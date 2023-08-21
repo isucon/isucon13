@@ -1,0 +1,18 @@
+version: '3.0'
+
+services:
+  mysql:
+    image: mysql/mysql-server:8.0.31
+    environment:
+      - "MYSQL_ROOT_HOST=%"
+      - "MYSQL_ROOT_PASSWORD=root"
+    volumes:
+      - ./webapp/sql/initdb.d:/docker-entrypoint-initdb.d
+      - mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+    restart: always
+
+
+volumes:
+  mysql:
