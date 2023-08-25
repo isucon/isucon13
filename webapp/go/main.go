@@ -4,8 +4,10 @@ package main
 // sqlx的な参考: https://jmoiron.github.io/sqlx/
 
 import (
+	"fmt"
 	"log"
 	"net"
+	"os"
 	"strconv"
 
 	"github.com/go-sql-driver/mysql"
@@ -27,15 +29,55 @@ func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
-func connectDB() (*sqlx.DB, error) {
-	// FIXME: envから読み出す
+func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
 	conf := mysql.NewConfig()
+	return conf, nil
+}
+
+func connectDB() (*sqlx.DB, error) {
+	const (
+		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
+		addrEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_ADDRESS"
+		userEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_USER"
+		passwordEnvKey    = "ISUCON13_MYSQL_DIALCONFIG_PASSWORD"
+		dbNameEnvKey      = "ISUCON13_MYSQL_DIALCONFIG_DATABASE"
+		parseTimeEnvKey   = "ISUCON13_MYSQL_DIALCONFIG_PARSETIME"
+	)
+
+	conf := mysql.NewConfig()
+
+	// 環境変数がセットされていなかった場合でも一旦動かせるように、デフォルト値を入れておく
+	// この挙動を変更して、エラーを出すようにしてもいいかもしれない
 	conf.Net = "tcp"
 	conf.Addr = "127.0.0.1:3306"
 	conf.User = "isucon"
 	conf.Passwd = "isucon"
 	conf.DBName = "isupipe"
 	conf.ParseTime = true
+
+	if v, ok := os.LookupEnv(networkTypeEnvKey); ok {
+		conf.Net = v
+	}
+	if v, ok := os.LookupEnv(addrEnvKey); ok {
+		conf.Addr = v
+	}
+	if v, ok := os.LookupEnv(userEnvKey); ok {
+		conf.User = v
+	}
+	if v, ok := os.LookupEnv(passwordEnvKey); ok {
+		conf.Passwd = v
+	}
+	if v, ok := os.LookupEnv(dbNameEnvKey); ok {
+		conf.DBName = v
+	}
+	if v, ok := os.LookupEnv(parseTimeEnvKey); ok {
+		parseTime, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse environment variable '%s' as bool: %+v", parseTimeEnvKey, err)
+		}
+		conf.ParseTime = parseTime
+	}
+
 	return sqlx.Open("mysql", conf.FormatDSN())
 }
 
