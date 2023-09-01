@@ -2,7 +2,7 @@ openapi: 3.1.0
 x-stoplight:
   id: 13ugbg96utt3a
 info:
-  title: pipe
+  title: isupipe
   version: '1.0'
 servers:
   - url: 'http://localhost:3000'
