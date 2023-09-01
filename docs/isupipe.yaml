@@ -1,0 +1,280 @@
+openapi: 3.1.0
+x-stoplight:
+  id: 13ugbg96utt3a
+info:
+  title: isupipe
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /login:
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-login
+      responses:
+        '200':
+          description: OK
+      description: ログイン
+      requestBody:
+        $ref: '#/components/requestBodies/Login'
+  /user:
+    post:
+      summary: Create New User
+      operationId: post-user
+      responses:
+        '201':
+          description: User Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                New User Bob Fellow:
+                  value:
+                    id: 12
+                    firstName: Bob
+                    lastName: Fellow
+                    email: bob.fellow@gmail.com
+                    dateOfBirth: '1996-08-24'
+                    emailVerified: false
+                    createDate: '2020-11-18'
+        '400':
+          description: Missing Required Information
+        '409':
+          description: Email Already Taken
+      description: ユーザ登録
+      requestBody:
+        $ref: '#/components/requestBodies/PostUser'
+  '/users/{userid}':
+    parameters:
+      - schema:
+          type: string
+        name: userid
+        in: path
+        required: true
+    get:
+      summary: ''
+      operationId: get-users-userid
+      responses:
+        '200':
+          $ref: '#/components/responses/GetUser'
+      description: ユーザプロフィール取得
+      parameters:
+        - schema:
+            type: string
+          in: cookie
+          name: SESSIONID
+          description: セッションID
+  /livestream:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          $ref: '#/components/responses/GetLivestreams'
+      operationId: get-livestream
+      description: ライブストリームの情報取得エンドポイント
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: limit
+        - schema:
+            type: integer
+          in: query
+          name: offset
+  '/livestream/{livestreamid}':
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          $ref: '#/components/responses/GetLivestream'
+      operationId: 'get-livestream-:livestreamid'
+      description: ライブストリーム視聴画面の情報取得
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
+  '/livestream/{livestreamid}/superchat':
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          $ref: '#/components/responses/GetSuperchats'
+      operationId: 'get-livestream-:livestreamid-superchat'
+      description: 当該ライブストリームの上位チャット取得
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
+components:
+  schemas:
+    User:
+      title: User
+      type: object
+      description: ''
+      examples:
+        - id: 0
+          name: alice
+          display_name: alice_display
+          description: alice@example.com
+          created_at: true
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the given user.
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+          format: email
+        created_at:
+          type: integer
+      required:
+        - id
+        - name
+        - display_name
+        - description
+    Livestream:
+      title: Livestream
+      x-stoplight:
+        id: 7t0r49gwe046a
+      type: object
+      properties:
+        id:
+          type: number
+        owner_id:
+          type: number
+        channel_id:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        start_at:
+          type: number
+        end_at:
+          type: number
+        created_at:
+          type: number
+        updated_at:
+          type: number
+    LivestreamView:
+      title: LivestreamView
+      x-stoplight:
+        id: qs78k91gl10ju
+      type: object
+      properties:
+        id:
+          type: number
+        owner_id:
+          type: number
+        channel_id:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        playlist_url:
+          type: string
+        start_at:
+          type: number
+        end_at:
+          type: number
+        created_at:
+          type: number
+        updated_at:
+          type: number
+    Superchat:
+      title: Superchat
+      x-stoplight:
+        id: xefjzrvtkos6j
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        comment:
+          type: string
+        tip:
+          type: number
+        created_at:
+          type: number
+        updated_at:
+          type: number
+      description: 上位チャットの投稿
+  requestBodies:
+    PostUser:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              display_name:
+                type: string
+              description:
+                type: string
+              password:
+                type: string
+          examples:
+            example-1:
+              value:
+                id: 1
+                name: johndoe
+                display_name: johndoe_display
+                description: blah blah blah
+                password: s3cr3t
+                created_at: 1234567
+    Login:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+  responses:
+    GetUser:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    GetLivestreams:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Livestream'
+    GetLivestream:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LivestreamView'
+    GetSuperchats:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Superchat'
