@@ -9,6 +9,7 @@ import (
 	"crypto/sha512"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
@@ -135,6 +136,12 @@ func loginHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
+	sess.Options = &sessions.Options{
+		MaxAge: int(600 /* 10 seconds */),
+		Path:   "/",
+	}
+	sess.Values["username"] = user.Name
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
