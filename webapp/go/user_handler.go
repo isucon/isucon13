@@ -15,15 +15,10 @@ type User struct {
 	Name        string `db:"name"`
 	DisplayName string `db:"display_name"`
 	Description string `db:"description"`
+	Password    string `db:"password"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt int `db:"created_at"`
 	UpdatedAt int `db:"updated_at"`
-}
-
-type PasswordHash struct {
-	ID       int    `db:"id"`
-	UserID   int    `db:"user_id"`
-	Password string `db:"password"`
 }
 
 type PostUserRequest struct {
@@ -48,6 +43,7 @@ func userRegisterHandler(c echo.Context) error {
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
 		Description: req.Description,
+		Password:    fmt.Sprintf("%x", hashedPassword),
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
@@ -55,23 +51,7 @@ func userRegisterHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description) VALUES(:name, :display_name, :description)", user)
-	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	userID, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	passwordHash := PasswordHash{
-		UserID:   int(userID),
-		Password: fmt.Sprintf("%x", hashedPassword),
-	}
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO password_hash (user_id, password) VALUES(:user_id, :password)", passwordHash); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

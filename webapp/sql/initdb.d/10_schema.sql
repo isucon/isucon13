@@ -101,21 +101,12 @@ CREATE TABLE `users` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `display_name` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
   `description` TEXT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
-
-CREATE TABLE `password_hash` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `user_id` BIGINT NOT NULL,
-  `password` VARCHAR(255) NOT NULL,
-
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `password` (`password`),
-  FOREIGN KEY fk_user_id (`user_id`) REFERENCES users (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 CREATE TABLE `channels` (
