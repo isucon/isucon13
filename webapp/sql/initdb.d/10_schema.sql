@@ -101,6 +101,7 @@ CREATE TABLE `users` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `display_name` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
   `description` TEXT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

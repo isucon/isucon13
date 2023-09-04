@@ -1,11 +1,66 @@
 package main
 
-import "github.com/labstack/echo/v4"
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"crypto/sha512"
+
+	"github.com/labstack/echo/v4"
+)
+
+type User struct {
+	ID          int    `db:"id"`
+	Name        string `db:"name"`
+	DisplayName string `db:"display_name"`
+	Description string `db:"description"`
+	Password    string `db:"password"`
+	// CreatedAt is the created timestamp that forms an UNIX time.
+	CreatedAt int `db:"created_at"`
+	UpdatedAt int `db:"updated_at"`
+}
+
+type PostUserRequest struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	Description string `json:"description"`
+	Password    string `json:"password"`
+}
 
 // ユーザ登録API
 // POST /user
 func userRegisterHandler(c echo.Context) error {
-	return nil
+	ctx := c.Request().Context()
+
+	req := PostUserRequest{}
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
+	}
+
+	hashedPassword := sha512.Sum512([]byte(req.Password))
+	user := User{
+		Name:        req.Name,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+		Password:    fmt.Sprintf("%x", hashedPassword),
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, user)
 }
 
 // ユーザログインAPI
