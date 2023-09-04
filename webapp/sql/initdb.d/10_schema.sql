@@ -118,3 +118,13 @@ CREATE TABLE `channels` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+CREATE TABLE `sessions` (
+  -- idはUUIDv4の形式を取るため、VARCHAR(36)とする
+  `id` VARCHAR(36) NOT NULL,
+  `user_id` BIGINT NOT NULL,
+  `expires` BIGINT NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY fk_user_id (`user_id`) REFERENCES users (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+

@@ -14,6 +14,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	echolog "github.com/labstack/gommon/log"
 )
 
@@ -82,10 +85,18 @@ func connectDB() (*sqlx.DB, error) {
 }
 
 func main() {
+	const sessionStoreSecretEnvKey = "ISUCON13_SESSION_SECRETKEY"
+
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(echolog.DEBUG)
 	e.Use(middleware.Logger())
+	secret, ok := os.LookupEnv(sessionStoreSecretEnvKey)
+	if !ok {
+		secret = "defaultsecret"
+	}
+
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte(secret))))
 	// e.Use(middleware.Recover())
 
 	// top
