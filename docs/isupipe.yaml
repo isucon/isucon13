@@ -220,8 +220,6 @@ components:
           schema:
             type: object
             properties:
-              id:
-                type: integer
               name:
                 type: string
               display_name:
@@ -233,7 +231,6 @@ components:
           examples:
             example-1:
               value:
-                id: 1
                 name: johndoe
                 display_name: johndoe_display
                 description: blah blah blah
