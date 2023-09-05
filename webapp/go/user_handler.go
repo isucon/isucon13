@@ -104,7 +104,7 @@ func loginHandler(c echo.Context) error {
 
 	user := User{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ? LIMIT 1", req.UserName); err != nil {
+	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -141,7 +141,7 @@ func loginHandler(c echo.Context) error {
 		MaxAge: int(600 /* 10 seconds */),
 		Path:   "/",
 	}
-	sess.Values["username"] = user.Name
+	sess.Values[defaultSessionIDKey] = userSession.ID
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -153,7 +153,44 @@ func loginHandler(c echo.Context) error {
 // ユーザ詳細API
 // GET /user/:userid
 func userHandler(c echo.Context) error {
-	return nil
+	ctx := c.Request().Context()
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	sessionID, ok := sess.Values[defaultSessionIDKey]
+	if !ok {
+		// FIXME: エラーメッセージを検討する
+		return echo.NewHTTPError(http.StatusForbidden, "")
+	}
+
+	userSession := Session{}
+	err = dbConn.GetContext(ctx, &userSession, "SELECT user_id, expires FROM sessions where id = ?", sessionID.(string))
+	if err != nil {
+		// セッション情報が保存されていないので、Forbiddenとする
+		// FIXME: エラーメッセージを検討する
+		return echo.NewHTTPError(http.StatusForbidden, "")
+	}
+
+	now := time.Now()
+	if now.Unix() > int64(userSession.Expires) {
+		// セッションの有効期限が切れたので、もう一度ログインしてもらう
+		if _, err := dbConn.NamedExecContext(ctx, "DELETE FROM sessoins WHERE id = :id", userSession); err != nil {
+			// レコード削除のエラーは無視する
+			c.Logger().Warn("failed to delete the session info from DB")
+		}
+
+		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
+	}
+
+	userID := c.Param("user_id")
+	user := User{}
+	if err := dbConn.Get(&user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userID); err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
+	}
+
+	return c.JSON(http.StatusOK, user)
 }
 
 // ユーザ
