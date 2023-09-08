@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"time"
 
-	"crypto/sha512"
-
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	defaultSessionIDKey = "SESSIONID"
+	bcryptDefaultCost   = 10
 )
 
 type User struct {
@@ -23,8 +23,8 @@ type User struct {
 	Name        string `db:"name"`
 	DisplayName string `db:"display_name"`
 	Description string `db:"description"`
-	// Password is hashed password.
-	Password string `db:"password"`
+	// HashedPassword is hashed password.
+	HashedPassword string `db:"password"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -62,12 +62,16 @@ func userRegisterHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
-	hashedPassword := sha512.Sum512([]byte(req.Password))
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptDefaultCost)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	user := User{
-		Name:        req.Name,
-		DisplayName: req.DisplayName,
-		Description: req.Description,
-		Password:    fmt.Sprintf("%x", hashedPassword),
+		Name:           req.Name,
+		DisplayName:    req.DisplayName,
+		Description:    req.Description,
+		HashedPassword: fmt.Sprintf("%x", hashedPassword),
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
@@ -108,9 +112,12 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	hashedPassword := fmt.Sprintf("%x", sha512.Sum512([]byte(req.Password)))
-	if req.UserName != user.Name || hashedPassword != user.Password {
+	err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	sessionEndAt := time.Now().Add(10 * time.Minute)
