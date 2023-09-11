@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -14,8 +13,9 @@ import (
 )
 
 const (
-	defaultSessionIDKey = "SESSIONID"
-	bcryptDefaultCost   = 10
+	defaultSessionIDKey      = "SESSIONID"
+	defaultSessionExpiresKey = "EXPIRES"
+	bcryptDefaultCost        = 10
 )
 
 type User struct {
@@ -71,7 +71,7 @@ func userRegisterHandler(c echo.Context) error {
 		Name:           req.Name,
 		DisplayName:    req.DisplayName,
 		Description:    req.Description,
-		HashedPassword: fmt.Sprintf("%x", hashedPassword),
+		HashedPassword: string(hashedPassword),
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
@@ -101,18 +101,13 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
-	tx, err := dbConn.BeginTxx(ctx, nil)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	user := User{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
+	if err := dbConn.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
@@ -129,16 +124,6 @@ func loginHandler(c echo.Context) error {
 		Expires: int(sessionEndAt.Unix()),
 	}
 
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO sessions (id, user_id, expires) VALUES(:id, :user_id, :expires)", userSession); err != nil {
-		// 変更系なのでロールバックする
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -149,6 +134,7 @@ func loginHandler(c echo.Context) error {
 		Path:   "/",
 	}
 	sess.Values[defaultSessionIDKey] = userSession.ID
+	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -160,34 +146,19 @@ func loginHandler(c echo.Context) error {
 // ユーザ詳細API
 // GET /user/:userid
 func userHandler(c echo.Context) error {
-	ctx := c.Request().Context()
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	sessionID, ok := sess.Values[defaultSessionIDKey]
+	sessionExpires, ok := sess.Values[defaultSessionExpiresKey]
 	if !ok {
 		// FIXME: エラーメッセージを検討する
 		return echo.NewHTTPError(http.StatusForbidden, "")
 	}
 
-	userSession := Session{}
-	err = dbConn.GetContext(ctx, &userSession, "SELECT user_id, expires FROM sessions where id = ?", sessionID.(string))
-	if err != nil {
-		// セッション情報が保存されていないので、Forbiddenとする
-		// FIXME: エラーメッセージを検討する
-		return echo.NewHTTPError(http.StatusForbidden, "")
-	}
-
 	now := time.Now()
-	if now.Unix() > int64(userSession.Expires) {
-		// セッションの有効期限が切れたので、もう一度ログインしてもらう
-		if _, err := dbConn.NamedExecContext(ctx, "DELETE FROM sessoins WHERE id = :id", userSession); err != nil {
-			// レコード削除のエラーは無視する
-			c.Logger().Warn("failed to delete the session info from DB")
-		}
-
+	if now.Unix() > int64(sessionExpires.(int)) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
 	}
 
