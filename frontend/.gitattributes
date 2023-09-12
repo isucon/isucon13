@@ -1,0 +1,4 @@
+.yarn/* linguist-generated=true
+yarn.lock linguist-generated=true
+src/api/apiClient.ts linguist-generated=true
+src/api/types.ts linguist-generated=true
