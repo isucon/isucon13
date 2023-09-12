@@ -15,6 +15,7 @@ import (
 const (
 	defaultSessionIDKey      = "SESSIONID"
 	defaultSessionExpiresKey = "EXPIRES"
+	defaultUserIDKey         = "USERID"
 	bcryptDefaultCost        = 10
 )
 
@@ -130,11 +131,15 @@ func loginHandler(c echo.Context) error {
 	}
 
 	sess.Options = &sessions.Options{
-		MaxAge: int(600 /* 10 seconds */),
+		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
 		Path:   "/",
 	}
 	sess.Values[defaultSessionIDKey] = userSession.ID
+	c.Logger().Infof("userSession.ID = %s", userSession.ID)
+	sess.Values[defaultUserIDKey] = userSession.UserID
+	c.Logger().Infof("userSession.UserID = %d", userSession.UserID)
 	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
+	c.Logger().Infof("sessionEndAt = %s", sessionEndAt.String())
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
