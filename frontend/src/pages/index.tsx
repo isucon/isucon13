@@ -25,7 +25,6 @@ export default function IndexPage(): React.ReactElement {
           top: 0,
           bottom: 0,
           paddingTop: '60px',
-          zIndex: -1,
         }}
       >
         <Stack direction="column" spacing={0} sx={{ padding: 2 }}>
