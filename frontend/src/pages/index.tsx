@@ -1,6 +1,4 @@
 import { Typography } from '@mui/joy';
-import AspectRatio from '@mui/joy/AspectRatio';
-import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
 import Divider from '@mui/joy/Divider';
 import Grid from '@mui/joy/Grid';
@@ -14,6 +12,7 @@ import {
   BsCircleFill,
 } from 'react-icons/bs';
 import { Link } from 'react-router-dom';
+import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
   return (
@@ -84,24 +83,7 @@ export default function IndexPage(): React.ReactElement {
             .fill(0)
             .map((_, index) => (
               <Grid key={index} xs={1}>
-                <AspectRatio sx={{ borderRadius: 10 }}>
-                  <img
-                    src="https://images.unsplash.com/photo-1527549993586-dff825b37782?auto=format&fit=crop&w=400"
-                    loading="lazy"
-                  />
-                </AspectRatio>
-                <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
-                  <Avatar />
-                  <div>
-                    <Typography level="title-sm">ビデオタイトル</Typography>
-                    <Typography level="body-sm">
-                      <Stack direction="row" spacing={2}>
-                        <span>チャンネル名</span>
-                        <span>1234人視聴・12分前</span>
-                      </Stack>
-                    </Typography>
-                  </div>
-                </Stack>
+                <VideoThumbnail />
               </Grid>
             ))}
         </Grid>
