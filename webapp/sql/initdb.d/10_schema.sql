@@ -1,5 +1,11 @@
 USE `isupipe`;
 
+CREATE TABLE `theme` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  -- 配信者ユーザIDを受取り、これに合わせてテーマを変更することになる
+  `user_id` BIGINT NOT NULL,
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
 -- FIXME: プロフィール画像があると雰囲気が出るが、基本実装ができたあとで検討
 CREATE TABLE `users` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -67,7 +73,7 @@ CREATE TABLE `superchats` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES users(`id`),
-  FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`),
+  FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ユーザからのスパチャのスパム報告

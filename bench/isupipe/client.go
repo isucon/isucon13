@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -18,19 +19,38 @@ type Client struct {
 	// FIXME: dns resolver
 }
 
-func NewClient() (*Client, error) {
-	baseURL := "http://127.0.0.1:12345"
-	timeout := 500 * time.Millisecond
-	customAgent, err := agent.NewAgent(
-		agent.WithBaseURL(baseURL),
+func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
+	opts := []agent.AgentOption{
+		agent.WithBaseURL("http://127.0.0.1:12345"),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
+			// Custom DNS Resolver
+			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				nameserverAddress := "1.1.1.1"
+				dialTimeout := 10000 * time.Millisecond
+				dialer := net.Dialer{
+					Timeout: dialTimeout,
+					Resolver: &net.Resolver{
+						PreferGo: true,
+						Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+							dialer := net.Dialer{Timeout: dialTimeout}
+							nameserver := net.JoinHostPort(nameserverAddress, "53")
+							return dialer.DialContext(ctx, "udp", nameserver)
+						},
+					},
+				}
+				return dialer.DialContext(ctx, network, address)
+			},
 		}),
 		agent.WithNoCache(),
-		agent.WithTimeout(timeout),
-	)
+		agent.WithTimeout(500 * time.Millisecond),
+	}
+	for _, customOpt := range customOpts {
+		opts = append(opts, customOpt)
+	}
+	customAgent, err := agent.NewAgent(opts...)
 	if err != nil {
 		return nil, err
 	}

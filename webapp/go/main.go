@@ -98,15 +98,25 @@ func connectDB() (*sqlx.DB, error) {
 func initializeHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	if _, err := dbConn.ExecContext(ctx, "TRUNCATE superchats"); err != nil {
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if _, err := dbConn.ExecContext(ctx, "DELETE FROM superchats"); err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	if _, err := dbConn.ExecContext(ctx, "TRUNCATE livestreams"); err != nil {
+	if _, err := dbConn.ExecContext(ctx, "DELETE FROM livestreams"); err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	if _, err := dbConn.ExecContext(ctx, "TRUNCATE users"); err != nil {
+	if _, err := dbConn.ExecContext(ctx, "DELETE FROM users"); err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
+	tx.Commit()
 
 	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{

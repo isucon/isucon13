@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/isucon/isucon13/bench/scenario"
 )
 
 func main() {
@@ -16,36 +16,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if err := client.PostUser(ctx, &isupipe.PostUserRequest{
-		Name:        "test",
-		DisplayName: "test",
-		Description: "blah blah blah",
-		Password:    "s3cr3t",
-	}); err != nil {
-		log.Fatalln(err)
-	}
-	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test",
-		Password: "s3cr3t",
-	}); err != nil {
-		log.Fatalln(err)
-	}
-
-	//
-	if err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Title:         "test",
-		Description:   "test",
-		PrivacyStatus: "public",
-		StartAt:       time.Now().Unix(),
-		EndAt:         time.Now().Unix(),
-	}); err != nil {
-		log.Fatalln(err)
-	}
-
-	if err := client.PostSuperchat(ctx, 1, &isupipe.PostSuperchatRequest{
-		Comment: "test",
-		Tip:     3,
-	}); err != nil {
+	if err := scenario.Pretest(ctx, client); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -1,5 +1,5 @@
 BUILD=go build
-TEST=go test
+TEST=/usr/local/go/bin/go test
 TEST_FLAGS=-v
 
 DARWIN_TARGET_ENV=GOOS=darwin GOARCH=amd64
@@ -12,12 +12,12 @@ RM=rm -f
 
 all: build
 
-build:
+build: clean
 	$(DARWIN_TARGET_ENV) $(BUILD) -o ./bin/bench_darwin ./cmd/bench
 	$(LINUX_TARGET_ENV) $(BUILD) -o ./bin/bench_linux ./cmd/bench
 
 test:
-	$(TEST) $(TEST_FLAGS) ./...
+	sudo $(TEST) $(TEST_FLAGS) ./...
 
 clean:
 	$(RM) ./bin/bench_darwin
