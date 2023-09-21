@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 
@@ -26,10 +27,20 @@ const (
 
 var (
 	dbConn *sqlx.DB
+	secret = []byte("defaultsecret")
 )
 
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	if secretKey, ok := os.LookupEnv("ISUCON13_SESSION_SECRETKEY"); ok {
+		secret = []byte(secretKey)
+	}
+}
+
+// FIXME: ポータルと足並み揃えて修正
+type InitializeResponse struct {
+	AvailableDays int    `json:"available_days"`
+	Language      string `json:"language"`
 }
 
 func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
@@ -84,47 +95,74 @@ func connectDB() (*sqlx.DB, error) {
 	return sqlx.Open("mysql", conf.FormatDSN())
 }
 
-func main() {
-	const sessionStoreSecretEnvKey = "ISUCON13_SESSION_SECRETKEY"
+func initializeHandler(c echo.Context) error {
+	ctx := c.Request().Context()
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if _, err := dbConn.ExecContext(ctx, "DELETE FROM superchats"); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if _, err := dbConn.ExecContext(ctx, "DELETE FROM livestreams"); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if _, err := dbConn.ExecContext(ctx, "DELETE FROM users"); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	tx.Commit()
+
+	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
+	return c.JSON(http.StatusOK, InitializeResponse{
+		AvailableDays: 0,
+		Language:      "golang",
+	})
+}
+
+func main() {
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(echolog.DEBUG)
 	e.Use(middleware.Logger())
-	secret, ok := os.LookupEnv(sessionStoreSecretEnvKey)
-	if !ok {
-		secret = "defaultsecret"
-	}
-
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte(secret))))
+	e.Use(session.Middleware(sessions.NewCookieStore(secret)))
 	// e.Use(middleware.Recover())
+
+	// 初期化
+	e.POST("/initialize", initializeHandler)
 
 	// top
 	e.GET("/tag", nil)
 
 	// livestream
+	// reserve livestream
+	e.POST("/livestream/reservation", reserveLivestreamHandler)
+	// list livestream
 	e.GET("/livestream", getLivestreamsHandler)
+	// get livestream
 	e.GET("/livestream/:livestream_id", getLivestreamHandler)
-	e.GET("/livestream/:livestream_id/comment", nil)
-	e.GET("/livestream/user/:userid", nil)
+	e.POST("/livestream/:livestream_id/superchat", postSuperchatHandler)
+	// get polling superchat timeline
+	e.GET("/livestream/:livestream_id/superchat", nil)
+	// スパチャ投稿
+	// スパチャ報告
+
+	// get reaction 候補 (FIXME: フロントエンドで持つなら要らなそう)
 	e.GET("/reaction", nil)
-	// movie
-	e.GET("/movie", nil)
+
+	// ユーザ視聴開始 (viewer)
+	// ユーザ視聴終了 (viewer)
 
 	// user
 	e.POST("/user", userRegisterHandler)
 	e.POST("/login", loginHandler)
 	e.GET("/user", userSessionHandler)
 	e.GET("/user/:user_id", userHandler)
-	e.GET("/user/:user_id/channel", userChannelHandler)
-	e.POST("/user/:user_id/channel/:channel_id/subscribe", subscribeChannelHandler)
-	e.POST("/user/:user_id/channel/:channel_id/unsubscribe", unsubscribeChannelHandler)
-	e.GET("/channel/:channel_id", channelHandler)
-	e.GET("/channel/:channel_id/subscribers", channelSubscribersHandler)
-	e.GET("/channel/:channel_id/movie", channelMovieHandler)
-	e.POST("/channel", createChannelHandler)
-	e.PUT("/channel/:channel_id", updateChannelHandler)
-	e.DELETE("/channel/:channel_id", deleteChannelHandler)
 
 	// DB接続
 	conn, err := connectDB()
