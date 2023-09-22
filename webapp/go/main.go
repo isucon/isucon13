@@ -164,6 +164,10 @@ func main() {
 	e.GET("/user", userSessionHandler)
 	e.GET("/user/:user_id", userHandler)
 
+	// stats
+	// スパチャ統計情報
+	e.GET("/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
+
 	// DB接続
 	conn, err := connectDB()
 	if err != nil {
