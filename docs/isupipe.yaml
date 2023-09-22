@@ -66,6 +66,26 @@ paths:
           in: cookie
           name: SESSIONID
           description: セッションID
+  '/users/{userid}/statistics':
+    parameters:
+      - schema:
+          type: string
+        name: userid
+        in: path
+        required: true
+    get:
+      summary: ''
+      operationId: get-users-statistics
+      responses:
+        '200':
+          $ref: '#/components/responses/GetUserStatistics'
+      description: ユーザの配信に関する統計情報取得
+      parameters:
+        - schema:
+            type: string
+          in: cookie
+          name: SESSIONID
+          description: セッションID
   /livestream:
     get:
       summary: Your GET endpoint
@@ -249,6 +269,18 @@ components:
           type: number
         previous_livestream_total_reactions_diff:
           type: number
+    UserStatistics:
+      title: LivesteamStatistics
+      type: object
+      properties:
+        average_viewers: 
+          type: number
+        average_tips:
+          type: number
+        average_superchats:
+          type: number
+        average_reactions:
+          type: number
   requestBodies:
     PostUser:
       content:
@@ -289,6 +321,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/User'
+    GetUserStatistics:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserStatistics'
     GetLivestreams:
       description: Example response
       content:
@@ -303,7 +341,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/LivestreamView'
-    GetLivestream:
+    GetLivestreamStatistics:
       description: Example response
       content:
         application/json:

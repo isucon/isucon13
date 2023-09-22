@@ -151,6 +151,28 @@ func loginHandler(c echo.Context) error {
 // ユーザ詳細API
 // GET /user/:userid
 func userHandler(c echo.Context) error {
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	userID := c.Param("user_id")
+	user := User{}
+	if err := dbConn.Get(&user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userID); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+
+	return c.JSON(http.StatusOK, user)
+}
+
+// ユーザ
+// XXX セッション情報返すみたいな？
+// GET /user
+func userSessionHandler(c echo.Context) error {
+	return nil
+}
+
+func verifyUserSession(c echo.Context) error {
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -167,18 +189,5 @@ func userHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
 	}
 
-	userID := c.Param("user_id")
-	user := User{}
-	if err := dbConn.Get(&user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userID); err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
-	}
-
-	return c.JSON(http.StatusOK, user)
-}
-
-// ユーザ
-// XXX セッション情報返すみたいな？
-// GET /user
-func userSessionHandler(c echo.Context) error {
 	return nil
 }

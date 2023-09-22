@@ -9,13 +9,73 @@ import (
 )
 
 type LivestreamStatistics struct {
-	TotalViewers                         int `json:"total_viewers"`
-	TotalTips                            int `json:"total_tips"`
-	TotalSuperchats                      int `json:"total_superchats"`
-	TotalReactions                       int `json:"total_reactions"`
-	PreviousLivesteamTotalViewersDiff    int `json:"previous_livesteam_total_viewers_diff"`
-	PreviousLivesteamTotalTipsDiff       int `json:"previous_livesteam_total_tips_diff"`
-	PreviousLivesteamTotalSuperchatsDiff int `json:"previous_livesteam_total_superchats_diff"`
+	TotalViewers                          int `json:"total_viewers"`
+	TotalTips                             int `json:"total_tips"`
+	TotalSuperchats                       int `json:"total_superchats"`
+	TotalReactions                        int `json:"total_reactions"`
+	PreviousLivestreamTotalViewersDiff    int `json:"previous_livestream_total_viewers_diff"`
+	PreviousLivestreamTotalTipsDiff       int `json:"previous_livestream_total_tips_diff"`
+	PreviousLivestreamTotalSuperchatsDiff int `json:"previous_livestream_total_superchats_diff"`
+	PreviousLivestreamTotaRlReactionsDiff int `json:"previous_livestream_total_reactions_diff"`
+}
+
+type UserStatistics struct {
+	AverageViewers    float64 `json:"average_viewers"`
+	AverageTips       float64 `json:"average_tips"`
+	AverageSuperchats float64 `json:"average_superchats"`
+	AverageReactions  float64 `json:"average_reactions"`
+}
+
+func getUserStatisticsHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	userID := c.Param("livestream_id")
+
+	rows, err := dbConn.QueryxContext(ctx, "SELECT id FROM livestreams where user_id = ?", userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	statsSequence := []LivestreamStatistics{}
+
+	for rows.Next() {
+		ls := Livestream{}
+		if err := rows.Scan(&ls); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		stats, err := queryLivestreamStatistics(ctx, fmt.Sprintf("%d", ls.Id))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		statsSequence = append(statsSequence, stats)
+	}
+
+	viewersSum := float64(0)
+	reactionsSum := float64(0)
+	superchatsSum := float64(0)
+	tipsSum := float64(0)
+
+	for _, stats := range statsSequence {
+		viewersSum += float64(stats.TotalViewers)
+		reactionsSum += float64(stats.TotalReactions)
+		superchatsSum += float64(stats.TotalSuperchats)
+		tipsSum += float64(stats.TotalTips)
+	}
+
+	stats := UserStatistics{
+		AverageViewers:    viewersSum / float64(len(statsSequence)),
+		AverageReactions:  reactionsSum / float64(len(statsSequence)),
+		AverageSuperchats: superchatsSum / float64(len(statsSequence)),
+		AverageTips:       tipsSum / float64(len(statsSequence)),
+	}
+	return c.JSON(http.StatusOK, stats)
 }
 
 func getLivestreamStatisticsHandler(c echo.Context) error {
@@ -28,41 +88,25 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "livestream not found")
 	}
 
-	statistics := LivestreamStatistics{}
-	if err := calculateSuperchatStatistics(ctx, livestreamID, &statistics); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	totalViewers, err := countTotalViewers(ctx, livestreamID)
+	statistics, err := queryLivestreamStatistics(ctx, livestreamID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	statistics.TotalViewers = totalViewers
-
-	totalReactions, err := countTotalReactions(ctx, livestreamID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	statistics.TotalReactions = totalReactions
 
 	prevLivestream := getPreviousLivestream(ctx, &livestream)
 	prevLivestreamStatistics := LivestreamStatistics{}
 	if prevLivestream != nil {
 		prevLivestreamID := fmt.Sprintf("%d", prevLivestream.Id)
-		if err := calculateSuperchatStatistics(ctx, prevLivestreamID, &prevLivestreamStatistics); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		totalViewers, err := countTotalViewers(ctx, prevLivestreamID)
+		prevLivestreamStatistics, err = queryLivestreamStatistics(ctx, prevLivestreamID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		prevLivestreamStatistics.TotalViewers = totalViewers
-
-		totalReactions, err := countTotalReactions(ctx, prevLivestreamID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		statistics.TotalReactions = totalReactions
 	}
+
+	statistics.PreviousLivestreamTotalViewersDiff = statistics.TotalViewers - prevLivestreamStatistics.TotalViewers
+	statistics.PreviousLivestreamTotalSuperchatsDiff = statistics.TotalSuperchats - prevLivestreamStatistics.TotalSuperchats
+	statistics.PreviousLivestreamTotalTipsDiff = statistics.TotalTips - prevLivestreamStatistics.TotalTips
+	statistics.PreviousLivestreamTotaRlReactionsDiff = statistics.TotalReactions - prevLivestreamStatistics.TotalReactions
 
 	return c.JSON(http.StatusOK, statistics)
 }
@@ -138,4 +182,25 @@ func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *
 	}
 
 	return newestLivestream
+}
+
+func queryLivestreamStatistics(ctx context.Context, livestreamID string) (LivestreamStatistics, error) {
+	statistics := LivestreamStatistics{}
+
+	if err := calculateSuperchatStatistics(ctx, livestreamID, &statistics); err != nil {
+		return statistics, err
+	}
+	totalViewers, err := countTotalViewers(ctx, livestreamID)
+	if err != nil {
+		return statistics, err
+	}
+	statistics.TotalViewers = totalViewers
+
+	totalReactions, err := countTotalReactions(ctx, livestreamID)
+	if err != nil {
+		return statistics, err
+	}
+
+	statistics.TotalReactions = totalReactions
+	return statistics, nil
 }
