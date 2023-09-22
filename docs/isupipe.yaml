@@ -114,6 +114,22 @@ paths:
         name: livestreamid
         in: path
         required: true
+  '/livestream/{livestreamid}/statistics':
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          $ref: '#/components/responses/GetLivestreamStatistics'
+        '404':
+      operationId: 'get-livestream-:livestreamid-statistics'
+      description: ライブストリームの統計情報取得
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
 components:
   schemas:
     User:
@@ -213,6 +229,26 @@ components:
         updated_at:
           type: number
       description: 上位チャットの投稿
+    LivesteamStatistics:
+      title: LivesteamStatistics
+      type: object
+      properties:
+        total_viewers: 
+          type: number
+        total_tips:
+          type: number
+        total_superchats:
+          type: number
+        total_reactions:
+          type: number
+        previous_livestream_total_viewers_diff:
+          type: number
+        previous_livestream_total_tips_diff:
+          type: number
+        previous_livestream_total_superchats_diff:
+          type: number
+        previous_livestream_total_reactions_diff:
+          type: number
   requestBodies:
     PostUser:
       content:
@@ -267,6 +303,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/LivestreamView'
+    GetLivestream:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LivesteamStatistics'
     GetSuperchats:
       description: Example response
       content:
