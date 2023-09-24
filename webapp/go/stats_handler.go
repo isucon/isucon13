@@ -34,7 +34,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		return err
 	}
 
-	userID := c.Param("livestream_id")
+	userID := c.Param("user_id")
 
 	rows, err := dbConn.QueryxContext(ctx, "SELECT id FROM livestreams where user_id = ?", userID)
 	if err != nil {

@@ -1,10 +1,10 @@
 USE `isupipe`;
 
-CREATE TABLE `theme` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
+-- CREATE TABLE `theme` (
+  -- `id` BIGINT NOT NULL AUTO_INCREMENT,
   -- 配信者ユーザIDを受取り、これに合わせてテーマを変更することになる
-  `user_id` BIGINT NOT NULL,
-) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+  -- `user_id` BIGINT NOT NULL,
+-- ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- FIXME: プロフィール画像があると雰囲気が出るが、基本実装ができたあとで検討
 CREATE TABLE `users` (
