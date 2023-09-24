@@ -132,3 +132,20 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 
 	return nil
 }
+
+func (c *Client) GetLivestreamsByTag(
+	ctx context.Context,
+	tag string,
+) error {
+	urlPath := fmt.Sprintf("/search_livestream?tag=%s", tag)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	if _, err := c.agent.Do(ctx, req); err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return nil
+}

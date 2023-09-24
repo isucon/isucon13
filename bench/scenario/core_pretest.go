@@ -8,7 +8,6 @@ import (
 )
 
 func Pretest(ctx context.Context, client *isupipe.Client) error {
-
 	if err := client.PostUser(ctx, &isupipe.PostUserRequest{
 		Name:        "test",
 		DisplayName: "test",
@@ -39,6 +38,10 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		Comment: "test",
 		Tip:     3,
 	}); err != nil {
+		return err
+	}
+
+	if err := client.GetLivestreamsByTag(ctx /* tag name */, "chair"); err != nil {
 		return err
 	}
 

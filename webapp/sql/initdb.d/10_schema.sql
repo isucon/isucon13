@@ -34,11 +34,19 @@ CREATE TABLE `livestreams` (
   FOREIGN KEY (`user_id`) REFERENCES users(`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
--- ライブストリームに付与するタグ
+-- ライブストリームに付与される、サービスで定義されたタグ
 CREATE TABLE `tags` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE `uniq_tag_name` (`name`)
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+-- ライブストリームごとに付与されたタグ
+CREATE TABLE `livestream_tags` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `livestream_id` BIGINT NOT NULL,
+  `tag_id` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信視聴者

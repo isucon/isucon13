@@ -16,20 +16,10 @@ type Tag struct {
 
 func getTagHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
 	tags := []Tag{}
-
-	rows, err := dbConn.QueryxContext(ctx, "SELECT id, name FROM tags")
-	if err != nil {
+	if err := dbConn.SelectContext(ctx, &tags, "SELECT id, name FROM tags"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	for rows.Next() {
-		tag := Tag{}
-		if err := rows.Scan(&tag); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-
-		tags = append(tags, tag)
 	}
 
 	return c.JSON(http.StatusOK, tags)
