@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/worker"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
@@ -36,8 +35,6 @@ func Normal(ctx context.Context, client *isupipe.Client) {
 			log.Printf("Normal: failed to post superchat: %s\n", err.Error())
 			return
 		}
-
-		benchscore.AddScore(benchscore.SuccessPostSuperchat)
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Normal scenario does not anything: %s\n", err.Error())

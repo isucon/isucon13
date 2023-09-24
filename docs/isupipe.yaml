@@ -132,17 +132,50 @@ paths:
     get:
       summary: Your GET endpoint
       tags: []
+      operationId: 'get-livestream-:livestreamid-superchat'
+      description: 当該ライブストリームのスパチャ取得
       responses:
         '200':
-          $ref: '#/components/responses/GetSuperchats'
-      operationId: 'get-livestream-:livestreamid-superchat'
-      description: 当該ライブストリームの上位チャット取得
+          description: OK
+        '201':
+          description: Created
+      requestBody:
+        $ref: '#/components/requestBodies/PostSuperchat'
     parameters:
       - schema:
           type: string
         name: livestreamid
         in: path
         required: true
+    post:
+      summary: ''
+      operationId: post-livestream-livestreamid-superchat
+      requestBody:
+        $ref: '#/components/requestBodies/PostSuperchat'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Superchat'
+              examples:
+                basic:
+                  value:
+                    id: 12
+                    user_id: 5
+                    livestream_id: 1
+                    comment: がんばれ〜
+                    tip: 500
+                    created_at: 1695586243
+                    updated_at: 1695586243
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Content-Type
+          description: application/json
+      description: スパチャ投稿
   '/livestream/{livestreamid}/statistics':
     get:
       summary: Your GET endpoint
@@ -150,7 +183,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetLivestreamStatistics'
-        '404':
+        '404': null
       operationId: 'get-livestream-:livestreamid-statistics'
       description: ライブストリームの統計情報取得
     parameters:
@@ -159,6 +192,56 @@ paths:
         name: livestreamid
         in: path
         required: true
+  /livestream/reservation:
+    post:
+      summary: ''
+      operationId: post-livestream-reservation
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Livestream'
+              examples:
+                Example 1:
+                  value:
+                    id: 1
+                    user_id: 12
+                    title: ISUCON公式から出たゲームやるぞ！
+                    description: 'お約束: マナーを守りましょう'
+                    privacy_status: public
+                    start_at: 12345
+                    end_at: 12345
+                    created_at: 12345
+                    updated_at: 12345
+      requestBody:
+        $ref: '#/components/requestBodies/ReserveLivestream'
+  '/superchat/{superchatid}/report':
+    parameters:
+      - schema:
+          type: string
+        name: superchatid
+        in: path
+        required: true
+    post:
+      summary: ''
+      operationId: post-superchat-superchatid-report
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuperchatReport'
+              examples:
+                Example 1:
+                  value:
+                    id: 1
+                    user_id: 12
+                    superchat_id: 153
+                    created_at: 12345
+                    updated_at: 12345
 components:
   schemas:
     Tag:
@@ -166,7 +249,7 @@ components:
         type: integer
       name:
         type: string
-      created_at: 
+      created_at:
         type: number
     User:
       title: User
@@ -204,13 +287,13 @@ components:
       properties:
         id:
           type: number
-        owner_id:
-          type: number
-        channel_id:
+        user_id:
           type: number
         title:
           type: string
         description:
+          type: string
+        privacy_status:
           type: string
         start_at:
           type: number
@@ -251,11 +334,14 @@ components:
       x-stoplight:
         id: xefjzrvtkos6j
       type: object
+      description: 上位チャットの投稿
       properties:
         id:
           type: number
-        name:
-          type: string
+        user_id:
+          type: number
+        livestream_id:
+          type: number
         comment:
           type: string
         tip:
@@ -264,12 +350,11 @@ components:
           type: number
         updated_at:
           type: number
-      description: 上位チャットの投稿
     LivesteamStatistics:
       title: LivesteamStatistics
       type: object
       properties:
-        total_viewers: 
+        total_viewers:
           type: number
         total_tips:
           type: number
@@ -289,13 +374,29 @@ components:
       title: LivesteamStatistics
       type: object
       properties:
-        average_viewers: 
+        average_viewers:
           type: number
         average_tips:
           type: number
         average_superchats:
           type: number
         average_reactions:
+          type: number
+    SuperchatReport:
+      title: SuperchatReport
+      x-stoplight:
+        id: ubl7oq4t4kkn8
+      type: object
+      properties:
+        id:
+          type: number
+        user_id:
+          type: number
+        superchat_id:
+          type: number
+        created_at:
+          type: number
+        updated_at:
           type: number
   requestBodies:
     PostUser:
@@ -330,6 +431,45 @@ components:
                 type: string
               password:
                 type: string
+    PostSuperchat:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              comment:
+                type: string
+              tip:
+                type: number
+          examples:
+            Example 1:
+              value:
+                comment: がんばれ〜
+                tip: 500
+    ReserveLivestream:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              privacy_status:
+                type: string
+              start_at:
+                type: number
+              end_at:
+                type: number
+          examples:
+            Example 1:
+              value:
+                title: ISUCON公式から出たゲームやるぞ！
+                description: '配信のマナー: ★みんな仲良くしましょう★'
+                privacy_status: public
+                start_at: 0
+                end_at: 0
   responses:
     GetTag:
       content:
@@ -378,3 +518,4 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/Superchat'
+  examples: {}

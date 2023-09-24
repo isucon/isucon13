@@ -67,14 +67,25 @@ func reserveLivestreamHandler(c echo.Context) error {
 			EndAt:         endAt,
 		}
 	)
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, privacy_status, start_at, end_at) VALUES(:user_id, :title, :description, :privacy_status, :start_at, :end_at)", livestream); err != nil {
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, privacy_status, start_at, end_at) VALUES(:user_id, :title, :description, :privacy_status, :start_at, :end_at)", livestream)
+	if err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	createdAt := time.Now()
+
+	livestreamId, err := rs.LastInsertId()
+	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	tx.Commit()
 
-	// FIXME: PK補完
+	livestream.Id = int(livestreamId)
+	livestream.CreatedAt = createdAt
+	livestream.UpdatedAt = createdAt
 	return c.JSON(http.StatusCreated, livestream)
 }
 
