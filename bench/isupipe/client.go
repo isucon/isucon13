@@ -127,6 +127,25 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return nil
 }
 
+func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) error {
+	payload, err := json.Marshal(r)
+	if err != nil {
+		return bencherror.WrapError(bencherror.SystemError, err)
+	}
+
+	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
+	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
+	if err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	if _, err := c.agent.Do(ctx, req); err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return nil
+}
+
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {

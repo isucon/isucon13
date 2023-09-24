@@ -96,16 +96,14 @@ CREATE TABLE `superchat_reports` (
 -- ライブ配信に対するリアクション
 CREATE TABLE `reactions` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(255) NOT NULL,
   `emoji_name` VARCHAR(255) NOT NULL, -- :innocent:, :tada:, etc...
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES users(`id`),
   FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`),
-  UNIQUE KEY `name` (`name`),
+  UNIQUE KEY `emoji_name` (`emoji_name`),
   UNIQUE `uniq_reactions` (`user_id`, `livestream_id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 

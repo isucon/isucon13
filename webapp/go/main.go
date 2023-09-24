@@ -137,6 +137,7 @@ func main() {
 	// get livestream
 	e.GET("/livestream/:livestream_id", getLivestreamHandler)
 	e.POST("/livestream/:livestream_id/superchat", postSuperchatHandler)
+	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
 	// get polling superchat timeline
 	e.GET("/livestream/:livestream_id/superchat", nil)
 	// スパチャ投稿
