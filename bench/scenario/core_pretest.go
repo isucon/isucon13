@@ -40,10 +40,15 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if err := client.PostSuperchat(ctx, 1, &isupipe.PostSuperchatRequest{
+	postSuperchatResp, err := client.PostSuperchat(ctx, 1, &isupipe.PostSuperchatRequest{
 		Comment: "test",
 		Tip:     3,
-	}); err != nil {
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := client.ReportSuperchat(ctx, postSuperchatResp.SuperchatId); err != nil {
 		return err
 	}
 

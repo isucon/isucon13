@@ -30,6 +30,11 @@ type (
 		Comment string `json:"comment"`
 		Tip     int    `json:"tip"`
 	}
+	PostSuperchatResponse struct {
+		SuperchatId int    `json:"superchat_id"`
+		Comment     string `json:"comment"`
+		Tip         int    `json:"tip"`
+	}
 )
 
 type PostReactionRequest struct {

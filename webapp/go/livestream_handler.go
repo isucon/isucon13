@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo-contrib/session"
@@ -30,29 +29,7 @@ type Livestream struct {
 	UpdatedAt     time.Time `db:"updated_at"`
 }
 
-type PostSuperchatRequest struct {
-	Comment string `json:"comment"`
-	Tip     int    `json:"tip"`
-}
-
-type PostSuperchatResponse struct {
-	SuperchatId int64  `json:"superchat_id"`
-	Comment     string `json:"comment"`
-	Tip         int    `json:"tip"`
-}
-
-type Superchat struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
-	LivestreamId int       `db:"livestream_id"`
-	Comment      string    `db:"comment"`
-	Tip          int       `db:"tip"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
-}
-
 // FIXME: リアクション
-// FIXME: isucon13-mysql-1  | ERROR 1064 (42000) at line 55: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ') ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin' at line 17
 
 func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -101,6 +78,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, livestream)
 }
 
+<<<<<<< Updated upstream
 func postSuperchatHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -155,6 +133,24 @@ func postSuperchatHandler(c echo.Context) error {
 		Comment:     superchat.Comment,
 		Tip:         superchat.Tip,
 	})
+=======
+func searchLivestreamsByTagHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	keyTagName := c.QueryParam("tag")
+
+	keyTag := Tag{}
+	if err := dbConn.GetContext(ctx, &keyTag, "SELECT id FROM livestreams WHERE name = ?", keyTagName); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	livestreams := []Livestream{}
+	if err := dbConn.SelectContext(ctx, &livestreams, "SELECT id FROM livestream_tags WHERE tag_id = ?", keyTag.ID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, livestreams)
+>>>>>>> Stashed changes
 }
 
 func getLivestreamsHandler(c echo.Context) error {

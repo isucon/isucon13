@@ -127,6 +127,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return nil
 }
 
+<<<<<<< Updated upstream
 func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
@@ -147,13 +148,37 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 }
 
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) error {
+=======
+func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
+>>>>>>> Stashed changes
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return bencherror.WrapError(bencherror.SystemError, err)
+		return nil, bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
+	if err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	resp, err := c.agent.Do(ctx, req)
+	if err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+	defer resp.Body.Close()
+
+	var superchatResponse *PostSuperchatResponse
+	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return superchatResponse, nil
+}
+
+func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
+	urlPath := fmt.Sprintf("/superchat/%d/report", superchatId)
+	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
