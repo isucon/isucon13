@@ -136,17 +136,18 @@ func main() {
 	e.GET("/livestream", getLivestreamsHandler)
 	// get livestream
 	e.GET("/livestream/:livestream_id", getLivestreamHandler)
+	// スパチャ投稿
 	e.POST("/livestream/:livestream_id/superchat", postSuperchatHandler)
 	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
 	// get polling superchat timeline
 	e.GET("/livestream/:livestream_id/superchat", nil)
-	// スパチャ投稿
 	// スパチャ報告
 	e.POST("/superchat/:superchat_id/report", reportSuperchatHandler)
 
 	// get reaction 候補 (FIXME: フロントエンドで持つなら要らなそう)
 	e.GET("/reaction", nil)
 
+	// livestream_viewersにINSERTするため必要
 	// ユーザ視聴開始 (viewer)
 	// ユーザ視聴終了 (viewer)
 

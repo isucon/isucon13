@@ -1,5 +1,7 @@
 version: '3.0'
 
+# FIXME: webappコンテナの起動
+
 services:
   mysql:
     image: mysql/mysql-server:8.0.31

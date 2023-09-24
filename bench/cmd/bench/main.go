@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/benchscore"
@@ -14,6 +15,10 @@ import (
 const (
 	defaultBenchmarkerTimeout = 5 // seconds
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	ctx := context.Background()

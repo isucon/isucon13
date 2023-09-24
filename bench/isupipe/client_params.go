@@ -1,5 +1,7 @@
 package isupipe
 
+import "time"
+
 type (
 	PostUserRequest struct {
 		Name        string `json:"name"`
@@ -31,9 +33,13 @@ type (
 		Tip     int    `json:"tip"`
 	}
 	PostSuperchatResponse struct {
-		SuperchatId int    `json:"superchat_id"`
-		Comment     string `json:"comment"`
-		Tip         int    `json:"tip"`
+		Id           int       `json:"superchat_id"`
+		UserId       int       `json:"user_id"`
+		LivestreamId int       `json:"livestream_id"`
+		Comment      string    `json:"comment"`
+		Tip          int       `json:"tip"`
+		CreatedAt    time.Time `json:"created_at"`
+		UpdatedAt    time.Time `json:"updated_at"`
 	}
 )
 

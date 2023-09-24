@@ -15,12 +15,6 @@ type PostSuperchatRequest struct {
 	Tip     int    `json:"tip"`
 }
 
-type PostSuperchatResponse struct {
-	SuperchatId int64  `json:"superchat_id"`
-	Comment     string `json:"comment"`
-	Tip         int    `json:"tip"`
-}
-
 type Superchat struct {
 	Id           int       `db:"id"`
 	UserId       int       `db:"user_id"`
@@ -32,8 +26,11 @@ type Superchat struct {
 }
 
 type SuperchatReport struct {
-	UserId      int `db:"user_id"`
-	SuperchatId int `db:"superchat_id"`
+	Id          int       `db:"id"`
+	UserId      int       `db:"user_id"`
+	SuperchatId int       `db:"superchat_id"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }
 
 func postSuperchatHandler(c echo.Context) error {
@@ -85,10 +82,15 @@ func postSuperchatHandler(c echo.Context) error {
 
 	tx.Commit()
 
-	return c.JSON(http.StatusCreated, &PostSuperchatResponse{
-		SuperchatId: superchatId,
-		Comment:     superchat.Comment,
-		Tip:         superchat.Tip,
+	createdAt := time.Now()
+	return c.JSON(http.StatusCreated, &Superchat{
+		Id:           int(superchatId),
+		UserId:       userId,
+		LivestreamId: livestreamId,
+		Comment:      superchat.Comment,
+		Tip:          superchat.Tip,
+		CreatedAt:    createdAt,
+		UpdatedAt:    createdAt,
 	})
 }
 

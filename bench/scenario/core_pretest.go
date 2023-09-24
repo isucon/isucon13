@@ -40,7 +40,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	postSuperchatResp, err := client.PostSuperchat(ctx, 1, &isupipe.PostSuperchatRequest{
+	superchat, err := client.PostSuperchat(ctx, 1, &isupipe.PostSuperchatRequest{
 		Comment: "test",
 		Tip:     3,
 	})
@@ -48,7 +48,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if err := client.ReportSuperchat(ctx, postSuperchatResp.SuperchatId); err != nil {
+	if err := client.ReportSuperchat(ctx, superchat.Id); err != nil {
 		return err
 	}
 
