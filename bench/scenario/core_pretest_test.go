@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/isucon/isucandar/agent"
-	"github.com/isucon/isucon13/bench/internal/benchtest"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,14 +12,8 @@ import (
 func TestPretest(t *testing.T) {
 	ctx := context.Background()
 
-	testResource, err := benchtest.Setup()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer benchtest.Teardown(testResource)
-
 	client, err := isupipe.NewClient(
-		agent.WithBaseURL(testResource.WebappIPAddress()),
+		agent.WithBaseURL(webappIPAddress),
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -22,17 +22,17 @@ func Normal(ctx context.Context, client *isupipe.Client) {
 			Password: "1sup1pe",
 		}
 		if err := client.Login(ctx, &loginRequest); err != nil {
-			log.Printf("Normal: failed to login: %s\n", err.Error())
+			// log.Printf("Normal: failed to login: %s\n", err.Error())
 			return
 		}
 
-		log.Printf("worker %d posting superchat request ...\n", i)
+		// log.Printf("worker %d posting superchat request ...\n", i)
 		req := isupipe.PostSuperchatRequest{
 			Comment: fmt.Sprintf("%d", i),
 		}
 
 		if _, err := client.PostSuperchat(ctx, 1 /* livestream id*/, &req); err != nil {
-			log.Printf("Normal: failed to post superchat: %s\n", err.Error())
+			// log.Printf("Normal: failed to post superchat: %s\n", err.Error())
 			return
 		}
 	}, worker.WithInfinityLoop())

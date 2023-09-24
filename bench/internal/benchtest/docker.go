@@ -3,12 +3,14 @@ package benchtest
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -91,6 +93,7 @@ func Setup() (*Resource, error) {
 	}
 
 	// run database
+	log.Println("[dockertest] running database container ...")
 	databaseResource, err := runContainer(pool, &dockertest.RunOptions{
 		Repository: "mysql/mysql-server",
 		Tag:        "8.0.31",
@@ -109,6 +112,7 @@ func Setup() (*Resource, error) {
 			network,
 		},
 	}, func(resource *dockertest.Resource) error {
+		mysql.SetLogger(new(nopLogger))
 		db, err := sql.Open("mysql", fmt.Sprintf("isucon:isucon@(localhost:%s)/isupipe", resource.GetPort("3306/tcp")))
 		if err != nil {
 			return err
@@ -125,6 +129,7 @@ func Setup() (*Resource, error) {
 	databaseIp := databaseResource.GetIPInNetwork(network)
 
 	// run webapp
+	log.Println("[dockertest] running webapp container ...")
 	webappResource, err := runContainer(pool, &dockertest.RunOptions{
 		Repository: "isupipe",
 		Tag:        "latest",
@@ -159,6 +164,7 @@ func Setup() (*Resource, error) {
 		return nil, fmt.Errorf("run webapp container error: %w", err)
 	}
 
+	log.Println("[dockertest] setup completed successfully.")
 	return &Resource{
 		pool:             pool,
 		webappResource:   webappResource,

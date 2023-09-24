@@ -1,6 +1,7 @@
 package bencherror
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/isucon/isucandar/failure"
@@ -26,7 +27,7 @@ var (
 func WrapError(code failure.StringCode, err error) error {
 	e := failure.NewError(code, err)
 	benchErrors.Add(e)
-	return e
+	return fmt.Errorf("%s: %w", err.Error(), e)
 }
 
 func GetFinalErrorMessages() map[string][]string {

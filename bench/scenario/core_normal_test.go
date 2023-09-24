@@ -3,27 +3,18 @@ package scenario
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
-	"github.com/isucon/isucon13/bench/internal/benchtest"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNormal(t *testing.T) {
-	testResource, err := benchtest.Setup()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	assert.NoError(t, err)
-	defer benchtest.Teardown(testResource)
-
 	client, err := isupipe.NewClient(
-		agent.WithBaseURL(testResource.WebappIPAddress()),
+		agent.WithBaseURL(webappIPAddress),
 	)
 	assert.NoError(t, err)
 
