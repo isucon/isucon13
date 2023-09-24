@@ -131,7 +131,7 @@ func Setup() (string, error) {
 		Tag:        "latest",
 		Name:       "isupipe",
 		Env: []string{
-			fmt.Sprintf("ISUCON13_MYSQL_DIALCONFIG_ADDRESS=%s", net.JoinHostPort(databaseIp, "3306")),
+			fmt.Sprintf("ISUCON13_MYSQL_DIALCONFIG_ADDRESS=%s", databaseIp),
 		},
 		Networks: []*dockertest.Network{
 			network,

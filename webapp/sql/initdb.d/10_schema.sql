@@ -1,9 +1,9 @@
 USE `isupipe`;
 
 -- CREATE TABLE `theme` (
-  -- `id` BIGINT NOT NULL AUTO_INCREMENT,
-  -- 配信者ユーザIDを受取り、これに合わせてテーマを変更することになる
-  -- `user_id` BIGINT NOT NULL,
+--   `id` BIGINT NOT NULL AUTO_INCREMENT,
+--   -- 配信者ユーザIDを受取り、これに合わせてテーマを変更することになる
+--   `user_id` BIGINT NOT NULL
 -- ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- FIXME: プロフィール画像があると雰囲気が出るが、基本実装ができたあとで検討
@@ -42,7 +42,6 @@ CREATE TABLE `tags` (
   UNIQUE `uniq_tag_name` (`name`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
--- ライブストリームごとに付与されたタグ
 CREATE TABLE `livestream_tags` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `livestream_id` BIGINT NOT NULL,
