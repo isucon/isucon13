@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 
 	"github.com/go-sql-driver/mysql"
@@ -52,6 +53,7 @@ func connectDB() (*sqlx.DB, error) {
 	const (
 		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
 		addrEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_ADDRESS"
+		portEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_PORT"
 		userEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_USER"
 		passwordEnvKey    = "ISUCON13_MYSQL_DIALCONFIG_PASSWORD"
 		dbNameEnvKey      = "ISUCON13_MYSQL_DIALCONFIG_DATABASE"
@@ -63,7 +65,7 @@ func connectDB() (*sqlx.DB, error) {
 	// 環境変数がセットされていなかった場合でも一旦動かせるように、デフォルト値を入れておく
 	// この挙動を変更して、エラーを出すようにしてもいいかもしれない
 	conf.Net = "tcp"
-	conf.Addr = "127.0.0.1:3306"
+	conf.Addr = net.JoinHostPort("127.0.0.1", "3306")
 	conf.User = "isucon"
 	conf.Passwd = "isucon"
 	conf.DBName = "isupipe"
@@ -72,8 +74,12 @@ func connectDB() (*sqlx.DB, error) {
 	if v, ok := os.LookupEnv(networkTypeEnvKey); ok {
 		conf.Net = v
 	}
-	if v, ok := os.LookupEnv(addrEnvKey); ok {
-		conf.Addr = v
+	if addr, ok := os.LookupEnv(addrEnvKey); ok {
+		if port, ok2 := os.LookupEnv(portEnvKey); ok2 {
+			conf.Addr = net.JoinHostPort(addr, port)
+		} else {
+			conf.Addr = net.JoinHostPort(addr, "3306")
+		}
 	}
 	if v, ok := os.LookupEnv(userEnvKey); ok {
 		conf.User = v
@@ -96,27 +102,10 @@ func connectDB() (*sqlx.DB, error) {
 }
 
 func initializeHandler(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	tx, err := dbConn.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	if _, err := dbConn.ExecContext(ctx, "DELETE FROM superchats"); err != nil {
-		tx.Rollback()
+	if out, err := exec.Command("./init.sh").CombinedOutput(); err != nil {
+		c.Logger().Warnf("init.sh failed with err=%s", string(out))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	if _, err := dbConn.ExecContext(ctx, "DELETE FROM livestreams"); err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	if _, err := dbConn.ExecContext(ctx, "DELETE FROM users"); err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	tx.Commit()
 
 	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
