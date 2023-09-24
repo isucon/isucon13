@@ -50,7 +50,7 @@ func postSuperchatHandler(c echo.Context) error {
 	}
 	userId, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
 	var req *PostSuperchatRequest

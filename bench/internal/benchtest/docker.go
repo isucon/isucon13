@@ -14,12 +14,17 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-type CleanupFn = func() error
+type Resource struct {
+	pool             *dockertest.Pool
+	databaseResource *dockertest.Resource
+	webappResource   *dockertest.Resource
+	network          *dockertest.Network
+}
 
-var (
-	cleanupDatabase CleanupFn
-	cleanupWebapp   CleanupFn
-)
+func (r *Resource) WebappIPAddress() string {
+	webappIp := r.webappResource.GetIPInNetwork(r.network)
+	return fmt.Sprintf("http://%s:12345", webappIp)
+}
 
 func runContainer(pool *dockertest.Pool, opts *dockertest.RunOptions, retryFunc func(*dockertest.Resource) error) (*dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(opts, func(config *docker.HostConfig) {
@@ -65,24 +70,24 @@ func findProjectRoot() (string, error) {
 	return strings.Join(cwdParts[:sliceEnd], "/"), nil
 }
 
-func Setup() (string, error) {
+func Setup() (*Resource, error) {
 	baseDir, err := findProjectRoot()
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("find projectroot error: %w", err)
 	}
 
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("create pool error: %w", err)
 	}
 	pool.MaxWait = 10 * time.Second
 	if err := pool.Client.Ping(); err != nil {
-		return "", err
+		return nil, fmt.Errorf("pool ping error: %w", err)
 	}
 
 	network, err := pool.CreateNetwork("isupipe")
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("create network error: %w", err)
 	}
 
 	// run database
@@ -115,15 +120,9 @@ func Setup() (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("run database container error: %w", err)
 	}
 	databaseIp := databaseResource.GetIPInNetwork(network)
-	cleanupDatabase = func() error {
-		if err := pool.Purge(databaseResource); err != nil {
-			return err
-		}
-		return nil
-	}
 
 	// run webapp
 	webappResource, err := runContainer(pool, &dockertest.RunOptions{
@@ -157,25 +156,25 @@ func Setup() (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", err
-	}
-	webappIp := webappResource.GetIPInNetwork(network)
-	cleanupWebapp = func() error {
-		if err := pool.Purge(webappResource); err != nil {
-			return err
-		}
-		return nil
+		return nil, fmt.Errorf("run webapp container error: %w", err)
 	}
 
-	return fmt.Sprintf("http://%s:12345", webappIp), nil
+	return &Resource{
+		pool:             pool,
+		webappResource:   webappResource,
+		databaseResource: databaseResource,
+		network:          network,
+	}, nil
 }
 
-func Teardown() error {
-	if err := cleanupDatabase(); err != nil {
+func Teardown(r *Resource) error {
+	if err := r.pool.Purge(r.databaseResource); err != nil {
 		return err
 	}
-
-	if err := cleanupWebapp(); err != nil {
+	if err := r.pool.Purge(r.webappResource); err != nil {
+		return err
+	}
+	if err := r.network.Close(); err != nil {
 		return err
 	}
 

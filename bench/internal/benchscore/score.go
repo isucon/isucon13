@@ -2,7 +2,6 @@ package benchscore
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/isucon/isucandar/score"
@@ -16,25 +15,27 @@ const (
 	SuccessLogin    score.ScoreTag = "success-login"
 	// ライブ配信
 	// スパチャ
+	SuccessPostSuperchat score.ScoreTag = "success-post-superchat"
 	// リアクション
 )
 
 var (
 	benchScore *score.Score
+	initOnce   sync.Once
 	doneOnce   sync.Once
 )
 
-func InitScore(ctx context.Context) (*score.Score, error) {
-	if benchScore != nil {
-		return nil, fmt.Errorf("benchmark score is already set")
-	}
-	benchScore = score.NewScore(ctx)
+func InitScore(ctx context.Context) {
+	initOnce.Do(func() {
+		benchScore = score.NewScore(ctx)
 
-	// 登録、ログインは１点
-	benchScore.Set(SuccessRegister, 1)
-	benchScore.Set(SuccessLogin, 1)
+		// FIXME: スコアの重み付けは後ほど考える
+		// 登録、ログインは１点
+		benchScore.Set(SuccessRegister, 1)
+		benchScore.Set(SuccessLogin, 1)
 
-	return benchScore, nil
+		benchScore.Set(SuccessPostSuperchat, 1)
+	})
 }
 
 func AddScore(tag score.ScoreTag) {
