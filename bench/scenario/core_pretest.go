@@ -22,8 +22,14 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}); err != nil {
 		return err
 	}
+	if err := client.GetUser(ctx, "1" /* user id */); err != nil {
+		return err
+	}
 
-	//
+	if err := client.GetTags(ctx); err != nil {
+		return err
+	}
+
 	if err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
 		Title:         "test",
 		Description:   "test",
@@ -41,7 +47,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if err := client.GetLivestreamsByTag(ctx /* tag name */, "chair"); err != nil {
+	if err := client.GetLivestreamsByTag(ctx, "chair" /* tag name */); err != nil {
 		return err
 	}
 
