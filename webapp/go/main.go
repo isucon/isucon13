@@ -142,6 +142,7 @@ func main() {
 	e.GET("/livestream/:livestream_id/superchat", nil)
 	// スパチャ投稿
 	// スパチャ報告
+	e.POST("/superchat/:superchat_id/report", reportSuperchatHandler)
 
 	// get reaction 候補 (FIXME: フロントエンドで持つなら要らなそう)
 	e.GET("/reaction", nil)

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo-contrib/session"
@@ -30,29 +29,7 @@ type Livestream struct {
 	UpdatedAt     time.Time `db:"updated_at"`
 }
 
-type PostSuperchatRequest struct {
-	Comment string `json:"comment"`
-	Tip     int    `json:"tip"`
-}
-
-type PostSuperchatResponse struct {
-	SuperchatId int64  `json:"superchat_id"`
-	Comment     string `json:"comment"`
-	Tip         int    `json:"tip"`
-}
-
-type Superchat struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
-	LivestreamId int       `db:"livestream_id"`
-	Comment      string    `db:"comment"`
-	Tip          int       `db:"tip"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
-}
-
 // FIXME: リアクション
-// FIXME: isucon13-mysql-1  | ERROR 1064 (42000) at line 55: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ') ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin' at line 17
 
 func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -99,62 +76,6 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	// FIXME: PK補完
 	return c.JSON(http.StatusCreated, livestream)
-}
-
-func postSuperchatHandler(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userId, ok := sess.Values[defaultUserIDKey].(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-
-	var req *PostSuperchatRequest
-	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	tx, err := dbConn.BeginTxx(ctx, nil)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	var (
-		superchat = &Superchat{
-			UserId:       userId,
-			LivestreamId: livestreamId,
-			Comment:      req.Comment,
-			Tip:          req.Tip,
-		}
-	)
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", superchat)
-	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	superchatId, err := rs.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	tx.Commit()
-
-	return c.JSON(http.StatusCreated, &PostSuperchatResponse{
-		SuperchatId: superchatId,
-		Comment:     superchat.Comment,
-		Tip:         superchat.Tip,
-	})
 }
 
 func getLivestreamsHandler(c echo.Context) error {
