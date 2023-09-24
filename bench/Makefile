@@ -1,6 +1,6 @@
 BUILD=go build
 TEST=/usr/local/go/bin/go test
-TEST_FLAGS=-v -p=1
+TEST_FLAGS=-v
 
 DARWIN_TARGET_ENV=GOOS=darwin GOARCH=amd64
 LINUX_TARGET_ENV=GOOS=linux GOARCH=amd64
