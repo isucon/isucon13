@@ -96,6 +96,19 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 	return nil
 }
 
+func (c *Client) GetUser(ctx context.Context, userID string) error {
+	urlPath := fmt.Sprintf("/user/%s", userID)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return err
+	}
+	if _, err := c.agent.Do(ctx, req); err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return nil
+}
+
 func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
@@ -139,6 +152,19 @@ func (c *Client) GetLivestreamsByTag(
 ) error {
 	urlPath := fmt.Sprintf("/search_livestream?tag=%s", tag)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	if _, err := c.agent.Do(ctx, req); err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return nil
+}
+
+func (c *Client) GetTags(ctx context.Context) error {
+	req, err := c.agent.NewRequest(http.MethodGet, "/tags", nil)
 	if err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
