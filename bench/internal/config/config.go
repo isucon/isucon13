@@ -1,6 +1,7 @@
 package config
 
 const (
+	// NOTE: あまり並列度高く長い時間ベンチさせると、ポートが枯渇する
 	DefaultBenchmarkerParallelism = 2
-	DefaultBenchmarkWorkerTimeout = 10
+	DefaultBenchmarkWorkerTimeout = 3
 )

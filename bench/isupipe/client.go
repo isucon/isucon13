@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -152,27 +151,23 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		log.Println("failed to marshal json")
 		return nil, bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
-		log.Println("faild to initiate request")
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
-		log.Printf("error = %s\n", err.Error())
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 	defer resp.Body.Close()
 
 	var superchatResponse *PostSuperchatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
-		log.Println("failed to unmarshal json")
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -227,10 +222,24 @@ func (c *Client) GetTags(ctx context.Context) error {
 
 func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
 	resp, err := c.agent.Do(ctx, req)
-	if errors.Is(context.DeadlineExceeded, err) {
-		return resp, bencherror.WrapError(bencherror.BenchmarkTimeoutError, err)
-	} else if err != nil {
-		return resp, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	if err != nil {
+		var (
+			netErr net.Error
+		)
+		if errors.Is(context.DeadlineExceeded, err) {
+			// 締切がすぎるのはベンチの都合なので、減点しない
+			return resp, err
+		} else if errors.As(err, &netErr) {
+			if netErr.Timeout() {
+				return resp, bencherror.WrapError(bencherror.BenchmarkTimeoutError, err)
+			} else {
+				// 接続ができないなど、ベンチ継続する上で致命的なエラー
+				return resp, bencherror.WrapError(bencherror.BenchmarkCriticalError, err)
+			}
+		} else {
+			// app errors
+			return resp, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		}
 	}
 
 	return resp, nil
