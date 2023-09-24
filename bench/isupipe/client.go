@@ -127,7 +127,6 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return nil
 }
 
-<<<<<<< Updated upstream
 func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
@@ -147,10 +146,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	return nil
 }
 
-func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) error {
-=======
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
->>>>>>> Stashed changes
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return nil, bencherror.WrapError(bencherror.SystemError, err)
