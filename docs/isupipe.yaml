@@ -7,6 +7,15 @@ info:
 servers:
   - url: 'http://localhost:3000'
 paths:
+  /tag:
+    parameters: []
+    get:
+      summary: ''
+      operationid: get-tag
+      responses:
+        '200':
+          $ref: '#/components/responses/GetTag'
+      description: サービスで提供されているタグの一覧取得
   /login:
     parameters: []
     post:
@@ -152,6 +161,13 @@ paths:
         required: true
 components:
   schemas:
+    Tag:
+      id:
+        type: integer
+      name:
+        type: string
+      created_at: 
+        type: number
     User:
       title: User
       type: object
@@ -315,6 +331,13 @@ components:
               password:
                 type: string
   responses:
+    GetTag:
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Tag'
     GetUser:
       description: Example response
       content:

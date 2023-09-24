@@ -37,11 +37,8 @@ CREATE TABLE `livestreams` (
 -- ライブストリームに付与するタグ
 CREATE TABLE `tags` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `livestream_id` BIGINT NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信視聴者
