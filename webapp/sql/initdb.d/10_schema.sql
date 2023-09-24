@@ -45,8 +45,7 @@ CREATE TABLE `tags` (
 CREATE TABLE `livestream_tags` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `livestream_id` BIGINT NOT NULL,
-  `tag_id` BIGINT NOT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `tag_id` BIGINT NOT NULL
 )  ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信視聴者
