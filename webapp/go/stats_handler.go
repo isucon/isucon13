@@ -139,23 +139,26 @@ func countTotalReactions(ctx context.Context, livestreamID string) (int, error) 
 	return reactionCount, nil
 }
 
-func calculateSuperchatStatistics(ctx context.Context, livestreamID string, stats *LivestreamStatistics) error {
+func calculateSuperchatStatistics(ctx context.Context, livestreamID string) (totalSuperchats int, totalTips int, err error) {
 	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM superchats WHERE livestream_id = ?", livestreamID)
 	if err != nil {
-		return err
+		return 0, 0, nil
 	}
+
+	totalSuperchats = 0
+	totalTips = 0
 
 	for rows.Next() {
 		superchat := Superchat{}
 		if err := rows.Scan(&superchat); err != nil {
-			return err
+			return 0, 0, err
 		}
 
-		stats.TotalSuperchats++
-		stats.TotalTips += superchat.Tip
+		totalSuperchats++
+		totalTips += superchat.Tip
 	}
 
-	return nil
+	return totalSuperchats, totalTips, nil
 }
 
 func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *Livestream {
@@ -187,9 +190,13 @@ func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *
 func queryLivestreamStatistics(ctx context.Context, livestreamID string) (LivestreamStatistics, error) {
 	statistics := LivestreamStatistics{}
 
-	if err := calculateSuperchatStatistics(ctx, livestreamID, &statistics); err != nil {
+	totalSuperchats, totalTips, err := calculateSuperchatStatistics(ctx, livestreamID)
+	if err != nil {
 		return statistics, err
 	}
+	statistics.TotalSuperchats = totalSuperchats
+	statistics.TotalTips = totalTips
+
 	totalViewers, err := countTotalViewers(ctx, livestreamID)
 	if err != nil {
 		return statistics, err
