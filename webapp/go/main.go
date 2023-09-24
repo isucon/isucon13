@@ -163,6 +163,7 @@ func main() {
 	e.POST("/login", loginHandler)
 	e.GET("/user", userSessionHandler)
 	e.GET("/user/:user_id", userHandler)
+	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
 
 	// stats
 	// スパチャ統計情報
