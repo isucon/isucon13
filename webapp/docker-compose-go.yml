@@ -9,11 +9,22 @@ services:
       - "MYSQL_ROOT_HOST=%"
       - "MYSQL_ROOT_PASSWORD=root"
     volumes:
-      - ./webapp/sql/initdb.d:/docker-entrypoint-initdb.d
+      - ./sql/initdb.d:/docker-entrypoint-initdb.d
       - mysql:/var/lib/mysql
     ports:
       - 3306:3306
     restart: always
+
+  webapp:
+    build: ./go
+    init: true
+    working_dir: /home/isucon/webapp/go
+    environment:
+      ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
+    ports:
+      - 12345:12345
+    depends_on:
+      - mysql
 
 
 volumes:
