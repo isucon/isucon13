@@ -9,4 +9,3 @@ INSERT INTO tags (name) VALUES ('chair');
 INSERT INTO tags (name) VALUES ('fruits');
 INSERT INTO tags (name) VALUES ('cat');
 INSERT INTO tags (name) VALUES ('dog');
-

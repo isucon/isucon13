@@ -31,3 +31,7 @@ type (
 		Tip     int    `json:"tip"`
 	}
 )
+
+type PostReactionRequest struct {
+	EmojiName string `json:"emoji_name"`
+}

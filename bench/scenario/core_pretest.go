@@ -47,6 +47,12 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	if err := client.PostReaction(ctx, 1 /* livestream id*/, &isupipe.PostReactionRequest{
+		EmojiName: ":chair:",
+	}); err != nil {
+		return err
+	}
+
 	if err := client.GetLivestreamsByTag(ctx, "chair" /* tag name */); err != nil {
 		return err
 	}
