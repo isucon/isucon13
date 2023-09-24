@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -71,7 +73,7 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) error {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err = c.agent.Do(ctx, req); err != nil {
+	if _, err = c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -89,7 +91,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err = c.agent.Do(ctx, req); err != nil {
+	if _, err = c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -102,7 +104,7 @@ func (c *Client) GetUser(ctx context.Context, userID string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := c.agent.Do(ctx, req); err != nil {
+	if _, err := c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -120,7 +122,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.agent.Do(ctx, req); err != nil {
+	if _, err := c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -139,7 +141,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.agent.Do(ctx, req); err != nil {
+	if _, err := c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -149,23 +151,27 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
+		log.Println("failed to marshal json")
 		return nil, bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
+		log.Println("faild to initiate request")
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	resp, err := c.agent.Do(ctx, req)
+	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
+		log.Printf("error = %s\n", err.Error())
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 	defer resp.Body.Close()
 
 	var superchatResponse *PostSuperchatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
+		log.Println("failed to unmarshal json")
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -179,7 +185,7 @@ func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.agent.Do(ctx, req); err != nil {
+	if _, err := c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -196,7 +202,7 @@ func (c *Client) GetLivestreamsByTag(
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.agent.Do(ctx, req); err != nil {
+	if _, err := c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
@@ -209,9 +215,20 @@ func (c *Client) GetTags(ctx context.Context) error {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.agent.Do(ctx, req); err != nil {
+	if _, err := c.sendRequest(ctx, req); err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
 	return nil
+}
+
+func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	resp, err := c.agent.Do(ctx, req)
+	if errors.Is(context.DeadlineExceeded, err) {
+		return resp, bencherror.WrapError(bencherror.BenchmarkTimeoutError, err)
+	} else if err != nil {
+		return resp, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return resp, nil
 }
