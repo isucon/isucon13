@@ -1,6 +1,7 @@
 package bencherror
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -19,9 +20,23 @@ var (
 )
 
 var (
-	benchErrors *failure.Errors
-	doneOnce    sync.Once
+	benchErrors    *failure.Errors
+	doneOnce       sync.Once
+	PenaltyWeights map[string]int
 )
+
+func InitializeErrors(ctx context.Context) {
+	benchErrors = failure.NewErrors(ctx)
+
+	PenaltyWeights[SystemError.ErrorCode()] = 1
+	PenaltyWeights[InitializeError.ErrorCode()] = 1
+	PenaltyWeights[PreTestError.ErrorCode()] = 1
+	// penaltyWeights[BenchmarkCriticalError] = 1
+	PenaltyWeights[BenchmarkApplicationError.ErrorCode()] = 1
+	PenaltyWeights[BenchmarkTimeoutError.ErrorCode()] = 1
+	PenaltyWeights[BenchmarkTemporaryError.ErrorCode()] = 1
+	PenaltyWeights[FinalCheckError.ErrorCode()] = 1
+}
 
 // FIXME: もうちょっと細分化して、エラーの一貫性を持たせたい
 func WrapError(code failure.StringCode, err error) error {

@@ -1,7 +1,5 @@
 package generator
 
-import "math/rand"
-
 var randomSuperchatComments = []string{
 	"こんいす！",
 	"こんいすー",
@@ -12,5 +10,5 @@ var randomSuperchatComments = []string{
 }
 
 func GenerateRandomComment() string {
-	return randomSuperchatComments[rand.Intn(len(randomSuperchatComments))]
+	return randomSuperchatComments[randomSource.Intn(len(randomSuperchatComments))]
 }
