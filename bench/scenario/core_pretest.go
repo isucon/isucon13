@@ -13,6 +13,9 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		DisplayName: "test",
 		Description: "blah blah blah",
 		Password:    "s3cr3t",
+		Theme: isupipe.Theme{
+			DarkMode: true,
+		},
 	}); err != nil {
 		return err
 	}

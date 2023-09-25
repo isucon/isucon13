@@ -282,6 +282,9 @@ paths:
                     updated_at: 12345
 components:
   schemas:
+    Theme:
+      dark_mode:
+        type: boolean
     Tag:
       id:
         type: integer
@@ -462,6 +465,8 @@ components:
                 type: string
               password:
                 type: string
+              theme:
+                $ref: "#/components/schemas/Theme"
           examples:
             example-1:
               value:
@@ -469,6 +474,8 @@ components:
                 display_name: johndoe_display
                 description: blah blah blah
                 password: s3cr3t
+                theme:
+                  dark_mode: true
                 created_at: 1234567
     Login:
       content:

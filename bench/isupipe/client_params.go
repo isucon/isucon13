@@ -9,6 +9,7 @@ type (
 		Description string `json:"description"`
 		// Password is non-hashed password.
 		Password string `json:"password"`
+		Theme    Theme  `json:"theme"`
 	}
 	LoginRequest struct {
 		UserName string `json:"username"`
@@ -45,4 +46,8 @@ type (
 
 type PostReactionRequest struct {
 	EmojiName string `json:"emoji_name"`
+}
+
+type Theme struct {
+	DarkMode bool `json:"dark_mode"`
 }
