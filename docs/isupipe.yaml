@@ -149,6 +149,25 @@ paths:
         required: true
     post:
       summary: ''
+      operationId: post-livestream-livestreamid-reaction
+      requestBody:
+        $ref: '#/components/requestBodies/PostReaction'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reaction'
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Content-Type
+          description: application/json
+      description: リアクション投稿
+    post:
+      summary: ''
       operationId: post-livestream-livestreamid-superchat
       requestBody:
         $ref: '#/components/requestBodies/PostSuperchat'
@@ -217,6 +236,25 @@ paths:
                     updated_at: 12345
       requestBody:
         $ref: '#/components/requestBodies/ReserveLivestream'
+  '/search_livestream':
+    parameters:
+      - in: query
+        name: tag
+        schema:
+          type: string
+        description: 検索に使用するタグの名前
+    get:
+      summary: ''
+      operationId: get-search-livestream
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Livestream'
   '/superchat/{superchatid}/report':
     parameters:
       - schema:
@@ -251,6 +289,17 @@ components:
         type: string
       created_at:
         type: number
+    Reaction:
+      id:
+        type: integer
+      emoji_name:
+        type: string
+      user_id:
+        type: integer
+      livestream_id:
+        type: integer
+      created_at:
+        type: integer
     User:
       title: User
       type: object
@@ -431,6 +480,18 @@ components:
                 type: string
               password:
                 type: string
+    PostReaction:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              emoji_name:
+                type: string
+          examples:
+            Example 1:
+              value:
+                emoji_name: ":innocent:"
     PostSuperchat:
       content:
         application/json:
