@@ -56,5 +56,10 @@ func main() {
 		finalPenalty += penalty * int(count)
 	}
 
-	fmt.Printf("final score ==> %d\n", int(benchscore.GetFinalScore())-finalPenalty)
+	finalScore := int(benchscore.GetFinalScore())
+	if finalScore < finalPenalty {
+		fmt.Println("final score ==> 0")
+	} else {
+		fmt.Printf("final score ==> %d\n", finalScore-finalPenalty)
+	}
 }
