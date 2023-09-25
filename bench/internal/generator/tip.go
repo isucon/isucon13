@@ -9,7 +9,8 @@ type TipLevel int
 
 // FIXME: スコアと絡めた考慮
 const (
-	TipLevel1 TipLevel = iota + 1
+	TipLevel0 TipLevel = iota
+	TipLevel1
 	TipLevel2
 	TipLevel3
 	TipLevel4
@@ -17,6 +18,7 @@ const (
 )
 
 var tipLevels = []TipLevel{
+	TipLevel0,
 	TipLevel1,
 	TipLevel2,
 	TipLevel3,
@@ -32,6 +34,8 @@ func GenerateRandomTipLevel() TipLevel {
 // チップレベルは、チップとスコアの関係を表現します。あるチップが与えられたとき、ベンチマークスコアが何点になるかを決定します
 func GenerateTip(level TipLevel) int {
 	switch level {
+	case TipLevel0:
+		return 0
 	case TipLevel1:
 		return generateIntBetween(1, 500)
 	case TipLevel2:
@@ -41,8 +45,7 @@ func GenerateTip(level TipLevel) int {
 	case TipLevel4:
 		return generateIntBetween(5000, 10000)
 	case TipLevel5:
-		// FIXME: APIサーバ側で一回のtips上限を定めて、それを区間上限とするk
-		return generateIntBetween(10000, 50000)
+		return generateIntBetween(10000, 20001) // 半開区間において、20kを含めるため
 	default:
 		// panic & non-return
 		log.Printf("uncovered tip level specified: %d\n", level)

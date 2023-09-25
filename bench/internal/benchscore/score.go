@@ -17,31 +17,35 @@ const (
 	// スパチャ
 	SuccessPostSuperchat score.ScoreTag = "success-post-superchat"
 	// リアクション
+	SuccessPostReaction score.ScoreTag = "success-post-reaction"
 )
 
 var (
 	benchScore *score.Score
-	initOnce   sync.Once
-	doneOnce   sync.Once
+	// initOnce   sync.Once
+	doneOnce sync.Once
 )
 
 func InitScore(ctx context.Context) {
-	initOnce.Do(func() {
-		benchScore = score.NewScore(ctx)
+	benchScore = score.NewScore(ctx)
 
-		// FIXME: スコアの重み付けは後ほど考える
-		// 登録、ログインは１点
-		benchScore.Set(SuccessRegister, 1)
-		benchScore.Set(SuccessLogin, 1)
+	// FIXME: スコアの重み付けは後ほど考える
+	// 登録、ログインは１点
+	benchScore.Set(SuccessRegister, 1)
+	benchScore.Set(SuccessLogin, 1)
 
-		benchScore.Set(SuccessPostSuperchat, 1)
+	benchScore.Set(SuccessPostSuperchat, 1)
+	benchScore.Set(SuccessPostReaction, 1)
 
-		initProfit(ctx)
-	})
+	initProfit(ctx)
 }
 
 func AddScore(tag score.ScoreTag) {
 	benchScore.Add(tag)
+}
+
+func GetCurrentScore() int64 {
+	return benchScore.Sum()
 }
 
 func GetFinalScore() int64 {
@@ -49,13 +53,4 @@ func GetFinalScore() int64 {
 		benchScore.Done()
 	})
 	return benchScore.Sum()
-}
-
-// GetProfit は、最終売上を返します
-// FIXME: finalcheck後にprofitをスコアに加算しないと駄目
-func GetProfit() int64 {
-	doneOnce.Do(func() {
-		profit.Done()
-	})
-	return profit.Sum()
 }
