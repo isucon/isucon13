@@ -2,12 +2,12 @@ package benchscore
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/isucon/isucandar/score"
 )
 
 const (
+	TipProfitLevel0 score.ScoreTag = "tip-level0" // 投げ銭が含まれないスーパーチャット
 	TipProfitLevel1 score.ScoreTag = "tip-level1"
 	TipProfitLevel2 score.ScoreTag = "tip-level2"
 	TipProfitLevel3 score.ScoreTag = "tip-level3"
@@ -29,27 +29,43 @@ func initProfit(ctx context.Context) {
 }
 
 func AddTipProfit(tip int) error {
-	tag, err := tipToProfitLevel(tip)
-	if err != nil {
-		return err
+	tag := tipToProfitLevel(tip)
+	if tag == TipProfitLevel0 {
+		return nil
 	}
+
 	profit.Add(tag)
 	return nil
 }
 
-func tipToProfitLevel(tip int) (score.ScoreTag, error) {
-	if tip >= 1 && tip <= 500 {
-		return TipProfitLevel1, nil
+func tipToProfitLevel(tip int) score.ScoreTag {
+	if tip == 0 {
+		return TipProfitLevel0
+	} else if tip >= 1 && tip <= 500 {
+		return TipProfitLevel1
 	} else if tip >= 500 && tip < 1000 {
-		return TipProfitLevel2, nil
+		return TipProfitLevel2
 	} else if tip >= 1000 && tip < 5000 {
-		return TipProfitLevel3, nil
+		return TipProfitLevel3
 	} else if tip >= 5000 && tip < 10000 {
-		return TipProfitLevel4, nil
-	} else if tip >= 10000 && tip < 50000 {
-		// FIXME: 50000という上限は、APIサーバ側で定めた一回のtip上限によって変える
-		return TipProfitLevel5, nil
+		return TipProfitLevel4
+	} else if tip >= 10000 && tip < 20000 {
+		return TipProfitLevel5
 	} else {
-		return TipProfitLevel5, fmt.Errorf("uncovered tip value specified: %d", tip)
+		// APIサーバが正しくtipsの下限と上限をバリデーションできているかチェックするロジックはここではない
+		panic("UNREACHABLE: uncovered tip value specified")
 	}
+}
+
+// GetFinalProfit は、最終売上を返します
+// FIXME: finalcheck後にprofitをスコアに加算しないと駄目
+func GetFinalProfit() int64 {
+	doneOnce.Do(func() {
+		profit.Done()
+	})
+	return profit.Sum()
+}
+
+func GetCurrentProfit() int64 {
+	return profit.Sum()
 }

@@ -16,5 +16,9 @@ func newBenchmarker() *benchmarker {
 // run はベンチマークシナリオを実行する
 // ctx には、context.WithTimeout()でタイムアウトが設定されたものが渡されることを想定
 func (b *benchmarker) run(ctx context.Context, client *isupipe.Client) {
-	go scenario.Normal(ctx, client)
+	go scenario.Reaction(ctx, client)
+	go scenario.Superchat(ctx, client)
+	go scenario.Tips(ctx, client)
+
+	<-ctx.Done()
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 type Client struct {
@@ -169,6 +170,8 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
+
+	benchscore.AddScore(benchscore.SuccessPostSuperchat)
 
 	return superchatResponse, nil
 }
