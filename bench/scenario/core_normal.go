@@ -6,8 +6,12 @@ import (
 	"log"
 	"time"
 
+	"github.com/isucon/isucandar/failure"
 	"github.com/isucon/isucandar/worker"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/generator"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
@@ -27,14 +31,23 @@ func Normal(ctx context.Context, client *isupipe.Client) {
 		}
 
 		// log.Printf("worker %d posting superchat request ...\n", i)
+		randomTipLevel := generator.GenerateRandomTipLevel()
 		req := isupipe.PostSuperchatRequest{
 			Comment: fmt.Sprintf("%d", i),
+			Tip:     generator.GenerateTip(randomTipLevel),
 		}
 
 		if _, err := client.PostSuperchat(ctx, 1 /* livestream id*/, &req); err != nil {
 			// log.Printf("Normal: failed to post superchat: %s\n", err.Error())
 			return
 		}
+
+		benchscore.AddScore(benchscore.SuccessPostSuperchat)
+		if err := benchscore.AddTipProfit(req.Tip); err != nil {
+			bencherror.WrapError(failure.StringCode(bencherror.SystemError), err)
+			log.Printf("ERROR: %s\n", err)
+		}
+
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Normal scenario does not anything: %s\n", err.Error())

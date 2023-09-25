@@ -23,4 +23,5 @@ func TestNormal(t *testing.T) {
 
 	assert.NotPanics(t, func() { Normal(ctx, client) })
 	fmt.Fprintf(os.Stderr, "final score ==> %d\n", benchscore.GetFinalScore())
+	fmt.Fprintf(os.Stderr, "final profit ==> %d\n", benchscore.GetProfit())
 }
