@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -33,7 +32,7 @@ func Normal(ctx context.Context, client *isupipe.Client) {
 		// log.Printf("worker %d posting superchat request ...\n", i)
 		randomTipLevel := generator.GenerateRandomTipLevel()
 		req := isupipe.PostSuperchatRequest{
-			Comment: fmt.Sprintf("%d", i),
+			Comment: generator.GenerateRandomComment(),
 			Tip:     generator.GenerateTip(randomTipLevel),
 		}
 
