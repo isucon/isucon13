@@ -38,6 +38,7 @@ func InitScore(ctx context.Context) {
 	benchScore.Set(SuccessPostReaction, 1)
 
 	initProfit(ctx)
+	initPenalty(ctx)
 }
 
 func AddScore(tag score.ScoreTag) {

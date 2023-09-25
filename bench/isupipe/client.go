@@ -65,7 +65,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return bencherror.WrapError(bencherror.SystemError, err)
+		bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	req, err := c.agent.NewRequest(http.MethodPost, "/user", bytes.NewReader(payload))
