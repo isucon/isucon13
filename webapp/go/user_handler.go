@@ -187,6 +187,23 @@ func userHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
+// 配信者のテーマ取得API
+// GET /user/:userid/theme
+func getUserThemeHandler(c echo.Context) error {
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	userID := c.Param("user_id")
+	theme := Theme{}
+	if err := dbConn.Get(&theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userID); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user theme not found")
+	}
+
+	return c.JSON(http.StatusOK, theme)
+}
+
 // ユーザ
 // XXX セッション情報返すみたいな？
 // GET /user

@@ -111,6 +111,19 @@ func (c *Client) GetUser(ctx context.Context, userID string) error {
 	return nil
 }
 
+func (c *Client) GetUserTheme(ctx context.Context, userID string) error {
+	urlPath := fmt.Sprintf("/user/%s/theme", userID)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return err
+	}
+	if _, err := c.sendRequest(ctx, req); err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	return nil
+}
+
 func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
