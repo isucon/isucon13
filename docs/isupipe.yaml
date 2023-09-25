@@ -75,6 +75,26 @@ paths:
           in: cookie
           name: SESSIONID
           description: セッションID
+  '/users/{userid}/theme':
+    parameters:
+      - schema:
+          type: string
+        name: userid
+        in: path
+        required: true
+    get:
+      summary: ''
+      operationId: get-users-userid-theme
+      responses:
+        '200':
+          $ref: '#/components/responses/GetUserTheme'
+      description: 配信者のテーマ取得
+      parameters:
+        - schema:
+            type: string
+          in: cookie
+          name: SESSIONID
+          description: セッションID
   '/users/{userid}/statistics':
     parameters:
       - schema:
@@ -552,6 +572,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/User'
+    GetUserTheme:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Theme'
     GetUserStatistics:
       description: Example response
       content:

@@ -29,6 +29,10 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	if err := client.GetUserTheme(ctx, "1" /* user id */); err != nil {
+		return err
+	}
+
 	if err := client.GetTags(ctx); err != nil {
 		return err
 	}
