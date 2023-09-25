@@ -9,13 +9,6 @@ var randomReactionEmojiNames = []string{
 	":+1:",
 }
 
-type RandomReactionGenerator struct {
-}
-
-func NewRandomReactionGenerator() *RandomReactionGenerator {
-	return &RandomReactionGenerator{}
-}
-
-func (r *RandomReactionGenerator) Generate() string {
+func GenerateRandomReaction() string {
 	return randomReactionEmojiNames[rand.Intn(len(randomReactionEmojiNames))]
 }
