@@ -31,6 +31,11 @@ type User struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+type Theme struct {
+	UserID   int  `db:"user_id"`
+	DarkMode bool `db:"dark_mode"`
+}
+
 type Session struct {
 	// ID is an identifier that forms an UUIDv4.
 	ID     string `db:"id"`
@@ -45,6 +50,7 @@ type PostUserRequest struct {
 	Description string `json:"description"`
 	// Password is non-hashed password.
 	Password string `json:"password"`
+	Theme    Theme  `json:"theme"`
 }
 
 type LoginRequest struct {
@@ -80,7 +86,23 @@ func userRegisterHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user); err != nil {
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user)
+	if err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	userID, err := result.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	theme := Theme{
+		UserID:   int(userID),
+		DarkMode: req.Theme.DarkMode,
+	}
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", theme); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
