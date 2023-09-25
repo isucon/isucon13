@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"time"
 
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
@@ -15,10 +15,6 @@ import (
 const (
 	defaultBenchmarkerTimeout = 5 // seconds
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func main() {
 	ctx := context.Background()
@@ -32,6 +28,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	benchscore.InitScore(ctx)
+	bencherror.InitializeErrors(ctx)
 	benchmarker := newBenchmarker()
 
 	benchCtx, cancel := context.WithTimeout(ctx, time.Second*defaultBenchmarkerTimeout)
@@ -39,5 +37,24 @@ func main() {
 
 	benchmarker.run(benchCtx, client)
 
-	fmt.Printf("final score ==> %d\n", benchscore.GetFinalScore())
+	criticalErrors := bencherror.GetFinalErrorMessages()[bencherror.BenchmarkCriticalError.ErrorCode()]
+	if len(criticalErrors) == 0 {
+		for i, c := range criticalErrors {
+			log.Printf("critical-error[%d]: %s\n", i, c)
+		}
+
+		log.Fatalln("final score ==> 0")
+	}
+
+	finalPenalty := 0
+	for key, count := range bencherror.GetFinalPenalties() {
+		if key == bencherror.BenchmarkCriticalError.ErrorCode() {
+			continue
+		}
+
+		penalty := bencherror.PenaltyWeights[key]
+		finalPenalty += penalty * int(count)
+	}
+
+	fmt.Printf("final score ==> %d\n", int(benchscore.GetFinalScore())-finalPenalty)
 }

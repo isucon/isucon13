@@ -74,7 +74,7 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) error {
 	}
 
 	if _, err = c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -92,7 +92,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 	}
 
 	if _, err = c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (c *Client) GetUser(ctx context.Context, userID string) error {
 		return err
 	}
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -118,7 +118,7 @@ func (c *Client) GetUserTheme(ctx context.Context, userID string) error {
 		return err
 	}
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -136,7 +136,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	}
 
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -155,7 +155,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	}
 
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -175,13 +175,18 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
-		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var superchatResponse *PostSuperchatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	// webappで正しくtipsの下限上限がバリデーションできているかチェック
+	if superchatResponse.Tip < 0 || 20000 < superchatResponse.Tip {
+		return superchatResponse, bencherror.WrapError(bencherror.BenchmarkCriticalError, err)
 	}
 
 	benchscore.AddScore(benchscore.SuccessPostSuperchat)
@@ -197,7 +202,7 @@ func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
 	}
 
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -214,7 +219,7 @@ func (c *Client) GetLivestreamsByTag(
 	}
 
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
@@ -227,12 +232,14 @@ func (c *Client) GetTags(ctx context.Context) error {
 	}
 
 	if _, err := c.sendRequest(ctx, req); err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 
 	return nil
 }
 
+// sendRequestはagent.Doをラップしたリクエスト送信関数
+// bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
 func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {

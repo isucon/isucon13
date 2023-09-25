@@ -2,7 +2,6 @@ package generator
 
 import (
 	"log"
-	"math/rand"
 )
 
 type TipLevel int
@@ -27,7 +26,7 @@ var tipLevels = []TipLevel{
 }
 
 func GenerateRandomTipLevel() TipLevel {
-	return tipLevels[(rand.Intn(len(tipLevels)))]
+	return tipLevels[(randomSource.Intn(len(tipLevels)))]
 }
 
 // GenerateTip は、投げ銭を生成します

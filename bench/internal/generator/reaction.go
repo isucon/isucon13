@@ -1,7 +1,5 @@
 package generator
 
-import "math/rand"
-
 var randomReactionEmojiNames = []string{
 	":innocent:",
 	":tada:",
@@ -10,5 +8,5 @@ var randomReactionEmojiNames = []string{
 }
 
 func GenerateRandomReaction() string {
-	return randomReactionEmojiNames[rand.Intn(len(randomReactionEmojiNames))]
+	return randomReactionEmojiNames[randomSource.Intn(len(randomReactionEmojiNames))]
 }
