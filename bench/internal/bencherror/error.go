@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/isucon/isucandar/failure"
+	"github.com/isucon/isucandar/score"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 var (
@@ -20,28 +22,19 @@ var (
 )
 
 var (
-	benchErrors    *failure.Errors
-	doneOnce       sync.Once
-	PenaltyWeights map[string]int
+	benchErrors *failure.Errors
+	doneOnce    sync.Once
 )
 
 func InitializeErrors(ctx context.Context) {
 	benchErrors = failure.NewErrors(ctx)
-
-	PenaltyWeights[SystemError.ErrorCode()] = 1
-	PenaltyWeights[InitializeError.ErrorCode()] = 1
-	PenaltyWeights[PreTestError.ErrorCode()] = 1
-	// penaltyWeights[BenchmarkCriticalError] = 1
-	PenaltyWeights[BenchmarkApplicationError.ErrorCode()] = 1
-	PenaltyWeights[BenchmarkTimeoutError.ErrorCode()] = 1
-	PenaltyWeights[BenchmarkTemporaryError.ErrorCode()] = 1
-	PenaltyWeights[FinalCheckError.ErrorCode()] = 1
 }
 
 // FIXME: もうちょっと細分化して、エラーの一貫性を持たせたい
 func WrapError(code failure.StringCode, err error) error {
 	e := failure.NewError(code, err)
 	benchErrors.Add(e)
+	benchscore.AddPenalty(failureCodeToScoreTag(code))
 	return fmt.Errorf("%s: %w", err.Error(), e)
 }
 
@@ -57,4 +50,27 @@ func GetFinalPenalties() map[string]int64 {
 		benchErrors.Done()
 	})
 	return benchErrors.Count()
+}
+
+func failureCodeToScoreTag(code failure.StringCode) score.ScoreTag {
+	switch code {
+	case SystemError:
+		return benchscore.SystemError
+	case BenchmarkApplicationError:
+		return benchscore.BenchmarkApplicationError
+	case InitializeError:
+		return benchscore.InitializeError
+	case PreTestError:
+		return benchscore.PreTestError
+	case BenchmarkCriticalError:
+		return benchscore.BenchmarkCriticalError
+	case BenchmarkTimeoutError:
+		return benchscore.BenchmarkTimeoutError
+	case BenchmarkTemporaryError:
+		return benchscore.BenchmarkTemporaryError
+	case FinalCheckError:
+		return benchscore.FinalCheckError
+	default:
+		panic("unreachable")
+	}
 }

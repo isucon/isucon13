@@ -43,20 +43,19 @@ func main() {
 			log.Printf("critical-error[%d]: %s\n", i, c)
 		}
 
-		log.Fatalln("final score ==> 0")
+		log.Fatalln("final score ==> 0 (denied)")
 	}
 
-	finalPenalty := 0
-	for key, count := range bencherror.GetFinalPenalties() {
+	for key, _ := range bencherror.GetFinalPenalties() {
 		if key == bencherror.BenchmarkCriticalError.ErrorCode() {
 			continue
 		}
 
-		penalty := bencherror.PenaltyWeights[key]
-		finalPenalty += penalty * int(count)
 	}
 
-	finalScore := int(benchscore.GetFinalScore())
+	finalScore := benchscore.GetFinalScore()
+	finalPenalty := benchscore.GetFinalPenalty()
+
 	if finalScore < finalPenalty {
 		fmt.Println("final score ==> 0")
 	} else {
