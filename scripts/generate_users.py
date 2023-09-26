@@ -2,7 +2,7 @@ import argparse
 from faker import Faker
 
 SQL_FORMAT="INSERT INTO users (name, display_name, description, password) VALUES ('{name}', '{display_name}', '{description}', '{password}');"
-SUPERCHAT_SQL_FORMAT="INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)"
+# SUPERCHAT_SQL_FORMAT="INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)"
 
 DESCRIPTION_FORMAT="普段{job}をしています。\\nよろしくおねがいします！\\n\\n連絡は以下からお願いします。\\n\\nウェブサイト: {website}\\nメールアドレス: {mail}\\n"
 
@@ -28,8 +28,8 @@ def gen_user_sql():
 
     return SQL_FORMAT.format(**locals())
 
-def gen_superchat_sql():
-    return fake.text()
+# def gen_superchat_sql():
+    # return fake.text()
 
 def main():
     args = get_args()
@@ -37,8 +37,8 @@ def main():
         sql = gen_user_sql()
         print(sql)
 
-    for _ in range(args.n):
-        print(gen_superchat_sql())
+    # for _ in range(args.n):
+        # print(gen_superchat_sql())
 
 if __name__ == '__main__':
     main()

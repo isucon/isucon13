@@ -28,10 +28,12 @@ func initPenalty(ctx context.Context) {
 	penaltyScore.Set(SystemError, 1)
 	penaltyScore.Set(InitializeError, 1)
 	penaltyScore.Set(PreTestError, 1)
-	penaltyScore.Set(BenchmarkCriticalError, 1)
 	penaltyScore.Set(BenchmarkApplicationError, 1)
 	penaltyScore.Set(BenchmarkTemporaryError, 1)
 	penaltyScore.Set(FinalCheckError, 1)
+
+	// スコアの計算には関与しないので0
+	penaltyScore.Set(BenchmarkCriticalError, 0)
 }
 
 func AddPenalty(tag score.ScoreTag) {

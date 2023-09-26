@@ -49,7 +49,7 @@ func tipToProfitLevel(tip int) score.ScoreTag {
 		return TipProfitLevel3
 	} else if tip >= 5000 && tip < 10000 {
 		return TipProfitLevel4
-	} else if tip >= 10000 && tip < 20000 {
+	} else if tip >= 10000 && tip <= 20000 {
 		return TipProfitLevel5
 	} else {
 		// APIサーバが正しくtipsの下限と上限をバリデーションできているかチェックするロジックはここではない
