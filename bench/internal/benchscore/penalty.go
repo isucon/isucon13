@@ -20,6 +20,7 @@ var (
 	BenchmarkTimeoutError     score.ScoreTag = "benchmark-timeout-error"
 	BenchmarkTemporaryError   score.ScoreTag = "benchmark-temporary-error"
 	FinalCheckError           score.ScoreTag = "finalcheck-error"
+	DBInconsistencyError      score.ScoreTag = "db-inconsistency-error"
 )
 
 func initPenalty(ctx context.Context) {

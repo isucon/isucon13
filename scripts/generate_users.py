@@ -1,5 +1,7 @@
 import argparse
 from faker import Faker
+import sys
+import subprocess
 
 SQL_FORMAT="INSERT INTO users (name, display_name, description, password) VALUES ('{name}', '{display_name}', '{description}', '{password}');"
 # SUPERCHAT_SQL_FORMAT="INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)"
@@ -24,7 +26,10 @@ def gen_user_sql():
         website=profile['website'][0],
         mail=profile['mail'],
     ) 
-    password = fake.password()
+    non_hashed_password = fake.password()
+    print(non_hashed_password, file=sys.stderr)
+    result = subprocess.run(['bcrypt-tool', 'hash', non_hashed_password], encoding='utf-8', stdout=subprocess.PIPE)
+    password = result.stdout
 
     return SQL_FORMAT.format(**locals())
 

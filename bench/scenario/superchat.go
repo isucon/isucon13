@@ -35,8 +35,6 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 			// log.Printf("Superchat: failed to post superchat: %s\n", err.Error())
 			return
 		}
-
-		// Superchatシナリオでは常にtips == 0なのでAddTipsProfitしない
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Superchat scenario does not anything: %s\n", err.Error())

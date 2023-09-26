@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/isucon/isucandar/worker"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/generator"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -36,8 +35,6 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 			// log.Printf("Tips: failed to post superchat: %s\n", err.Error())
 			return
 		}
-
-		benchscore.AddTipProfit(req.Tip)
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Tips scenario does not anything: %s\n", err.Error())

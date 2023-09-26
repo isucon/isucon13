@@ -51,3 +51,21 @@ type PostReactionRequest struct {
 type Theme struct {
 	DarkMode bool `json:"dark_mode"`
 }
+
+type Superchat struct {
+	ID           int       `json:"id"`
+	UserID       int       `json:"user_id"`
+	LivestreamID int       `json:"livestream_id"`
+	Comment      string    `json:"comment"`
+	Tip          int       `json:"tip"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type Reaction struct {
+	ID           int       `json:"id"`
+	EmojiName    string    `json:"emoji_name"`
+	UserID       string    `json:"user_id"`
+	LivestreamID string    `json:"livestream_id"`
+	CreatedAt    time.Time `json:"created_at"`
+}

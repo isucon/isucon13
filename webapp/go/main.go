@@ -136,11 +136,12 @@ func main() {
 	e.GET("/livestream", getLivestreamsHandler)
 	// get livestream
 	e.GET("/livestream/:livestream_id", getLivestreamHandler)
+	// get polling superchat timeline
+	e.GET("/livestream/:livestream_id/superchat", getSuperchatsHandler)
 	// スパチャ投稿
 	e.POST("/livestream/:livestream_id/superchat", postSuperchatHandler)
 	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
-	// get polling superchat timeline
-	e.GET("/livestream/:livestream_id/superchat", nil)
+	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
 	// スパチャ報告
 	e.POST("/superchat/:superchat_id/report", reportSuperchatHandler)
 

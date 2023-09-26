@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/isucon/isucandar/worker"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/generator"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -30,12 +29,11 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 			EmojiName: generator.GenerateRandomReaction(),
 		}
 
-		if err := client.PostReaction(ctx, 1 /* livestream id*/, &req); err != nil {
+		if _, err := client.PostReaction(ctx, 1 /* livestream id*/, &req); err != nil {
 			// log.Printf("reaction: failed to post reaction : %s\n", err.Error())
 			return
 		}
 
-		benchscore.AddScore(benchscore.SuccessPostReaction)
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Reaction scenario does not anything: %s\n", err.Error())

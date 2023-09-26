@@ -144,23 +144,34 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return nil
 }
 
-func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) error {
+func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) (*Reaction, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return bencherror.WrapError(bencherror.SystemError, err)
+		return nil, bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.sendRequest(ctx, req); err != nil {
-		return err
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	if resp.StatusCode != http.StatusCreated {
+		// FIXME: それっぽいエラーに細分化
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, fmt.Errorf("リアクション投稿が正常に行えませんでした"))
+	}
+	reaction := &Reaction{}
+	if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
+		return reaction, err
+	}
+
+	benchscore.AddScore(benchscore.SuccessPostReaction)
+	return reaction, nil
 }
 
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
@@ -192,6 +203,7 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	}
 
 	benchscore.AddScore(benchscore.SuccessPostSuperchat)
+	benchscore.AddTipProfit(superchatResponse.Tip)
 
 	return superchatResponse, nil
 }
@@ -238,6 +250,54 @@ func (c *Client) GetTags(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction, error) {
+	req, err := c.agent.NewRequest(http.MethodGet, fmt.Sprintf("/livestream/%d/reaction", livestreamID), nil)
+	if err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, fmt.Errorf("リアクション一覧の取得に失敗しました"))
+	}
+
+	reactions := []Reaction{}
+	if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
+		return reactions, err
+	}
+
+	return reactions, nil
+}
+
+func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superchat, error) {
+	req, err := c.agent.NewRequest(http.MethodGet, fmt.Sprintf("/livestream/%d/superchat", livestreamID), nil)
+	if err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, fmt.Errorf("スーパーチャット一覧の取得に失敗しました"))
+	}
+
+	superchats := []Superchat{}
+	if err := json.NewDecoder(resp.Body).Decode(&superchats); err != nil {
+		return superchats, err
+	}
+
+	return superchats, nil
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数

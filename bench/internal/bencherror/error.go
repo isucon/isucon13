@@ -19,6 +19,8 @@ var (
 	BenchmarkTimeoutError     failure.StringCode = "benchmark-timeout"
 	BenchmarkTemporaryError   failure.StringCode = "benchmark-temporary"
 	FinalCheckError           failure.StringCode = "finalcheck"
+
+	DBInconsistencyError failure.StringCode = "db-inconsistency"
 )
 
 var (
@@ -70,6 +72,8 @@ func failureCodeToScoreTag(code failure.StringCode) score.ScoreTag {
 		return benchscore.BenchmarkTemporaryError
 	case FinalCheckError:
 		return benchscore.FinalCheckError
+	case DBInconsistencyError:
+		return benchscore.DBInconsistencyError
 	default:
 		panic("unreachable")
 	}
