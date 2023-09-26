@@ -10,13 +10,12 @@ fake = Faker('ja-JP')
 
 
 # 投入するSQL文のフォーマット
-SQL_FORMAT="INSERT INTO livestreams (:user_id, :title, :description, :privacy_status, :start_at, :end_at) VALUES ({user_id}, '{title}', '{description}', 'public', {start_at}, {end_at});"
+SQL_FORMAT="INSERT INTO livestreams (user_id, title, description, privacy_status, start_at, end_at) VALUES ({user_id}, '{title}', '{description}', 'public', '{start_at}', '{end_at}');"
 
 # FIXME: Goコードのフォーマット
 
 # 時間枠のパターン(hourの粒度)
 patterns = [1,3,5,10,20,24]
-
 
 def solve(total, limits, assigned, schedules, max_schedules=10):
     """スケジュール候補を生成します"""
@@ -112,8 +111,8 @@ def dump_sql(available_hours, schedules, max_schedules, max_users):
                 user_id=random.randint(1, max_users),
                 title=''.join(fake.random_letters()),
                 description=fake.text().replace('\n', ''),
-                start_at=int(time.mktime(start_at.timetuple())),
-                end_at=int(time.mktime(end_at.timetuple())),
+                start_at=start_at.strftime("%Y-%m-%d %H:%M:%S"),
+                end_at=end_at.strftime("%Y-%m-%d %H:%M:%S"),
             )
             print(sql)
             base_time = end_at

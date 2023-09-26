@@ -3,7 +3,6 @@ package scenario
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/isucon/isucandar/worker"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
@@ -18,8 +17,8 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 	postReactionWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
 		// init.sqlで事前挿入されたデータ
 		loginRequest := isupipe.LoginRequest{
-			UserName: "isupipe",
-			Password: "1sup1pe",
+			UserName: "鈴木 陽一",
+			Password: "kaorisuzuki",
 		}
 		if err := client.Login(ctx, &loginRequest); err != nil {
 			// log.Printf("reaction: failed to login: %s\n", err.Error())
@@ -45,12 +44,10 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 	postReactionWorker.SetParallelism(config.DefaultBenchmarkerParallelism)
 
 	log.Println("processing workers ...")
-	workerCtx, cancelWorkerCtx := context.WithTimeout(ctx, config.DefaultBenchmarkWorkerTimeout*time.Second)
-	defer cancelWorkerCtx()
-	postReactionWorker.Process(workerCtx)
+	postReactionWorker.Process(ctx)
 
 	log.Println("waiting context canceling ...")
-	<-workerCtx.Done()
+	<-ctx.Done()
 	log.Println("waiting for post reaction workers ...")
 	postReactionWorker.Wait()
 	log.Println("post reaction workers has finished.")

@@ -36,15 +36,15 @@ func GenerateTip(level TipLevel) int {
 	case TipLevel0:
 		return 0
 	case TipLevel1:
-		return generateIntBetween(1, 500)
+		return GenerateIntBetween(1, 500)
 	case TipLevel2:
-		return generateIntBetween(500, 1000)
+		return GenerateIntBetween(500, 1000)
 	case TipLevel3:
-		return generateIntBetween(1000, 5000)
+		return GenerateIntBetween(1000, 5000)
 	case TipLevel4:
-		return generateIntBetween(5000, 10000)
+		return GenerateIntBetween(5000, 10000)
 	case TipLevel5:
-		return generateIntBetween(10000, 20001) // 半開区間において、20kを含めるため
+		return GenerateIntBetween(10000, 20001) // 半開区間において、20kを含めるため
 	default:
 		// panic & non-return
 		log.Printf("uncovered tip level specified: %d\n", level)

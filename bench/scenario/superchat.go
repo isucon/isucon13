@@ -3,7 +3,6 @@ package scenario
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/isucon/isucandar/worker"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -18,8 +17,8 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 	postSuperchatWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
 		// init.sqlで事前挿入されたデータ
 		loginRequest := isupipe.LoginRequest{
-			UserName: "isupipe",
-			Password: "1sup1pe",
+			UserName: "鈴木 陽一",
+			Password: "kaorisuzuki",
 		}
 		if err := client.Login(ctx, &loginRequest); err != nil {
 			// log.Printf("Superchat: failed to login: %s\n", err.Error())
@@ -46,12 +45,10 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 	postSuperchatWorker.SetParallelism(config.DefaultBenchmarkerParallelism)
 
 	log.Println("processing workers ...")
-	workerCtx, cancelWorkerCtx := context.WithTimeout(ctx, config.DefaultBenchmarkWorkerTimeout*time.Second)
-	defer cancelWorkerCtx()
-	postSuperchatWorker.Process(workerCtx)
+	postSuperchatWorker.Process(ctx)
 
 	log.Println("waiting context canceling ...")
-	<-workerCtx.Done()
+	<-ctx.Done()
 	log.Println("waiting for post superchat workers ...")
 	postSuperchatWorker.Wait()
 	log.Println("post superchat workers has finished.")

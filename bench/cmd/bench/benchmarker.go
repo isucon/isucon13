@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"time"
 
-	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/scenario"
 )
 
@@ -13,12 +15,24 @@ func newBenchmarker() *benchmarker {
 	return &benchmarker{}
 }
 
-// run はベンチマークシナリオを実行する
-// ctx には、context.WithTimeout()でタイムアウトが設定されたものが渡されることを想定
-func (b *benchmarker) run(ctx context.Context, client *isupipe.Client) {
-	go scenario.Reaction(ctx, client)
-	go scenario.Superchat(ctx, client)
-	go scenario.Tips(ctx, client)
+const Season1PassConditionTips = 200000
 
-	<-ctx.Done()
+// season1 はSeason1シナリオを実行する
+// ctx には、context.WithTimeout()でタイムアウトが設定されたものが渡されることを想定
+// 内部でSeason1条件が達成されたかどうかをチェックし、問題がなければnilが返る
+func (b *benchmarker) season1(ctx context.Context, webappURL string) error {
+	go scenario.Season1(ctx, webappURL)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("benchmarker timeout")
+		default:
+			currentProfit := benchscore.GetCurrentProfit()
+			if currentProfit >= Season1PassConditionTips {
+				return nil
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
 }

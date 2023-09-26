@@ -21,9 +21,11 @@ type Client struct {
 	// FIXME: dns resolver
 }
 
+const DefaultClientBaseURL = "http://127.0.0.1:12345"
+
 func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
-		agent.WithBaseURL("http://127.0.0.1:12345"),
+		agent.WithBaseURL(DefaultClientBaseURL),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,

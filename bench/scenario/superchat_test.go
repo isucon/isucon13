@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +20,8 @@ func TestSuperchat(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeout*time.Second)
+	defer cancel()
 	benchscore.InitScore(ctx)
 
 	assert.NotPanics(t, func() { Superchat(ctx, client) })
