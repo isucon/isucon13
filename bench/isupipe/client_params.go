@@ -34,9 +34,9 @@ type (
 		Tip     int    `json:"tip"`
 	}
 	PostSuperchatResponse struct {
-		Id           int       `json:"superchat_id"`
-		UserId       int       `json:"user_id"`
-		LivestreamId int       `json:"livestream_id"`
+		ID           int       `json:"superchat_id"`
+		UserID       int       `json:"user_id"`
+		LivestreamID int       `json:"livestream_id"`
 		Comment      string    `json:"comment"`
 		Tip          int       `json:"tip"`
 		CreatedAt    time.Time `json:"created_at"`
@@ -83,8 +83,8 @@ type User struct {
 }
 
 type Livestream struct {
-	Id            int       `json:"id"`
-	UserId        int       `json:"user_id"`
+	ID            int       `json:"id"`
+	UserID        int       `json:"user_id"`
 	Title         string    `json:"title"`
 	Description   string    `json:"description"`
 	PrivacyStatus string    `json:"privacy_status"`

@@ -18,8 +18,8 @@ type ReserveLivestreamRequest struct {
 }
 
 type Livestream struct {
-	Id            int       `db:"id"`
-	UserId        int       `db:"user_id"`
+	ID            int       `db:"id"`
+	UserID        int       `db:"user_id"`
 	Title         string    `db:"title"`
 	Description   string    `db:"description"`
 	PrivacyStatus string    `db:"privacy_status"`
@@ -38,7 +38,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userId, ok := sess.Values[defaultUserIDKey].(int)
+	userID, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -59,7 +59,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		startAt    = time.Unix(req.StartAt, 0)
 		endAt      = time.Unix(req.EndAt, 0)
 		livestream = &Livestream{
-			UserId:        userId,
+			UserID:        userID,
 			Title:         req.Title,
 			Description:   req.Description,
 			PrivacyStatus: req.PrivacyStatus,
@@ -75,7 +75,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	createdAt := time.Now()
 
-	livestreamId, err := rs.LastInsertId()
+	livestreamID, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -83,7 +83,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	tx.Commit()
 
-	livestream.Id = int(livestreamId)
+	livestream.ID = int(livestreamID)
 	livestream.CreatedAt = createdAt
 	livestream.UpdatedAt = createdAt
 	return c.JSON(http.StatusCreated, livestream)
