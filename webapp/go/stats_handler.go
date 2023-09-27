@@ -49,7 +49,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
-		stats, err := queryLivestreamStatistics(ctx, fmt.Sprintf("%d", ls.Id))
+		stats, err := queryLivestreamStatistics(ctx, fmt.Sprintf("%d", ls.ID))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -96,7 +96,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	prevLivestream := getPreviousLivestream(ctx, &livestream)
 	prevLivestreamStatistics := LivestreamStatistics{}
 	if prevLivestream != nil {
-		prevLivestreamID := fmt.Sprintf("%d", prevLivestream.Id)
+		prevLivestreamID := fmt.Sprintf("%d", prevLivestream.ID)
 		prevLivestreamStatistics, err = queryLivestreamStatistics(ctx, prevLivestreamID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -162,7 +162,7 @@ func calculateSuperchatStatistics(ctx context.Context, livestreamID string) (tot
 }
 
 func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *Livestream {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT id, start_at FROM livestreams WHERE user_id = ?", currentLivestream.UserId)
+	rows, err := dbConn.QueryxContext(ctx, "SELECT id, start_at FROM livestreams WHERE user_id = ?", currentLivestream.UserID)
 	if err != nil {
 		return nil
 	}

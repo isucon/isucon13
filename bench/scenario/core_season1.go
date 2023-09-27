@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/worker"
@@ -108,7 +109,8 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
-			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+			urlPath := fmt.Sprintf("/livestream/%d/reaction", randomLivestreamID)
+			err = bencherror.DBInconsistency(http.MethodGet, urlPath, err)
 			log.Printf("Season: %s\n", err)
 		}
 
@@ -127,8 +129,9 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
-			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.ID); err != nil {
+			urlPath := fmt.Sprintf("/livestream/%d/superchat", randomLivestreamID)
+			err = bencherror.DBInconsistency(http.MethodGet, urlPath, err)
 			log.Printf("Season: %s\n", err)
 		}
 	}, worker.WithInfinityLoop())
@@ -156,14 +159,15 @@ func checkPostedReactionConsistency(
 		return err
 	}
 
-	var postedReaction *isupipe.Reaction
+	postedReactionFound := false
 	for _, r := range reactions {
 		if r.ID == postedReactionID {
-			postedReaction = &r
+			postedReactionFound = true
+			break
 		}
 	}
 
-	if postedReaction == nil {
+	if !postedReactionFound {
 		return fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
 	}
 
@@ -181,14 +185,15 @@ func checkPostedSuperchatConsistency(
 		return err
 	}
 
-	var postedSuperchat *isupipe.Superchat
+	postedSuperchatFound := false
 	for _, s := range superchats {
 		if s.ID == postedSuperchatID {
-			postedSuperchat = &s
+			postedSuperchatFound = true
+			break
 		}
 	}
 
-	if postedSuperchat == nil {
+	if !postedSuperchatFound {
 		return fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
 	}
 

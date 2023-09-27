@@ -58,7 +58,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to post superchat...")
-	superchat, err := client.PostSuperchat(ctx, livestream.Id, &isupipe.PostSuperchatRequest{
+	superchat, err := client.PostSuperchat(ctx, livestream.ID, &isupipe.PostSuperchatRequest{
 		Comment: "test",
 		Tip:     3,
 	})
@@ -67,24 +67,24 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to get superchats...")
-	if _, err := client.GetSuperchats(ctx, livestream.Id /* livestream id*/); err != nil {
+	if _, err := client.GetSuperchats(ctx, livestream.ID /* livestream id*/); err != nil {
 		return err
 	}
 
 	log.Printf("try to report superchat...")
-	if err := client.ReportSuperchat(ctx, superchat.Id); err != nil {
+	if err := client.ReportSuperchat(ctx, superchat.ID); err != nil {
 		return err
 	}
 
 	log.Printf("try to post reaction...")
-	if _, err := client.PostReaction(ctx, livestream.Id /* livestream id*/, &isupipe.PostReactionRequest{
+	if _, err := client.PostReaction(ctx, livestream.ID /* livestream id*/, &isupipe.PostReactionRequest{
 		EmojiName: ":chair:",
 	}); err != nil {
 		return err
 	}
 
 	log.Printf("try to get reactions...")
-	if _, err := client.GetReactions(ctx, livestream.Id /* livestream id*/); err != nil {
+	if _, err := client.GetReactions(ctx, livestream.ID /* livestream id*/); err != nil {
 		return err
 	}
 

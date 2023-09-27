@@ -14,13 +14,20 @@ var (
 	SystemError               failure.StringCode = "system"
 	InitializeError           failure.StringCode = "initialize"
 	PreTestError              failure.StringCode = "pretest"
-	BenchmarkCriticalError    failure.StringCode = "benchmark-critical"
 	BenchmarkApplicationError failure.StringCode = "benchmark-application"
-	BenchmarkTimeoutError     failure.StringCode = "benchmark-timeout"
-	BenchmarkTemporaryError   failure.StringCode = "benchmark-temporary"
-	FinalCheckError           failure.StringCode = "finalcheck"
+	// BenchmarkCriticalError は、ベンチマークを行う前提条件を満たしていない場合を表す
+	// この場合、競技者サーバは失格扱いとし、得点を0にする
+	BenchmarkCriticalError  failure.StringCode = "benchmark-critical"
+	BenchmarkTimeoutError   failure.StringCode = "benchmark-timeout"
+	BenchmarkTemporaryError failure.StringCode = "benchmark-temporary"
+	FinalCheckError         failure.StringCode = "finalcheck"
 
-	DBInconsistencyError failure.StringCode = "db-inconsistency"
+	// InternalError はベンチマーカ内部のエラーが含まれる
+	// このエラーが出力された場合、運営に連絡してもらう必要がある
+	InternalError                 failure.StringCode = "internal"
+	InvalidResponseFormatError    failure.StringCode = "invalid-response-format"
+	DBInconsistencyError          failure.StringCode = "db-inconsistency"
+	UnexpectedHTTPStatusCodeError failure.StringCode = "unexpected-https-status-code"
 )
 
 var (
@@ -72,8 +79,14 @@ func failureCodeToScoreTag(code failure.StringCode) score.ScoreTag {
 		return benchscore.BenchmarkTemporaryError
 	case FinalCheckError:
 		return benchscore.FinalCheckError
+	case InternalError:
+		return benchscore.InternalError
 	case DBInconsistencyError:
 		return benchscore.DBInconsistencyError
+	case InvalidResponseFormatError:
+		return benchscore.InvalidResponseFormatError
+	case UnexpectedHTTPStatusCodeError:
+		return benchscore.UnexpectedHTTPStatusCodeError
 	default:
 		panic("unreachable")
 	}

@@ -16,9 +16,9 @@ type PostSuperchatRequest struct {
 }
 
 type Superchat struct {
-	Id           int       `json:"id" db:"id"`
-	UserId       int       `json:"user_id" db:"user_id"`
-	LivestreamId int       `json:"livestream_id" db:"livestream_id"`
+	ID           int       `json:"id" db:"id"`
+	UserID       int       `json:"user_id" db:"user_id"`
+	LivestreamID int       `json:"livestream_id" db:"livestream_id"`
 	Comment      string    `json:"comment" db:"comment"`
 	Tip          int       `json:"tip" db:"tip"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
@@ -26,9 +26,9 @@ type Superchat struct {
 }
 
 type SuperchatReport struct {
-	Id          int       `db:"id"`
-	UserId      int       `db:"user_id"`
-	SuperchatId int       `db:"superchat_id"`
+	ID          int       `db:"id"`
+	UserID      int       `db:"user_id"`
+	SuperchatID int       `db:"superchat_id"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 }
@@ -53,7 +53,7 @@ func getSuperchatsHandler(c echo.Context) error {
 func postSuperchatHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -62,9 +62,9 @@ func postSuperchatHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userId, ok := sess.Values[defaultUserIDKey].(int)
+	userID, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized)
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
 
 	var req *PostSuperchatRequest
@@ -77,44 +77,40 @@ func postSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	var (
-		superchat = &Superchat{
-			UserId:       userId,
-			LivestreamId: livestreamId,
-			Comment:      req.Comment,
-			Tip:          req.Tip,
-		}
-	)
+	superchat := Superchat{
+		UserID:       userID,
+		LivestreamID: livestreamID,
+		Comment:      req.Comment,
+		Tip:          req.Tip,
+	}
+
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", superchat)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	superchatId, err := rs.LastInsertId()
+	superchatID, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
+	superchat.ID = int(superchatID)
 	createdAt := time.Now()
-	return c.JSON(http.StatusCreated, &Superchat{
-		Id:           int(superchatId),
-		UserId:       userId,
-		LivestreamId: livestreamId,
-		Comment:      superchat.Comment,
-		Tip:          superchat.Tip,
-		CreatedAt:    createdAt,
-		UpdatedAt:    createdAt,
-	})
+	superchat.CreatedAt = createdAt
+	superchat.UpdatedAt = createdAt
+	return c.JSON(http.StatusCreated, superchat)
 }
 
 func reportSuperchatHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	superchatId, err := strconv.Atoi(c.Param("superchat_id"))
+	superchatID, err := strconv.Atoi(c.Param("superchat_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -123,7 +119,7 @@ func reportSuperchatHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
-	userId, ok := sess.Values[defaultUserIDKey].(int)
+	userID, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -134,14 +130,14 @@ func reportSuperchatHandler(c echo.Context) error {
 	}
 
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchat_reports(user_id, superchat_id) VALUES (:user_id, :superchat_id)", &SuperchatReport{
-		UserId:      userId,
-		SuperchatId: superchatId,
+		UserID:      userID,
+		SuperchatID: superchatID,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reportId, err := rs.LastInsertId()
+	reportID, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -150,6 +146,6 @@ func reportSuperchatHandler(c echo.Context) error {
 	tx.Commit()
 
 	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"report_id": reportId,
+		"report_id": reportID,
 	})
 }

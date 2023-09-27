@@ -25,7 +25,7 @@ func main() {
 	}
 
 	if err := scenario.Pretest(ctx, client); err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Pretest: ベンチマーカの初期テストに失敗しました: %s", err.Error())
 	}
 
 	benchscore.InitScore(ctx)
