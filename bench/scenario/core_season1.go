@@ -108,7 +108,7 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
-			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+			err = bencherror.DBInconsistency(err)
 			log.Printf("Season: %s\n", err)
 		}
 
@@ -128,7 +128,7 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
-			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+			err = bencherror.DBInconsistency(err)
 			log.Printf("Season: %s\n", err)
 		}
 	}, worker.WithInfinityLoop())
