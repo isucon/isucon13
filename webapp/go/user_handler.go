@@ -98,6 +98,8 @@ func userRegisterHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	user.ID = int(userID)
+
 	theme := Theme{
 		UserID:   int(userID),
 		DarkMode: req.Theme.DarkMode,
@@ -127,6 +129,7 @@ func loginHandler(c echo.Context) error {
 	user := User{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
 	if err := dbConn.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
+		c.Logger().Printf("failed to get: username='%s', err=%+v", req.UserName, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -192,13 +195,15 @@ func userHandler(c echo.Context) error {
 func getUserThemeHandler(c echo.Context) error {
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
+		c.Logger().Printf("verifyUserSession: %+v\n", err)
 		return err
 	}
 
 	userID := c.Param("user_id")
 	theme := Theme{}
 	if err := dbConn.Get(&theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userID); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user theme not found")
+		c.Logger().Printf("dbConn.Get: %+v\n", err)
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, theme)

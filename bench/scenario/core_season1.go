@@ -20,44 +20,44 @@ type loginUser struct {
 
 var loginUsers = []loginUser{
 	{
-		UserName: "渡辺 裕美子",
-		Password: ")fi8AoKoed",
+		UserName: "井上 太郎",
+		Password: "o^E0K1Axj@",
 	},
 	{
-		UserName: "佐藤 翔太",
-		Password: "!4+3O*Tv&$",
+		UserName: "山崎 洋介",
+		Password: "u4JVlvx%(6",
 	},
 	{
-		UserName: "渡辺 くみ子",
-		Password: "kCG9Vio#@0",
+		UserName: "高橋 智也",
+		Password: "Ba)6J7pmZY",
 	},
 	{
-		UserName: "清水 陽一",
-		Password: "R2QbFf@n)G",
+		UserName: "三浦 浩",
+		Password: "@4$rPveY4b",
 	},
 	{
-		UserName: "斉藤 裕美子",
-		Password: "vcBK18OI%&",
+		UserName: "田中 洋介",
+		Password: "m$C2hSyMac",
 	},
 	{
-		UserName: "鈴木 舞",
-		Password: "*R++jCXz+3",
+		UserName: "山田 裕美子",
+		Password: "!4QdG!Ni&x",
 	},
 	{
-		UserName: "井上 くみ子",
-		Password: "K4RJaB7y#g",
+		UserName: "山下 晃",
+		Password: "+L_3kLjI61",
 	},
 	{
-		UserName: "松田 淳",
-		Password: "z(U58NunYm",
+		UserName: "佐々木 さゆり",
+		Password: ")i_7Qvnh1!",
 	},
 	{
-		UserName: "太田 京助",
-		Password: "^h9R^E^h2I",
+		UserName: "高橋 太郎",
+		Password: ")6ZVY&D1&v",
 	},
 	{
-		UserName: "伊藤 修平",
-		Password: "@X0$0DMoCc",
+		UserName: "井上 春香",
+		Password: ")22R(a&z%2",
 	},
 }
 
@@ -81,21 +81,20 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		panic(err)
 	}
 
+	// FIXME: 自然なリクエストにするためには、複数のユーザからリクエストが飛んでほしい
+	//        isupipe.Clientのログインセッションキャッシュを考慮しつつ、
+	//        season1 scenario内で複数のgoroutineを吐き出して、それぞれのユーザをシミュレートするように変更する
+	loginRequest := isupipe.LoginRequest{
+		UserName: loginUser.UserName,
+		Password: loginUser.Password,
+	}
+
+	if err := client.Login(ctx, &loginRequest); err != nil {
+		log.Printf("reaction: failed to login: %s\n", err.Error())
+		return
+	}
+
 	season1UserWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
-		// FIXME: 自然なリクエストにするためには、複数のユーザからリクエストが飛んでほしい
-		//        isupipe.Clientのログインセッションキャッシュを考慮しつつ、
-		//        season1 scenario内で複数のgoroutineを吐き出して、それぞれのユーザをシミュレートするように変更する
-		loginRequest := isupipe.LoginRequest{
-			UserName: loginUser.UserName,
-			Password: loginUser.Password,
-		}
-
-		log.Printf("login: username='%s', password='%s'\n", loginUser.UserName, loginUser.Password)
-		if err := client.Login(ctx, &loginRequest); err != nil {
-			// log.Printf("reaction: failed to login: %s\n", err.Error())
-			return
-		}
-
 		postReactionReq := isupipe.PostReactionRequest{
 			EmojiName: generator.GenerateRandomReaction(),
 		}
@@ -103,13 +102,14 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		randomLivestreamID := generator.GenerateIntBetween(1, 11)
 		postedReaction, err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq)
 		if err != nil {
-			// log.Printf("reaction: failed to post reaction : %s\n", err.Error())
+			log.Printf("reaction: failed to post reaction : %s\n", err.Error())
 			return
 		}
 
+		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
 			bencherror.WrapError(bencherror.DBInconsistencyError, err)
-			// log.Printf("Season: %s\n", err)
+			log.Printf("Season: %s\n", err)
 		}
 
 		// season1でたまたま高額Tipが連続すると、すぐに条件を達成してしまう
@@ -122,14 +122,14 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		}
 		postedSuperchat, err := client.PostSuperchat(ctx, randomLivestreamID /* livestream id*/, &postSuperchatReq)
 		if err != nil {
-			// log.Printf("reaction: failed!!! to post reaction : %s\n", err.Error())
+			log.Printf("reaction: failed to post superchat : %s\n", err.Error())
 			return
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
 			bencherror.WrapError(bencherror.DBInconsistencyError, err)
-			// log.Printf("Season: %s\n", err)
+			log.Printf("Season: %s\n", err)
 		}
 	}, worker.WithInfinityLoop())
 	if err != nil {
@@ -159,7 +159,7 @@ func checkPostedReactionConsistency(
 	var postedReaction *isupipe.Reaction
 	for _, r := range reactions {
 		if r.ID == postedReactionID {
-			*postedReaction = r
+			postedReaction = &r
 		}
 	}
 
@@ -184,7 +184,7 @@ func checkPostedSuperchatConsistency(
 	var postedSuperchat *isupipe.Superchat
 	for _, s := range superchats {
 		if s.ID == postedSuperchatID {
-			*postedSuperchat = s
+			postedSuperchat = &s
 		}
 	}
 

@@ -126,7 +126,7 @@ func main() {
 	e.POST("/initialize", initializeHandler)
 
 	// top
-	e.GET("/tag", nil)
+	e.GET("/tag", getTagHandler)
 
 	// livestream
 	// reserve livestream
@@ -157,6 +157,7 @@ func main() {
 	e.POST("/login", loginHandler)
 	e.GET("/user", userSessionHandler)
 	e.GET("/user/:user_id", userHandler)
+	e.GET("/user/:user_id/theme", getUserThemeHandler)
 	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
 
 	// stats

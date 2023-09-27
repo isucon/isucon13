@@ -4,6 +4,7 @@ import sys
 import subprocess
 
 SQL_FORMAT="INSERT INTO users (name, display_name, description, password) VALUES ('{name}', '{display_name}', '{description}', '{password}');"
+INSERT_THEME_FORMAT="INSERT INTO themes (user_id, dark_mode) VALUES ({user_id}, {dark_mode});"
 # SUPERCHAT_SQL_FORMAT="INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)"
 
 DESCRIPTION_FORMAT="普段{job}をしています。\\nよろしくおねがいします！\\n\\n連絡は以下からお願いします。\\n\\nウェブサイト: {website}\\nメールアドレス: {mail}\\n"
@@ -17,7 +18,11 @@ def get_args():
 
     return parser.parse_args()
 
-def gen_user_sql():
+def gen_user_theme_sql(user_id: int) -> str:
+    dark_mode = ['true', 'false'][user_id % 2]
+    return INSERT_THEME_FORMAT.format(**locals())
+
+def gen_user_sql(user_id: int) -> str:
     profile = fake.profile()
     name = profile['name']
     display_name = profile['username']
@@ -29,17 +34,18 @@ def gen_user_sql():
     non_hashed_password = fake.password()
     print(non_hashed_password, file=sys.stderr)
     result = subprocess.run(['bcrypt-tool', 'hash', non_hashed_password], encoding='utf-8', stdout=subprocess.PIPE)
-    password = result.stdout
+    password = result.stdout.rstrip("\n")
 
-    return SQL_FORMAT.format(**locals())
+    insert_user_sql = SQL_FORMAT.format(**locals())
+    return insert_user_sql + "\n" + gen_user_theme_sql(user_id)
 
 # def gen_superchat_sql():
     # return fake.text()
 
 def main():
     args = get_args()
-    for _ in range(args.n):
-        sql = gen_user_sql()
+    for i in range(args.n):
+        sql = gen_user_sql(i + 1)
         print(sql)
 
     # for _ in range(args.n):

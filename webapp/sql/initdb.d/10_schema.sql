@@ -32,8 +32,7 @@ CREATE TABLE `livestreams` (
   `start_at` DATETIME NOT NULL,
   `end_at` DATETIME NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (`user_id`) REFERENCES users(`id`)
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブストリームに付与される、サービスで定義されたタグ
@@ -58,8 +57,6 @@ CREATE TABLE `livestream_viewers` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`user_id`) REFERENCES users(`id`),
-  FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`),
   UNIQUE `uniq_livestream_viewers` (`user_id`, `livestream_id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
@@ -77,9 +74,7 @@ CREATE TABLE `superchats` (
   `tip` BIGINT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  FOREIGN KEY (`user_id`) REFERENCES users(`id`),
-  FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ユーザからのスパチャのスパム報告
@@ -90,8 +85,6 @@ CREATE TABLE `superchat_reports` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`user_id`) REFERENCES users(`id`),
-  FOREIGN KEY (`superchat_id`) REFERENCES superchats(`id`),
   UNIQUE `uniq_superchat_reports` (`user_id`, `superchat_id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
@@ -102,10 +95,5 @@ CREATE TABLE `reactions` (
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  FOREIGN KEY (`user_id`) REFERENCES users(`id`),
-  FOREIGN KEY (`livestream_id`) REFERENCES livestreams(`id`),
-  UNIQUE KEY `emoji_name` (`emoji_name`),
-  UNIQUE `uniq_reactions` (`user_id`, `livestream_id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
-

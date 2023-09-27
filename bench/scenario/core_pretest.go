@@ -2,13 +2,14 @@ package scenario
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
 func Pretest(ctx context.Context, client *isupipe.Client) error {
-	if err := client.PostUser(ctx, &isupipe.PostUserRequest{
+	user, err := client.PostUser(ctx, &isupipe.PostUserRequest{
 		Name:        "test",
 		DisplayName: "test",
 		Description: "blah blah blah",
@@ -16,38 +17,48 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
+
+	log.Printf("try to login...")
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test",
+		UserName: user.Name,
 		Password: "s3cr3t",
 	}); err != nil {
 		return err
 	}
-	if err := client.GetUser(ctx, "1" /* user id */); err != nil {
+
+	log.Printf("try to get user...")
+	if err := client.GetUser(ctx, user.ID /* user id */); err != nil {
 		return err
 	}
 
-	if err := client.GetUserTheme(ctx, "1" /* user id */); err != nil {
+	log.Printf("try to get user theme...")
+	if err := client.GetUserTheme(ctx, user.ID /* user id */); err != nil {
 		return err
 	}
 
+	log.Printf("try to get tags...")
 	if err := client.GetTags(ctx); err != nil {
 		return err
 	}
 
-	if err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+	log.Printf("try to reserve livestream...")
+	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
 		Title:         "test",
 		Description:   "test",
 		PrivacyStatus: "public",
 		StartAt:       time.Now().Unix(),
 		EndAt:         time.Now().Unix(),
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
-	superchat, err := client.PostSuperchat(ctx, 1, &isupipe.PostSuperchatRequest{
+	log.Printf("try to post superchat...")
+	superchat, err := client.PostSuperchat(ctx, livestream.Id, &isupipe.PostSuperchatRequest{
 		Comment: "test",
 		Tip:     3,
 	})
@@ -55,23 +66,29 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetSuperchats(ctx, 1 /* livestream id*/); err != nil {
+	log.Printf("try to get superchats...")
+	if _, err := client.GetSuperchats(ctx, livestream.Id /* livestream id*/); err != nil {
 		return err
 	}
 
+	log.Printf("try to report superchat...")
 	if err := client.ReportSuperchat(ctx, superchat.Id); err != nil {
 		return err
 	}
 
-	if _, err := client.PostReaction(ctx, 1 /* livestream id*/, &isupipe.PostReactionRequest{
+	log.Printf("try to post reaction...")
+	if _, err := client.PostReaction(ctx, livestream.Id /* livestream id*/, &isupipe.PostReactionRequest{
 		EmojiName: ":chair:",
 	}); err != nil {
 		return err
 	}
-	if _, err := client.GetReactions(ctx, 1 /* livestream id*/); err != nil {
+
+	log.Printf("try to get reactions...")
+	if _, err := client.GetReactions(ctx, livestream.Id /* livestream id*/); err != nil {
 		return err
 	}
 
+	log.Printf("try to get livestreams by tag...")
 	if err := client.GetLivestreamsByTag(ctx, "chair" /* tag name */); err != nil {
 		return err
 	}

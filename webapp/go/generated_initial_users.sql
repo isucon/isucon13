@@ -1,20 +1,22 @@
-INSERT INTO users (name, display_name, description, password) VALUES ('渡辺 裕美子', 'yamashitakazuya', '普段コピーライターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://nishimura.com/\nメールアドレス: gnakagawa@gmail.com\n', '$2a$10$c1B.kcjE6gYrzNuXTBbtCu2EZfFwV2avGQjc2GnausTWdmGa0tJZS
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('佐藤 翔太', 'rmiura', '普段アイドルをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.matsumoto.net/\nメールアドレス: jendo@gmail.com\n', '$2a$10$Njlp/78MqH0prIiYVsELaeE35rKvmpxJkGHhWZ8hERk3UPqh60bqS
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('渡辺 くみ子', 'pkimura', '普段ウェディングプランナーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://www.yoshida.net/\nメールアドレス: yosukehasegawa@gmail.com\n', '$2a$10$XNDilJ6d7meglE2LVYBLr.tnA5GH4tngl.jqA88LoS/vC1hSZsgv2
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('清水 陽一', 'takuma23', '普段裁判官をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://takahashi.jp/\nメールアドレス: miki85@yahoo.com\n', '$2a$10$7h9Ku9fPVxGnMLy.ToEP6umeVi1TnL1W7U2iRDGIngQjVoTix2Voq
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('斉藤 裕美子', 'ahashimoto', '普段寿司職人をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.ito.jp/\nメールアドレス: saitoyuki@yahoo.com\n', '$2a$10$0YI7VEVcHcUN3wRBtSOSbu2PrTKg6FQilpyS2R1mkNgTOP2d9PFP6
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('鈴木 舞', 'watanabehiroshi', '普段気象予報士をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://www.sasaki.jp/\nメールアドレス: ksuzuki@yahoo.com\n', '$2a$10$onjveC1anIjbVNzwWVQetOaGCJ2CklQegTSRJbGBhryDhxmTUy2Bi
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('井上 くみ子', 'kenichi73', '普段ゲームクリエイターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://kobayashi.net/\nメールアドレス: minoru79@hotmail.com\n', '$2a$10$X17Hxy2yVy2WZqR33J7OXeAH2ted/geXBXoqRHUnC040y.XcPGDl6
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('松田 淳', 'bshimizu', '普段薬剤師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://www.ishikawa.com/\nメールアドレス: winoue@gmail.com\n', '$2a$10$O0158IlG28g.xMsKcmRJIePl1Qjk4NHipK/7foRdET4KbbsBq3LzC
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('太田 京助', 'itojun', '普段小説家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://www.sato.com/\nメールアドレス: asukasato@gmail.com\n', '$2a$10$YRdCtlnNEj/kdAg2mu5ClOPO4pOVV0fN4Hhwdh0Ys2Sk2vq8RsUI2
-');
-INSERT INTO users (name, display_name, description, password) VALUES ('伊藤 修平', 'yokohayashi', '普段音楽家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://watanabe.org/\nメールアドレス: yasuhiroyamamoto@hotmail.com\n', '$2a$10$QjWbdC9rD6TH/P.1ovv0eOZtim8oM8CMzY3Di48c5TJVpj.OZ1Dl6
-');
+INSERT INTO users (name, display_name, description, password) VALUES ('井上 太郎', 'shotasasaki', '普段モデルをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://hayashi.jp/\nメールアドレス: vmatsumoto@hotmail.com\n', '$2a$10$tr8iXPenRhbsDsmHUotRjeUDHQxkd8z5hqcFMVPzcLTw1TxbsPI7m');
+INSERT INTO users (name, display_name, description, password) VALUES ('山崎 洋介', 'nito', '普段ウェディングプランナーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://www.goto.com/\nメールアドレス: akemifujii@hotmail.com\n', '$2a$10$qgmMccF0fTSe29eOnR7O6uLU8pHwtwY8IE8q3B/TA5dML0PiljPUC');
+INSERT INTO users (name, display_name, description, password) VALUES ('高橋 智也', 'katosotaro', '普段映画監督をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.hashimoto.jp/\nメールアドレス: gwatanabe@hotmail.com\n', '$2a$10$2w8NJgTxeFjz3s7V9Y4ZtukQEXXAg3Zc/EkuJ5Xzpc26ln1IDDrli');
+INSERT INTO users (name, display_name, description, password) VALUES ('三浦 浩', 'dmurakami', '普段司法書士をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://kato.jp/\nメールアドレス: nakamurashohei@yahoo.com\n', '$2a$10$buOq46N66idcYNKFuq0j1OHjoi.paSsPRGiHXFOKbPI7kBPNES9ae');
+INSERT INTO users (name, display_name, description, password) VALUES ('田中 洋介', 'mikakokato', '普段音響技術者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.yamaguchi.jp/\nメールアドレス: shota89@yahoo.com\n', '$2a$10$uNGdbP57OB2vW0EXOo36DeP9jdz3GPVVEAJUuf.XCdf9i.bVA.fei');
+INSERT INTO users (name, display_name, description, password) VALUES ('山田 裕美子', 'miturusaito', '普段医師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.nakagawa.com/\nメールアドレス: vsuzuki@hotmail.com\n', '$2a$10$O8Z12kqeb0jA584EO0GJduKdB/R0xKGiblCfrU.rYfPG9cQXW8KyW');
+INSERT INTO users (name, display_name, description, password) VALUES ('山下 晃', 'nanamisato', '普段営業をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://sato.com/\nメールアドレス: reiito@yahoo.com\n', '$2a$10$7gndW0O8/BDXl0ZlUtIZ/.ucQrRapuF8SZtdsTkACHIKh1RFLqjLK');
+INSERT INTO users (name, display_name, description, password) VALUES ('佐々木 さゆり', 'tsato', '普段公認会計士をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.ogawa.com/\nメールアドレス: sayuriwatanabe@hotmail.com\n', '$2a$10$FWmPA8zLeBhtSmY0RgusHuOQ1jhVKKE/GFIoAO79JdO1D8Imwh8l6');
+INSERT INTO users (name, display_name, description, password) VALUES ('高橋 太郎', 'inouemituru', '普段高等学校教員をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.matsumoto.com/\nメールアドレス: taichi62@yahoo.com\n', '$2a$10$QpW.yIflpaVU3BsIovwk1u5GlA7TCtoJNrY/RIXS9.Th/rjchhEOi');
+INSERT INTO users (name, display_name, description, password) VALUES ('井上 春香', 'nkobayashi', '普段エンジニア演奏家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.yoshida.jp/\nメールアドレス: hyamaguchi@yahoo.com\n', '$2a$10$s8Lz7Go/TqyPOnsnFMvpLe/ESYjjCoQW1FiQIpVftUclaSXgFU/VG');
+
+INSERT INTO themes (user_id, dark_mode) VALUES (1, true);
+INSERT INTO themes (user_id, dark_mode) VALUES (2, false);
+INSERT INTO themes (user_id, dark_mode) VALUES (3, true);
+INSERT INTO themes (user_id, dark_mode) VALUES (4, false);
+INSERT INTO themes (user_id, dark_mode) VALUES (5, true);
+INSERT INTO themes (user_id, dark_mode) VALUES (6, false);
+INSERT INTO themes (user_id, dark_mode) VALUES (7, true);
+INSERT INTO themes (user_id, dark_mode) VALUES (8, false);
+INSERT INTO themes (user_id, dark_mode) VALUES (9, true);
+INSERT INTO themes (user_id, dark_mode) VALUES (10, false);
+
