@@ -64,7 +64,7 @@ func postSuperchatHandler(c echo.Context) error {
 	}
 	userID, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized)
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
 
 	var req *PostSuperchatRequest
@@ -77,14 +77,13 @@ func postSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	var (
-		superchat = &Superchat{
-			UserID:       userID,
-			LivestreamID: livestreamID,
-			Comment:      req.Comment,
-			Tip:          req.Tip,
-		}
-	)
+	superchat := Superchat{
+		UserID:       userID,
+		LivestreamID: livestreamID,
+		Comment:      req.Comment,
+		Tip:          req.Tip,
+	}
+
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", superchat)
 	if err != nil {
 		tx.Rollback()
@@ -97,18 +96,15 @@ func postSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
+	superchat.ID = int(superchatID)
 	createdAt := time.Now()
-	return c.JSON(http.StatusCreated, &Superchat{
-		ID:           int(superchatID),
-		UserID:       userID,
-		LivestreamID: livestreamID,
-		Comment:      superchat.Comment,
-		Tip:          superchat.Tip,
-		CreatedAt:    createdAt,
-		UpdatedAt:    createdAt,
-	})
+	superchat.CreatedAt = createdAt
+	superchat.UpdatedAt = createdAt
+	return c.JSON(http.StatusCreated, superchat)
 }
 
 func reportSuperchatHandler(c echo.Context) error {

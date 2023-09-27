@@ -34,7 +34,7 @@ type (
 		Tip     int    `json:"tip"`
 	}
 	PostSuperchatResponse struct {
-		ID           int       `json:"superchat_id"`
+		ID           int       `json:"id"`
 		UserID       int       `json:"user_id"`
 		LivestreamID int       `json:"livestream_id"`
 		Comment      string    `json:"comment"`
@@ -65,8 +65,8 @@ type Superchat struct {
 type Reaction struct {
 	ID           int       `json:"id"`
 	EmojiName    string    `json:"emoji_name"`
-	UserID       string    `json:"user_id"`
-	LivestreamID string    `json:"livestream_id"`
+	UserID       int       `json:"user_id"`
+	LivestreamID int       `json:"livestream_id"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 

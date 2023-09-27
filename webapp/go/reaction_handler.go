@@ -2,9 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo-contrib/session"
@@ -14,8 +13,8 @@ import (
 type Reaction struct {
 	ID           int       `json:"id" db:"id"`
 	EmojiName    string    `json:"emoji_name" db:"emoji_name"`
-	UserID       string    `json:"user_id" db:"user_id"`
-	LivestreamID string    `json:"livestream_id" db:"livestream_id"`
+	UserID       int       `json:"user_id" db:"user_id"`
+	LivestreamID int       `json:"livestream_id" db:"livestream_id"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
@@ -43,7 +42,10 @@ func getReactionsHandler(c echo.Context) error {
 
 func postReactionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
-	livestreamID := c.Param("livestream_id")
+	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -55,7 +57,6 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	log.Printf("%+v\n", sess.Values)
 	userID, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
@@ -72,7 +73,7 @@ func postReactionHandler(c echo.Context) error {
 	}
 
 	reaction := Reaction{
-		UserID:       fmt.Sprintf("%d", userID),
+		UserID:       userID,
 		LivestreamID: livestreamID,
 		EmojiName:    req.EmojiName,
 	}
