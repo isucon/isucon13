@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/worker"
@@ -64,7 +63,7 @@ var loginUsers = []loginUser{
 
 // Season1 シナリオは、サービス開始時点で存在する配信者の配信に対して、ランダムにリクエストを送信する
 func Season1(ctx context.Context, webappIPAddress string) {
-	log.Println("running season1 scenario!!!! ...")
+	log.Println("running season1 scenario ...")
 
 	for _, user := range loginUsers {
 		go simulateSeason1User(ctx, webappIPAddress, user)
@@ -91,7 +90,7 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 	}
 
 	if err := client.Login(ctx, &loginRequest); err != nil {
-		log.Printf("reaction: failed to login: %s\n", err.Error())
+		log.Printf("season1: %s\n", err.Error())
 		return
 	}
 
@@ -103,15 +102,13 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		randomLivestreamID := generator.GenerateIntBetween(1, 11)
 		postedReaction, err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq)
 		if err != nil {
-			log.Printf("reaction: failed to post reaction : %s\n", err.Error())
+			log.Printf("season1: %s\n", err.Error())
 			return
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
-			urlPath := fmt.Sprintf("/livestream/%d/reaction", randomLivestreamID)
-			err = bencherror.DBInconsistency(http.MethodGet, urlPath, err)
-			log.Printf("Season: %s\n", err)
+			log.Printf("Season1: %s\n", err.Error())
 		}
 
 		// season1でたまたま高額Tipが連続すると、すぐに条件を達成してしまう
@@ -124,15 +121,13 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		}
 		postedSuperchat, err := client.PostSuperchat(ctx, randomLivestreamID /* livestream id*/, &postSuperchatReq)
 		if err != nil {
-			log.Printf("reaction: failed to post superchat : %s\n", err.Error())
+			log.Printf("season1: %s\n", err.Error())
 			return
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.ID); err != nil {
-			urlPath := fmt.Sprintf("/livestream/%d/superchat", randomLivestreamID)
-			err = bencherror.DBInconsistency(http.MethodGet, urlPath, err)
-			log.Printf("Season: %s\n", err)
+			log.Printf("Season1: %s\n", err.Error())
 		}
 	}, worker.WithInfinityLoop())
 	if err != nil {
@@ -168,7 +163,8 @@ func checkPostedReactionConsistency(
 	}
 
 	if !postedReactionFound {
-		return fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
+		err := fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
+		return bencherror.DBInconsistency(err)
 	}
 
 	return nil
@@ -194,7 +190,8 @@ func checkPostedSuperchatConsistency(
 	}
 
 	if !postedSuperchatFound {
-		return fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
+		err := fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
+		return bencherror.DBInconsistency(err)
 	}
 
 	return nil

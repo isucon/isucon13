@@ -44,7 +44,7 @@ func WrapError(code failure.StringCode, err error) error {
 	e := failure.NewError(code, err)
 	benchErrors.Add(e)
 	benchscore.AddPenalty(failureCodeToScoreTag(code))
-	return fmt.Errorf("%s: %w", err.Error(), e)
+	return fmt.Errorf("[%s]: %s", code, err.Error())
 }
 
 func GetFinalErrorMessages() map[string][]string {
