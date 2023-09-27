@@ -126,7 +126,7 @@ func main() {
 	e.POST("/initialize", initializeHandler)
 
 	// top
-	e.GET("/tag", nil)
+	e.GET("/tag", getTagHandler)
 
 	// livestream
 	// reserve livestream
@@ -136,11 +136,12 @@ func main() {
 	e.GET("/livestream", getLivestreamsHandler)
 	// get livestream
 	e.GET("/livestream/:livestream_id", getLivestreamHandler)
+	// get polling superchat timeline
+	e.GET("/livestream/:livestream_id/superchat", getSuperchatsHandler)
 	// スパチャ投稿
 	e.POST("/livestream/:livestream_id/superchat", postSuperchatHandler)
 	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
-	// get polling superchat timeline
-	e.GET("/livestream/:livestream_id/superchat", nil)
+	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
 	// スパチャ報告
 	e.POST("/superchat/:superchat_id/report", reportSuperchatHandler)
 
@@ -156,6 +157,7 @@ func main() {
 	e.POST("/login", loginHandler)
 	e.GET("/user", userSessionHandler)
 	e.GET("/user/:user_id", userHandler)
+	e.GET("/user/:user_id/theme", getUserThemeHandler)
 	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
 
 	// stats

@@ -2,11 +2,12 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/worker"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/generator"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -19,50 +20,50 @@ type loginUser struct {
 
 var loginUsers = []loginUser{
 	{
-		UserName: "鈴木 陽一",
-		Password: "9!5AgcWmQ@",
+		UserName: "井上 太郎",
+		Password: "o^E0K1Axj@",
 	},
 	{
-		UserName: "山本 拓真",
-		Password: "gIfYB5Oqm+",
+		UserName: "山崎 洋介",
+		Password: "u4JVlvx%(6",
 	},
 	{
-		UserName: "山下 陽子",
-		Password: ")3AaHkiCa7",
+		UserName: "高橋 智也",
+		Password: "Ba)6J7pmZY",
 	},
 	{
-		UserName: "藤井 京助",
-		Password: "ujO08RwS_6",
+		UserName: "三浦 浩",
+		Password: "@4$rPveY4b",
 	},
 	{
-		UserName: "井上 淳",
-		Password: "8_HZfg1s$C",
+		UserName: "田中 洋介",
+		Password: "m$C2hSyMac",
 	},
 	{
-		UserName: "遠藤 淳",
-		Password: "8k4Xx)9wg^",
+		UserName: "山田 裕美子",
+		Password: "!4QdG!Ni&x",
 	},
 	{
-		UserName: "田中 学",
-		Password: "33DEv!_#_p",
+		UserName: "山下 晃",
+		Password: "+L_3kLjI61",
 	},
 	{
-		UserName: "三浦 翔太",
-		Password: "0*opW%Kp!j",
+		UserName: "佐々木 さゆり",
+		Password: ")i_7Qvnh1!",
 	},
 	{
-		UserName: "佐藤 くみ子",
-		Password: "%86BURTp69",
+		UserName: "高橋 太郎",
+		Password: ")6ZVY&D1&v",
 	},
 	{
-		UserName: "池田 京助",
-		Password: "cJ&2Ow*gnk",
+		UserName: "井上 春香",
+		Password: ")22R(a&z%2",
 	},
 }
 
 // Season1 シナリオは、サービス開始時点で存在する配信者の配信に対して、ランダムにリクエストを送信する
 func Season1(ctx context.Context, webappIPAddress string) {
-	log.Println("running season1 scenario ...")
+	log.Println("running season1 scenario!!!! ...")
 
 	for _, user := range loginUsers {
 		go simulateSeason1User(ctx, webappIPAddress, user)
@@ -79,6 +80,7 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 	if err != nil {
 		panic(err)
 	}
+
 	// FIXME: 自然なリクエストにするためには、複数のユーザからリクエストが飛んでほしい
 	//        isupipe.Clientのログインセッションキャッシュを考慮しつつ、
 	//        season1 scenario内で複数のgoroutineを吐き出して、それぞれのユーザをシミュレートするように変更する
@@ -86,8 +88,9 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		UserName: loginUser.UserName,
 		Password: loginUser.Password,
 	}
+
 	if err := client.Login(ctx, &loginRequest); err != nil {
-		// log.Printf("reaction: failed to login: %s\n", err.Error())
+		log.Printf("reaction: failed to login: %s\n", err.Error())
 		return
 	}
 
@@ -97,22 +100,37 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		}
 
 		randomLivestreamID := generator.GenerateIntBetween(1, 11)
-		if err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq); err != nil {
-			// log.Printf("reaction: failed to post reaction : %s\n", err.Error())
+		postedReaction, err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq)
+		if err != nil {
+			log.Printf("reaction: failed to post reaction : %s\n", err.Error())
 			return
 		}
-		benchscore.AddScore(benchscore.SuccessPostReaction)
 
-		randomTipLevel := generator.GenerateRandomTipLevel()
+		// ちゃんと結果整合性が担保されているかチェック
+		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
+			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+			log.Printf("Season: %s\n", err)
+		}
+
+		// season1でたまたま高額Tipが連続すると、すぐに条件を達成してしまう
+		// ある程度のリクエストをさばけることを検証するべく、tip-levelをおさえこむ
+		// TipLevel1であれば、最高でも500で、200kまでに4000リクエストを要するため、一旦そうしておく
+		// randomTipLevel := generator.GenerateRandomTipLevel()
 		postSuperchatReq := isupipe.PostSuperchatRequest{
 			Comment: generator.GenerateRandomComment(),
-			Tip:     generator.GenerateTip(randomTipLevel),
+			Tip:     generator.GenerateTip(generator.TipLevel1),
 		}
-		if _, err := client.PostSuperchat(ctx, randomLivestreamID /* livestream id*/, &postSuperchatReq); err != nil {
-			// log.Printf("reaction: failed to post reaction : %s\n", err.Error())
+		postedSuperchat, err := client.PostSuperchat(ctx, randomLivestreamID /* livestream id*/, &postSuperchatReq)
+		if err != nil {
+			log.Printf("reaction: failed to post superchat : %s\n", err.Error())
 			return
 		}
-		benchscore.AddScore(benchscore.SuccessPostSuperchat)
+
+		// ちゃんと結果整合性が担保されているかチェック
+		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
+			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+			log.Printf("Season: %s\n", err)
+		}
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Season1 scenario does not anything: %s\n", err.Error())
@@ -125,4 +143,54 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 	<-ctx.Done()
 	season1UserWorker.Wait()
 
+}
+
+func checkPostedReactionConsistency(
+	ctx context.Context,
+	client *isupipe.Client,
+	livestreamID int,
+	postedReactionID int,
+) error {
+	reactions, err := client.GetReactions(ctx, livestreamID)
+	if err != nil {
+		return err
+	}
+
+	var postedReaction *isupipe.Reaction
+	for _, r := range reactions {
+		if r.ID == postedReactionID {
+			postedReaction = &r
+		}
+	}
+
+	if postedReaction == nil {
+		return fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
+	}
+
+	return nil
+}
+
+func checkPostedSuperchatConsistency(
+	ctx context.Context,
+	client *isupipe.Client,
+	livestreamID int,
+	postedSuperchatID int,
+) error {
+	superchats, err := client.GetSuperchats(ctx, livestreamID)
+	if err != nil {
+		return err
+	}
+
+	var postedSuperchat *isupipe.Superchat
+	for _, s := range superchats {
+		if s.ID == postedSuperchatID {
+			postedSuperchat = &s
+		}
+	}
+
+	if postedSuperchat == nil {
+		return fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
+	}
+
+	return nil
 }

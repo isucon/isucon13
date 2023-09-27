@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -11,19 +12,33 @@ import (
 )
 
 type Reaction struct {
-	ID           string    `db:"id"`
-	EmojiName    string    `db:"emoji_name"`
-	UserID       string    `db:"user_id"`
-	LivestreamID string    `db:"livestream_id"`
-	CreatedAt    time.Time `db:"created_at"`
+	ID           int       `json:"id" db:"id"`
+	EmojiName    string    `json:"emoji_name" db:"emoji_name"`
+	UserID       string    `json:"user_id" db:"user_id"`
+	LivestreamID string    `json:"livestream_id" db:"livestream_id"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
 type PostReactionRequest struct {
 	EmojiName string `json:"emoji_name"`
 }
 
-type PostReactionResponse struct {
-	ReactionID int64 `json:"reaction_id"`
+func getReactionsHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	livestreamID := c.Param("livestream_id")
+
+	reactions := []Reaction{}
+	if err := dbConn.SelectContext(ctx, &reactions, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamID); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, reactions)
 }
 
 func postReactionHandler(c echo.Context) error {
@@ -31,16 +46,19 @@ func postReactionHandler(c echo.Context) error {
 	livestreamID := c.Param("livestream_id")
 
 	if err := verifyUserSession(c); err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
 	}
 
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
+
+	log.Printf("%+v\n", sess.Values)
 	userID, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
 
 	var req *PostReactionRequest
@@ -75,7 +93,6 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, &PostReactionResponse{
-		ReactionID: reactionID,
-	})
+	reaction.ID = int(reactionID)
+	return c.JSON(http.StatusCreated, reaction)
 }

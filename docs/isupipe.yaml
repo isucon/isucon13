@@ -157,16 +157,62 @@ paths:
       responses:
         '200':
           description: OK
-        '201':
-          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Superchat'
+    post:
+      summary: ''
+      operationId: post-livestream-livestreamid-superchat
       requestBody:
         $ref: '#/components/requestBodies/PostSuperchat'
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Content-Type
+          description: application/json
+      description: ライブストリームに対するスパチャ投稿
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Superchat'
+              examples:
+                basic:
+                  value:
+                    id: 12
+                    user_id: 5
+                    livestream_id: 1
+                    comment: がんばれ〜
+                    tip: 500
+                    created_at: 1695586243
+                    updated_at: 1695586243
     parameters:
       - schema:
           type: string
         name: livestreamid
         in: path
         required: true
+  '/livestream/{livestreamid}/reaction':
+    get:
+      summary: Your GET endpoint
+      tags: []
+      operationId: 'get-livestream-:livestreamid-reaction'
+      description: 当該ライブストリームのリアクション取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reaction'
     post:
       summary: ''
       operationId: post-livestream-livestreamid-reaction
@@ -186,35 +232,6 @@ paths:
           name: Content-Type
           description: application/json
       description: リアクション投稿
-    post:
-      summary: ''
-      operationId: post-livestream-livestreamid-superchat
-      requestBody:
-        $ref: '#/components/requestBodies/PostSuperchat'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Superchat'
-              examples:
-                basic:
-                  value:
-                    id: 12
-                    user_id: 5
-                    livestream_id: 1
-                    comment: がんばれ〜
-                    tip: 500
-                    created_at: 1695586243
-                    updated_at: 1695586243
-      parameters:
-        - schema:
-            type: string
-          in: header
-          name: Content-Type
-          description: application/json
-      description: スパチャ投稿
   '/livestream/{livestreamid}/statistics':
     get:
       summary: Your GET endpoint

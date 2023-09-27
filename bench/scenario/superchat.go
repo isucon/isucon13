@@ -14,16 +14,18 @@ import (
 // INFO: 後々シーズンごとのシナリオに移行される、一時的なシナリオ
 func Superchat(ctx context.Context, client *isupipe.Client) {
 	log.Println("running superchat scenario ...")
+
+	// init.sqlで事前挿入されたデータ
+	loginRequest := isupipe.LoginRequest{
+		UserName: "井上 太郎",
+		Password: "o^E0K1Axj@",
+	}
+	if err := client.Login(ctx, &loginRequest); err != nil {
+		// log.Printf("Superchat: failed to login: %s\n", err.Error())
+		return
+	}
+
 	postSuperchatWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
-		// init.sqlで事前挿入されたデータ
-		loginRequest := isupipe.LoginRequest{
-			UserName: "鈴木 陽一",
-			Password: "kaorisuzuki",
-		}
-		if err := client.Login(ctx, &loginRequest); err != nil {
-			// log.Printf("Superchat: failed to login: %s\n", err.Error())
-			return
-		}
 
 		// log.Printf("worker %d posting superchat request ...\n", i)
 		req := isupipe.PostSuperchatRequest{
@@ -35,8 +37,6 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 			// log.Printf("Superchat: failed to post superchat: %s\n", err.Error())
 			return
 		}
-
-		// Superchatシナリオでは常にtips == 0なのでAddTipsProfitしない
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Superchat scenario does not anything: %s\n", err.Error())

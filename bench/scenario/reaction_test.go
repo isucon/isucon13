@@ -20,7 +20,7 @@ func TestReaction(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeout*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeoutSeconds*time.Second)
 	defer cancel()
 	benchscore.InitScore(ctx)
 

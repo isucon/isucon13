@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/isucon/isucandar/worker"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/generator"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -15,16 +14,17 @@ import (
 // INFO: 後々シーズンごとのシナリオに移行される、一時的なシナリオ
 func Tips(ctx context.Context, client *isupipe.Client) {
 	log.Println("running tips scenario ...")
-	postSuperchatWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
-		// 事前挿入されたデータ
-		loginRequest := isupipe.LoginRequest{
-			UserName: "鈴木 陽一",
-			Password: "kaorisuzuki",
-		}
-		if err := client.Login(ctx, &loginRequest); err != nil {
-			return
-		}
 
+	// 事前挿入されたデータ
+	loginRequest := isupipe.LoginRequest{
+		UserName: "井上 太郎",
+		Password: "o^E0K1Axj@",
+	}
+	if err := client.Login(ctx, &loginRequest); err != nil {
+		return
+	}
+
+	postSuperchatWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
 		// log.Printf("worker %d posting tips request ...\n", i)
 		randomTipLevel := generator.GenerateRandomTipLevel()
 		req := isupipe.PostSuperchatRequest{
@@ -36,8 +36,6 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 			// log.Printf("Tips: failed to post superchat: %s\n", err.Error())
 			return
 		}
-
-		benchscore.AddTipProfit(req.Tip)
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Tips scenario does not anything: %s\n", err.Error())

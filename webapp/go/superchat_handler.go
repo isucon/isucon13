@@ -16,13 +16,13 @@ type PostSuperchatRequest struct {
 }
 
 type Superchat struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
-	LivestreamId int       `db:"livestream_id"`
-	Comment      string    `db:"comment"`
-	Tip          int       `db:"tip"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	Id           int       `json:"id" db:"id"`
+	UserId       int       `json:"user_id" db:"user_id"`
+	LivestreamId int       `json:"livestream_id" db:"livestream_id"`
+	Comment      string    `json:"comment" db:"comment"`
+	Tip          int       `json:"tip" db:"tip"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type SuperchatReport struct {
@@ -31,6 +31,23 @@ type SuperchatReport struct {
 	SuperchatId int       `db:"superchat_id"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
+}
+
+func getSuperchatsHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	livestreamID := c.Param("livestream_id")
+
+	superchats := []Superchat{}
+	if err := dbConn.SelectContext(ctx, &superchats, "SELECT * FROM superchats WHERE livestream_id = ?", livestreamID); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, superchats)
 }
 
 func postSuperchatHandler(c echo.Context) error {

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -64,7 +65,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) error {
+func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
 		bencherror.WrapError(bencherror.SystemError, err)
@@ -72,14 +73,28 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) error {
 
 	req, err := c.agent.NewRequest(http.MethodPost, "/user", bytes.NewReader(payload))
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err = c.sendRequest(ctx, req); err != nil {
-		return err
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	if resp.StatusCode != http.StatusCreated {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("not created: %s", string(body))
+	}
+
+	var user *User
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
@@ -93,74 +108,125 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err = c.sendRequest(ctx, req); err != nil {
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not OK: %s", string(body))
 	}
 
 	return nil
 }
 
-func (c *Client) GetUser(ctx context.Context, userID string) error {
-	urlPath := fmt.Sprintf("/user/%s", userID)
+func (c *Client) GetUser(ctx context.Context, userID int) error {
+	urlPath := fmt.Sprintf("/user/%d", userID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return err
 	}
-	if _, err := c.sendRequest(ctx, req); err != nil {
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
 		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not OK: %s", string(body))
 	}
 
 	return nil
 }
 
-func (c *Client) GetUserTheme(ctx context.Context, userID string) error {
-	urlPath := fmt.Sprintf("/user/%s/theme", userID)
+func (c *Client) GetUserTheme(ctx context.Context, userID int) error {
+	urlPath := fmt.Sprintf("/user/%d/theme", userID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return err
 	}
-	if _, err := c.sendRequest(ctx, req); err != nil {
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not OK: %s", string(body))
 	}
 
 	return nil
 }
 
-func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest) error {
+func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest) (*Livestream, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return bencherror.WrapError(bencherror.SystemError, err)
+		return nil, bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	req, err := c.agent.NewRequest(http.MethodPost, "/livestream/reservation", bytes.NewReader(payload))
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.sendRequest(ctx, req); err != nil {
-		return err
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	if resp.StatusCode != http.StatusCreated {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("not created: %s", string(body))
+	}
+	var livestream *Livestream
+	if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
+		return nil, err
+	}
+
+	return livestream, err
 }
 
-func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) error {
+func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) (*Reaction, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return bencherror.WrapError(bencherror.SystemError, err)
+		return nil, bencherror.WrapError(bencherror.SystemError, err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.sendRequest(ctx, req); err != nil {
-		return err
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	if resp.StatusCode != http.StatusCreated {
+		// FIXME: それっぽいエラーに細分化
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, fmt.Errorf("リアクション投稿が正常に行えませんでした"))
+	}
+	reaction := &Reaction{}
+	if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
+		return reaction, err
+	}
+
+	benchscore.AddScore(benchscore.SuccessPostReaction)
+	return reaction, nil
 }
 
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
@@ -181,6 +247,14 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusCreated {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("not created: %s", string(body))
+	}
+
 	var superchatResponse *PostSuperchatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
 		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
@@ -192,6 +266,7 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	}
 
 	benchscore.AddScore(benchscore.SuccessPostSuperchat)
+	benchscore.AddTipProfit(superchatResponse.Tip)
 
 	return superchatResponse, nil
 }
@@ -203,8 +278,16 @@ func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.sendRequest(ctx, req); err != nil {
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
 		return err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not created: %s", string(body))
 	}
 
 	return nil
@@ -220,24 +303,88 @@ func (c *Client) GetLivestreamsByTag(
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.sendRequest(ctx, req); err != nil {
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
 		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not OK: %s", string(body))
 	}
 
 	return nil
 }
 
 func (c *Client) GetTags(ctx context.Context) error {
-	req, err := c.agent.NewRequest(http.MethodGet, "/tags", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/tag", nil)
 	if err != nil {
 		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
 	}
 
-	if _, err := c.sendRequest(ctx, req); err != nil {
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
 		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not OK: %s", string(body))
 	}
 
 	return nil
+}
+
+func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction, error) {
+	req, err := c.agent.NewRequest(http.MethodGet, fmt.Sprintf("/livestream/%d/reaction", livestreamID), nil)
+	if err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, fmt.Errorf("リアクション一覧の取得に失敗しました"))
+	}
+
+	reactions := []Reaction{}
+	if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
+		return reactions, err
+	}
+
+	return reactions, nil
+}
+
+func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superchat, error) {
+	req, err := c.agent.NewRequest(http.MethodGet, fmt.Sprintf("/livestream/%d/superchat", livestreamID), nil)
+	if err != nil {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, bencherror.WrapError(bencherror.BenchmarkApplicationError, fmt.Errorf("スーパーチャット一覧の取得に失敗しました"))
+	}
+
+	superchats := []Superchat{}
+	if err := json.NewDecoder(resp.Body).Decode(&superchats); err != nil {
+		return superchats, err
+	}
+
+	return superchats, nil
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数
