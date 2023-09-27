@@ -35,7 +35,9 @@ func initPenalty(ctx context.Context) {
 	penaltyScore.Set(BenchmarkApplicationError, 1)
 	penaltyScore.Set(BenchmarkTemporaryError, 1)
 	penaltyScore.Set(FinalCheckError, 1)
+	penaltyScore.Set(DBInconsistencyError, 1)
 	penaltyScore.Set(InvalidResponseFormatError, 1)
+	penaltyScore.Set(UnexpectedHTTPStatusCodeError, 1)
 
 	// スコアの計算には関与しないので0
 	penaltyScore.Set(InternalError, 0)
