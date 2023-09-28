@@ -103,3 +103,7 @@ type Tag struct {
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type TagsResponse struct {
+	Tags []*Tag `json:"tags"`
+}

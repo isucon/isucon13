@@ -121,7 +121,7 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := assertPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
-			bencherror.WrapError(bencherror.DBInconsistencyError, err)
+			bencherror.NewAssertionError(err, "リアクション投稿にて一貫性が取れていません")
 			// log.Printf("Season: %s\n", err)
 		}
 

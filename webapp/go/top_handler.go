@@ -14,15 +14,21 @@ type Tag struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
+type TagsResponse struct {
+	Tags []*Tag `json:"tags"`
+}
+
 func getTagHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	tags := []Tag{}
-	if err := dbConn.SelectContext(ctx, &tags, "SELECT id, name FROM tags"); err != nil {
+	var tags []*Tag
+	if err := dbConn.SelectContext(ctx, &tags, "SELECT * FROM tags"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, tags)
+	return c.JSON(http.StatusOK, &TagsResponse{
+		Tags: tags,
+	})
 }
 
 func searchLivestreamsByTagHandler(c echo.Context) error {

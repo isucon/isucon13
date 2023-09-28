@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -23,6 +24,7 @@ func TestReaction(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeoutSeconds*time.Second)
 	defer cancel()
 	benchscore.InitScore(ctx)
+	bencherror.InitPenalty(ctx)
 
 	assert.NotPanics(t, func() { Reaction(ctx, client) })
 	fmt.Fprintf(os.Stderr, "final score ==> %d\n", benchscore.GetCurrentScore())

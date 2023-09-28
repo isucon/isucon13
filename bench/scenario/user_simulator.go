@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/isucon/isucandar/agent"
@@ -123,8 +122,7 @@ func checkPostedReactionConsistency(
 	}
 
 	if !postedReactionFound {
-		err := fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
-		return bencherror.DBInconsistency(err)
+		return bencherror.NewAssertionError(err, "投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
 	}
 
 	return nil
@@ -150,8 +148,7 @@ func checkPostedSuperchatConsistency(
 	}
 
 	if !postedSuperchatFound {
-		err := fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
-		return bencherror.DBInconsistency(err)
+		return bencherror.NewAssertionError(err, "投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
 	}
 
 	return nil

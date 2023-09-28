@@ -41,7 +41,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to get tags...")
-	if err := client.GetTags(ctx); err != nil {
+	if _, err := client.GetTags(ctx); err != nil {
 		return err
 	}
 

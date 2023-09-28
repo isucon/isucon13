@@ -26,7 +26,7 @@ func Season2(ctx context.Context, webappIPAddress string) {
 			agent.WithBaseURL(webappIPAddress),
 		)
 		if err != nil {
-			bencherror.Internal(err)
+			bencherror.NewInternalError(err)
 			return
 		}
 

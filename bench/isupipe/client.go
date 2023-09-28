@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"time"
@@ -59,7 +58,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	}
 	customAgent, err := agent.NewAgent(opts...)
 	if err != nil {
-		return nil, err
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	return &Client{
@@ -70,12 +69,12 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	req, err := c.agent.NewRequest(http.MethodPost, "/user", bytes.NewReader(payload))
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -85,20 +84,12 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s\n", req.Method, req.URL.EscapedPath(), string(body))
-		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
+		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 
 	var user *User
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-		return nil, bencherror.InvalidResponseFormat(err)
+		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
 	benchscore.AddScore(benchscore.SuccessRegister)
@@ -108,12 +99,12 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error
 func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	req, err := c.agent.NewRequest(http.MethodPost, "/login", bytes.NewReader(payload))
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -122,14 +113,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessLogin)
@@ -140,7 +124,7 @@ func (c *Client) GetUser(ctx context.Context, userID int) error {
 	urlPath := fmt.Sprintf("/user/%d", userID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -148,14 +132,7 @@ func (c *Client) GetUser(ctx context.Context, userID int) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetUser)
@@ -166,7 +143,7 @@ func (c *Client) GetUserTheme(ctx context.Context, userID int) error {
 	urlPath := fmt.Sprintf("/user/%d/theme", userID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -174,14 +151,7 @@ func (c *Client) GetUserTheme(ctx context.Context, userID int) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetUserTheme)
@@ -191,12 +161,12 @@ func (c *Client) GetUserTheme(ctx context.Context, userID int) error {
 func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest) (*Livestream, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	req, err := c.agent.NewRequest(http.MethodPost, "/livestream/reservation", bytes.NewReader(payload))
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -205,19 +175,11 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
+		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 	var livestream *Livestream
 	if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-		return nil, bencherror.InvalidResponseFormat(err)
+		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
 	benchscore.AddScore(benchscore.SuccessReserveLivestream)
@@ -227,13 +189,13 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) (*Reaction, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -242,19 +204,11 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
+		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 	reaction := &Reaction{}
 	if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-		return nil, bencherror.InvalidResponseFormat(err)
+		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
 	benchscore.AddScore(benchscore.SuccessPostReaction)
@@ -264,13 +218,13 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -280,20 +234,12 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
+		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 
 	var superchatResponse *PostSuperchatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-		return nil, bencherror.InvalidResponseFormat(err)
+		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
 	benchscore.AddScore(benchscore.SuccessPostSuperchat)
@@ -306,7 +252,7 @@ func (c *Client) ReportSuperchat(ctx context.Context, livestreamId, superchatId 
 	urlPath := fmt.Sprintf("/livestream/%d/superchat/%d/report", livestreamId, superchatId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -314,14 +260,7 @@ func (c *Client) ReportSuperchat(ctx context.Context, livestreamId, superchatId 
 		return err
 	}
 	if resp.StatusCode != http.StatusCreated {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessReportSuperchat)
@@ -335,25 +274,21 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) 
 		NGWord: ngWord,
 	})
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return bencherror.NewInternalError(err)
 	}
 
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(payload))
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
-		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("not created: %s", string(body))
+		return bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 
 	return nil
@@ -366,7 +301,7 @@ func (c *Client) GetLivestreamsByTag(
 	urlPath := fmt.Sprintf("/search_livestream?tag=%s", tag)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -374,50 +309,41 @@ func (c *Client) GetLivestreamsByTag(
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetLivestreamByTag)
 	return nil
 }
 
-func (c *Client) GetTags(ctx context.Context) error {
+func (c *Client) GetTags(ctx context.Context) (*TagsResponse, error) {
 	req, err := c.agent.NewRequest(http.MethodGet, "/tag", nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
+		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	}
 
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+	var tags *TagsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return nil, err
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetTags)
-	return nil
+	return tags, nil
 }
 
 func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction, error) {
 	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -427,20 +353,12 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	reactions := []Reaction{}
 	if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-		return nil, bencherror.InvalidResponseFormat(err)
+		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetReactions)
@@ -451,7 +369,7 @@ func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superch
 	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return nil, bencherror.Internal(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -461,20 +379,12 @@ func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superch
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	superchats := []Superchat{}
 	if err := json.NewDecoder(resp.Body).Decode(&superchats); err != nil {
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-		return superchats, err
+		return superchats, bencherror.NewHttpResponseError(err, req)
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetSuperchats)
@@ -485,7 +395,7 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {
 	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -495,14 +405,7 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessEnterLivestream)
@@ -513,7 +416,7 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int) error {
 	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
-		return bencherror.Internal(err)
+		return bencherror.NewInternalError(err)
 	}
 
 	resp, err := c.sendRequest(ctx, req)
@@ -523,14 +426,7 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
-			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
-		}
-
-		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
-		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
 	benchscore.AddScore(benchscore.SuccessLeaveLivestream)
@@ -540,6 +436,7 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int) error {
 // sendRequestはagent.Doをラップしたリクエスト送信関数
 // bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
 func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {
 		var (
@@ -551,13 +448,13 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Resp
 			return resp, ErrCancelRequest
 		} else if errors.As(err, &netErr) {
 			if netErr.Timeout() {
-				return resp, bencherror.BenchmarkTimeout(err)
+				return resp, bencherror.NewTimeoutError(err, "%s", endpoint)
 			} else {
 				// 接続ができないなど、ベンチ継続する上で致命的なエラー
-				return resp, bencherror.BenchmarkCritical(err)
+				return resp, bencherror.NewViolationError(err, "webappの %s に対するリクエストで、接続に失敗しました", endpoint)
 			}
 		} else {
-			return resp, bencherror.BenchmarkApplication(err)
+			return resp, bencherror.NewApplicationError(err, "%s に対するリクエストが失敗しました", endpoint)
 		}
 	}
 

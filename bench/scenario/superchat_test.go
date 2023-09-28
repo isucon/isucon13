@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -23,6 +24,7 @@ func TestSuperchat(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeoutSeconds*time.Second)
 	defer cancel()
 	benchscore.InitScore(ctx)
+	bencherror.InitPenalty(ctx)
 
 	assert.NotPanics(t, func() { Superchat(ctx, client) })
 	fmt.Fprintf(os.Stderr, "superchat: score ==> %d\n", benchscore.GetCurrentScore())

@@ -2,7 +2,7 @@ package main
 
 import "sync"
 
-// FIXME: 試験的にwebappに課金サーバを兼任させる
+// webappに課金サーバを兼任させる
 // とりあえずfinalcheck等を実装する上で必要なので用意
 type Payment struct {
 	ReservationId int
