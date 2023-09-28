@@ -57,6 +57,11 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	log.Printf("try to enter livestream...")
+	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
+		return err
+	}
+
 	log.Printf("try to post superchat...")
 	superchat, err := client.PostSuperchat(ctx, livestream.ID, &isupipe.PostSuperchatRequest{
 		Comment: "test",
@@ -90,6 +95,11 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 
 	log.Printf("try to get livestreams by tag...")
 	if err := client.GetLivestreamsByTag(ctx, "chair" /* tag name */); err != nil {
+		return err
+	}
+
+	log.Printf("try to leave jlivestream...")
+	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 

@@ -26,6 +26,9 @@ const (
 	// リアクション
 	SuccessGetReactions score.ScoreTag = "success-get-reactions"
 	SuccessPostReaction score.ScoreTag = "success-post-reaction"
+
+	SuccessEnterLivestream score.ScoreTag = "success-enter-livestream"
+	SuccessLeaveLivestream score.ScoreTag = "success-leave-livestream"
 )
 
 var (
@@ -53,6 +56,9 @@ func InitScore(ctx context.Context) {
 
 	benchScore.Set(SuccessGetReactions, 1)
 	benchScore.Set(SuccessPostReaction, 1)
+
+	benchScore.Set(SuccessEnterLivestream, 1)
+	benchScore.Set(SuccessLeaveLivestream, 1)
 
 	initProfit(ctx)
 	initPenalty(ctx)

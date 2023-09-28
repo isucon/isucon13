@@ -198,7 +198,34 @@ paths:
         name: livestreamid
         in: path
         required: true
+  '/livestream/{livestreamid}/enter':
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
+    post:
+      summary: ''
+      operationId: post-livestream-livestreamid-enter
+      responses:
+        '200':
+          description: OK
+      description: 配信の視聴開始
+    delete:
+      summary: ''
+      operationId: delete-livestream-livestreamid-enter
+      responses:
+        '200':
+          description: OK
+      description: 配信の視聴終了
   '/livestream/{livestreamid}/reaction':
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
     get:
       summary: Your GET endpoint
       tags: []

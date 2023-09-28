@@ -21,8 +21,13 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 		Password: "o^E0K1Axj@",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
+		log.Printf("Superchat: %s\n", err.Error())
 		// log.Printf("Superchat: failed to login: %s\n", err.Error())
 		return
+	}
+
+	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
+		log.Printf("Superchat: %s\n", err.Error())
 	}
 
 	postSuperchatWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
@@ -37,6 +42,7 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 			// log.Printf("Superchat: failed to post superchat: %s\n", err.Error())
 			return
 		}
+
 	}, worker.WithInfinityLoop())
 	if err != nil {
 		log.Printf("WARNING: found an error; Superchat scenario does not anything: %s\n", err.Error())
@@ -52,4 +58,8 @@ func Superchat(ctx context.Context, client *isupipe.Client) {
 	log.Println("waiting for post superchat workers ...")
 	postSuperchatWorker.Wait()
 	log.Println("post superchat workers has finished.")
+
+	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
+		log.Printf("Superchat: %s\n", err.Error())
+	}
 }
