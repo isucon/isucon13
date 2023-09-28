@@ -85,15 +85,17 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error
 	if resp.StatusCode != http.StatusCreated {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s\n", req.Method, req.URL.EscapedPath(), string(body))
 		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 	}
 
 	var user *User
 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 		return nil, bencherror.InvalidResponseFormat(err)
 	}
 
@@ -120,10 +122,11 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
@@ -145,10 +148,11 @@ func (c *Client) GetUser(ctx context.Context, userID int) error {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
@@ -170,10 +174,11 @@ func (c *Client) GetUserTheme(ctx context.Context, userID int) error {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
@@ -200,14 +205,16 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	if resp.StatusCode != http.StatusCreated {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 	}
 	var livestream *Livestream
 	if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 		return nil, bencherror.InvalidResponseFormat(err)
 	}
 
@@ -235,14 +242,16 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	if resp.StatusCode != http.StatusCreated {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 	}
 	reaction := &Reaction{}
 	if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 		return nil, bencherror.InvalidResponseFormat(err)
 	}
 
@@ -271,15 +280,17 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	if resp.StatusCode != http.StatusCreated {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 	}
 
 	var superchatResponse *PostSuperchatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 		return nil, bencherror.InvalidResponseFormat(err)
 	}
 
@@ -303,10 +314,11 @@ func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
 	if resp.StatusCode != http.StatusCreated {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return bencherror.UnexpectedHTTPStatusCode(http.StatusCreated, resp.StatusCode, err)
 	}
 
@@ -331,10 +343,11 @@ func (c *Client) GetLivestreamsByTag(
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
@@ -355,10 +368,11 @@ func (c *Client) GetTags(ctx context.Context) error {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
@@ -382,15 +396,17 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
 	reactions := []Reaction{}
 	if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 		return nil, bencherror.InvalidResponseFormat(err)
 	}
 
@@ -414,15 +430,17 @@ func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superch
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 			return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 		}
 
-		err = fmt.Errorf("%s\n", string(body))
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
 		return nil, bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
 	}
 
 	superchats := []Superchat{}
 	if err := json.NewDecoder(resp.Body).Decode(&superchats); err != nil {
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
 		return superchats, err
 	}
 
