@@ -17,6 +17,8 @@ import (
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
+var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
+
 type Client struct {
 	agent *agent.Agent
 	// FIXME: dns resolver
@@ -300,8 +302,8 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 	return superchatResponse, nil
 }
 
-func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
-	urlPath := fmt.Sprintf("/superchat/%d/report", superchatId)
+func (c *Client) ReportSuperchat(ctx context.Context, livestreamId, superchatId int) error {
+	urlPath := fmt.Sprintf("/livestream/%d/superchat/%d/report", livestreamId, superchatId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.Internal(err)
@@ -323,6 +325,37 @@ func (c *Client) ReportSuperchat(ctx context.Context, superchatId int) error {
 	}
 
 	benchscore.AddScore(benchscore.SuccessReportSuperchat)
+	return nil
+}
+
+func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) error {
+	urlPath := fmt.Sprintf("/livestream/%d/moderate", livestreamId)
+
+	payload, err := json.Marshal(&ModerateRequest{
+		NGWord: ngWord,
+	})
+	if err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(payload))
+	if err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return bencherror.WrapError(bencherror.BenchmarkApplicationError, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("not created: %s", string(body))
+	}
+
 	return nil
 }
 
@@ -514,7 +547,8 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Resp
 		)
 		if errors.Is(err, context.DeadlineExceeded) {
 			// 締切がすぎるのはベンチの都合なので、減点しない
-			return resp, err
+			// リクエストをキャンセルする
+			return resp, ErrCancelRequest
 		} else if errors.As(err, &netErr) {
 			if netErr.Timeout() {
 				return resp, bencherror.BenchmarkTimeout(err)

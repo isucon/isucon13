@@ -293,7 +293,6 @@ paths:
                     user_id: 12
                     title: ISUCON公式から出たゲームやるぞ！
                     description: 'お約束: マナーを守りましょう'
-                    privacy_status: public
                     start_at: 12345
                     end_at: 12345
                     created_at: 12345
@@ -408,8 +407,6 @@ components:
         title:
           type: string
         description:
-          type: string
-        privacy_status:
           type: string
         start_at:
           type: number
@@ -588,8 +585,6 @@ components:
                 type: string
               description:
                 type: string
-              privacy_status:
-                type: string
               start_at:
                 type: number
               end_at:
@@ -599,7 +594,6 @@ components:
               value:
                 title: ISUCON公式から出たゲームやるぞ！
                 description: '配信のマナー: ★みんな仲良くしましょう★'
-                privacy_status: public
                 start_at: 0
                 end_at: 0
   responses:

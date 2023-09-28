@@ -8,6 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
+
 type LivestreamStatistics struct {
 	TotalViewers                          int `json:"total_viewers"`
 	TotalTips                             int `json:"total_tips"`
@@ -49,7 +51,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
-		stats, err := queryLivestreamStatistics(ctx, fmt.Sprintf("%d", ls.ID))
+		stats, err := queryLivestreamStatistics(ctx, fmt.Sprintf("%d", ls.Id))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -96,7 +98,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	prevLivestream := getPreviousLivestream(ctx, &livestream)
 	prevLivestreamStatistics := LivestreamStatistics{}
 	if prevLivestream != nil {
-		prevLivestreamID := fmt.Sprintf("%d", prevLivestream.ID)
+		prevLivestreamID := fmt.Sprintf("%d", prevLivestream.Id)
 		prevLivestreamStatistics, err = queryLivestreamStatistics(ctx, prevLivestreamID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -162,7 +164,7 @@ func calculateSuperchatStatistics(ctx context.Context, livestreamID string) (tot
 }
 
 func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *Livestream {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT id, start_at FROM livestreams WHERE user_id = ?", currentLivestream.UserID)
+	rows, err := dbConn.QueryxContext(ctx, "SELECT id, start_at FROM livestreams WHERE user_id = ?", currentLivestream.UserId)
 	if err != nil {
 		return nil
 	}

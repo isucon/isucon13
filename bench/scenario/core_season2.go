@@ -47,11 +47,10 @@ func Season2(ctx context.Context, webappIPAddress string) {
 		client := userIDToClient[reservePattern.UserID]
 
 		reserveRequest := isupipe.ReserveLivestreamRequest{
-			Title:         reservePattern.Title,
-			Description:   reservePattern.Description,
-			PrivacyStatus: "public",
-			StartAt:       reservePattern.StartAt.Unix(),
-			EndAt:         reservePattern.EndAt.Unix(),
+			Title:       reservePattern.Title,
+			Description: reservePattern.Description,
+			StartAt:     reservePattern.StartAt.Unix(),
+			EndAt:       reservePattern.EndAt.Unix(),
 		}
 		if _, err := client.ReserveLivestream(ctx, &reserveRequest); err != nil {
 			log.Printf("season2: %s\n", err.Error())

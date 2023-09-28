@@ -78,7 +78,7 @@ func simulateRandomLivestreamViewer(
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.ID); err != nil {
+		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 		}
 
@@ -143,7 +143,7 @@ func checkPostedSuperchatConsistency(
 
 	postedSuperchatFound := false
 	for _, s := range superchats {
-		if s.ID == postedSuperchatID {
+		if s.Id == postedSuperchatID {
 			postedSuperchatFound = true
 			break
 		}

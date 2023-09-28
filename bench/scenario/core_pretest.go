@@ -47,23 +47,23 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 
 	log.Printf("try to reserve livestream...")
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Title:         "test",
-		Description:   "test",
-		PrivacyStatus: "public",
-		StartAt:       time.Now().Unix(),
-		EndAt:         time.Now().Unix(),
+		Tags:        []int{1},
+		Title:       "test",
+		Description: "test",
+		StartAt:     time.Date(2024, 07, 12, 1, 0, 0, 0, time.Local).Unix(),
+		EndAt:       time.Date(2024, 07, 12, 2, 0, 0, 0, time.Local).Unix(),
 	})
 	if err != nil {
 		return err
 	}
 
 	log.Printf("try to enter livestream...")
-	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
+	if err := client.EnterLivestream(ctx, livestream.Id); err != nil {
 		return err
 	}
 
 	log.Printf("try to post superchat...")
-	superchat, err := client.PostSuperchat(ctx, livestream.ID, &isupipe.PostSuperchatRequest{
+	superchat, err := client.PostSuperchat(ctx, livestream.Id, &isupipe.PostSuperchatRequest{
 		Comment: "test",
 		Tip:     3,
 	})
@@ -72,24 +72,24 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to get superchats...")
-	if _, err := client.GetSuperchats(ctx, livestream.ID /* livestream id*/); err != nil {
+	if _, err := client.GetSuperchats(ctx, livestream.Id /* livestream id*/); err != nil {
 		return err
 	}
 
 	log.Printf("try to report superchat...")
-	if err := client.ReportSuperchat(ctx, superchat.ID); err != nil {
+	if err := client.ReportSuperchat(ctx, livestream.Id, superchat.Id); err != nil {
 		return err
 	}
 
 	log.Printf("try to post reaction...")
-	if _, err := client.PostReaction(ctx, livestream.ID /* livestream id*/, &isupipe.PostReactionRequest{
+	if _, err := client.PostReaction(ctx, livestream.Id /* livestream id*/, &isupipe.PostReactionRequest{
 		EmojiName: ":chair:",
 	}); err != nil {
 		return err
 	}
 
 	log.Printf("try to get reactions...")
-	if _, err := client.GetReactions(ctx, livestream.ID /* livestream id*/); err != nil {
+	if _, err := client.GetReactions(ctx, livestream.Id /* livestream id*/); err != nil {
 		return err
 	}
 
@@ -99,7 +99,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to leave jlivestream...")
-	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
+	if err := client.LeaveLivestream(ctx, livestream.Id); err != nil {
 		return err
 	}
 

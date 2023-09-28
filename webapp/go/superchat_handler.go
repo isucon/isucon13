@@ -26,11 +26,22 @@ type Superchat struct {
 }
 
 type SuperchatReport struct {
-	ID          int       `db:"id"`
-	UserID      int       `db:"user_id"`
-	SuperchatID int       `db:"superchat_id"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	Id           int       `db:"id"`
+	UserId       int       `db:"user_id"`
+	LivestreamId int       `db:"livestream_id"`
+	SuperchatId  int       `db:"superchat_id"`
+	CreatedAt    time.Time `db:"created_at"`
+	UpdatedAt    time.Time `db:"updated_at"`
+}
+
+type ModerateRequest struct {
+	NGWord string `json:"ng_word"`
+}
+
+type NGWord struct {
+	UserId       int    `db:"user_id"`
+	LivestreamId int    `db:"livestream_id"`
+	Word         string `db:"word"`
 }
 
 func getSuperchatsHandler(c echo.Context) error {
@@ -110,7 +121,12 @@ func postSuperchatHandler(c echo.Context) error {
 func reportSuperchatHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	superchatID, err := strconv.Atoi(c.Param("superchat_id"))
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	superchatId, err := strconv.Atoi(c.Param("superchat_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -119,7 +135,7 @@ func reportSuperchatHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
-	userID, ok := sess.Values[defaultUserIDKey].(int)
+	userId, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -129,9 +145,10 @@ func reportSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchat_reports(user_id, superchat_id) VALUES (:user_id, :superchat_id)", &SuperchatReport{
-		UserID:      userID,
-		SuperchatID: superchatID,
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchat_reports(user_id, livestream_id, superchat_id) VALUES (:user_id, :livestream_id, :superchat_id)", &SuperchatReport{
+		UserId:       userId,
+		LivestreamId: livestreamId,
+		SuperchatId:  superchatId,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -147,5 +164,55 @@ func reportSuperchatHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"report_id": reportID,
+	})
+}
+
+// NGワードを登録
+func moderateNGWordHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized)
+	}
+	userId, ok := sess.Values[defaultUserIDKey].(int)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	var req *ModerateRequest
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO ng_words(user_id, livestream_id, word) VALUES (:user_id, :livestream_id, :word)", &NGWord{
+		UserId:       userId,
+		LivestreamId: livestreamId,
+		Word:         req.NGWord,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	wordId, err := rs.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	tx.Commit()
+
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"word_id": wordId,
 	})
 }
