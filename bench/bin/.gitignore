@@ -1,2 +1,3 @@
-bench_darwin
-bench_linux
+bench_darwin_amd64
+bench_linux_amd64
+bench_linux_arm64
