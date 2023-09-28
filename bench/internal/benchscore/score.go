@@ -66,6 +66,10 @@ func GetCurrentScore() int64 {
 	return benchScore.Sum()
 }
 
+func GetCurrentScoreByTag(tag score.ScoreTag) int64 {
+	return benchScore.Breakdown()[tag]
+}
+
 func GetFinalScore() int64 {
 	doneOnce.Do(func() {
 		benchScore.Done()
