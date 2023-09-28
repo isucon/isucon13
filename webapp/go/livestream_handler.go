@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo-contrib/session"
@@ -29,10 +30,20 @@ type Livestream struct {
 	UpdatedAt     time.Time `db:"updated_at"`
 }
 
+type LivestreamViewer struct {
+	UserID       int `db:"user_id"`
+	LivestreamID int `db:"livestream_id"`
+}
+
 // FIXME: リアクション
 
 func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
 
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
@@ -103,7 +114,6 @@ func getLivestreamsHandler(c echo.Context) error {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	c.Logger().Debugf("livestreams = %+v\n", livestreams)
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -112,10 +122,94 @@ func getLivestreamsHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, livestreams)
 }
 
-func getLivestreamHandler(c echo.Context) error {
+func enterLivestreamHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	userID, ok := sess.Values[defaultUserIDKey].(int)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
+	}
+
+	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	viewer := LivestreamViewer{
+		UserID:       userID,
+		LivestreamID: livestreamID,
+	}
+
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers (user_id, livestream_id) VALUES(:user_id, :livestream_id)", viewer); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return nil
 }
 
-func getLivestreamCommentsHandler(c echo.Context) error {
+func leaveLivestreamHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	userID, ok := sess.Values[defaultUserIDKey].(int)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
+	}
+
+	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	viewer := LivestreamViewer{
+		UserID:       userID,
+		LivestreamID: livestreamID,
+	}
+
+	if _, err := tx.NamedExecContext(ctx, "DELETE FROM livestream_viewers WHERE user_id = :user_id AND livestream_id = :livestream_id", viewer); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return nil
+}
+
+func getLivestreamHandler(c echo.Context) error {
 	return nil
 }

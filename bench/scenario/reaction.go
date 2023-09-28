@@ -16,12 +16,16 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 
 	// init.sqlで事前挿入されたデータ
 	loginRequest := isupipe.LoginRequest{
-		UserName: "井上 太郎",
-		Password: "o^E0K1Axj@",
+		UserName: "山崎 洋介",
+		Password: "u4JVlvx%(6",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
-		// log.Printf("reaction: failed to login: %s\n", err.Error())
+		log.Printf("Reaction: %s\n", err.Error())
 		return
+	}
+
+	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
+		log.Printf("Reaction: %s\n", err.Error())
 	}
 
 	postReactionWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
@@ -32,7 +36,7 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 		}
 
 		if _, err := client.PostReaction(ctx, 1 /* livestream id*/, &req); err != nil {
-			// log.Printf("reaction: failed to post reaction : %s\n", err.Error())
+			log.Printf("Reaction: %s\n", err.Error())
 			return
 		}
 
@@ -51,4 +55,9 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 	log.Println("waiting for post reaction workers ...")
 	postReactionWorker.Wait()
 	log.Println("post reaction workers has finished.")
+
+	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
+		log.Printf("Reaction: %s\n", err.Error())
+	}
+
 }

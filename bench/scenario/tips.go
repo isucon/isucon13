@@ -17,11 +17,16 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 
 	// 事前挿入されたデータ
 	loginRequest := isupipe.LoginRequest{
-		UserName: "井上 太郎",
-		Password: "o^E0K1Axj@",
+		UserName: "高橋 智也",
+		Password: "Ba)6J7pmZY",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
+		log.Printf("Tips: %s\n", err.Error())
 		return
+	}
+
+	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
+		log.Printf("Tips: %s\n", err.Error())
 	}
 
 	postSuperchatWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
@@ -33,7 +38,7 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 		}
 
 		if _, err := client.PostSuperchat(ctx, 1 /* livestream id*/, &req); err != nil {
-			// log.Printf("Tips: failed to post superchat: %s\n", err.Error())
+			log.Printf("Tips: %s\n", err.Error())
 			return
 		}
 	}, worker.WithInfinityLoop())
@@ -51,4 +56,8 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 	log.Println("waiting for post superchat workers ...")
 	postSuperchatWorker.Wait()
 	log.Println("post superchat workers has finished.")
+
+	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
+		log.Printf("Tips: %s\n", err.Error())
+	}
 }

@@ -448,6 +448,62 @@ func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superch
 	return superchats, nil
 }
 
+func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {
+	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
+	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
+	if err != nil {
+		return bencherror.Internal(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
+			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		}
+
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
+		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+	}
+
+	benchscore.AddScore(benchscore.SuccessEnterLivestream)
+	return nil
+}
+
+func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int) error {
+	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
+	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
+	if err != nil {
+		return bencherror.Internal(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), err.Error())
+			return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+		}
+
+		err = fmt.Errorf("%s %s: %s", req.Method, req.URL.EscapedPath(), string(body))
+		return bencherror.UnexpectedHTTPStatusCode(http.StatusOK, resp.StatusCode, err)
+	}
+
+	benchscore.AddScore(benchscore.SuccessLeaveLivestream)
+	return nil
+}
+
 // sendRequestはagent.Doをラップしたリクエスト送信関数
 // bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
 func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {

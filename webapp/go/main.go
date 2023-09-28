@@ -145,12 +145,11 @@ func main() {
 	// スパチャ報告
 	e.POST("/superchat/:superchat_id/report", reportSuperchatHandler)
 
-	// get reaction 候補 (FIXME: フロントエンドで持つなら要らなそう)
-	e.GET("/reaction", nil)
-
 	// livestream_viewersにINSERTするため必要
 	// ユーザ視聴開始 (viewer)
+	e.POST("/livestream/:livestream_id/enter", enterLivestreamHandler)
 	// ユーザ視聴終了 (viewer)
+	e.DELETE("/livestream/:livestream_id/enter", leaveLivestreamHandler)
 
 	// user
 	e.POST("/user", userRegisterHandler)

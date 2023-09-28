@@ -30,9 +30,6 @@ func simulateRandomLivestreamViewer(
 		panic(err)
 	}
 
-	// FIXME: 自然なリクエストにするためには、複数のユーザからリクエストが飛んでほしい
-	//        isupipe.Clientのログインセッションキャッシュを考慮しつつ、
-	//        season1 scenario内で複数のgoroutineを吐き出して、それぞれのユーザをシミュレートするように変更する
 	loginRequest := isupipe.LoginRequest{
 		UserName: loginUser.UserName,
 		Password: loginUser.Password,
@@ -44,11 +41,17 @@ func simulateRandomLivestreamViewer(
 	}
 
 	userSimulateWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
+
+		randomLivestreamID := generator.GenerateIntBetween(randomViewLivestreamIDStart, randomViewLivestreamIDEnd)
+
+		if err := client.EnterLivestream(ctx, randomLivestreamID /* livestream id*/); err != nil {
+			log.Printf("%s: %s\n", scenarioName, err.Error())
+			return
+		}
+
 		postReactionReq := isupipe.PostReactionRequest{
 			EmojiName: generator.GenerateRandomReaction(),
 		}
-
-		randomLivestreamID := generator.GenerateIntBetween(randomViewLivestreamIDStart, randomViewLivestreamIDEnd)
 		postedReaction, err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq)
 		if err != nil {
 			log.Printf("%s: %s\n", scenarioName, err.Error())
@@ -77,6 +80,11 @@ func simulateRandomLivestreamViewer(
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.ID); err != nil {
 			log.Printf("%s: %s\n", scenarioName, err.Error())
+		}
+
+		if err := client.LeaveLivestream(ctx, randomLivestreamID /* livestream id*/); err != nil {
+			log.Printf("%s: %s\n", scenarioName, err.Error())
+			return
 		}
 
 		// INFO: ここで適当なsleepを入れて、広告費用によってsleep間隔が狭まるようにしてもいいかも
