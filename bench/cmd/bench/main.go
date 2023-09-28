@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
 )
@@ -18,6 +20,12 @@ const (
 
 func main() {
 	ctx := context.Background()
+	defineCLIFlags()
+	flag.Parse()
+
+	if config.AdvertiseCost < 1 || 10 < config.AdvertiseCost {
+		log.Fatalln("-c(ベンチマーク走行中の広告費用) は1~10の中で設定してください")
+	}
 
 	client, err := isupipe.NewClient()
 	if err != nil {
@@ -83,4 +91,8 @@ func printBenchmarkResult() {
 	} else {
 		log.Printf("final score ==> %d\n", finalScore+finalProfit-finalPenalty)
 	}
+}
+
+func defineCLIFlags() {
+	flag.IntVar(&config.AdvertiseCost, "c", 1, "ベンチマーク走行中の広告費用(1~10)")
 }

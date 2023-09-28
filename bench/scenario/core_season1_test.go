@@ -17,6 +17,7 @@ func TestSeason1(t *testing.T) {
 	defer cancel()
 	benchscore.InitScore(ctx)
 
+	config.AdvertiseCost = 10
 	assert.NotPanics(t, func() { Season1(ctx, webappIPAddress) })
 	fmt.Fprintf(os.Stderr, "season1: score ==> %d\n", benchscore.GetCurrentScore())
 	fmt.Fprintf(os.Stderr, "season1: profit ==> %d\n", benchscore.GetCurrentProfit())

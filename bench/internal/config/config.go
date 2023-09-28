@@ -5,3 +5,9 @@ const (
 	DefaultBenchmarkerParallelism        = 2
 	DefaultBenchmarkWorkerTimeoutSeconds = 10
 )
+
+var (
+	// 広告費用
+	// 1~10で設定
+	AdvertiseCost = 1
+)

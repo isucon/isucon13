@@ -65,8 +65,10 @@ var loginUsers = []loginUser{
 func Season1(ctx context.Context, webappIPAddress string) {
 	log.Println("running season1 scenario ...")
 
-	for _, user := range loginUsers {
-		go simulateSeason1User(ctx, webappIPAddress, user)
+	// 広告費用で制御して、リクエスト送信goroutineを単純倍増
+	// INFO: リクエスト数を制御するだけでなく、tipsの金額も増加させても良いかもしれない
+	for userIdx := 0; userIdx < config.AdvertiseCost; userIdx++ {
+		go simulateSeason1User(ctx, webappIPAddress, loginUsers[userIdx])
 	}
 
 	<-ctx.Done()
