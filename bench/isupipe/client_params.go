@@ -102,6 +102,15 @@ type Livestream struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type LivecommentReport struct {
+	Id            int       `json:"id"`
+	UserId        int       `json:"user_id"`
+	LivestreamId  int       `json:"livestream_id"`
+	LivecommentId int       `json:"livecomment_id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
 type Tag struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`

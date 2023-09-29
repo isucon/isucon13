@@ -254,9 +254,22 @@ func getLivestreamHandler(c echo.Context) error {
 
 	livestreamID := c.Param("livestream_id")
 	livestream := Livestream{}
-	if err := dbConn.GetContext(ctx, &livestream, "SELECT * FROM livestreamd WHERE id = ?", livestreamID); err != nil {
+	if err := dbConn.GetContext(ctx, &livestream, "SELECT * FROM livestreams WHERE id = ?", livestreamID); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, livestream)
+}
+
+func getLivecommentReportsHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	livestreamID := c.Param("livestream_id")
+
+	var reports []*LivecommentReport
+	if err := dbConn.SelectContext(ctx, &reports, "SELECT * FROM livecomment_reports WHERE livestream_id = ?", livestreamID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, reports)
 }

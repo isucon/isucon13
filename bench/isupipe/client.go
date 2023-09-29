@@ -433,6 +433,32 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int) ([]Livec
 	return livecomments, nil
 }
 
+func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int) ([]LivecommentReport, error) {
+	urlPath := fmt.Sprintf("/livestream/%d/report", livestreamID)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	}
+
+	reports := []LivecommentReport{}
+	if err := json.NewDecoder(resp.Body).Decode(&reports); err != nil {
+		return reports, bencherror.NewHttpResponseError(err, req)
+	}
+
+	benchscore.AddScore(benchscore.SuccessGetLivecommentReports)
+	return reports, nil
+}
+
 func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {
 	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
