@@ -24,10 +24,28 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
       description: ログイン
       requestBody:
         $ref: '#/components/requestBodies/Login'
   /user:
+    get:
+      summary:
+      operationId: get-users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
     post:
       summary: Create New User
       operationId: post-user
@@ -49,9 +67,9 @@ paths:
                     emailVerified: false
                     createDate: '2020-11-18'
         '400':
-          description: Missing Required Information
-        '409':
-          description: Email Already Taken
+          description: Bad Request
+        '500':
+          description: Internal Server Error
       description: ユーザ登録
       requestBody:
         $ref: '#/components/requestBodies/PostUser'
@@ -68,6 +86,14 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetUser'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       description: ユーザプロフィール取得
       parameters:
         - schema:
@@ -88,6 +114,12 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetUserTheme'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       description: 配信者のテーマ取得
       parameters:
         - schema:
@@ -108,6 +140,12 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetUserStatistics'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       description: ユーザの配信に関する統計情報取得
       parameters:
         - schema:
@@ -122,18 +160,17 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetLivestreams'
+        '500':
+          description: Internal Server Error
       operationId: get-livestream
       description: ライブストリームの情報取得エンドポイント
-      parameters:
-        - schema:
-            type: integer
-          in: query
-          name: limit
-        - schema:
-            type: integer
-          in: query
-          name: offset
   '/livestream/{livestreamid}':
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
     get:
       summary: Your GET endpoint
       tags: []
@@ -142,13 +179,42 @@ paths:
           $ref: '#/components/responses/GetLivestream'
       operationId: 'get-livestream-:livestreamid'
       description: ライブストリーム視聴画面の情報取得
+  '/livestream/{livestreamid}/moderate':
     parameters:
       - schema:
           type: string
         name: livestreamid
         in: path
         required: true
+    post:
+      summary: ''
+      operationId: 'post-livestream-livestreamid-moderate'
+      requestBody:
+        $ref: '#/components/requestBodies/PostLivestreamModerate'
+      description: 配信者がNGワードを登録するエンドポイント
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  word_id:
+                    type: number
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
   '/livestream/{livestreamid}/livecomment':
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
     get:
       summary: Your GET endpoint
       tags: []
@@ -163,6 +229,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Livecomment'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
     post:
       summary: ''
       operationId: post-livestream-livestreamid-livecomment
@@ -182,22 +254,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Livecomment'
-              examples:
-                basic:
-                  value:
-                    id: 12
-                    user_id: 5
-                    livestream_id: 1
-                    comment: がんばれ〜
-                    tip: 500
-                    created_at: 1695586243
-                    updated_at: 1695586243
-    parameters:
-      - schema:
-          type: string
-        name: livestreamid
-        in: path
-        required: true
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
   '/livestream/{livestreamid}/enter':
     parameters:
       - schema:
@@ -211,6 +273,12 @@ paths:
       responses:
         '200':
           description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       description: 配信の視聴開始
     delete:
       summary: ''
@@ -218,6 +286,12 @@ paths:
       responses:
         '200':
           description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       description: 配信の視聴終了
   '/livestream/{livestreamid}/reaction':
     parameters:
@@ -240,6 +314,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Reaction'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
     post:
       summary: ''
       operationId: post-livestream-livestreamid-reaction
@@ -252,6 +332,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Reaction'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       parameters:
         - schema:
             type: string
@@ -260,21 +346,20 @@ paths:
           description: application/json
       description: リアクション投稿
   '/livestream/{livestreamid}/statistics':
-    get:
-      summary: Your GET endpoint
-      tags: []
-      responses:
-        '200':
-          $ref: '#/components/responses/GetLivestreamStatistics'
-        '404': null
-      operationId: 'get-livestream-:livestreamid-statistics'
-      description: ライブストリームの統計情報取得
     parameters:
       - schema:
           type: string
         name: livestreamid
         in: path
         required: true
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          $ref: '#/components/responses/GetLivestreamStatistics'
+      operationId: 'get-livestream-:livestreamid-statistics'
+      description: ライブストリームの統計情報取得
   /livestream/reservation:
     post:
       summary: ''
@@ -297,6 +382,12 @@ paths:
                     end_at: 12345
                     created_at: 12345
                     updated_at: 12345
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
       requestBody:
         $ref: '#/components/requestBodies/ReserveLivestream'
   '/search_livestream':
@@ -318,11 +409,35 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Livestream'
-  '/livecomment/{livecommentid}/report':
+  '/livestream/{livestreamid}/report':
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
+    get:
+      summary: ''
+      operationId: get-livecomment-livecommentid-reports
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LivecommentReport'
+  '/livestream/{livestreamid}/livecomment/{livecommentid}/report':
     parameters:
       - schema:
           type: string
         name: livecommentid
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: livestreamid
         in: path
         required: true
     post:
@@ -340,6 +455,7 @@ paths:
                   value:
                     id: 1
                     user_id: 12
+                    livestream_id: 153
                     livecomment_id: 153
                     created_at: 12345
                     updated_at: 12345
@@ -386,8 +502,9 @@ components:
           type: string
         description:
           type: string
-          format: email
         created_at:
+          type: integer
+        updated_at:
           type: integer
       required:
         - id
@@ -463,8 +580,8 @@ components:
           type: number
         updated_at:
           type: number
-    LivesteamStatistics:
-      title: LivesteamStatistics
+    LivestreamStatistics:
+      title: LivestreamrStatistics
       type: object
       properties:
         total_viewers:
@@ -505,6 +622,8 @@ components:
           type: number
         user_id:
           type: number
+        livestream_id:
+          type: number
         livecomment_id:
           type: number
         created_at:
@@ -512,6 +631,14 @@ components:
         updated_at:
           type: number
   requestBodies:
+    PostLivestreamModerate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ng_word:
+                type: string
     PostUser:
       content:
         application/json:
@@ -537,7 +664,6 @@ components:
                 password: s3cr3t
                 theme:
                   dark_mode: true
-                created_at: 1234567
     Login:
       content:
         application/json:
@@ -581,10 +707,18 @@ components:
           schema:
             type: object
             properties:
+              tags:
+                type: array
+                items: 
+                  type: number
               title:
                 type: string
               description:
                 type: string
+              collaborators:
+                type: array
+                items:
+                  type: number
               start_at:
                 type: number
               end_at:
@@ -641,7 +775,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/LivesteamStatistics'
+            $ref: '#/components/schemas/LivestreamStatistics'
     GetLivecomments:
       description: Example response
       content:
