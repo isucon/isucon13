@@ -10,40 +10,42 @@ import (
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
-// Tips は投げ銭機能のベンチマークを実行する
+// Livecomment は基本機能のベンチマークを実行する
 // INFO: 後々シーズンごとのシナリオに移行される、一時的なシナリオ
-func Tips(ctx context.Context, client *isupipe.Client) {
-	log.Println("running tips scenario ...")
+func Livecomment(ctx context.Context, client *isupipe.Client) {
+	log.Println("running livecomment scenario ...")
 
-	// 事前挿入されたデータ
+	// init.sqlで事前挿入されたデータ
 	loginRequest := isupipe.LoginRequest{
-		UserName: "高橋 智也",
-		Password: "Ba)6J7pmZY",
+		UserName: "井上 太郎",
+		Password: "o^E0K1Axj@",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
-		log.Printf("Tips: %s\n", err.Error())
+		log.Printf("Livecomment: %s\n", err.Error())
+		// log.Printf("Livecomment: failed to login: %s\n", err.Error())
 		return
 	}
 
 	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
-		log.Printf("Tips: %s\n", err.Error())
+		log.Printf("Livecomment: %s\n", err.Error())
 	}
 
 	postLivecommentWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
-		// log.Printf("worker %d posting tips request ...\n", i)
-		randomTipLevel := generator.GenerateRandomTipLevel()
+
+		// log.Printf("worker %d posting livecomment request ...\n", i)
 		req := isupipe.PostLivecommentRequest{
 			Comment: generator.GenerateRandomComment(),
-			Tip:     generator.GenerateTip(randomTipLevel), // livecommentシナリオでは常にtips == 0
+			Tip:     0, // livecommentシナリオでは常にtips == 0
 		}
 
 		if _, err := client.PostLivecomment(ctx, 1 /* livestream id*/, &req); err != nil {
-			log.Printf("Tips: %s\n", err.Error())
+			// log.Printf("Livecomment: failed to post livecomment: %s\n", err.Error())
 			return
 		}
+
 	}, worker.WithInfinityLoop())
 	if err != nil {
-		log.Printf("WARNING: found an error; Tips scenario does not anything: %s\n", err.Error())
+		log.Printf("WARNING: found an error; Livecomment scenario does not anything: %s\n", err.Error())
 		return
 	}
 	postLivecommentWorker.SetParallelism(config.DefaultBenchmarkerParallelism)
@@ -58,6 +60,6 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 	log.Println("post livecomment workers has finished.")
 
 	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
-		log.Printf("Tips: %s\n", err.Error())
+		log.Printf("Livecomment: %s\n", err.Error())
 	}
 }

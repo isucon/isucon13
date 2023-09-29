@@ -12,8 +12,8 @@ import (
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
-// simulateRandomLivestreamViewer は特定の配信に対してスーパーチャットとリアクションを送信し続けるWorkerを動かす
-// randomViewLivestreamIDStart~randomViewLivestreamIDEnd の範囲内で特定の配信を選出し、その配信に対してスパチャ/リアクションする
+// simulateRandomLivestreamViewer は特定の配信に対してライブコメントとリアクションを送信し続けるWorkerを動かす
+// randomViewLivestreamIDStart~randomViewLivestreamIDEnd の範囲内で特定の配信を選出し、その配信に対してライブコメント/リアクションする
 func simulateRandomLivestreamViewer(
 	ctx context.Context,
 	webappIPAddress string,
@@ -66,18 +66,18 @@ func simulateRandomLivestreamViewer(
 		// ある程度のリクエストをさばけることを検証するべく、tip-levelをおさえこむ
 		// TipLevel1であれば、最高でも500で、200kまでに4000リクエストを要するため、一旦そうしておく
 		// randomTipLevel := generator.GenerateRandomTipLevel()
-		postSuperchatReq := isupipe.PostSuperchatRequest{
+		postLivecommentReq := isupipe.PostLivecommentRequest{
 			Comment: generator.GenerateRandomComment(),
 			Tip:     generator.GenerateTip(generator.TipLevel1),
 		}
-		postedSuperchat, err := client.PostSuperchat(ctx, randomLivestreamID /* livestream id*/, &postSuperchatReq)
+		postedLivecomment, err := client.PostLivecomment(ctx, randomLivestreamID /* livestream id*/, &postLivecommentReq)
 		if err != nil {
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 			return
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
+		if err := checkPostedLivecommentConsistency(ctx, client, randomLivestreamID, postedLivecomment.Id); err != nil {
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 		}
 
@@ -128,27 +128,27 @@ func checkPostedReactionConsistency(
 	return nil
 }
 
-func checkPostedSuperchatConsistency(
+func checkPostedLivecommentConsistency(
 	ctx context.Context,
 	client *isupipe.Client,
 	livestreamID int,
-	postedSuperchatID int,
+	postedLivecommentID int,
 ) error {
-	superchats, err := client.GetSuperchats(ctx, livestreamID)
+	livecomments, err := client.GetLivecomments(ctx, livestreamID)
 	if err != nil {
 		return err
 	}
 
-	postedSuperchatFound := false
-	for _, s := range superchats {
-		if s.Id == postedSuperchatID {
-			postedSuperchatFound = true
+	postedLivecommentFound := false
+	for _, s := range livecomments {
+		if s.Id == postedLivecommentID {
+			postedLivecommentFound = true
 			break
 		}
 	}
 
-	if !postedSuperchatFound {
-		return bencherror.NewAssertionError(err, "投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
+	if !postedLivecommentFound {
+		return bencherror.NewAssertionError(err, "投稿されたライブコメント(id: %d)が取得できませんでした", postedLivecommentID)
 	}
 
 	return nil

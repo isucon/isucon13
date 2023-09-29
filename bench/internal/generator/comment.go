@@ -1,6 +1,6 @@
 package generator
 
-var randomSuperchatComments = []string{
+var randomLivecommentComments = []string{
 	"こんいす！",
 	"こんいすー",
 	"こんいす〜",
@@ -10,5 +10,5 @@ var randomSuperchatComments = []string{
 }
 
 func GenerateRandomComment() string {
-	return randomSuperchatComments[randomSource.Intn(len(randomSuperchatComments))]
+	return randomLivecommentComments[randomSource.Intn(len(randomLivecommentComments))]
 }

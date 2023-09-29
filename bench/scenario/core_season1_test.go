@@ -18,6 +18,7 @@ func TestSeason1(t *testing.T) {
 	defer cancel()
 	benchscore.InitScore(ctx)
 	bencherror.InitPenalty(ctx)
+	benchscore.SetAchivementGoal(0)
 
 	config.AdvertiseCost = 10
 	assert.NotPanics(t, func() { Season1(ctx, webappIPAddress) })

@@ -40,7 +40,7 @@ func SpamScenario(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	// シードデータの配信予約に対し、スパム投稿
-	superchat, err := client.PostSuperchat(ctx, livestream.Id, &isupipe.PostSuperchatRequest{
+	livecomment, err := client.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
 		Comment: "this is spam",
 		Tip:     0,
 	})
@@ -48,8 +48,8 @@ func SpamScenario(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	// 特定スパチャをスパム報告
-	if err := client.ReportSuperchat(ctx, livestream.Id, superchat.Id); err != nil {
+	// 特定ライブコメントをスパム報告
+	if err := client.ReportLivecomment(ctx, livestream.Id, livecomment.Id); err != nil {
 		return err
 	}
 

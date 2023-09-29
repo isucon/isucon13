@@ -129,22 +129,22 @@ func simulateSeason1User(ctx context.Context, webappIPAddress string, loginUser 
 		// ある程度のリクエストをさばけることを検証するべく、tip-levelをおさえこむ
 		// TipLevel1であれば、最高でも500で、200kまでに4000リクエストを要するため、一旦そうしておく
 		// randomTipLevel := generator.GenerateRandomTipLevel()
-		postSuperchatReq := isupipe.PostSuperchatRequest{
+		postLivecommentReq := isupipe.PostLivecommentRequest{
 			Comment: generator.GenerateRandomComment(),
 			Tip:     generator.GenerateTip(generator.TipLevel1),
 		}
-		_, err = client.PostSuperchat(ctx, randomLivestreamID /* livestream id*/, &postSuperchatReq)
+		_, err = client.PostLivecomment(ctx, randomLivestreamID /* livestream id*/, &postLivecommentReq)
 		if err != nil {
 			if errors.Is(err, isupipe.ErrCancelRequest) {
 				return
 			} else {
-				log.Printf("reaction: failed to post superchat : %s\n", err.Error())
+				log.Printf("reaction: failed to post livecomment : %s\n", err.Error())
 				return
 			}
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		// if err := assertPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
+		// if err := assertPostedLivecommentConsistency(ctx, client, randomLivestreamID, postedLivecomment.Id); err != nil {
 		// 	bencherror.WrapError(bencherror.DBInconsistencyError, err)
 		// 	log.Printf("Season: %s\n", err)
 		// }

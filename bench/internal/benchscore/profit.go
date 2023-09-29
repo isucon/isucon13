@@ -2,12 +2,13 @@ package benchscore
 
 import (
 	"context"
+	"sync"
 
 	"github.com/isucon/isucandar/score"
 )
 
 const (
-	TipProfitLevel0 score.ScoreTag = "tip-level0" // 投げ銭が含まれないスーパーチャット
+	TipProfitLevel0 score.ScoreTag = "tip-level0" // 投げ銭が含まれないライブコメント
 	TipProfitLevel1 score.ScoreTag = "tip-level1"
 	TipProfitLevel2 score.ScoreTag = "tip-level2"
 	TipProfitLevel3 score.ScoreTag = "tip-level3"
@@ -20,6 +21,7 @@ var (
 
 	achieveCh chan struct{}
 	goalSum   int
+	closeOnce sync.Once
 )
 
 func initProfit(ctx context.Context) {
@@ -32,6 +34,7 @@ func initProfit(ctx context.Context) {
 }
 
 func SetAchivementGoal(goal int) {
+	achieveCh = make(chan struct{})
 	goalSum = goal
 }
 
@@ -47,8 +50,11 @@ func AddTipProfit(tip int) error {
 
 	profit.Add(tag)
 	if profit.Sum() >= int64(goalSum) {
-		close(achieveCh)
+		closeOnce.Do(func() {
+			close(achieveCh)
+		})
 	}
+
 	return nil
 }
 

@@ -148,12 +148,12 @@ paths:
         name: livestreamid
         in: path
         required: true
-  '/livestream/{livestreamid}/superchat':
+  '/livestream/{livestreamid}/livecomment':
     get:
       summary: Your GET endpoint
       tags: []
-      operationId: 'get-livestream-:livestreamid-superchat'
-      description: 当該ライブストリームのスパチャ取得
+      operationId: 'get-livestream-:livestreamid-livecomment'
+      description: 当該ライブストリームのライブコメント取得
       responses:
         '200':
           description: OK
@@ -162,26 +162,26 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Superchat'
+                  $ref: '#/components/schemas/Livecomment'
     post:
       summary: ''
-      operationId: post-livestream-livestreamid-superchat
+      operationId: post-livestream-livestreamid-livecomment
       requestBody:
-        $ref: '#/components/requestBodies/PostSuperchat'
+        $ref: '#/components/requestBodies/PostLivecomment'
       parameters:
         - schema:
             type: string
           in: header
           name: Content-Type
           description: application/json
-      description: ライブストリームに対するスパチャ投稿
+      description: ライブストリームに対するライブコメント投稿
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Superchat'
+                $ref: '#/components/schemas/Livecomment'
               examples:
                 basic:
                   value:
@@ -318,29 +318,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Livestream'
-  '/superchat/{superchatid}/report':
+  '/livecomment/{livecommentid}/report':
     parameters:
       - schema:
           type: string
-        name: superchatid
+        name: livecommentid
         in: path
         required: true
     post:
       summary: ''
-      operationId: post-superchat-superchatid-report
+      operationId: post-livecomment-livecommentid-report
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuperchatReport'
+                $ref: '#/components/schemas/LivecommentReport'
               examples:
                 Example 1:
                   value:
                     id: 1
                     user_id: 12
-                    superchat_id: 153
+                    livecomment_id: 153
                     created_at: 12345
                     updated_at: 12345
 components:
@@ -442,8 +442,8 @@ components:
           type: number
         updated_at:
           type: number
-    Superchat:
-      title: Superchat
+    Livecomment:
+      title: Livecomment
       x-stoplight:
         id: xefjzrvtkos6j
       type: object
@@ -471,7 +471,7 @@ components:
           type: number
         total_tips:
           type: number
-        total_superchats:
+        total_livecomments:
           type: number
         total_reactions:
           type: number
@@ -479,7 +479,7 @@ components:
           type: number
         previous_livestream_total_tips_diff:
           type: number
-        previous_livestream_total_superchats_diff:
+        previous_livestream_total_livecomments_diff:
           type: number
         previous_livestream_total_reactions_diff:
           type: number
@@ -491,12 +491,12 @@ components:
           type: number
         average_tips:
           type: number
-        average_superchats:
+        average_livecomments:
           type: number
         average_reactions:
           type: number
-    SuperchatReport:
-      title: SuperchatReport
+    LivecommentReport:
+      title: LivecommentReport
       x-stoplight:
         id: ubl7oq4t4kkn8
       type: object
@@ -505,7 +505,7 @@ components:
           type: number
         user_id:
           type: number
-        superchat_id:
+        livecomment_id:
           type: number
         created_at:
           type: number
@@ -560,7 +560,7 @@ components:
             Example 1:
               value:
                 emoji_name: ":innocent:"
-    PostSuperchat:
+    PostLivecomment:
       content:
         application/json:
           schema:
@@ -642,12 +642,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/LivesteamStatistics'
-    GetSuperchats:
+    GetLivecomments:
       description: Example response
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Superchat'
+              $ref: '#/components/schemas/Livecomment'
   examples: {}

@@ -20,6 +20,7 @@ func TestReaction(t *testing.T) {
 		agent.WithBaseURL(webappIPAddress),
 	)
 	assert.NoError(t, err)
+	benchscore.SetAchivementGoal(0)
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeoutSeconds*time.Second)
 	defer cancel()

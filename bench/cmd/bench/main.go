@@ -43,7 +43,7 @@ func main() {
 	// season1Ctx, season1Cancel := context.WithCancel(benchCtx)
 	// defer season1Cancel()
 
-	// log.Println("Season1シナリオ走行開始~既存配信者に対する大量のスーパーチャット/リアクション~")
+	// log.Println("Season1シナリオ走行開始~既存配信者に対する大量のライブコメント/リアクション~")
 	// log.Println("Season1シナリオの達成条件: 200,000の利益を獲得すること")
 	// if err := benchmarker.season1(season1Ctx, isupipe.DefaultClientBaseURL); err != nil {
 	// 	// 単なるエラーではなく、season1を達成できずに終わっただけなので、スコアを表示する
@@ -54,7 +54,7 @@ func main() {
 	// log.Println("Season1シナリオの達成条件: 200,000の利益を獲得を満たしました")
 	// season1Cancel()
 
-	// log.Println("Season2シナリオ走行開始~新人配信者の大量予約+新人配信に対する大量のスーパーチャット/リアクション~")
+	// log.Println("Season2シナリオ走行開始~新人配信者の大量予約+新人配信に対する大量のライブコメント/リアクション~")
 	// season2Ctx, season2Cancel := context.WithCancel(benchCtx)
 	// defer season2Cancel()
 	// if err := benchmarker.season2(season2Ctx, isupipe.DefaultClientBaseURL); err != nil {

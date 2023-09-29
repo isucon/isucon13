@@ -56,7 +56,7 @@ def solve(total, limits, assigned, schedules, max_schedules=10):
 
 def generate_season1(max_schedules, max_users):
     # NOTE: season1は、初心者救済期間
-    #       可能な限り多くの予約を取れるようにし、たくさんスパチャ、投げ銭、リアクションを稼げるようにしてあげる
+    #       可能な限り多くの予約を取れるようにし、たくさんライブコメント、投げ銭、リアクションを稼げるようにしてあげる
     #       あまりにもスコアが上がりすぎる場合は大型枠を増やして調整
 
     # NOTE:１日引いている(exclusiveな期間)
@@ -70,7 +70,7 @@ def generate_season1(max_schedules, max_users):
 
 def generate_season2(max_schedules, max_users):
     # NOTE: season2は、新人VTuberからの予約が殺到する
-    # 新人VTuber宛のスパチャ、投げ銭、リアクションはそこまで多くないが、予約が多い期間
+    # 新人VTuber宛のライブコメント、投げ銭、リアクションはそこまで多くないが、予約が多い期間
     # 様々な予約パターンを試せると良さそうなので、一旦均等に分配する
 
     available_hours = (24*(31+31+30)) - (24*1)
@@ -83,7 +83,7 @@ def generate_season2(max_schedules, max_users):
 
 def generate_season3(max_schedules, max_users):
     # NOTE: season3は、新人VTuberが成長する期間。season2ではリクエストが少なかったVTuberにもリクエストが飛ぶようになる
-    # 投げ銭やスパチャ、リアクションがたくさんくるので、人気VTuberだけ優遇するアプローチ一本ではうまくいかない
+    # 投げ銭やライブコメント、リアクションがたくさんくるので、人気VTuberだけ優遇するアプローチ一本ではうまくいかない
     # このとき、予約枠の大きさは大きな配信枠が多めになり、衝突が増えてくる
 
     available_hours = (24*(31+30+31)) - (24*1)

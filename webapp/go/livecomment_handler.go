@@ -10,12 +10,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type PostSuperchatRequest struct {
+type PostLivecommentRequest struct {
 	Comment string `json:"comment"`
 	Tip     int    `json:"tip"`
 }
 
-type Superchat struct {
+type Livecomment struct {
 	ID           int       `json:"id" db:"id"`
 	UserID       int       `json:"user_id" db:"user_id"`
 	LivestreamID int       `json:"livestream_id" db:"livestream_id"`
@@ -25,13 +25,13 @@ type Superchat struct {
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
-type SuperchatReport struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
-	LivestreamId int       `db:"livestream_id"`
-	SuperchatId  int       `db:"superchat_id"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+type LivecommentReport struct {
+	Id            int       `db:"id"`
+	UserId        int       `db:"user_id"`
+	LivestreamId  int       `db:"livestream_id"`
+	LivecommentId int       `db:"livecomment_id"`
+	CreatedAt     time.Time `db:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at"`
 }
 
 type ModerateRequest struct {
@@ -44,7 +44,7 @@ type NGWord struct {
 	Word         string `db:"word"`
 }
 
-func getSuperchatsHandler(c echo.Context) error {
+func getLivecommentsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -53,15 +53,15 @@ func getSuperchatsHandler(c echo.Context) error {
 
 	livestreamID := c.Param("livestream_id")
 
-	superchats := []Superchat{}
-	if err := dbConn.SelectContext(ctx, &superchats, "SELECT * FROM superchats WHERE livestream_id = ?", livestreamID); err != nil {
+	livecomments := []Livecomment{}
+	if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamID); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, superchats)
+	return c.JSON(http.StatusOK, livecomments)
 }
 
-func postSuperchatHandler(c echo.Context) error {
+func postLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
@@ -78,7 +78,7 @@ func postSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
 
-	var req *PostSuperchatRequest
+	var req *PostLivecommentRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -88,20 +88,20 @@ func postSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	superchat := Superchat{
+	livecomment := Livecomment{
 		UserID:       userID,
 		LivestreamID: livestreamID,
 		Comment:      req.Comment,
 		Tip:          req.Tip,
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", superchat)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", livecomment)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	superchatID, err := rs.LastInsertId()
+	livecommentID, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -111,14 +111,14 @@ func postSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	superchat.ID = int(superchatID)
+	livecomment.ID = int(livecommentID)
 	createdAt := time.Now()
-	superchat.CreatedAt = createdAt
-	superchat.UpdatedAt = createdAt
-	return c.JSON(http.StatusCreated, superchat)
+	livecomment.CreatedAt = createdAt
+	livecomment.UpdatedAt = createdAt
+	return c.JSON(http.StatusCreated, livecomment)
 }
 
-func reportSuperchatHandler(c echo.Context) error {
+func reportLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
@@ -126,7 +126,7 @@ func reportSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	superchatId, err := strconv.Atoi(c.Param("superchat_id"))
+	livecommentId, err := strconv.Atoi(c.Param("livecomment_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -145,10 +145,10 @@ func reportSuperchatHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO superchat_reports(user_id, livestream_id, superchat_id) VALUES (:user_id, :livestream_id, :superchat_id)", &SuperchatReport{
-		UserId:       userId,
-		LivestreamId: livestreamId,
-		SuperchatId:  superchatId,
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)", &LivecommentReport{
+		UserId:        userId,
+		LivestreamId:  livestreamId,
+		LivecommentId: livecommentId,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

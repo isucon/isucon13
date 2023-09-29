@@ -58,8 +58,8 @@ CREATE TABLE `livestream_viewers` (
   UNIQUE `uniq_livestream_viewers` (`user_id`, `livestream_id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
--- ライブ配信に対するスーパーチャット
-CREATE TABLE `superchats` (
+-- ライブ配信に対するライブコメント
+CREATE TABLE `livecomments` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
@@ -75,16 +75,16 @@ CREATE TABLE `superchats` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
--- ユーザからのスパチャのスパム報告
-CREATE TABLE `superchat_reports` (
+-- ユーザからのライブコメントのスパム報告
+CREATE TABLE `livecomment_reports` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
-  `superchat_id` BIGINT NOT NULL,
+  `livecomment_id` BIGINT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE `uniq_superchat_reports` (`user_id`, `livestream_id`, `superchat_id`)
+  UNIQUE `uniq_livecomment_reports` (`user_id`, `livestream_id`, `livecomment_id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- 配信者からのNGワード登録

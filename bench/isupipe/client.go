@@ -235,13 +235,13 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	return reaction, nil
 }
 
-func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSuperchatRequest) (*PostSuperchatResponse, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostLivecommentRequest) (*PostLivecommentResponse, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamId)
+	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -257,19 +257,19 @@ func (c *Client) PostSuperchat(ctx context.Context, livestreamId int, r *PostSup
 		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 
-	var superchatResponse *PostSuperchatResponse
-	if err := json.NewDecoder(resp.Body).Decode(&superchatResponse); err != nil {
+	var livecommentResponse *PostLivecommentResponse
+	if err := json.NewDecoder(resp.Body).Decode(&livecommentResponse); err != nil {
 		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
-	benchscore.AddScore(benchscore.SuccessPostSuperchat)
-	benchscore.AddTipProfit(superchatResponse.Tip)
+	benchscore.AddScore(benchscore.SuccessPostLivecomment)
+	benchscore.AddTipProfit(livecommentResponse.Tip)
 
-	return superchatResponse, nil
+	return livecommentResponse, nil
 }
 
-func (c *Client) ReportSuperchat(ctx context.Context, livestreamId, superchatId int) error {
-	urlPath := fmt.Sprintf("/livestream/%d/superchat/%d/report", livestreamId, superchatId)
+func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommentId int) error {
+	urlPath := fmt.Sprintf("/livestream/%d/livecomment/%d/report", livestreamId, livecommentId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -283,7 +283,7 @@ func (c *Client) ReportSuperchat(ctx context.Context, livestreamId, superchatId 
 		return bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessReportSuperchat)
+	benchscore.AddScore(benchscore.SuccessReportLivecomment)
 	return nil
 }
 
@@ -385,8 +385,8 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction
 	return reactions, nil
 }
 
-func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superchat, error) {
-	urlPath := fmt.Sprintf("/livestream/%d/superchat", livestreamID)
+func (c *Client) GetLivecomments(ctx context.Context, livestreamID int) ([]Livecomment, error) {
+	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -402,13 +402,13 @@ func (c *Client) GetSuperchats(ctx context.Context, livestreamID int) ([]Superch
 		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
-	superchats := []Superchat{}
-	if err := json.NewDecoder(resp.Body).Decode(&superchats); err != nil {
-		return superchats, bencherror.NewHttpResponseError(err, req)
+	livecomments := []Livecomment{}
+	if err := json.NewDecoder(resp.Body).Decode(&livecomments); err != nil {
+		return livecomments, bencherror.NewHttpResponseError(err, req)
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetSuperchats)
-	return superchats, nil
+	benchscore.AddScore(benchscore.SuccessGetLivecomments)
+	return livecomments, nil
 }
 
 func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {

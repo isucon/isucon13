@@ -11,21 +11,21 @@ import (
 // FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
 
 type LivestreamStatistics struct {
-	TotalViewers                          int `json:"total_viewers"`
-	TotalTips                             int `json:"total_tips"`
-	TotalSuperchats                       int `json:"total_superchats"`
-	TotalReactions                        int `json:"total_reactions"`
-	PreviousLivestreamTotalViewersDiff    int `json:"previous_livestream_total_viewers_diff"`
-	PreviousLivestreamTotalTipsDiff       int `json:"previous_livestream_total_tips_diff"`
-	PreviousLivestreamTotalSuperchatsDiff int `json:"previous_livestream_total_superchats_diff"`
-	PreviousLivestreamTotaRlReactionsDiff int `json:"previous_livestream_total_reactions_diff"`
+	TotalViewers                            int `json:"total_viewers"`
+	TotalTips                               int `json:"total_tips"`
+	TotalLivecomments                       int `json:"total_livecomments"`
+	TotalReactions                          int `json:"total_reactions"`
+	PreviousLivestreamTotalViewersDiff      int `json:"previous_livestream_total_viewers_diff"`
+	PreviousLivestreamTotalTipsDiff         int `json:"previous_livestream_total_tips_diff"`
+	PreviousLivestreamTotalLivecommentsDiff int `json:"previous_livestream_total_livecomments_diff"`
+	PreviousLivestreamTotaRlReactionsDiff   int `json:"previous_livestream_total_reactions_diff"`
 }
 
 type UserStatistics struct {
-	AverageViewers    float64 `json:"average_viewers"`
-	AverageTips       float64 `json:"average_tips"`
-	AverageSuperchats float64 `json:"average_superchats"`
-	AverageReactions  float64 `json:"average_reactions"`
+	AverageViewers      float64 `json:"average_viewers"`
+	AverageTips         float64 `json:"average_tips"`
+	AverageLivecomments float64 `json:"average_livecomments"`
+	AverageReactions    float64 `json:"average_reactions"`
 }
 
 func getUserStatisticsHandler(c echo.Context) error {
@@ -61,21 +61,21 @@ func getUserStatisticsHandler(c echo.Context) error {
 
 	viewersSum := float64(0)
 	reactionsSum := float64(0)
-	superchatsSum := float64(0)
+	livecommentsSum := float64(0)
 	tipsSum := float64(0)
 
 	for _, stats := range statsSequence {
 		viewersSum += float64(stats.TotalViewers)
 		reactionsSum += float64(stats.TotalReactions)
-		superchatsSum += float64(stats.TotalSuperchats)
+		livecommentsSum += float64(stats.TotalLivecomments)
 		tipsSum += float64(stats.TotalTips)
 	}
 
 	stats := UserStatistics{
-		AverageViewers:    viewersSum / float64(len(statsSequence)),
-		AverageReactions:  reactionsSum / float64(len(statsSequence)),
-		AverageSuperchats: superchatsSum / float64(len(statsSequence)),
-		AverageTips:       tipsSum / float64(len(statsSequence)),
+		AverageViewers:      viewersSum / float64(len(statsSequence)),
+		AverageReactions:    reactionsSum / float64(len(statsSequence)),
+		AverageLivecomments: livecommentsSum / float64(len(statsSequence)),
+		AverageTips:         tipsSum / float64(len(statsSequence)),
 	}
 	return c.JSON(http.StatusOK, stats)
 }
@@ -106,7 +106,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	}
 
 	statistics.PreviousLivestreamTotalViewersDiff = statistics.TotalViewers - prevLivestreamStatistics.TotalViewers
-	statistics.PreviousLivestreamTotalSuperchatsDiff = statistics.TotalSuperchats - prevLivestreamStatistics.TotalSuperchats
+	statistics.PreviousLivestreamTotalLivecommentsDiff = statistics.TotalLivecomments - prevLivestreamStatistics.TotalLivecomments
 	statistics.PreviousLivestreamTotalTipsDiff = statistics.TotalTips - prevLivestreamStatistics.TotalTips
 	statistics.PreviousLivestreamTotaRlReactionsDiff = statistics.TotalReactions - prevLivestreamStatistics.TotalReactions
 
@@ -141,26 +141,26 @@ func countTotalReactions(ctx context.Context, livestreamID string) (int, error) 
 	return reactionCount, nil
 }
 
-func calculateSuperchatStatistics(ctx context.Context, livestreamID string) (totalSuperchats int, totalTips int, err error) {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM superchats WHERE livestream_id = ?", livestreamID)
+func calculateLivecommentStatistics(ctx context.Context, livestreamID string) (totalLivecomments int, totalTips int, err error) {
+	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamID)
 	if err != nil {
 		return 0, 0, nil
 	}
 
-	totalSuperchats = 0
+	totalLivecomments = 0
 	totalTips = 0
 
 	for rows.Next() {
-		superchat := Superchat{}
-		if err := rows.Scan(&superchat); err != nil {
+		livecomment := Livecomment{}
+		if err := rows.Scan(&livecomment); err != nil {
 			return 0, 0, err
 		}
 
-		totalSuperchats++
-		totalTips += superchat.Tip
+		totalLivecomments++
+		totalTips += livecomment.Tip
 	}
 
-	return totalSuperchats, totalTips, nil
+	return totalLivecomments, totalTips, nil
 }
 
 func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *Livestream {
@@ -192,11 +192,11 @@ func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *
 func queryLivestreamStatistics(ctx context.Context, livestreamID string) (LivestreamStatistics, error) {
 	statistics := LivestreamStatistics{}
 
-	totalSuperchats, totalTips, err := calculateSuperchatStatistics(ctx, livestreamID)
+	totalLivecomments, totalTips, err := calculateLivecommentStatistics(ctx, livestreamID)
 	if err != nil {
 		return statistics, err
 	}
-	statistics.TotalSuperchats = totalSuperchats
+	statistics.TotalLivecomments = totalLivecomments
 	statistics.TotalTips = totalTips
 
 	totalViewers, err := countTotalViewers(ctx, livestreamID)

@@ -25,6 +25,7 @@ func TestTips(t *testing.T) {
 	defer cancel()
 	benchscore.InitScore(ctx)
 	bencherror.InitPenalty(ctx)
+	benchscore.SetAchivementGoal(0)
 
 	assert.NotPanics(t, func() { Tips(ctx, client) })
 	fmt.Fprintf(os.Stderr, "tips: score ==> %d\n", benchscore.GetCurrentScore())

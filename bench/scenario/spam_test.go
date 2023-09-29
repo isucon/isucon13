@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSpamScenario(t *testing.T) {
 	ctx := context.Background()
+	benchscore.SetAchivementGoal(0)
 
 	client, err := isupipe.NewClient(
 		agent.WithBaseURL(webappIPAddress),

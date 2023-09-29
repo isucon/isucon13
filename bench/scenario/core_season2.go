@@ -12,7 +12,7 @@ import (
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
-// Season2 シナリオは、新人配信者の予約が発生しつつ、Season1と同様に配信に対するスパチャ/投げ銭を行う
+// Season2 シナリオは、新人配信者の予約が発生しつつ、Season1と同様に配信に対するライブコメント/投げ銭を行う
 func Season2(ctx context.Context, webappIPAddress string) {
 	log.Println("running season2 scenario ...")
 
@@ -64,7 +64,7 @@ func Season2(ctx context.Context, webappIPAddress string) {
 
 	log.Println("processing workers ...")
 	season2ReserveWorker.Process(ctx)
-	// 予約リクエストを捌ききれないと、スパチャ/リアクションが投げられないようにする
+	// 予約リクエストを捌ききれないと、ライブコメント/リアクションが投げられないようにする
 	season2ReserveWorker.Wait()
 
 	// season1と同様に広告費用で制御して、リクエスト送信goroutineを単純倍増
