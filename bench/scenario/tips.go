@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/isucon/isucandar/worker"
@@ -21,11 +22,17 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 		Password: "Ba)6J7pmZY",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Tips: %s\n", err.Error())
 		return
 	}
 
 	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Tips: %s\n", err.Error())
 	}
 
@@ -38,6 +45,9 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 		}
 
 		if _, err := client.PostLivecomment(ctx, 1 /* livestream id*/, &req); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
 			log.Printf("Tips: %s\n", err.Error())
 			return
 		}
@@ -58,6 +68,9 @@ func Tips(ctx context.Context, client *isupipe.Client) {
 	log.Println("post livecomment workers has finished.")
 
 	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Tips: %s\n", err.Error())
 	}
 }
