@@ -40,8 +40,8 @@ func init() {
 
 // FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
-	AvailableDays int    `json:"available_days"`
-	Language      string `json:"language"`
+	AdvertiseLevel int    `json:"advertise_level"`
+	Language       string `json:"language"`
 }
 
 func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
@@ -109,8 +109,8 @@ func initializeHandler(c echo.Context) error {
 
 	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
-		AvailableDays: 0,
-		Language:      "golang",
+		AdvertiseLevel: 1,
+		Language:       "golang",
 	})
 }
 

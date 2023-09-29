@@ -66,6 +66,26 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	}, nil
 }
 
+func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
+	req, err := c.agent.NewRequest(http.MethodPost, "/initialize", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.agent.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var initializeResp *InitializeResponse
+	if json.NewDecoder(resp.Body).Decode(&initializeResp); err != nil {
+		return nil, err
+	}
+
+	return initializeResp, nil
+}
+
 func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error) {
 	payload, err := json.Marshal(r)
 	if err != nil {

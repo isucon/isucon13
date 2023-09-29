@@ -2,24 +2,27 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
+	"math/rand"
+	"time"
 
-	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
 )
 
-const (
-	defaultBenchmarkerTimeoutSeconds = 60 // seconds
-)
+func init() {
+	loc, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	time.Local = loc
+
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+}
 
 func main() {
 	ctx := context.Background()
-	defineCLIFlags()
-	flag.Parse()
 
 	if config.AdvertiseCost < 1 || 10 < config.AdvertiseCost {
 		log.Fatalln("-c(ベンチマーク走行中の広告費用) は1~10の中で設定してください")
@@ -33,14 +36,6 @@ func main() {
 	if err := scenario.Pretest(ctx, client); err != nil {
 		log.Fatalf("Pretest: ベンチマーカの初期テストに失敗しました: %s", err.Error())
 	}
-
-	benchscore.InitScore(ctx)
-	bencherror.InitPenalty(ctx)
-	bencherror.InitializeErrors(ctx)
-	// benchmarker := newBenchmarker()
-
-	// benchCtx, cancel := context.WithTimeout(ctx, time.Second*defaultBenchmarkerTimeoutSeconds)
-	// defer cancel()
 
 	// // 各シーズンシナリオが無事達成された際には、一度cancel()を実行してこれ以上シーズンシナリオが進行しないようにするため、
 	// // シーズンシナリオごとにctxを切る
@@ -104,7 +99,3 @@ func main() {
 // 		log.Printf("final score ==> %d\n", finalScore+finalProfit-finalPenalty)
 // 	}
 // }
-
-func defineCLIFlags() {
-	flag.IntVar(&config.AdvertiseCost, "c", 1, "ベンチマーク走行中の広告費用(1~10)")
-}

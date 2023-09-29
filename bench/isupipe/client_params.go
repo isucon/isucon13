@@ -2,6 +2,11 @@ package isupipe
 
 import "time"
 
+type InitializeResponse struct {
+	AdvertiseLevel int    `json:"advertise_level"`
+	Language       string `json:"language"`
+}
+
 type (
 	PostUserRequest struct {
 		Name        string `json:"name"`
