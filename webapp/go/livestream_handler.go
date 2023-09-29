@@ -202,7 +202,7 @@ func enterLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return nil
+	return c.JSON(http.StatusOK, nil)
 }
 
 func leaveLivestreamHandler(c echo.Context) error {
@@ -246,9 +246,17 @@ func leaveLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return nil
+	return c.JSON(http.StatusOK, nil)
 }
 
 func getLivestreamHandler(c echo.Context) error {
-	return nil
+	ctx := c.Request().Context()
+
+	livestreamID := c.Param("livestream_id")
+	livestream := Livestream{}
+	if err := dbConn.GetContext(ctx, &livestream, "SELECT * FROM livestreamd WHERE id = ?", livestreamID); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, livestream)
 }

@@ -176,6 +176,7 @@ func loginHandler(c echo.Context) error {
 // ユーザ詳細API
 // GET /user/:userid
 func userHandler(c echo.Context) error {
+	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
 		return err
@@ -183,7 +184,7 @@ func userHandler(c echo.Context) error {
 
 	userID := c.Param("user_id")
 	user := User{}
-	if err := dbConn.Get(&user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userID); err != nil {
+	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userID); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
 
@@ -193,6 +194,7 @@ func userHandler(c echo.Context) error {
 // 配信者のテーマ取得API
 // GET /user/:userid/theme
 func getUserThemeHandler(c echo.Context) error {
+	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
 		c.Logger().Printf("verifyUserSession: %+v\n", err)
@@ -201,7 +203,7 @@ func getUserThemeHandler(c echo.Context) error {
 
 	userID := c.Param("user_id")
 	theme := Theme{}
-	if err := dbConn.Get(&theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userID); err != nil {
+	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userID); err != nil {
 		c.Logger().Printf("dbConn.Get: %+v\n", err)
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
