@@ -211,11 +211,15 @@ func getUserThemeHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, theme)
 }
 
-// ユーザ
-// XXX セッション情報返すみたいな？
-// GET /user
-func userSessionHandler(c echo.Context) error {
-	return nil
+func getUsersHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	var users []*User
+	if err := dbConn.SelectContext(ctx, &users, "SELECT * FROM users"); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, users)
 }
 
 func verifyUserSession(c echo.Context) error {
