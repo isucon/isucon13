@@ -5,7 +5,7 @@ import subprocess
 
 SQL_FORMAT="INSERT INTO users (name, display_name, description, password) VALUES ('{name}', '{display_name}', '{description}', '{password}');"
 INSERT_THEME_FORMAT="INSERT INTO themes (user_id, dark_mode) VALUES ({user_id}, {dark_mode});"
-# SUPERCHAT_SQL_FORMAT="INSERT INTO superchats (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)"
+# livecomment_SQL_FORMAT="INSERT INTO livecomments (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)"
 
 DESCRIPTION_FORMAT="普段{job}をしています。\\nよろしくおねがいします！\\n\\n連絡は以下からお願いします。\\n\\nウェブサイト: {website}\\nメールアドレス: {mail}\\n"
 
@@ -39,7 +39,7 @@ def gen_user_sql(user_id: int) -> str:
     insert_user_sql = SQL_FORMAT.format(**locals())
     return insert_user_sql + "\n" + gen_user_theme_sql(user_id)
 
-# def gen_superchat_sql():
+# def gen_livecomment_sql():
     # return fake.text()
 
 def main():
@@ -49,7 +49,7 @@ def main():
         print(sql)
 
     # for _ in range(args.n):
-        # print(gen_superchat_sql())
+        # print(gen_livecomment_sql())
 
 if __name__ == '__main__':
     main()

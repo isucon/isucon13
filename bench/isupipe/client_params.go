@@ -34,11 +34,11 @@ type (
 )
 
 type (
-	PostSuperchatRequest struct {
+	PostLivecommentRequest struct {
 		Comment string `json:"comment"`
 		Tip     int    `json:"tip"`
 	}
-	PostSuperchatResponse struct {
+	PostLivecommentResponse struct {
 		Id           int       `json:"id"`
 		UserID       int       `json:"user_id"`
 		LivestreamID int       `json:"livestream_id"`
@@ -61,7 +61,7 @@ type Theme struct {
 	DarkMode bool `json:"dark_mode"`
 }
 
-type Superchat struct {
+type Livecomment struct {
 	Id           int       `json:"id"`
 	UserID       int       `json:"user_id"`
 	LivestreamID int       `json:"livestream_id"`

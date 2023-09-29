@@ -29,24 +29,24 @@ func assertPostedReactionConsistency(
 	return fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
 }
 
-func assertPostedSuperchatConsistency(
+func assertPostedLivecommentConsistency(
 	ctx context.Context,
 	client *isupipe.Client,
 	livestreamID int,
-	postedSuperchatID int,
+	postedLivecommentID int,
 ) error {
-	superchats, err := client.GetSuperchats(ctx, livestreamID)
+	livecomments, err := client.GetLivecomments(ctx, livestreamID)
 	if err != nil {
 		return err
 	}
 
-	for _, s := range superchats {
-		if s.Id == postedSuperchatID {
+	for _, s := range livecomments {
+		if s.Id == postedLivecommentID {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
+	return fmt.Errorf("投稿されたライブコメント(id: %d)が取得できませんでした", postedLivecommentID)
 }
 
 // もともと人気VTuberだったが、スパムにより不人気になった場合のアサーション

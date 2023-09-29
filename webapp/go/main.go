@@ -136,14 +136,14 @@ func main() {
 	e.GET("/livestream", getLivestreamsHandler)
 	// get livestream
 	e.GET("/livestream/:livestream_id", getLivestreamHandler)
-	// get polling superchat timeline
-	e.GET("/livestream/:livestream_id/superchat", getSuperchatsHandler)
-	// スパチャ投稿
-	e.POST("/livestream/:livestream_id/superchat", postSuperchatHandler)
+	// get polling livecomment timeline
+	e.GET("/livestream/:livestream_id/livecomment", getLivecommentsHandler)
+	// ライブコメント投稿
+	e.POST("/livestream/:livestream_id/livecomment", postLivecommentHandler)
 	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
 	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
-	// スパチャ報告
-	e.POST("/livestream/:livestream_id/superchat/:superchat_id/report", reportSuperchatHandler)
+	// ライブコメント報告
+	e.POST("/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)
 	e.POST("/livestream/:livestream_id/moderate", moderateNGWordHandler)
 
@@ -164,7 +164,7 @@ func main() {
 	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
 
 	// stats
-	// スパチャ統計情報
+	// ライブコメント統計情報
 	e.GET("/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
 
 	// DB接続

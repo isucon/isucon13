@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSuperchat(t *testing.T) {
+func TestLivecomment(t *testing.T) {
 	client, err := isupipe.NewClient(
 		agent.WithBaseURL(webappIPAddress),
 	)
@@ -25,8 +25,9 @@ func TestSuperchat(t *testing.T) {
 	defer cancel()
 	benchscore.InitScore(ctx)
 	bencherror.InitPenalty(ctx)
+	benchscore.SetAchivementGoal(0)
 
-	assert.NotPanics(t, func() { Superchat(ctx, client) })
-	fmt.Fprintf(os.Stderr, "superchat: score ==> %d\n", benchscore.GetCurrentScore())
-	fmt.Fprintf(os.Stderr, "superchat: profit ==> %d\n", benchscore.GetCurrentProfit())
+	assert.NotPanics(t, func() { Livecomment(ctx, client) })
+	fmt.Fprintf(os.Stderr, "livecomment: score ==> %d\n", benchscore.GetCurrentScore())
+	fmt.Fprintf(os.Stderr, "livecomment: profit ==> %d\n", benchscore.GetCurrentProfit())
 }

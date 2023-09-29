@@ -19,10 +19,10 @@ const (
 	// ライブ配信
 	SuccessReserveLivestream  score.ScoreTag = "success-reserve-livestream"
 	SuccessGetLivestreamByTag score.ScoreTag = "success-get-livestream-by-tag"
-	// スパチャ
-	SuccessGetSuperchats   score.ScoreTag = "success-get-superchats"
-	SuccessPostSuperchat   score.ScoreTag = "success-post-superchat"
-	SuccessReportSuperchat score.ScoreTag = "success-report-superchat"
+	// ライブコメント
+	SuccessGetLivecomments   score.ScoreTag = "success-get-livecomments"
+	SuccessPostLivecomment   score.ScoreTag = "success-post-livecomment"
+	SuccessReportLivecomment score.ScoreTag = "success-report-livecomment"
 	// リアクション
 	SuccessGetReactions score.ScoreTag = "success-get-reactions"
 	SuccessPostReaction score.ScoreTag = "success-post-reaction"
@@ -50,9 +50,9 @@ func InitScore(ctx context.Context) {
 	benchScore.Set(SuccessReserveLivestream, 1)
 	benchScore.Set(SuccessGetLivestreamByTag, 1)
 
-	benchScore.Set(SuccessGetSuperchats, 1)
-	benchScore.Set(SuccessPostSuperchat, 1)
-	benchScore.Set(SuccessReportSuperchat, 1)
+	benchScore.Set(SuccessGetLivecomments, 1)
+	benchScore.Set(SuccessPostLivecomment, 1)
+	benchScore.Set(SuccessReportLivecomment, 1)
 
 	benchScore.Set(SuccessGetReactions, 1)
 	benchScore.Set(SuccessPostReaction, 1)
