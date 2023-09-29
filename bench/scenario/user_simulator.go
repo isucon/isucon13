@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/isucon/isucandar/agent"
@@ -78,7 +77,7 @@ func simulateRandomLivestreamViewer(
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.ID); err != nil {
+		if err := checkPostedSuperchatConsistency(ctx, client, randomLivestreamID, postedSuperchat.Id); err != nil {
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 		}
 
@@ -123,8 +122,7 @@ func checkPostedReactionConsistency(
 	}
 
 	if !postedReactionFound {
-		err := fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
-		return bencherror.DBInconsistency(err)
+		return bencherror.NewAssertionError(err, "投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
 	}
 
 	return nil
@@ -143,15 +141,14 @@ func checkPostedSuperchatConsistency(
 
 	postedSuperchatFound := false
 	for _, s := range superchats {
-		if s.ID == postedSuperchatID {
+		if s.Id == postedSuperchatID {
 			postedSuperchatFound = true
 			break
 		}
 	}
 
 	if !postedSuperchatFound {
-		err := fmt.Errorf("投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
-		return bencherror.DBInconsistency(err)
+		return bencherror.NewAssertionError(err, "投稿されたスーパーチャット(id: %d)が取得できませんでした", postedSuperchatID)
 	}
 
 	return nil

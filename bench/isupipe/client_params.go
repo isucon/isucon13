@@ -2,6 +2,11 @@ package isupipe
 
 import "time"
 
+type InitializeResponse struct {
+	AdvertiseLevel int    `json:"advertise_level"`
+	Language       string `json:"language"`
+}
+
 type (
 	PostUserRequest struct {
 		Name        string `json:"name"`
@@ -20,11 +25,11 @@ type (
 
 type (
 	ReserveLivestreamRequest struct {
-		Title         string `json:"title"`
-		Description   string `json:"description"`
-		PrivacyStatus string `json:"privacy_status"`
-		StartAt       int64  `json:"start_at"`
-		EndAt         int64  `json:"end_at"`
+		Tags        []int  `json:"tags"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		StartAt     int64  `json:"start_at"`
+		EndAt       int64  `json:"end_at"`
 	}
 )
 
@@ -34,7 +39,7 @@ type (
 		Tip     int    `json:"tip"`
 	}
 	PostSuperchatResponse struct {
-		ID           int       `json:"id"`
+		Id           int       `json:"id"`
 		UserID       int       `json:"user_id"`
 		LivestreamID int       `json:"livestream_id"`
 		Comment      string    `json:"comment"`
@@ -43,6 +48,10 @@ type (
 		UpdatedAt    time.Time `json:"updated_at"`
 	}
 )
+
+type ModerateRequest struct {
+	NGWord string `json:"ng_word"`
+}
 
 type PostReactionRequest struct {
 	EmojiName string `json:"emoji_name"`
@@ -53,7 +62,7 @@ type Theme struct {
 }
 
 type Superchat struct {
-	ID           int       `json:"id"`
+	Id           int       `json:"id"`
 	UserID       int       `json:"user_id"`
 	LivestreamID int       `json:"livestream_id"`
 	Comment      string    `json:"comment"`
@@ -83,13 +92,23 @@ type User struct {
 }
 
 type Livestream struct {
-	ID            int       `json:"id"`
-	UserID        int       `json:"user_id"`
-	Title         string    `json:"title"`
-	Description   string    `json:"description"`
-	PrivacyStatus string    `json:"privacy_status"`
-	StartAt       time.Time `json:"start_at"`
-	EndAt         time.Time `json:"end_at"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	Id          int       `json:"id"`
+	UserId      int       `json:"user_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	StartAt     time.Time `json:"start_at"`
+	EndAt       time.Time `json:"end_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type Tag struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	// CreatedAt is the created timestamp that forms an UNIX time.
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type TagsResponse struct {
+	Tags []*Tag `json:"tags"`
 }

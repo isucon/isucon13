@@ -40,8 +40,8 @@ func init() {
 
 // FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
-	AvailableDays int    `json:"available_days"`
-	Language      string `json:"language"`
+	AdvertiseLevel int    `json:"advertise_level"`
+	Language       string `json:"language"`
 }
 
 func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
@@ -109,8 +109,8 @@ func initializeHandler(c echo.Context) error {
 
 	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
-		AvailableDays: 0,
-		Language:      "golang",
+		AdvertiseLevel: 1,
+		Language:       "golang",
 	})
 }
 
@@ -143,7 +143,9 @@ func main() {
 	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
 	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
 	// スパチャ報告
-	e.POST("/superchat/:superchat_id/report", reportSuperchatHandler)
+	e.POST("/livestream/:livestream_id/superchat/:superchat_id/report", reportSuperchatHandler)
+	// 配信者によるモデレーション (NGワード登録)
+	e.POST("/livestream/:livestream_id/moderate", moderateNGWordHandler)
 
 	// livestream_viewersにINSERTするため必要
 	// ユーザ視聴開始 (viewer)
@@ -155,6 +157,8 @@ func main() {
 	e.POST("/user", userRegisterHandler)
 	e.POST("/login", loginHandler)
 	e.GET("/user", userSessionHandler)
+	// FIXME: ユーザ一覧を返すAPI
+	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/user/:user_id", userHandler)
 	e.GET("/user/:user_id/theme", getUserThemeHandler)
 	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)

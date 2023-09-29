@@ -10,7 +10,7 @@ fake = Faker('ja-JP')
 
 
 # 投入するSQL文のフォーマット
-SQL_FORMAT="INSERT INTO livestreams (user_id, title, description, privacy_status, start_at, end_at) VALUES ({user_id}, '{title}', '{description}', 'public', '{start_at}', '{end_at}');"
+SQL_FORMAT="INSERT INTO livestreams (user_id, title, description, start_at, end_at) VALUES ({user_id}, '{title}', '{description}', '{start_at}', '{end_at}');"
 
 # FIXME: Goコードのフォーマット
 GO_SCHEDULER_PATTERN_FORMAT="""

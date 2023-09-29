@@ -82,7 +82,7 @@ func Setup() (*Resource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create pool error: %w", err)
 	}
-	pool.MaxWait = 10 * time.Second
+	pool.MaxWait = 30 * time.Second
 	if err := pool.Client.Ping(); err != nil {
 		return nil, fmt.Errorf("pool ping error: %w", err)
 	}

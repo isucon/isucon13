@@ -1,40 +1,59 @@
 package bencherror
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 )
 
-func UnexpectedHTTPStatusCode(expected int, actual int, err error) error {
-	err = fmt.Errorf("期待されたHTTPステータスコードが確認できませんでした(expected:%d, actual:%d): %s", expected, actual, err)
-	return WrapError(UnexpectedHTTPStatusCodeError, err)
+// NOTE: Goのhttp.Clientがcontext.DeadlineExceededをラップして返してくれないので、暫定対応
+var ErrTimeout = errors.New("タイムアウトによりリクエスト失敗")
+
+func NewInternalError(err error) error {
+	err = fmt.Errorf("[ベンチ本体のエラー] 運営に連絡してください: %w", err)
+	return WrapError(SystemError, err)
 }
 
-func Internal(err error) error {
-	err = fmt.Errorf("ベンチマーカ側の内部エラーです、運営に連絡してください!: %s", err.Error())
-	return WrapError(InternalError, err)
-}
-
-func BenchmarkTimeout(err error) error {
-	err = fmt.Errorf("ベンチマーカのリクエストがタイムアウトしました: %s", err.Error())
+func NewTimeoutError(err error, msg string, args ...interface{}) error {
+	message := fmt.Sprintf(msg, args...)
+	err = fmt.Errorf("%s: %w", err.Error(), ErrTimeout)
+	err = fmt.Errorf("[リクエストタイムアウト] %s: %w", message, err)
 	return WrapError(BenchmarkTimeoutError, err)
 }
 
-func BenchmarkCritical(err error) error {
-	err = fmt.Errorf("ベンチマーカが継続不可能な致命的エラー(スコアが強制的に0となります): %s", err.Error())
-	return WrapError(BenchmarkCriticalError, err)
+func NewViolationError(err error, msg string, args ...interface{}) error {
+	message := fmt.Sprintf(msg, args...)
+	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
+	return WrapError(BenchmarkViolationError, err)
 }
 
-func BenchmarkApplication(err error) error {
-	err = fmt.Errorf("%s", err.Error())
+func NewApplicationError(err error, msg string, args ...interface{}) error {
+	message := fmt.Sprintf(msg, args...)
+	err = fmt.Errorf("[一般] %s: %w", message, err)
 	return WrapError(BenchmarkApplicationError, err)
 }
 
-func InvalidResponseFormat(err error) error {
-	err = fmt.Errorf("レスポンスボディの形式が仕様に不一致です: %s", err)
-	return WrapError(InvalidResponseFormatError, err)
+func NewHttpError(err error, req *http.Request, msg string, args ...interface{}) error {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
+	message := fmt.Sprintf(msg, args...)
+	err = fmt.Errorf("[一般] %sへのリクエストに対して、%s: %w", endpoint, message, err)
+	return WrapError(BenchmarkApplicationError, err)
 }
 
-func DBInconsistency(err error) error {
-	err = fmt.Errorf("DBの非一貫性を検出しました: %s", err)
-	return WrapError(DBInconsistencyError, err)
+func NewHttpStatusError(req *http.Request, expected int, actual int) error {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
+	err := fmt.Errorf("[一般] %s へのリクエストに対して、期待されたHTTPステータスコードが確認できませんでした (expected:%d, actual:%d)", endpoint, expected, actual)
+	return WrapError(BenchmarkApplicationError, err)
+}
+
+func NewHttpResponseError(err error, req *http.Request) error {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
+	err = fmt.Errorf("[一般] %s へのリクエストに対して、レスポンスボディの形式が不正です: %w", endpoint, err)
+	return WrapError(BenchmarkApplicationError, err)
+}
+
+func NewAssertionError(err error, msg string, args ...interface{}) error {
+	message := fmt.Sprintf(msg, args...)
+	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
+	return WrapError(BenchmarkViolationError, err)
 }

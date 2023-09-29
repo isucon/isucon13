@@ -6,28 +6,23 @@ import (
 	"sync"
 
 	"github.com/isucon/isucandar/failure"
-	"github.com/isucon/isucandar/score"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 var (
-	SystemError               failure.StringCode = "system"
-	InitializeError           failure.StringCode = "initialize"
-	PreTestError              failure.StringCode = "pretest"
+	// SystemError は、ベンチマーカ内部のエラー (継続不可。FIXME: スコアについての扱いどうするか)
+	SystemError failure.StringCode = "system"
+	// InitializeError は、webapp初期化のエラー (即fail)
+	InitializeError failure.StringCode = "initialize"
+	// PreTestError は、pretest実行中のエラー (即fail)
+	PreTestError failure.StringCode = "pretest"
+	// BenchmarkApplicationError は、ベンチ走行中の一般的なエラー (減点)
 	BenchmarkApplicationError failure.StringCode = "benchmark-application"
-	// BenchmarkCriticalError は、ベンチマークを行う前提条件を満たしていない場合を表す
-	// この場合、競技者サーバは失格扱いとし、得点を0にする
-	BenchmarkCriticalError  failure.StringCode = "benchmark-critical"
-	BenchmarkTimeoutError   failure.StringCode = "benchmark-timeout"
-	BenchmarkTemporaryError failure.StringCode = "benchmark-temporary"
-	FinalCheckError         failure.StringCode = "finalcheck"
-
-	// InternalError はベンチマーカ内部のエラーが含まれる
-	// このエラーが出力された場合、運営に連絡してもらう必要がある
-	InternalError                 failure.StringCode = "internal"
-	InvalidResponseFormatError    failure.StringCode = "invalid-response-format"
-	DBInconsistencyError          failure.StringCode = "db-inconsistency"
-	UnexpectedHTTPStatusCodeError failure.StringCode = "unexpected-https-status-code"
+	// BenchmarkCriticalError は、仕様違反エラー (fail)
+	BenchmarkViolationError failure.StringCode = "benchmark-critical"
+	// BenchmarkTimeoutError は、タイムアウトによるエラー (減点)
+	BenchmarkTimeoutError failure.StringCode = "benchmark-timeout"
+	// FinalCheckError は、売上金額突合処理(finalcheck)でのエラー (即fail)
+	FinalCheckError failure.StringCode = "finalcheck"
 )
 
 var (
@@ -39,12 +34,10 @@ func InitializeErrors(ctx context.Context) {
 	benchErrors = failure.NewErrors(ctx)
 }
 
-// FIXME: もうちょっと細分化して、エラーの一貫性を持たせたい
 func WrapError(code failure.StringCode, err error) error {
-	e := failure.NewError(code, err)
-	benchErrors.Add(e)
-	benchscore.AddPenalty(failureCodeToScoreTag(code))
-	return fmt.Errorf("[%s]: %s", code, err.Error())
+	benchErrors.Add(failure.NewError(code, err))
+	AddPenalty(code)
+	return fmt.Errorf("%s: %w", code, err)
 }
 
 func GetFinalErrorMessages() map[string][]string {
@@ -59,35 +52,4 @@ func GetFinalPenalties() map[string]int64 {
 		benchErrors.Done()
 	})
 	return benchErrors.Count()
-}
-
-func failureCodeToScoreTag(code failure.StringCode) score.ScoreTag {
-	switch code {
-	case SystemError:
-		return benchscore.SystemError
-	case BenchmarkApplicationError:
-		return benchscore.BenchmarkApplicationError
-	case InitializeError:
-		return benchscore.InitializeError
-	case PreTestError:
-		return benchscore.PreTestError
-	case BenchmarkCriticalError:
-		return benchscore.BenchmarkCriticalError
-	case BenchmarkTimeoutError:
-		return benchscore.BenchmarkTimeoutError
-	case BenchmarkTemporaryError:
-		return benchscore.BenchmarkTemporaryError
-	case FinalCheckError:
-		return benchscore.FinalCheckError
-	case InternalError:
-		return benchscore.InternalError
-	case DBInconsistencyError:
-		return benchscore.DBInconsistencyError
-	case InvalidResponseFormatError:
-		return benchscore.InvalidResponseFormatError
-	case UnexpectedHTTPStatusCodeError:
-		return benchscore.UnexpectedHTTPStatusCodeError
-	default:
-		panic("unreachable")
-	}
 }

@@ -11,23 +11,14 @@ import (
 )
 
 type ReserveLivestreamRequest struct {
-	Title         string `json:"title"`
-	Description   string `json:"description"`
-	PrivacyStatus string `json:"privacy_status"`
-	StartAt       int64  `json:"start_at"`
-	EndAt         int64  `json:"end_at"`
-}
-
-type Livestream struct {
-	ID            int       `db:"id"`
-	UserID        int       `db:"user_id"`
-	Title         string    `db:"title"`
-	Description   string    `db:"description"`
-	PrivacyStatus string    `db:"privacy_status"`
-	StartAt       time.Time `db:"start_at"`
-	EndAt         time.Time `db:"end_at"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	Tags        []int  `json:"tags"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	// NOTE: コラボ配信の際に便利な自動スケジュールチェック機能
+	// DBに記録しないが、コラボレーターがスケジュール的に問題ないか調べて、エラーを返す
+	Collaborators []int `json:"collaborators"`
+	StartAt       int64 `json:"start_at"`
+	EndAt         int64 `json:"end_at"`
 }
 
 type LivestreamViewer struct {
@@ -35,7 +26,22 @@ type LivestreamViewer struct {
 	LivestreamID int `db:"livestream_id"`
 }
 
-// FIXME: リアクション
+type Livestream struct {
+	Id          int       `db:"id"`
+	UserId      int       `db:"user_id"`
+	Title       string    `db:"title"`
+	Description string    `db:"description"`
+	StartAt     time.Time `db:"start_at"`
+	EndAt       time.Time `db:"end_at"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+}
+
+type LivestreamTag struct {
+	Id           int `db:"id"`
+	LivestreamId int `db:"livestream_id"`
+	TagId        int `db:"tag_id"`
+}
 
 func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -49,7 +55,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userID, ok := sess.Values[defaultUserIDKey].(int)
+	userId, ok := sess.Values[defaultUserIDKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -64,21 +70,43 @@ func reserveLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	// FIXME: 2024/04/01 - 2025/03/31までの期間かチェック
+	// 2024/04/01 - 2025/03/31までの期間かチェック
+	var (
+		termStartAt    = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
+		termEndAt      = time.Date(2025, 3, 31, 0, 0, 0, 0, time.Local)
+		reserveStartAt = time.Unix(req.StartAt, 0)
+		reserveEndAt   = time.Unix(req.EndAt, 0)
+	)
+	if !(reserveEndAt.Equal(termEndAt) || reserveEndAt.Before(termEndAt)) && (reserveStartAt.Equal(termStartAt) || reserveStartAt.After(termStartAt)) {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusBadRequest, "bad reservation time range")
+	}
+
+	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる
+	var users []int
+	users = append(users, userId)
+	users = append(users, req.Collaborators...)
+	for _, user := range users {
+		var founds int
+		if err := tx.SelectContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at && ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
+			// tx.Rollback()
+			// return echo.NewHTTPError(http.StatusConflict, "schedule conflict")
+			c.Logger().Warn("schedule conflict")
+		}
+	}
 
 	var (
 		startAt    = time.Unix(req.StartAt, 0)
 		endAt      = time.Unix(req.EndAt, 0)
 		livestream = &Livestream{
-			UserID:        userID,
-			Title:         req.Title,
-			Description:   req.Description,
-			PrivacyStatus: req.PrivacyStatus,
-			StartAt:       startAt,
-			EndAt:         endAt,
+			UserId:      userId,
+			Title:       req.Title,
+			Description: req.Description,
+			StartAt:     startAt,
+			EndAt:       endAt,
 		}
 	)
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, privacy_status, start_at, end_at) VALUES(:user_id, :title, :description, :privacy_status, :start_at, :end_at)", livestream)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, start_at, end_at) VALUES(:user_id, :title, :description, :start_at, :end_at)", livestream)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -86,15 +114,26 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	createdAt := time.Now()
 
-	livestreamID, err := rs.LastInsertId()
+	livestreamId, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	// タグ追加
+	for _, tagId := range req.Tags {
+		if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)", &LivestreamTag{
+			LivestreamId: int(livestreamId),
+			TagId:        tagId,
+		}); err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
+
 	tx.Commit()
 
-	livestream.ID = int(livestreamID)
+	livestream.Id = int(livestreamId)
 	livestream.CreatedAt = createdAt
 	livestream.UpdatedAt = createdAt
 	return c.JSON(http.StatusCreated, livestream)
