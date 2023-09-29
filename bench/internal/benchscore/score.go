@@ -15,6 +15,7 @@ const (
 	SuccessRegister     score.ScoreTag = "success-register"
 	SuccessLogin        score.ScoreTag = "success-login"
 	SuccessGetUser      score.ScoreTag = "success-get-user"
+	SuccessGetUsers     score.ScoreTag = "success-get-users"
 	SuccessGetUserTheme score.ScoreTag = "success-get-user-theme"
 	// ライブ配信
 	SuccessReserveLivestream  score.ScoreTag = "success-reserve-livestream"
