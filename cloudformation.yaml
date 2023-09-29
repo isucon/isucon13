@@ -162,7 +162,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 20
+            VolumeSize: 40
             VolumeType: gp3
       Tags:
         - Key: Name
@@ -186,7 +186,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 20
+            VolumeSize: 40
             VolumeType: gp3
       Tags:
         - Key: Name
@@ -210,7 +210,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 20
+            VolumeSize: 40
             VolumeType: gp3
       Tags:
         - Key: Name
