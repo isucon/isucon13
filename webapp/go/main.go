@@ -142,6 +142,9 @@ func main() {
 	e.POST("/livestream/:livestream_id/livecomment", postLivecommentHandler)
 	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
 	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
+
+	// (配信者向け)ライブコメント一覧取得API
+	e.GET("/livestream/:livestream_id/report", getLivecommentReportsHandler)
 	// ライブコメント報告
 	e.POST("/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)

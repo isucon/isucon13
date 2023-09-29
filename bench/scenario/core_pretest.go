@@ -56,6 +56,12 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	if err != nil {
 		return err
 	}
+
+	log.Printf("try to get livecomment reports...")
+	if _, err = client.GetLivecommentReports(ctx, livestream.Id); err != nil {
+		return err
+	}
+	log.Printf("try to get livestream...")
 	if err = client.GetLivestream(ctx, livestream.Id); err != nil {
 		return err
 	}

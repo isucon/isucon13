@@ -21,9 +21,10 @@ const (
 	SuccessGetLivestream      score.ScoreTag = "success-get-livestream"
 	SuccessGetLivestreamByTag score.ScoreTag = "success-get-livestream-by-tag"
 	// ライブコメント
-	SuccessGetLivecomments   score.ScoreTag = "success-get-livecomments"
-	SuccessPostLivecomment   score.ScoreTag = "success-post-livecomment"
-	SuccessReportLivecomment score.ScoreTag = "success-report-livecomment"
+	SuccessGetLivecomments       score.ScoreTag = "success-get-livecomments"
+	SuccessPostLivecomment       score.ScoreTag = "success-post-livecomment"
+	SuccessReportLivecomment     score.ScoreTag = "success-report-livecomment"
+	SuccessGetLivecommentReports score.ScoreTag = "success-get-livecomment-reports"
 	// リアクション
 	SuccessGetReactions score.ScoreTag = "success-get-reactions"
 	SuccessPostReaction score.ScoreTag = "success-post-reaction"
