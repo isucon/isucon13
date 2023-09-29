@@ -21,6 +21,7 @@ type Livecomment struct {
 	LivestreamID int       `json:"livestream_id" db:"livestream_id"`
 	Comment      string    `json:"comment" db:"comment"`
 	Tip          int       `json:"tip" db:"tip"`
+	ReportCount  int       `json:"report_count" db:"report_count"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -154,17 +155,30 @@ func reportLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentId); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	reportID, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	createdAt := time.Now()
+	report := &LivecommentReport{
+		Id:            int(reportID),
+		UserId:        userId,
+		LivestreamId:  livestreamId,
+		LivecommentId: livecommentId,
+		CreatedAt:     createdAt,
+		UpdatedAt:     createdAt,
+	}
+
 	tx.Commit()
 
-	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"report_id": reportID,
-	})
+	return c.JSON(http.StatusCreated, report)
 }
 
 // NGワードを登録

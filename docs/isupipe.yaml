@@ -516,6 +516,12 @@ components:
           type: string
         description:
           type: string
+        playlist_url:
+          type: string
+        thumbnail_url:
+          type: string
+        viewers_count:
+          type: number
         start_at:
           type: number
         end_at:
@@ -566,6 +572,8 @@ components:
         comment:
           type: string
         tip:
+          type: number
+        report_count:
           type: number
         created_at:
           type: number

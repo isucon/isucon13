@@ -8,8 +8,11 @@ const (
 	//        対策としては、アルゴリズム側で必ず重複しないように調整するか、
 	//        worker parallelismを1にしつつ、視聴者のシミュレータをgoroutineで吐き出して並行性を担保する
 	//        とりあえず後者で対応
-	DefaultBenchmarkerParallelism        = 1
-	DefaultBenchmarkWorkerTimeoutSeconds = 10
+	DefaultBenchmarkerParallelism = 5
+	// FIXME: これ実質シーズンのタイムアウト
+	DefaultBenchmarkWorkerTimeoutSeconds = 15
+	// シナリオテストのタイムアウト[秒]
+	ScenarioTestTimeoutSeconds = 3
 )
 
 var (

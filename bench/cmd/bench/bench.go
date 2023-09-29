@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/urfave/cli"
 
@@ -45,7 +45,7 @@ var run = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:        "target",
-			Value:       "http://localhost",
+			Value:       "http://127.0.0.1:12345",
 			Destination: &config.TargetBaseURL,
 			EnvVar:      "BENCH_TARGET_URL",
 		},
@@ -68,6 +68,7 @@ var run = cli.Command{
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
+		lgr.Infof("webapp: %s", config.TargetBaseURL)
 
 		lgr.Info("===== Prepare benchmarker =====")
 		// FIXME: アセット読み込み
@@ -75,6 +76,7 @@ var run = cli.Command{
 		lgr.Info("===== Initialize webapp =====")
 		initClient, err := isupipe.NewClient(
 			agent.WithBaseURL(config.TargetBaseURL),
+			agent.WithTimeout(20*time.Second),
 		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
@@ -97,6 +99,12 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 
+		// pretest, benchmarkにはこれら初期化が必要
+		benchscore.InitScore(ctx)
+		bencherror.InitPenalty(ctx)
+		bencherror.InitializeErrors(ctx)
+		// NOTE: チャネル初期化のため、目標を設定せずにpretest
+		benchscore.SetAchivementGoal(0)
 		if err := scenario.Pretest(ctx, pretestClient); err != nil {
 			return cli.NewExitError(err, 1)
 		}
@@ -105,27 +113,21 @@ var run = cli.Command{
 		defer cancelBench()
 
 		benchmarker := newBenchmarker()
+		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitScore(ctx)
 		bencherror.InitPenalty(ctx)
 		bencherror.InitializeErrors(ctx)
 
-		lgr.Info("===== Benchmark webapp - Season1 =====")
-		lgr.Info("Season1の達成条件は以下のとおりです")
-		lgr.Info("スコア >= 200000")
+		lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
 		if err := benchmarker.runSeason1(benchCtx); err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
-		lgr.Info("===== Benchmark webapp - Season2 =====")
-		lgr.Info("Season2の達成条件は以下のとおりです")
-		lgr.Info("スコア >= 400000")
+		lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
 
-		lgr.Info("===== Benchmark webapp - Season3 =====")
-		lgr.Info("Season3の達成条件は以下のとおりです")
-		lgr.Info("スコア >= 600000")
+		lgr.Info("===== Benchmark - 第３負荷フェーズ開始 =====")
 
-		lgr.Info("===== Benchmark webapp - Season4 =====")
-		lgr.Info("Season4に達成条件はありません")
+		lgr.Info("===== Benchmark - 最終負荷フェーズ開始 =====")
 
 		lgr.Info("===== Final check =====")
 		paymentClient, err := isupipe.NewClient(
@@ -140,8 +142,10 @@ var run = cli.Command{
 		}
 
 		lgr.Info("===== System errors =====")
-		for _, msg := range bencherror.GetFinalErrorMessages() {
-			lgr.Warn(msg)
+		for _, msgs := range bencherror.GetFinalErrorMessages() {
+			for _, msg := range msgs {
+				lgr.Warn(msg)
+			}
 		}
 
 		lgr.Info("===== Calculate final score =====")
@@ -149,14 +153,18 @@ var run = cli.Command{
 
 		score := benchscore.GetFinalScore()
 		msgs = append(msgs, fmt.Sprintf("スコア: %d", score))
+		lgr.Infof("スコア: %d", score)
 
 		profit := benchscore.GetFinalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
+		lgr.Infof("売上: %d", profit)
 
-		penalty := bencherror.GetFinalPenalties()
-		msgs = append(msgs, fmt.Sprintf("ペナルティ: %+v", penalty))
-
-		lgr.Info(strings.Join(msgs, "\n"))
+		penalties := bencherror.GetFinalPenalties()
+		for code, penalty := range penalties {
+			message := fmt.Sprintf("ペナルティ[%s]: %d", code, penalty)
+			msgs = append(msgs, message)
+			lgr.Info(message)
+		}
 
 		return nil
 	},

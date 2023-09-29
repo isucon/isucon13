@@ -67,6 +67,7 @@ type Livecomment struct {
 	LivestreamID int       `json:"livestream_id"`
 	Comment      string    `json:"comment"`
 	Tip          int       `json:"tip"`
+	ReportCount  int       `json:"report_count"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -94,14 +95,17 @@ type User struct {
 }
 
 type Livestream struct {
-	Id          int       `json:"id"`
-	UserId      int       `json:"user_id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	StartAt     time.Time `json:"start_at"`
-	EndAt       time.Time `json:"end_at"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Id           int       `json:"id"`
+	UserId       int       `json:"user_id"`
+	Title        string    `json:"title"`
+	Description  string    `json:"description"`
+	PlaylistUrl  string    `json:"playlist_url"`
+	ThumbnailUrl string    `json:"thumbnail_url"`
+	ViewersCount int       `json:"viewers_count"`
+	StartAt      time.Time `json:"start_at"`
+	EndAt        time.Time `json:"end_at"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type LivecommentReport struct {
@@ -122,4 +126,14 @@ type Tag struct {
 
 type TagsResponse struct {
 	Tags []*Tag `json:"tags"`
+}
+
+type Payment struct {
+	ReservationId int
+	Tip           int
+}
+
+type PaymentResult struct {
+	Total    int
+	Payments []*Payment
 }

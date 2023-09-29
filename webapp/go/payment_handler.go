@@ -1,6 +1,11 @@
 package main
 
-import "sync"
+import (
+	"net/http"
+	"sync"
+
+	"github.com/labstack/echo/v4"
+)
 
 // webappに課金サーバを兼任させる
 // とりあえずfinalcheck等を実装する上で必要なので用意
@@ -31,12 +36,12 @@ func AddPayment(reservationId, tip int) {
 	total += tip
 }
 
-func GetPaymentResult() *PaymentResult {
+func GetPaymentResult(c echo.Context) error {
 	paymentMu.RLock()
 	defer paymentMu.RUnlock()
 
-	return &PaymentResult{
+	return c.JSON(http.StatusOK, &PaymentResult{
 		Total:    total,
 		Payments: payments,
-	}
+	})
 }

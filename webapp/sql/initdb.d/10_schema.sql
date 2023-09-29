@@ -27,6 +27,10 @@ CREATE TABLE `livestreams` (
   `user_id` BIGINT NOT NULL,
   `title` VARCHAR(255) NOT NULL,
   `description` text NOT NULL,
+  `playlist_url` varchar(255) NOT NULL,
+  `thumbnail_url` varchar(255) NOT NULL,
+  -- リアルタイムな視聴者数
+  `viewers_count` BIGINT DEFAULT 0 NOT NULL,
   `start_at` DATETIME NOT NULL,
   `end_at` DATETIME NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -48,14 +52,14 @@ CREATE TABLE `livestream_tags` (
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信視聴者
-CREATE TABLE `livestream_viewers` (
+CREATE TABLE `livestream_viewers_history` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE `uniq_livestream_viewers` (`user_id`, `livestream_id`)
+  UNIQUE `uniq_livestream_viewers_history` (`user_id`, `livestream_id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信に対するライブコメント
@@ -70,6 +74,8 @@ CREATE TABLE `livecomments` (
   -- 単位はISU (1,2,3,4,5, ...などわかりやすい数値で良い気がする)
   -- 色は、青、水、黄緑、黃、マゼンタ、赤の６段階 (ココらへんはフロントエンドでいい感じにしてもらう)
   `tip` BIGINT NOT NULL,
+  -- スパム報告数
+  `report_count` BIGINT DEFAULT 0 NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

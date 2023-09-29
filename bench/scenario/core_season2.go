@@ -75,9 +75,9 @@ func Season2(ctx context.Context, webappIPAddress string) {
 	// INFO: リクエスト数を制御するだけでなく、tipsの金額も増加させても良いかもしれない
 	for userIdx := 0; userIdx < config.AdvertiseCost; userIdx++ {
 		// 571~(571+len(Season2LivestreamReservationPatterns)) -> season1期間の配信を含まない、season2ReserveWorkerが登録する配信一覧
-		randomLivestreamIDStartAt := Season1GeneratedLivestreamCount + 1
-		randomLivestreamIDEndAt := Season1GeneratedLivestreamCount + 1 + len(scheduler.Season2LivestreamReservationPatterns)
-		go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], randomLivestreamIDStartAt, randomLivestreamIDEndAt, "Season2")
+		// randomLivestreamIDStartAt := Season1GeneratedLivestreamCount + 1
+		// randomLivestreamIDEndAt := Season1GeneratedLivestreamCount + 1 + len(scheduler.Season2LivestreamReservationPatterns)
+		// go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], randomLivestreamIDStartAt, randomLivestreamIDEndAt, "Season2")
 	}
 
 	<-ctx.Done()
