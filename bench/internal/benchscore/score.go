@@ -18,6 +18,7 @@ const (
 	SuccessGetUserTheme score.ScoreTag = "success-get-user-theme"
 	// ライブ配信
 	SuccessReserveLivestream  score.ScoreTag = "success-reserve-livestream"
+	SuccessGetLivestream      score.ScoreTag = "success-get-livestream"
 	SuccessGetLivestreamByTag score.ScoreTag = "success-get-livestream-by-tag"
 	// ライブコメント
 	SuccessGetLivecomments   score.ScoreTag = "success-get-livecomments"

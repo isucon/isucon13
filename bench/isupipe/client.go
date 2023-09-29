@@ -314,6 +314,28 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) 
 	return nil
 }
 
+func (c *Client) GetLivestream(
+	ctx context.Context,
+	livestreamID int,
+) error {
+	urlPath := fmt.Sprintf("/livestream/%d", livestreamID)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	}
+
+	benchscore.AddScore(benchscore.SuccessGetLivestream)
+	return nil
+}
+
 func (c *Client) GetLivestreamsByTag(
 	ctx context.Context,
 	tag string,
