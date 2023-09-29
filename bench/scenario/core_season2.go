@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/isucon/isucandar/agent"
@@ -53,6 +54,9 @@ func Season2(ctx context.Context, webappIPAddress string) {
 			EndAt:       reservePattern.EndAt.Unix(),
 		}
 		if _, err := client.ReserveLivestream(ctx, &reserveRequest); err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("season2: %s\n", err.Error())
 		}
 	}, worker.WithLoopCount(int32(len(scheduler.Season2LivestreamReservationPatterns))))

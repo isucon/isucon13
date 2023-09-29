@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/isucon/isucandar/worker"
@@ -21,12 +22,18 @@ func Livecomment(ctx context.Context, client *isupipe.Client) {
 		Password: "o^E0K1Axj@",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Livecomment: %s\n", err.Error())
 		// log.Printf("Livecomment: failed to login: %s\n", err.Error())
 		return
 	}
 
 	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Livecomment: %s\n", err.Error())
 	}
 
@@ -39,7 +46,10 @@ func Livecomment(ctx context.Context, client *isupipe.Client) {
 		}
 
 		if _, err := client.PostLivecomment(ctx, 1 /* livestream id*/, &req); err != nil {
-			// log.Printf("Livecomment: failed to post livecomment: %s\n", err.Error())
+			if errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
+			log.Printf("Livecomment: %s\n", err.Error())
 			return
 		}
 
@@ -60,6 +70,9 @@ func Livecomment(ctx context.Context, client *isupipe.Client) {
 	log.Println("post livecomment workers has finished.")
 
 	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Livecomment: %s\n", err.Error())
 	}
 }

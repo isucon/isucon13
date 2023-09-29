@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/isucon/isucandar/worker"
@@ -20,11 +21,17 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 		Password: "u4JVlvx%(6",
 	}
 	if err := client.Login(ctx, &loginRequest); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Reaction: %s\n", err.Error())
 		return
 	}
 
 	if err := client.EnterLivestream(ctx, 1 /* livestream id*/); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Reaction: %s\n", err.Error())
 	}
 
@@ -36,6 +43,9 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 		}
 
 		if _, err := client.PostReaction(ctx, 1 /* livestream id*/, &req); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
 			log.Printf("Reaction: %s\n", err.Error())
 			return
 		}
@@ -57,6 +67,9 @@ func Reaction(ctx context.Context, client *isupipe.Client) {
 	log.Println("post reaction workers has finished.")
 
 	if err := client.LeaveLivestream(ctx, 1 /* livestream id*/); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
 		log.Printf("Reaction: %s\n", err.Error())
 	}
 

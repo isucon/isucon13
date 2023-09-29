@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/isucon/isucandar/agent"
@@ -35,6 +36,9 @@ func simulateRandomLivestreamViewer(
 	}
 
 	if err := client.Login(ctx, &loginRequest); err != nil {
+		if errors.Is(err, context.DeadlineExceeded); err != nil {
+			return
+		}
 		log.Printf("%s: %s\n", scenarioName, err.Error())
 		return
 	}
@@ -44,6 +48,9 @@ func simulateRandomLivestreamViewer(
 		randomLivestreamID := generator.GenerateIntBetween(randomViewLivestreamIDStart, randomViewLivestreamIDEnd)
 
 		if err := client.EnterLivestream(ctx, randomLivestreamID /* livestream id*/); err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 			return
 		}
@@ -53,12 +60,18 @@ func simulateRandomLivestreamViewer(
 		}
 		postedReaction, err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 			return
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 		}
 
@@ -72,16 +85,25 @@ func simulateRandomLivestreamViewer(
 		}
 		postedLivecomment, err := client.PostLivecomment(ctx, randomLivestreamID /* livestream id*/, &postLivecommentReq)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 			return
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
 		if err := checkPostedLivecommentConsistency(ctx, client, randomLivestreamID, postedLivecomment.Id); err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 		}
 
 		if err := client.LeaveLivestream(ctx, randomLivestreamID /* livestream id*/); err != nil {
+			if errors.Is(err, context.DeadlineExceeded); err != nil {
+				return
+			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 			return
 		}
