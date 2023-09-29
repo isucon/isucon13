@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation for ISUCON12 Qualify
+Resources:
+  GetAvailabilityZoneFunctionExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: GetAvailabilityZoneFunctionPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeAvailabilityZones
+                Resource: "*"
+  GetAvailabilityZoneFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+          def handler(event, context):
+            if event['RequestType'] == "Create":
+              ec2 = boto3.client('ec2')
+              response = ec2.describe_availability_zones(
+                ZoneIds = ['apne1-az2']
+              )
+              ZoneName = response['AvailabilityZones'][0]['ZoneName']
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {"ZoneName" : ZoneName})
+            elif event['RequestType'] == "Update":
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+            elif event['RequestType'] == "Delete":
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+      Handler: index.handler
+      Runtime: python3.9
+      Timeout: 30
+      Role: !GetAtt GetAvailabilityZoneFunctionExecutionRole.Arn
+  GetAvailabilityZone:
+    Type: Custom::PythonLambdaExecution
+    Properties:
+      ServiceToken: !GetAtt GetAvailabilityZoneFunction.Arn
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "192.168.0.0/16"
+      EnableDnsSupport: "true"
+      EnableDnsHostnames: "true"
+      InstanceTenancy: default
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !GetAtt GetAvailabilityZone.ZoneName
+      CidrBlock: "192.168.0.0/24"
+      VpcId: !Ref VPC
+      MapPublicIpOnLaunch: False
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+  Route:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet
+      RouteTableId: !Ref RouteTable
+    DependsOn:
+      - Subnet
+      - RouteTable
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Security Group for ISUCON12 Qualify
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: "22"
+          ToPort: "22"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: tcp
+          FromPort: "443"
+          ToPort: "443"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/24"
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: IsuconEC2InstancePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeAvailabilityZones
+                Resource: "*"
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref InstanceRole
+
+  MyKeyPair:
+    Type: "AWS::EC2::KeyPair"
+    Properties:
+      KeyName: isucon12-quarify-cfn
+
+  QualifyInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-05c5b59deed48f66b
+      InstanceType: c5.large
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      SubnetId: !Ref Subnet
+      KeyName: !Ref MyKeyPair
+      PrivateIpAddress: "192.168.0.11"
+      IamInstanceProfile: !Ref InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: isucon12-qualify-1
+  QualifyInstanceIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref QualifyInstance1
+  QualifyInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-05c5b59deed48f66b
+      InstanceType: c5.large
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      SubnetId: !Ref Subnet
+      KeyName: !Ref MyKeyPair
+      PrivateIpAddress: "192.168.0.12"
+      IamInstanceProfile: !Ref InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: isucon12-qualify-2
+  QualifyInstanceIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref QualifyInstance2
+  QualifyInstance3:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-05c5b59deed48f66b
+      InstanceType: c5.large
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      SubnetId: !Ref Subnet
+      KeyName: !Ref MyKeyPair
+      PrivateIpAddress: "192.168.0.13"
+      IamInstanceProfile: !Ref InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: isucon12-qualify-3
+  QualifyInstanceIP3:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref QualifyInstance3
