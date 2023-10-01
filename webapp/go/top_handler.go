@@ -30,21 +30,3 @@ func getTagHandler(c echo.Context) error {
 		Tags: tags,
 	})
 }
-
-func searchLivestreamsByTagHandler(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	keyTagName := c.QueryParam("tag")
-
-	keyTag := Tag{}
-	if err := dbConn.GetContext(ctx, &keyTag, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	livestreams := []Livestream{}
-	if err := dbConn.SelectContext(ctx, &livestreams, "SELECT id FROM livestream_tags WHERE tag_id = ?", keyTag.ID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, livestreams)
-}

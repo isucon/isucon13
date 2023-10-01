@@ -340,7 +340,7 @@ func (c *Client) GetLivestreamsByTag(
 	ctx context.Context,
 	tag string,
 ) error {
-	urlPath := fmt.Sprintf("/search_livestream?tag=%s", tag)
+	urlPath := fmt.Sprintf("/livestream?tag=%s", tag)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)

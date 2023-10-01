@@ -154,6 +154,12 @@ paths:
           name: SESSIONID
           description: セッションID
   /livestream:
+    parameters:
+      - in: query
+        name: tag
+        schema:
+          type: string
+        description: 検索に使用するタグの名前
     get:
       summary: Your GET endpoint
       tags: []
@@ -390,25 +396,6 @@ paths:
           description: Internal Server Error
       requestBody:
         $ref: '#/components/requestBodies/ReserveLivestream'
-  '/search_livestream':
-    parameters:
-      - in: query
-        name: tag
-        schema:
-          type: string
-        description: 検索に使用するタグの名前
-    get:
-      summary: ''
-      operationId: get-search-livestream
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Livestream'
   '/livestream/{livestreamid}/report':
     parameters:
       - schema:
