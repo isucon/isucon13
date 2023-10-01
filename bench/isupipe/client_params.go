@@ -89,6 +89,8 @@ type User struct {
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+
+	IsFamous bool `json:"is_famous"`
 }
 
 type Livestream struct {

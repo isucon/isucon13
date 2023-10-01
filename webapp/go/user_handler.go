@@ -29,6 +29,8 @@ type User struct {
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+
+	IsFamous bool `json:"is_famous"`
 }
 
 type Theme struct {
@@ -188,6 +190,9 @@ func userHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
 
+	// FIXME: IsFamousのアルゴリズムを作る
+	user.IsFamous = true
+
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -219,6 +224,10 @@ func getUsersHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	// FIXME: IsFamousのアルゴリズムを作る
+	for i := range users {
+		users[i].IsFamous = true
+	}
 	return c.JSON(http.StatusOK, users)
 }
 
