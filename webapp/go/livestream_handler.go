@@ -141,6 +141,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 func getLivestreamsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	keyTagName := c.QueryParam("tag")
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
@@ -149,16 +150,38 @@ func getLivestreamsHandler(c echo.Context) error {
 
 	// 複数件取得
 	var livestreams []*Livestream
-	if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	if keyTagName == "" {
+		keyTag := Tag{}
+		if err := dbConn.GetContext(ctx, &keyTag, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		var keyTaggedLivestreams []*Livestream
+		if err := tx.SelectContext(ctx, &keyTaggedLivestreams, "SELECT * FROM livestream_tags WHERE tag_id = ?", keyTag.ID); err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		for _, keyTaggedLivestream := range keyTaggedLivestreams {
+			ls := &Livestream{}
+			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.Id); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			livestreams = append(livestreams, ls)
+		}
+	} else {
+		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, livestreams)
+	return c.JSON(http.StatusOK, livestreams)
 }
 
 func enterLivestreamHandler(c echo.Context) error {

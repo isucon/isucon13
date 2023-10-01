@@ -130,7 +130,6 @@ func main() {
 
 	// livestream
 	// reserve livestream
-	e.GET("/search_livestream", searchLivestreamsByTagHandler)
 	e.POST("/livestream/reservation", reserveLivestreamHandler)
 	// list livestream
 	e.GET("/livestream", getLivestreamsHandler)
