@@ -1,0 +1,174 @@
+package Isupipe::App::UserHandler;
+use v5.38;
+use utf8;
+
+use HTTP::Status qw(:constants);
+use Types::Standard -types;
+use Log::Minimal qw(infof);
+
+use Isupipe::Entity::User;
+use Isupipe::Entity::Theme;
+
+use Isupipe::App::Util qw(
+    verify_user_session
+    DEFAULT_USER_ID_KEY
+
+    encrypt_password
+    check_password
+);
+
+use constant ThemeRequest => Dict[
+    user_id   => Int,
+    dark_mode => Bool,
+];
+
+use constant PostUserRequest => Dict[
+    name         => Str,
+    display_name => Str,
+    description  => Str,
+    # Password is non-hashed password.
+    password     => Str,
+    theme        => ThemeRequest,
+];
+
+use constant LoginRequest => Dict[
+    name => Str,
+
+    # Password is non-hashed password.
+    password => Str,
+];
+
+# ユーザ登録API
+# POST /user
+sub user_register_handler($app, $c) {
+    my $req = $c->req->body_parameters;
+    unless (PostUserRequest->check($req)) {
+        $c->halt(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
+    }
+
+    my $hashed_password = encrypt_password($req->{password});
+
+    my $user = Isupipe::Entity::User->new(
+        name         => $req->{name},
+        display_name => $req->{display_name},
+        description  => $req->{description},
+        password     => $hashed_password,
+    );
+
+    {
+        my $dbh = $app->dbh;
+        my $txn = $dbh->txn_scope;
+
+        $dbh->query(
+            'INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)',
+            $user->as_hashref
+        );
+
+        my $user_id = $dbh->last_insert_id;
+        $user->set_id($user_id);
+
+        my $theme = Isupipe::Entity::Theme->new(
+            user_id   => $user_id,
+            dark_mode => $req->{theme}{dark_mode},
+        );
+
+        $dbh->query(
+            'INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)',
+            $theme->as_hashref
+        );
+
+        $txn->commit;
+    }
+
+    my $res = $c->render_json($user);
+    $res->status(HTTP_CREATED);
+    return $res;
+}
+
+
+# ユーザログインAPI
+# POST /api/login
+sub login_handler($app, $c) {
+    my $params = $c->req->body_parameters->as_hashref;
+    unless (LoginRequest->check($params)) {
+        $c->halt_text(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
+    }
+
+    my $txn = $app->dbh->txn_scope;
+
+    # usernameはUNIQUEなので、whereで一意に特定できる
+    my $user = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE name = :name',
+        { name => $params->{name} }
+    );
+    unless ($user) {
+        $c->halt_text(HTTP_NOT_FOUND, 'invalid username or password');
+    }
+
+    $txn->commit;
+
+    unless (check_password($params->{password}, $user->password)) {
+        $c->halt_text(HTTP_UNAUTHORIZED, 'invalid username or password');
+    }
+
+    my $session = Plack::Session->new($c->env);
+    $session->set(DEFAULT_USER_ID_KEY, $user->id);
+
+    return $c->halt_no_content(HTTP_OK);
+}
+
+
+# ユーザ詳細API
+# GET /user/:user_id
+sub user_handler($app, $c) {
+    my $err = verify_user_session($app, $c);
+    if ($err isa Kossy::Exception) {
+        die $err;
+    }
+
+    my $user_id = $c->args->{user_id};
+
+    my $user = $app->db->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE id = :id',
+        { id => $user_id }
+    );
+    unless ($user) {
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
+    }
+
+    return $c->render_json($user);
+}
+
+# 配信者のテーマ取得API
+# GET /user/:userid/theme
+sub get_user_theme_handler($app, $c) {
+    my $err = verify_user_session($app, $c);
+    if ($err isa Kossy::Exception) {
+        die $err;
+    }
+
+    my $user_id = $c->args->{user_id};
+    my $theme = $app->db->select_row_as(
+        'Isupipe::Entity::Theme',
+        'SELECT * FROM themes WHERE user_id = ?',
+        $user_id
+    );
+    unless ($theme) {
+        $c->halt(HTTP_NOT_FOUND, 'theme not found');
+    }
+
+    return $c->render_json($theme);
+}
+
+sub get_users_handler($app, $c) {
+    my $users = $app->db->select_all_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users'
+    );
+
+    return $c->render_json($users);
+}
+
+
