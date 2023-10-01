@@ -127,6 +127,7 @@ func main() {
 
 	// top
 	e.GET("/tag", getTagHandler)
+	e.GET("/theme", getStreamerThemeHandler)
 
 	// livestream
 	// reserve livestream
@@ -162,7 +163,6 @@ func main() {
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/user/:user_id", userHandler)
-	e.GET("/user/:user_id/theme", getUserThemeHandler)
 	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
 
 	// stats

@@ -159,9 +159,9 @@ func (c *Client) GetUser(ctx context.Context, userID int) error {
 	return nil
 }
 
-func (c *Client) GetUserTheme(ctx context.Context, userID int) error {
-	urlPath := fmt.Sprintf("/user/%d/theme", userID)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+// FIXME: Hostヘッダにusernameを含めたドメインを入れてリクエスト
+func (c *Client) GetStreamerTheme(ctx context.Context) error {
+	req, err := c.agent.NewRequest(http.MethodGet, "/theme", nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
