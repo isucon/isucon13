@@ -71,6 +71,10 @@ func userRegisterHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
+	if req.Name == "pipe" {
+		return echo.NewHTTPError(http.StatusBadRequest, "the username 'pipe' is reserved")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptDefaultCost)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
