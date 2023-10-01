@@ -40,10 +40,12 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	log.Printf("try to get user theme...")
-	if err := client.GetUserTheme(ctx, user.ID /* user id */); err != nil {
-		return err
-	}
+	log.Printf("try to get streamer theme...")
+	// FIXME
+
+	// if err := client.GetStreamerTheme(ctx, user.ID /* user id */); err != nil {
+	// return err
+	// }
 
 	log.Printf("try to get tags...")
 	if _, err := client.GetTags(ctx); err != nil {
