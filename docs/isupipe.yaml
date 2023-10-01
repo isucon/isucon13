@@ -479,6 +479,7 @@ components:
           display_name: alice_display
           description: alice@example.com
           created_at: true
+          is_famous: true
       properties:
         id:
           type: integer
@@ -493,11 +494,14 @@ components:
           type: integer
         updated_at:
           type: integer
+        is_famous:
+          type: boolean
       required:
         - id
         - name
         - display_name
         - description
+        - is_famous
     Livestream:
       title: Livestream
       x-stoplight:
