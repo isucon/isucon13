@@ -29,26 +29,26 @@ func NewViolationError(err error, msg string, args ...interface{}) error {
 
 func NewApplicationError(err error, msg string, args ...interface{}) error {
 	message := fmt.Sprintf(msg, args...)
-	err = fmt.Errorf("[一般] %s: %w", message, err)
+	err = fmt.Errorf("[一般エラー] %s: %w", message, err)
 	return WrapError(BenchmarkApplicationError, err)
 }
 
 func NewHttpError(err error, req *http.Request, msg string, args ...interface{}) error {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
 	message := fmt.Sprintf(msg, args...)
-	err = fmt.Errorf("[一般] %sへのリクエストに対して、%s: %w", endpoint, message, err)
+	err = fmt.Errorf("[一般エラー] %sへのリクエストに対して、%s: %w", endpoint, message, err)
 	return WrapError(BenchmarkApplicationError, err)
 }
 
 func NewHttpStatusError(req *http.Request, expected int, actual int) error {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	err := fmt.Errorf("[一般] %s へのリクエストに対して、期待されたHTTPステータスコードが確認できませんでした (expected:%d, actual:%d)", endpoint, expected, actual)
+	err := fmt.Errorf("[一般エラー] %s へのリクエストに対して、期待されたHTTPステータスコードが確認できませんでした (expected:%d, actual:%d)", endpoint, expected, actual)
 	return WrapError(BenchmarkApplicationError, err)
 }
 
 func NewHttpResponseError(err error, req *http.Request) error {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	err = fmt.Errorf("[一般] %s へのリクエストに対して、レスポンスボディの形式が不正です: %w", endpoint, err)
+	err = fmt.Errorf("[一般エラー] %s へのリクエストに対して、レスポンスボディの形式が不正です: %w", endpoint, err)
 	return WrapError(BenchmarkApplicationError, err)
 }
 

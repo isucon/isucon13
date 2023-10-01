@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 
-	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/worker"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -17,19 +16,12 @@ import (
 // randomViewLivestreamIDStart~randomViewLivestreamIDEnd の範囲内で特定の配信を選出し、その配信に対してライブコメント/リアクションする
 func simulateRandomLivestreamViewer(
 	ctx context.Context,
-	webappIPAddress string,
+	client *isupipe.Client,
 	loginUser loginUser,
 	randomViewLivestreamIDStart int,
 	randomViewLivestreamIDEnd int,
 	scenarioName string,
 ) {
-	client, err := isupipe.NewClient(
-		agent.WithBaseURL(webappIPAddress),
-	)
-	if err != nil {
-		panic(err)
-	}
-
 	loginRequest := isupipe.LoginRequest{
 		UserName: loginUser.UserName,
 		Password: loginUser.Password,

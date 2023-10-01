@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/isucon/isucandar/failure"
+	"go.uber.org/zap"
 )
 
 var (
@@ -41,15 +42,42 @@ func WrapError(code failure.StringCode, err error) error {
 }
 
 func GetFinalErrorMessages() map[string][]string {
+	lgr := zap.S()
+
 	doneOnce.Do(func() {
 		benchErrors.Done()
 	})
-	return benchErrors.Messages()
+
+	// メッセージを整形した上でコード種別ごと詰め直して返す
+	m := make(map[string][]string)
+	for _, e := range benchErrors.All() {
+		code := failure.GetErrorCode(e)
+
+		failureErr, ok := e.(*failure.Error)
+		if !ok {
+			lgr.Warnf("ベンチマーカーが制御できないエラーが発生しました: %+v", e)
+			continue
+		}
+
+		err := failureErr.Unwrap()
+		if err == nil {
+			lgr.Warnf("ベンチマーカーが制御できないエラーが発生しました: %+v", e)
+		}
+
+		if _, ok := m[code]; !ok {
+			m[code] = []string{err.Error()}
+		} else {
+			m[code] = append(m[code], err.Error())
+		}
+	}
+
+	return m
 }
 
 func GetFinalPenalties() map[string]int64 {
 	doneOnce.Do(func() {
 		benchErrors.Done()
 	})
+
 	return benchErrors.Count()
 }

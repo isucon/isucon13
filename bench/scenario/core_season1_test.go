@@ -14,14 +14,14 @@ import (
 )
 
 func TestSeason1(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeoutSeconds*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.ScenarioTestTimeoutSeconds*time.Second)
 	defer cancel()
 	benchscore.InitScore(ctx)
 	bencherror.InitPenalty(ctx)
 	benchscore.SetAchivementGoal(0)
 
 	config.AdvertiseCost = 10
-	assert.NotPanics(t, func() { Season1(ctx, webappIPAddress) })
+	assert.NotPanics(t, func() { Season1(ctx) })
 	fmt.Fprintf(os.Stderr, "season1: score ==> %d\n", benchscore.GetCurrentScore())
 	fmt.Fprintf(os.Stderr, "season1: profit ==> %d\n", benchscore.GetCurrentProfit())
 	fmt.Fprintf(os.Stderr, "season1: penalty ==> %d\n", bencherror.GetCurrentPenalty())

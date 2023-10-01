@@ -37,6 +37,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 
 	log.Printf("try to get users...")
 	if _, err := client.GetUsers(ctx); err != nil {
+		log.Printf("failed to get users %s", err.Error())
 		return err
 	}
 

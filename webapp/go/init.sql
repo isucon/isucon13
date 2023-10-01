@@ -2,7 +2,7 @@ DELETE FROM tags;
 DELETE FROM livestreams;
 DELETE FROM livecomments;
 DELETE FROM reactions;
-DELETE FROM livestream_viewers;
+DELETE FROM livestream_viewers_history;
 DELETE FROM users;
 
 INSERT INTO tags (name) VALUES ('chair');

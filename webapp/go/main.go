@@ -119,7 +119,9 @@ func main() {
 	e.Debug = true
 	e.Logger.SetLevel(echolog.DEBUG)
 	e.Use(middleware.Logger())
-	e.Use(session.Middleware(sessions.NewCookieStore(secret)))
+	cookieStore := sessions.NewCookieStore(secret)
+	// cookieStore.Options.Domain = "*.u.isucon.dev"
+	e.Use(session.Middleware(cookieStore))
 	// e.Use(middleware.Recover())
 
 	// 初期化
@@ -168,6 +170,9 @@ func main() {
 	// stats
 	// ライブコメント統計情報
 	e.GET("/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
+
+	// 課金情報
+	e.GET("/payment", GetPaymentResult)
 
 	// DB接続
 	conn, err := connectDB()

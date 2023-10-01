@@ -4,7 +4,9 @@ import (
 	"context"
 	"log"
 
+	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/isupipe"
 )
 
 const (
@@ -62,16 +64,25 @@ var loginUsers = map[int]loginUser{
 }
 
 // Season1 シナリオは、サービス開始時点で存在する配信者の配信に対して、ランダムにリクエストを送信する
-func Season1(ctx context.Context, webappIPAddress string) {
+func Season1(ctx context.Context) error {
 	log.Println("running season1 scenario ...")
+
+	client, err := isupipe.NewClient(
+		agent.WithBaseURL(config.TargetBaseURL),
+	)
+	if err != nil {
+		return err
+	}
 
 	// 広告費用で制御して、リクエスト送信goroutineを単純倍増
 	// INFO: リクエスト数を制御するだけでなく、tipsの金額も増加させても良いかもしれない
 	for userIdx := 0; userIdx < config.AdvertiseCost; userIdx++ {
 		// 1~570 -> /initializeで注入されるseason1期間の配信
-		go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], 1 /* livestream id start */, 570 /* livestream id end*/, "Season1")
+		go simulateRandomLivestreamViewer(ctx, client, loginUsers[userIdx+1], 1 /* livestream id start */, 570 /* livestream id end*/, "Season1")
 	}
 
 	<-ctx.Done()
 	log.Println("season1 user workers has finished.")
+
+	return nil
 }

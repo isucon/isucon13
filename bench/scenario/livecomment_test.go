@@ -21,7 +21,7 @@ func TestLivecomment(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultBenchmarkWorkerTimeoutSeconds*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.ScenarioTestTimeoutSeconds*time.Second)
 	defer cancel()
 	benchscore.InitScore(ctx)
 	bencherror.InitPenalty(ctx)

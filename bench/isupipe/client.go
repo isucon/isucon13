@@ -51,7 +51,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 			},
 		}),
 		agent.WithNoCache(),
-		agent.WithTimeout(500 * time.Millisecond),
+		agent.WithTimeout(1 * time.Second),
 	}
 	for _, customOpt := range customOpts {
 		opts = append(opts, customOpt)
@@ -151,6 +151,7 @@ func (c *Client) GetUser(ctx context.Context, userID int) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
@@ -433,7 +434,7 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int) ([]Livec
 	return livecomments, nil
 }
 
-func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
+func (c *Client) GetUsers(ctx context.Context) ([]*User, error) {
 	req, err := c.agent.NewRequest(http.MethodGet, "/user", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -449,7 +450,7 @@ func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
 		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
 	}
 
-	users := []User{}
+	var users []*User
 	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
 		return users, bencherror.NewHttpResponseError(err, req)
 	}
@@ -524,6 +525,28 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int) error {
 
 	benchscore.AddScore(benchscore.SuccessLeaveLivestream)
 	return nil
+}
+
+// FIXME: 統計情報取得
+
+func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
+	req, err := c.agent.NewRequest(http.MethodGet, "/payment", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.agent.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var paymentResp *PaymentResult
+	if json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
+		return nil, err
+	}
+
+	return paymentResp, nil
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数

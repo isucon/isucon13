@@ -1,16 +1,19 @@
 package scheduler
 
-// 新人VTuber ... 当該シーズンにおいて登録した配信者
-// 人気VTuber ... 古株のうち、人気の高いVTuber
-// 不人気VTuber ... 古株のうち、人気が高くないVTuber
+// フェーズに応じて、指定された種別のユーザを返す
+// ただし、フェーズごとに各ユーザの上限は決められるので、それに違反しないように返す
 
-type VTuberScheduler struct {
+type UserScheduler struct {
 }
 
-func (s *VTuberScheduler) SelectPopularVTuber() {
+func (s *UserScheduler) SelectPopularVTuber() {
 
 }
 
-func (s *VTuberScheduler) SelectUnpopularVTuber() {
+func (s *UserScheduler) SelectVTuber() {
+
+}
+
+func (s *UserScheduler) SelectViewer() {
 
 }

@@ -27,14 +27,17 @@ type LivestreamViewer struct {
 }
 
 type Livestream struct {
-	Id          int       `db:"id"`
-	UserId      int       `db:"user_id"`
-	Title       string    `db:"title"`
-	Description string    `db:"description"`
-	StartAt     time.Time `db:"start_at"`
-	EndAt       time.Time `db:"end_at"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	Id           int       `db:"id"`
+	UserId       int       `db:"user_id"`
+	Title        string    `db:"title"`
+	Description  string    `db:"description"`
+	PlaylistUrl  string    `db:"playlist_url"`
+	ThumbnailUrl string    `db:"thumbnail_url"`
+	ViewersCount int       `db:"viewers_count"`
+	StartAt      time.Time `db:"start_at"`
+	EndAt        time.Time `db:"end_at"`
+	CreatedAt    time.Time `db:"created_at"`
+	UpdatedAt    time.Time `db:"updated_at"`
 }
 
 type LivestreamTag struct {
@@ -88,7 +91,8 @@ func reserveLivestreamHandler(c echo.Context) error {
 	users = append(users, req.Collaborators...)
 	for _, user := range users {
 		var founds int
-		if err := tx.SelectContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at && ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
+		if err := tx.SelectContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
+			// FIXME: スケジューラ実装ができてきたら、ちゃんとエラーを返すように
 			// tx.Rollback()
 			// return echo.NewHTTPError(http.StatusConflict, "schedule conflict")
 			c.Logger().Warn("schedule conflict")
@@ -99,14 +103,16 @@ func reserveLivestreamHandler(c echo.Context) error {
 		startAt    = time.Unix(req.StartAt, 0)
 		endAt      = time.Unix(req.EndAt, 0)
 		livestream = &Livestream{
-			UserId:      userId,
-			Title:       req.Title,
-			Description: req.Description,
-			StartAt:     startAt,
-			EndAt:       endAt,
+			UserId:       userId,
+			Title:        req.Title,
+			Description:  req.Description,
+			PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
+			ThumbnailUrl: "https://picsum.photos/200/300",
+			StartAt:      startAt,
+			EndAt:        endAt,
 		}
 	)
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, start_at, end_at) VALUES(:user_id, :title, :description, :start_at, :end_at)", livestream)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)", livestream)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -184,6 +190,9 @@ func getLivestreamsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, livestreams)
 }
 
+// FIXME: livestreamのカラムを追加し、視聴者数を増やす
+//
+//	viewerテーブルの廃止
 func enterLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
@@ -216,7 +225,12 @@ func enterLivestreamHandler(c echo.Context) error {
 		LivestreamID: livestreamID,
 	}
 
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers (user_id, livestream_id) VALUES(:user_id, :livestream_id)", viewer); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers_history (user_id, livestream_id) VALUES(:user_id, :livestream_id)", viewer); err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count + 1 WHERE id = ?", livestreamID); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -235,16 +249,6 @@ func leaveLivestreamHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-
-	userID, ok := sess.Values[defaultUserIDKey].(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
-	}
-
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -255,12 +259,7 @@ func leaveLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	viewer := LivestreamViewer{
-		UserID:       userID,
-		LivestreamID: livestreamID,
-	}
-
-	if _, err := tx.NamedExecContext(ctx, "DELETE FROM livestream_viewers WHERE user_id = :user_id AND livestream_id = :livestream_id", viewer); err != nil {
+	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count - 1 WHERE id = ?", livestreamID); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

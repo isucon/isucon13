@@ -10,6 +10,7 @@ import (
 
 // FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
 
+// FIXME: ライブ配信では、
 type LivestreamStatistics struct {
 	TotalViewers                            int `json:"total_viewers"`
 	TotalTips                               int `json:"total_tips"`
@@ -18,7 +19,7 @@ type LivestreamStatistics struct {
 	PreviousLivestreamTotalViewersDiff      int `json:"previous_livestream_total_viewers_diff"`
 	PreviousLivestreamTotalTipsDiff         int `json:"previous_livestream_total_tips_diff"`
 	PreviousLivestreamTotalLivecommentsDiff int `json:"previous_livestream_total_livecomments_diff"`
-	PreviousLivestreamTotaRlReactionsDiff   int `json:"previous_livestream_total_reactions_diff"`
+	PreviousLivestreamTotalReactionsDiff    int `json:"previous_livestream_total_reactions_diff"`
 }
 
 type UserStatistics struct {
@@ -108,13 +109,13 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	statistics.PreviousLivestreamTotalViewersDiff = statistics.TotalViewers - prevLivestreamStatistics.TotalViewers
 	statistics.PreviousLivestreamTotalLivecommentsDiff = statistics.TotalLivecomments - prevLivestreamStatistics.TotalLivecomments
 	statistics.PreviousLivestreamTotalTipsDiff = statistics.TotalTips - prevLivestreamStatistics.TotalTips
-	statistics.PreviousLivestreamTotaRlReactionsDiff = statistics.TotalReactions - prevLivestreamStatistics.TotalReactions
+	statistics.PreviousLivestreamTotalReactionsDiff = statistics.TotalReactions - prevLivestreamStatistics.TotalReactions
 
 	return c.JSON(http.StatusOK, statistics)
 }
 
 func countTotalViewers(ctx context.Context, livestreamID string) (int, error) {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livestream_viewers WHERE livestream_id = ?", livestreamID)
+	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livestream_viewers_history WHERE livestream_id = ?", livestreamID)
 	if err != nil {
 		return 0, err
 	}
