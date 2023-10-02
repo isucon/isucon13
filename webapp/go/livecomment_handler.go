@@ -47,6 +47,7 @@ type NGWord struct {
 
 func getLivecommentsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
 		return err
@@ -64,6 +65,10 @@ func getLivecommentsHandler(c echo.Context) error {
 
 func postLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
@@ -121,6 +126,10 @@ func postLivecommentHandler(c echo.Context) error {
 
 func reportLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
 
 	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
@@ -184,6 +193,10 @@ func reportLivecommentHandler(c echo.Context) error {
 // NGワードを登録
 func moderateNGWordHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
 
 	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {

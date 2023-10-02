@@ -84,6 +84,10 @@ func getUserStatisticsHandler(c echo.Context) error {
 func getLivestreamStatisticsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
+
 	livestreamID := c.Param("livestream_id")
 
 	livestream := Livestream{}

@@ -203,6 +203,10 @@ func userHandler(c echo.Context) error {
 func getUsersHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
+
 	var users []*User
 	if err := dbConn.SelectContext(ctx, &users, "SELECT * FROM users"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
