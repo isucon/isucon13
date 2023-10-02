@@ -159,6 +159,15 @@ func reportLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	// 配信者自身の配信に対するGETなのかを検証
+	var ownedLivestreams []*Livestream
+	if err := tx.SelectContext(ctx, &ownedLivestreams, "SELECT * FROM livestreams WHERE id = ? AND user_id = ?", livestreamId, userId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if len(ownedLivestreams) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't get livecomment reports that other streamers own")
+	}
+
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)", &LivecommentReport{
 		UserId:        userId,
 		LivestreamId:  livestreamId,
@@ -224,6 +233,15 @@ func moderateNGWordHandler(c echo.Context) error {
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	// 配信者自身の配信に対するmoderateなのかを検証
+	var ownedLivestreams []*Livestream
+	if err := tx.SelectContext(ctx, &ownedLivestreams, "SELECT * FROM livestreams WHERE id = ? AND user_id = ?", livestreamId, userId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if len(ownedLivestreams) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't moderate livestreams that other streamers own")
 	}
 
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO ng_words(user_id, livestream_id, word) VALUES (:user_id, :livestream_id, :word)", &NGWord{
