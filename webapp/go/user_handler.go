@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +32,7 @@ type User struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 
-	IsFamous bool `json:"is_famous"`
+	IsPopular bool `json:"is_popular"`
 }
 
 type Theme struct {
@@ -188,14 +190,20 @@ func userHandler(c echo.Context) error {
 		return err
 	}
 
-	userID := c.Param("user_id")
+	userId, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userID); err != nil {
+	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
 
-	// FIXME: IsFamousのアルゴリズムを作る
-	user.IsFamous = true
+	popular, err := userIsPopular(ctx, userId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	user.IsPopular = popular
 
 	return c.JSON(http.StatusOK, user)
 }
@@ -214,7 +222,8 @@ func getUsersHandler(c echo.Context) error {
 
 	// FIXME: IsFamousのアルゴリズムを作る
 	for i := range users {
-		users[i].IsFamous = true
+		userIsPopular(ctx, users[i].ID)
+		users[i].IsPopular = true
 	}
 	return c.JSON(http.StatusOK, users)
 }
@@ -237,4 +246,47 @@ func verifyUserSession(c echo.Context) error {
 	}
 
 	return nil
+}
+
+func userIsPopular(ctx context.Context, userId int) (bool, error) {
+	var livestreams []*Livestream
+	if err := dbConn.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
+		return false, err
+	}
+
+	totalSpamReports := 0
+	totalTips := 0
+	totalLivecomments := 0
+	for _, ls := range livestreams {
+		spamReports := 0
+		if err := dbConn.SelectContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
+			return false, err
+		}
+
+		var livecomments []*Livecomment
+		if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
+			return false, err
+		}
+
+		for _, lc := range livecomments {
+			totalTips += lc.Tip
+		}
+
+		totalSpamReports += spamReports
+		totalLivecomments += len(livecomments)
+	}
+
+	if totalSpamReports >= 10 {
+		return false, nil
+	}
+
+	if totalTips < 1000 {
+		return false, nil
+	}
+
+	if totalLivecomments < 50 {
+		return false, nil
+	}
+
+	return true, nil
 }
