@@ -24,8 +24,8 @@ def gen_user_theme_sql(user_id: int) -> str:
 
 def gen_user_sql(user_id: int) -> str:
     profile = fake.profile()
-    name = profile['name']
-    display_name = profile['username']
+    display_name = profile['name'] # Fakerではja-JP設定だとname=氏名になるので、これをdisplay_nameとして扱う
+    name = profile['username']
     description = DESCRIPTION_FORMAT.format(
         job=profile['job'],
         website=profile['website'][0],
