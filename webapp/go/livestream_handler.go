@@ -274,6 +274,10 @@ func leaveLivestreamHandler(c echo.Context) error {
 func getLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
+
 	livestreamID := c.Param("livestream_id")
 	livestream := Livestream{}
 	if err := dbConn.GetContext(ctx, &livestream, "SELECT * FROM livestreams WHERE id = ?", livestreamID); err != nil {
@@ -285,6 +289,10 @@ func getLivestreamHandler(c echo.Context) error {
 
 func getLivecommentReportsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
 
 	livestreamID := c.Param("livestream_id")
 
