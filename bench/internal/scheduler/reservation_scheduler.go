@@ -13,14 +13,14 @@ import (
 // フェーズ切り替えの際、
 // FIXME: baseAtちゃんとした値に直す
 var (
-	phase2ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
-	phase3ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
-	phase4ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
+	Phase2ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
+	Phase3ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
+	Phase4ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
 )
 
 func init() {
 	// スケジューラに初期データをロード
-	phase2ReservationScheduler.loadReservations(phase2ReservationPool)
+	Phase2ReservationScheduler.loadReservations(phase2ReservationPool)
 }
 
 // FIXME: 予約のタイトルと説明文はベンチ走行中にランダムに割り当てる
@@ -100,10 +100,6 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// FIXME: 最初の要素だけだと、すべて払い出していて予約を得られない可能性がある
-	// 予約が得られるまで走査するように
-	// interval := intervals[len(intervals)-1]
 
 	for i := len(intervals) - 1; i >= 0; i-- {
 		interval := intervals[i]
@@ -204,14 +200,12 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 	return nil, fmt.Errorf("no hot long reservation")
 }
 
-// FIXME: 予約の突合処理
-/*
+// 予約の突合処理に使う
 func (r *ReservationScheduler) RangeReserved(fn func(*Reservation)) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.reservationsMu.Lock()
+	defer r.reservationsMu.Unlock()
 
 	for _, reservationInterval := range r.reservations {
 		fn(reservationInterval)
 	}
 }
-*/

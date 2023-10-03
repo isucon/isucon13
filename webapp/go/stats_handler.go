@@ -11,6 +11,9 @@ import (
 // FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
 
 // FIXME: ライブ配信では、
+// TotalReactions map[string]int
+// TotalSpamReports int
+// TotalTips int
 type LivestreamStatistics struct {
 	TotalViewers                            int `json:"total_viewers"`
 	TotalTips                               int `json:"total_tips"`
