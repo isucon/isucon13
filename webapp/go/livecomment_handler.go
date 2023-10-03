@@ -16,9 +16,9 @@ type PostLivecommentRequest struct {
 }
 
 type Livecomment struct {
-	ID           int       `json:"id" db:"id"`
-	UserID       int       `json:"user_id" db:"user_id"`
-	LivestreamID int       `json:"livestream_id" db:"livestream_id"`
+	Id           int       `json:"id" db:"id"`
+	UserId       int       `json:"user_id" db:"user_id"`
+	LivestreamId int       `json:"livestream_id" db:"livestream_id"`
 	Comment      string    `json:"comment" db:"comment"`
 	Tip          int       `json:"tip" db:"tip"`
 	ReportCount  int       `json:"report_count" db:"report_count"`
@@ -53,10 +53,10 @@ func getLivecommentsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamID := c.Param("livestream_id")
+	livestreamId := c.Param("livestream_id")
 
 	livecomments := []Livecomment{}
-	if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamID); err != nil {
+	if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
@@ -70,16 +70,16 @@ func postLivecommentHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
+	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userID, ok := sess.Values[defaultUserIDKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
@@ -99,8 +99,8 @@ func postLivecommentHandler(c echo.Context) error {
 	}
 
 	livecomment := Livecomment{
-		UserID:       userID,
-		LivestreamID: livestreamID,
+		UserId:       userId,
+		LivestreamId: livestreamId,
 		Comment:      req.Comment,
 		Tip:          req.Tip,
 	}
@@ -111,7 +111,7 @@ func postLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	livecommentID, err := rs.LastInsertId()
+	livecommentId, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -121,7 +121,7 @@ func postLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	livecomment.ID = int(livecommentID)
+	livecomment.Id = int(livecommentId)
 	createdAt := time.Now()
 	livecomment.CreatedAt = createdAt
 	livecomment.UpdatedAt = createdAt
@@ -145,11 +145,11 @@ func reportLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
+	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
-	userId, ok := sess.Values[defaultUserIDKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -182,7 +182,7 @@ func reportLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reportID, err := rs.LastInsertId()
+	reportId, err := rs.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -190,7 +190,7 @@ func reportLivecommentHandler(c echo.Context) error {
 
 	createdAt := time.Now()
 	report := &LivecommentReport{
-		Id:            int(reportID),
+		Id:            int(reportId),
 		UserId:        userId,
 		LivestreamId:  livestreamId,
 		LivecommentId: livecommentId,
@@ -216,11 +216,11 @@ func moderateNGWordHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
+	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
-	userId, ok := sess.Values[defaultUserIDKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}

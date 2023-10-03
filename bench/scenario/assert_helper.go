@@ -12,41 +12,41 @@ import (
 func assertPostedReactionConsistency(
 	ctx context.Context,
 	client *isupipe.Client,
-	livestreamID int,
-	postedReactionID int,
+	livestreamId int,
+	postedReactionId int,
 ) error {
-	reactions, err := client.GetReactions(ctx, livestreamID)
+	reactions, err := client.GetReactions(ctx, livestreamId)
 	if err != nil {
 		return err
 	}
 
 	for _, r := range reactions {
-		if r.ID == postedReactionID {
+		if r.Id == postedReactionId {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
+	return fmt.Errorf("投稿されたリアクション(id: %d)が取得できませんでした", postedReactionId)
 }
 
 func assertPostedLivecommentConsistency(
 	ctx context.Context,
 	client *isupipe.Client,
-	livestreamID int,
-	postedLivecommentID int,
+	livestreamId int,
+	postedLivecommentId int,
 ) error {
-	livecomments, err := client.GetLivecomments(ctx, livestreamID)
+	livecomments, err := client.GetLivecomments(ctx, livestreamId)
 	if err != nil {
 		return err
 	}
 
 	for _, s := range livecomments {
-		if s.Id == postedLivecommentID {
+		if s.Id == postedLivecommentId {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("投稿されたライブコメント(id: %d)が取得できませんでした", postedLivecommentID)
+	return fmt.Errorf("投稿されたライブコメント(id: %d)が取得できませんでした", postedLivecommentId)
 }
 
 // もともと人気VTuberだったが、スパムにより不人気になった場合のアサーション
