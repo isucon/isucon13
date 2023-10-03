@@ -7,7 +7,7 @@ use Getopt::Long qw/:config posix_default no_ignore_case gnu_compat/;
 
 srand(1565458009);
 
-my $dic = 'positive.txt';
+my $dic = './initial-data/positive.txt';
 my $include_ngword = 0;
 my $num = 20;
 GetOptions(
@@ -24,7 +24,7 @@ my @KEYWORDS;
 
 my @NGWORDS;
 {
-    open(my $fh, "<:utf8", 'ngwords.txt') or die $!;
+    open(my $fh, "<:utf8", './initial-data/ngwords.txt') or die $!;
     @NGWORDS = map { chomp $_; $_ } <$fh>;
 }
 

@@ -44,14 +44,17 @@ func Season2(ctx context.Context, webappIPAddress string) {
 	}
 
 	season2ReserveWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
-		reservePattern := scheduler.Season2LivestreamReservationPatterns[i]
-		client := userIdToClient[reservePattern.UserId]
+		reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
+		if err != nil {
+
+		}
+		client := userIDToClient[reservation.UserId]
 
 		reserveRequest := isupipe.ReserveLivestreamRequest{
-			Title:       reservePattern.Title,
-			Description: reservePattern.Description,
-			StartAt:     reservePattern.StartAt.Unix(),
-			EndAt:       reservePattern.EndAt.Unix(),
+			Title:       reservation.Title,
+			Description: reservation.Description,
+			StartAt:     reservation.StartAt,
+			EndAt:       reservation.EndAt,
 		}
 		if _, err := client.ReserveLivestream(ctx, &reserveRequest); err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
@@ -59,7 +62,7 @@ func Season2(ctx context.Context, webappIPAddress string) {
 			}
 			log.Printf("season2: %s\n", err.Error())
 		}
-	}, worker.WithLoopCount(int32(len(scheduler.Season2LivestreamReservationPatterns))))
+	}, worker.WithLoopCount(10))
 	if err != nil {
 		log.Printf("WARNING: found an error; Season1 scenario does not anything: %s\n", err.Error())
 		return
