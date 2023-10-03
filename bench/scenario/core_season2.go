@@ -20,9 +20,9 @@ func Season2(ctx context.Context, webappIPAddress string) {
 	// ログイン回数を減らしてベンチマーカの性能を上げるため、
 	// ログイン済みのクライアントをキャッシュする
 
-	userIDToClient := map[int]*isupipe.Client{}
+	userIdToClient := map[int]*isupipe.Client{}
 
-	for userID, user := range loginUsers {
+	for userId, user := range loginUsers {
 		client, err := isupipe.NewClient(
 			agent.WithBaseURL(webappIPAddress),
 		)
@@ -40,12 +40,12 @@ func Season2(ctx context.Context, webappIPAddress string) {
 			return
 		}
 
-		userIDToClient[userID] = client
+		userIdToClient[userId] = client
 	}
 
 	season2ReserveWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
 		reservePattern := scheduler.Season2LivestreamReservationPatterns[i]
-		client := userIDToClient[reservePattern.UserID]
+		client := userIdToClient[reservePattern.UserId]
 
 		reserveRequest := isupipe.ReserveLivestreamRequest{
 			Title:       reservePattern.Title,
@@ -75,9 +75,9 @@ func Season2(ctx context.Context, webappIPAddress string) {
 	// INFO: リクエスト数を制御するだけでなく、tipsの金額も増加させても良いかもしれない
 	for userIdx := 0; userIdx < config.AdvertiseCost; userIdx++ {
 		// 571~(571+len(Season2LivestreamReservationPatterns)) -> season1期間の配信を含まない、season2ReserveWorkerが登録する配信一覧
-		// randomLivestreamIDStartAt := Season1GeneratedLivestreamCount + 1
-		// randomLivestreamIDEndAt := Season1GeneratedLivestreamCount + 1 + len(scheduler.Season2LivestreamReservationPatterns)
-		// go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], randomLivestreamIDStartAt, randomLivestreamIDEndAt, "Season2")
+		// randomLivestreamIdStartAt := Season1GeneratedLivestreamCount + 1
+		// randomLivestreamIdEndAt := Season1GeneratedLivestreamCount + 1 + len(scheduler.Season2LivestreamReservationPatterns)
+		// go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], randomLivestreamIdStartAt, randomLivestreamIdEndAt, "Season2")
 	}
 
 	<-ctx.Done()

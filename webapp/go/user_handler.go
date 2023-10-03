@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	defaultSessionIDKey      = "SESSIONID"
+	defaultSessionIdKey      = "SESSIONId"
 	defaultSessionExpiresKey = "EXPIRES"
-	defaultUserIDKey         = "USERID"
+	defaultUserIdKey         = "USERId"
 	bcryptDefaultCost        = 10
 )
 
 type User struct {
-	ID          int    `db:"id"`
+	Id          int    `db:"id"`
 	Name        string `db:"name"`
 	DisplayName string `db:"display_name"`
 	Description string `db:"description"`
@@ -36,14 +36,14 @@ type User struct {
 }
 
 type Theme struct {
-	UserID   int  `db:"user_id"`
+	UserId   int  `db:"user_id"`
 	DarkMode bool `db:"dark_mode"`
 }
 
 type Session struct {
-	// ID is an identifier that forms an UUIDv4.
-	ID     string `db:"id"`
-	UserID int    `db:"user_id"`
+	// Id is an identifier that forms an UUIdv4.
+	Id     string `db:"id"`
+	UserId int    `db:"user_id"`
 	// Expires is the UNIX timestamp that the sesison will be expired.
 	Expires int `db:"expires"`
 }
@@ -100,16 +100,16 @@ func userRegisterHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	userID, err := result.LastInsertId()
+	userId, err := result.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	user.ID = int(userID)
+	user.Id = int(userId)
 
 	theme := Theme{
-		UserID:   int(userID),
+		UserId:   int(userId),
 		DarkMode: req.Theme.DarkMode,
 	}
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", theme); err != nil {
@@ -151,14 +151,14 @@ func loginHandler(c echo.Context) error {
 
 	sessionEndAt := time.Now().Add(10 * time.Minute)
 
-	sessionID := uuid.NewString()
+	sessionId := uuid.NewString()
 	userSession := Session{
-		ID:      sessionID,
-		UserID:  user.ID,
+		Id:      sessionId,
+		UserId:  user.Id,
 		Expires: int(sessionEndAt.Unix()),
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
+	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -167,10 +167,10 @@ func loginHandler(c echo.Context) error {
 		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
 		Path:   "/",
 	}
-	sess.Values[defaultSessionIDKey] = userSession.ID
-	c.Logger().Infof("userSession.ID = %s", userSession.ID)
-	sess.Values[defaultUserIDKey] = userSession.UserID
-	c.Logger().Infof("userSession.UserID = %d", userSession.UserID)
+	sess.Values[defaultSessionIdKey] = userSession.Id
+	c.Logger().Infof("userSession.Id = %s", userSession.Id)
+	sess.Values[defaultUserIdKey] = userSession.UserId
+	c.Logger().Infof("userSession.UserId = %d", userSession.UserId)
 	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
 	c.Logger().Infof("sessionEndAt = %s", sessionEndAt.String())
 
@@ -222,14 +222,14 @@ func getUsersHandler(c echo.Context) error {
 
 	// FIXME: IsFamousのアルゴリズムを作る
 	for i := range users {
-		userIsPopular(ctx, users[i].ID)
+		userIsPopular(ctx, users[i].Id)
 		users[i].IsPopular = true
 	}
 	return c.JSON(http.StatusOK, users)
 }
 
 func verifyUserSession(c echo.Context) error {
-	sess, err := session.Get(defaultSessionIDKey, c)
+	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

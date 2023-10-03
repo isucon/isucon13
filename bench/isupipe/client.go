@@ -140,8 +140,8 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 	return nil
 }
 
-func (c *Client) GetUser(ctx context.Context, userID int) error {
-	urlPath := fmt.Sprintf("/user/%d", userID)
+func (c *Client) GetUser(ctx context.Context, userId int) error {
+	urlPath := fmt.Sprintf("/user/%d", userId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -317,9 +317,9 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) 
 
 func (c *Client) GetLivestream(
 	ctx context.Context,
-	livestreamID int,
+	livestreamId int,
 ) error {
-	urlPath := fmt.Sprintf("/livestream/%d", livestreamID)
+	urlPath := fmt.Sprintf("/livestream/%d", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -382,8 +382,8 @@ func (c *Client) GetTags(ctx context.Context) (*TagsResponse, error) {
 	return tags, nil
 }
 
-func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction, error) {
-	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamID)
+func (c *Client) GetReactions(ctx context.Context, livestreamId int) ([]Reaction, error) {
+	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -408,8 +408,8 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int) ([]Reaction
 	return reactions, nil
 }
 
-func (c *Client) GetLivecomments(ctx context.Context, livestreamID int) ([]Livecomment, error) {
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamID)
+func (c *Client) GetLivecomments(ctx context.Context, livestreamId int) ([]Livecomment, error) {
+	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -459,8 +459,8 @@ func (c *Client) GetUsers(ctx context.Context) ([]*User, error) {
 	return users, nil
 }
 
-func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int) ([]LivecommentReport, error) {
-	urlPath := fmt.Sprintf("/livestream/%d/report", livestreamID)
+func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int) ([]LivecommentReport, error) {
+	urlPath := fmt.Sprintf("/livestream/%d/report", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -485,8 +485,8 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int) ([
 	return reports, nil
 }
 
-func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {
-	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
+func (c *Client) EnterLivestream(ctx context.Context, livestreamId int) error {
+	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -506,8 +506,8 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int) error {
 	return nil
 }
 
-func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int) error {
-	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamID)
+func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int) error {
+	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)

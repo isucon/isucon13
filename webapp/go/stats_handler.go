@@ -37,9 +37,9 @@ func getUserStatisticsHandler(c echo.Context) error {
 		return err
 	}
 
-	userID := c.Param("user_id")
+	userId := c.Param("user_id")
 
-	rows, err := dbConn.QueryxContext(ctx, "SELECT id FROM livestreams where user_id = ?", userID)
+	rows, err := dbConn.QueryxContext(ctx, "SELECT id FROM livestreams where user_id = ?", userId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -88,14 +88,14 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamID := c.Param("livestream_id")
+	livestreamId := c.Param("livestream_id")
 
 	livestream := Livestream{}
-	if err := dbConn.GetContext(ctx, &livestream, "SELECT user_id, start_at FROM livestreams WHERE id = ?", livestreamID); err != nil {
+	if err := dbConn.GetContext(ctx, &livestream, "SELECT user_id, start_at FROM livestreams WHERE id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "livestream not found")
 	}
 
-	statistics, err := queryLivestreamStatistics(ctx, livestreamID)
+	statistics, err := queryLivestreamStatistics(ctx, livestreamId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -103,8 +103,8 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	prevLivestream := getPreviousLivestream(ctx, &livestream)
 	prevLivestreamStatistics := LivestreamStatistics{}
 	if prevLivestream != nil {
-		prevLivestreamID := fmt.Sprintf("%d", prevLivestream.Id)
-		prevLivestreamStatistics, err = queryLivestreamStatistics(ctx, prevLivestreamID)
+		prevLivestreamId := fmt.Sprintf("%d", prevLivestream.Id)
+		prevLivestreamStatistics, err = queryLivestreamStatistics(ctx, prevLivestreamId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -118,8 +118,8 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, statistics)
 }
 
-func countTotalViewers(ctx context.Context, livestreamID string) (int, error) {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livestream_viewers_history WHERE livestream_id = ?", livestreamID)
+func countTotalViewers(ctx context.Context, livestreamId string) (int, error) {
+	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livestream_viewers_history WHERE livestream_id = ?", livestreamId)
 	if err != nil {
 		return 0, err
 	}
@@ -132,8 +132,8 @@ func countTotalViewers(ctx context.Context, livestreamID string) (int, error) {
 	return viewerCount, nil
 }
 
-func countTotalReactions(ctx context.Context, livestreamID string) (int, error) {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamID)
+func countTotalReactions(ctx context.Context, livestreamId string) (int, error) {
+	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId)
 	if err != nil {
 		return 0, err
 	}
@@ -146,8 +146,8 @@ func countTotalReactions(ctx context.Context, livestreamID string) (int, error) 
 	return reactionCount, nil
 }
 
-func calculateLivecommentStatistics(ctx context.Context, livestreamID string) (totalLivecomments int, totalTips int, err error) {
-	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamID)
+func calculateLivecommentStatistics(ctx context.Context, livestreamId string) (totalLivecomments int, totalTips int, err error) {
+	rows, err := dbConn.QueryxContext(ctx, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId)
 	if err != nil {
 		return 0, 0, nil
 	}
@@ -194,23 +194,23 @@ func getPreviousLivestream(ctx context.Context, currentLivestream *Livestream) *
 	return newestLivestream
 }
 
-func queryLivestreamStatistics(ctx context.Context, livestreamID string) (LivestreamStatistics, error) {
+func queryLivestreamStatistics(ctx context.Context, livestreamId string) (LivestreamStatistics, error) {
 	statistics := LivestreamStatistics{}
 
-	totalLivecomments, totalTips, err := calculateLivecommentStatistics(ctx, livestreamID)
+	totalLivecomments, totalTips, err := calculateLivecommentStatistics(ctx, livestreamId)
 	if err != nil {
 		return statistics, err
 	}
 	statistics.TotalLivecomments = totalLivecomments
 	statistics.TotalTips = totalTips
 
-	totalViewers, err := countTotalViewers(ctx, livestreamID)
+	totalViewers, err := countTotalViewers(ctx, livestreamId)
 	if err != nil {
 		return statistics, err
 	}
 	statistics.TotalViewers = totalViewers
 
-	totalReactions, err := countTotalReactions(ctx, livestreamID)
+	totalReactions, err := countTotalReactions(ctx, livestreamId)
 	if err != nil {
 		return statistics, err
 	}
