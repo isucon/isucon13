@@ -86,7 +86,16 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 	return initializeResp, nil
 }
 
-func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error) {
+func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, options ...AssertOption) (*User, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusCreated,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -103,20 +112,29 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest) (*User, error
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	var user *User
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		return nil, bencherror.NewHttpResponseError(err, req)
+	if pat.DecodeBody {
+		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
 	}
 
 	benchscore.AddScore(benchscore.SuccessRegister)
 	return user, nil
 }
 
-func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
+func (c *Client) Login(ctx context.Context, r *LoginRequest, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -132,15 +150,24 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessLogin)
 	return nil
 }
 
-func (c *Client) GetUser(ctx context.Context, userId int) error {
+func (c *Client) GetUser(ctx context.Context, userId int, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/user/%d", userId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -152,8 +179,9 @@ func (c *Client) GetUser(ctx context.Context, userId int) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetUser)
@@ -161,7 +189,16 @@ func (c *Client) GetUser(ctx context.Context, userId int) error {
 }
 
 // FIXME: Hostヘッダにusernameを含めたドメインを入れてリクエスト
-func (c *Client) GetStreamerTheme(ctx context.Context) error {
+func (c *Client) GetStreamerTheme(ctx context.Context, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	req, err := c.agent.NewRequest(http.MethodGet, "/theme", nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -171,15 +208,24 @@ func (c *Client) GetStreamerTheme(ctx context.Context) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetUserTheme)
 	return nil
 }
 
-func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest) (*Livestream, error) {
+func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest, options ...AssertOption) (*Livestream, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusCreated,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -195,9 +241,10 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
+
 	var livestream *Livestream
 	if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
 		return nil, bencherror.NewHttpResponseError(err, req)
@@ -207,7 +254,16 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return livestream, nil
 }
 
-func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest) (*Reaction, error) {
+func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest, options ...AssertOption) (*Reaction, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusCreated,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -224,9 +280,10 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
+
 	reaction := &Reaction{}
 	if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
 		return nil, bencherror.NewHttpResponseError(err, req)
@@ -236,7 +293,16 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	return reaction, nil
 }
 
-func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostLivecommentRequest) (*PostLivecommentResponse, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostLivecommentRequest, options ...AssertOption) (*PostLivecommentResponse, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusCreated,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -254,8 +320,8 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	var livecommentResponse *PostLivecommentResponse
@@ -269,7 +335,16 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 	return livecommentResponse, nil
 }
 
-func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommentId int) error {
+func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommentId int, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusCreated,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d/livecomment/%d/report", livestreamId, livecommentId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
@@ -280,15 +355,25 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommen
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusCreated {
-		return bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessReportLivecomment)
 	return nil
 }
 
-func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) error {
+func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusCreated,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d/moderate", livestreamId)
 
 	payload, err := json.Marshal(&ModerateRequest{
@@ -308,8 +393,9 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) 
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusCreated {
-		return bencherror.NewHttpStatusError(req, http.StatusCreated, resp.StatusCode)
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	return nil
@@ -318,7 +404,17 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string) 
 func (c *Client) GetLivestream(
 	ctx context.Context,
 	livestreamId int,
+	options ...AssertOption,
 ) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -329,8 +425,9 @@ func (c *Client) GetLivestream(
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetLivestream)
@@ -340,7 +437,17 @@ func (c *Client) GetLivestream(
 func (c *Client) GetLivestreamsByTag(
 	ctx context.Context,
 	tag string,
+	options ...AssertOption,
 ) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream?tag=%s", tag)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -351,15 +458,25 @@ func (c *Client) GetLivestreamsByTag(
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetLivestreamByTag)
 	return nil
 }
 
-func (c *Client) GetTags(ctx context.Context) (*TagsResponse, error) {
+func (c *Client) GetTags(ctx context.Context, options ...AssertOption) (*TagsResponse, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	req, err := c.agent.NewRequest(http.MethodGet, "/tag", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -369,8 +486,9 @@ func (c *Client) GetTags(ctx context.Context) (*TagsResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	var tags *TagsResponse
@@ -382,7 +500,16 @@ func (c *Client) GetTags(ctx context.Context) (*TagsResponse, error) {
 	return tags, nil
 }
 
-func (c *Client) GetReactions(ctx context.Context, livestreamId int) ([]Reaction, error) {
+func (c *Client) GetReactions(ctx context.Context, livestreamId int, options ...AssertOption) ([]Reaction, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -395,8 +522,8 @@ func (c *Client) GetReactions(ctx context.Context, livestreamId int) ([]Reaction
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	reactions := []Reaction{}
@@ -408,7 +535,15 @@ func (c *Client) GetReactions(ctx context.Context, livestreamId int) ([]Reaction
 	return reactions, nil
 }
 
-func (c *Client) GetLivecomments(ctx context.Context, livestreamId int) ([]Livecomment, error) {
+func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, options ...AssertOption) ([]Livecomment, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
 	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -421,8 +556,8 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamId int) ([]Livec
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	livecomments := []Livecomment{}
@@ -434,7 +569,15 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamId int) ([]Livec
 	return livecomments, nil
 }
 
-func (c *Client) GetUsers(ctx context.Context) ([]*User, error) {
+func (c *Client) GetUsers(ctx context.Context, options ...AssertOption) ([]*User, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
 	req, err := c.agent.NewRequest(http.MethodGet, "/user", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -446,8 +589,8 @@ func (c *Client) GetUsers(ctx context.Context) ([]*User, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	var users []*User
@@ -459,7 +602,16 @@ func (c *Client) GetUsers(ctx context.Context) ([]*User, error) {
 	return users, nil
 }
 
-func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int) ([]LivecommentReport, error) {
+func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, options ...AssertOption) ([]LivecommentReport, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d/report", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -472,8 +624,8 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int) ([
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
 	}
 
 	reports := []LivecommentReport{}
@@ -485,7 +637,16 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int) ([
 	return reports, nil
 }
 
-func (c *Client) EnterLivestream(ctx context.Context, livestreamId int) error {
+func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
@@ -498,15 +659,24 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamId int) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessEnterLivestream)
 	return nil
 }
 
-func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int) error {
+func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
 	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
@@ -519,8 +689,8 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return bencherror.NewHttpStatusError(req, http.StatusOK, resp.StatusCode)
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
 	}
 
 	benchscore.AddScore(benchscore.SuccessLeaveLivestream)
@@ -575,4 +745,35 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Resp
 	}
 
 	return resp, nil
+}
+
+type ClientAssertPattern struct {
+	StatusCode int
+	SetCookie  bool
+	DecodeBody bool
+}
+
+func (pat *ClientAssertPattern) assertStatuscode(
+	req *http.Request,
+	resp *http.Response,
+) error {
+	if resp.StatusCode != pat.StatusCode {
+		return bencherror.NewHttpStatusError(req, pat.StatusCode, resp.StatusCode)
+	}
+
+	return nil
+}
+
+type AssertOption = func(cap *ClientAssertPattern)
+
+func WithStatusCode(code int) AssertOption {
+	return func(cap *ClientAssertPattern) {
+		cap.StatusCode = code
+	}
+}
+
+func DecodeBody(decode bool) AssertOption {
+	return func(cap *ClientAssertPattern) {
+		cap.DecodeBody = decode
+	}
 }
