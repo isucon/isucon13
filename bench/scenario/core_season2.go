@@ -20,9 +20,9 @@ func Season2(ctx context.Context, webappIPAddress string) {
 	// ログイン回数を減らしてベンチマーカの性能を上げるため、
 	// ログイン済みのクライアントをキャッシュする
 
-	userIdToClient := map[int]*isupipe.Client{}
+	userIDToClient := map[int]*isupipe.Client{}
 
-	for userId, user := range loginUsers {
+	for userID, user := range loginUsers {
 		client, err := isupipe.NewClient(
 			agent.WithBaseURL(webappIPAddress),
 		)
@@ -40,18 +40,21 @@ func Season2(ctx context.Context, webappIPAddress string) {
 			return
 		}
 
-		userIdToClient[userId] = client
+		userIDToClient[userID] = client
 	}
 
 	season2ReserveWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
-		reservePattern := scheduler.Season2LivestreamReservationPatterns[i]
-		client := userIdToClient[reservePattern.UserId]
+		reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
+		if err != nil {
+
+		}
+		client := userIDToClient[reservation.UserId]
 
 		reserveRequest := isupipe.ReserveLivestreamRequest{
-			Title:       reservePattern.Title,
-			Description: reservePattern.Description,
-			StartAt:     reservePattern.StartAt.Unix(),
-			EndAt:       reservePattern.EndAt.Unix(),
+			Title:       reservation.Title,
+			Description: reservation.Description,
+			StartAt:     reservation.StartAt,
+			EndAt:       reservation.EndAt,
 		}
 		if _, err := client.ReserveLivestream(ctx, &reserveRequest); err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
@@ -59,7 +62,7 @@ func Season2(ctx context.Context, webappIPAddress string) {
 			}
 			log.Printf("season2: %s\n", err.Error())
 		}
-	}, worker.WithLoopCount(int32(len(scheduler.Season2LivestreamReservationPatterns))))
+	}, worker.WithLoopCount(10))
 	if err != nil {
 		log.Printf("WARNING: found an error; Season1 scenario does not anything: %s\n", err.Error())
 		return
@@ -75,9 +78,9 @@ func Season2(ctx context.Context, webappIPAddress string) {
 	// INFO: リクエスト数を制御するだけでなく、tipsの金額も増加させても良いかもしれない
 	for userIdx := 0; userIdx < config.AdvertiseCost; userIdx++ {
 		// 571~(571+len(Season2LivestreamReservationPatterns)) -> season1期間の配信を含まない、season2ReserveWorkerが登録する配信一覧
-		// randomLivestreamIdStartAt := Season1GeneratedLivestreamCount + 1
-		// randomLivestreamIdEndAt := Season1GeneratedLivestreamCount + 1 + len(scheduler.Season2LivestreamReservationPatterns)
-		// go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], randomLivestreamIdStartAt, randomLivestreamIdEndAt, "Season2")
+		// randomLivestreamIDStartAt := Season1GeneratedLivestreamCount + 1
+		// randomLivestreamIDEndAt := Season1GeneratedLivestreamCount + 1 + len(scheduler.Season2LivestreamReservationPatterns)
+		// go simulateRandomLivestreamViewer(ctx, webappIPAddress, loginUsers[userIdx+1], randomLivestreamIDStartAt, randomLivestreamIDEndAt, "Season2")
 	}
 
 	<-ctx.Done()
