@@ -11,10 +11,10 @@ import (
 )
 
 type Reaction struct {
-	ID           int       `json:"id" db:"id"`
+	Id           int       `json:"id" db:"id"`
 	EmojiName    string    `json:"emoji_name" db:"emoji_name"`
-	UserID       int       `json:"user_id" db:"user_id"`
-	LivestreamID int       `json:"livestream_id" db:"livestream_id"`
+	UserId       int       `json:"user_id" db:"user_id"`
+	LivestreamId int       `json:"livestream_id" db:"livestream_id"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
@@ -30,10 +30,10 @@ func getReactionsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamID := c.Param("livestream_id")
+	livestreamId := c.Param("livestream_id")
 
 	reactions := []Reaction{}
-	if err := dbConn.SelectContext(ctx, &reactions, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamID); err != nil {
+	if err := dbConn.SelectContext(ctx, &reactions, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
@@ -42,7 +42,7 @@ func getReactionsHandler(c echo.Context) error {
 
 func postReactionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
-	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -52,12 +52,12 @@ func postReactionHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
+	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	userID, ok := sess.Values[defaultUserIDKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
@@ -73,8 +73,8 @@ func postReactionHandler(c echo.Context) error {
 	}
 
 	reaction := Reaction{
-		UserID:       userID,
-		LivestreamID: livestreamID,
+		UserId:       userId,
+		LivestreamId: livestreamId,
 		EmojiName:    req.EmojiName,
 	}
 
@@ -84,7 +84,7 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reactionID, err := result.LastInsertId()
+	reactionId, err := result.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -94,6 +94,6 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reaction.ID = int(reactionID)
+	reaction.Id = int(reactionId)
 	return c.JSON(http.StatusCreated, reaction)
 }

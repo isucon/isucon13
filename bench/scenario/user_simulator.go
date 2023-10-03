@@ -13,13 +13,13 @@ import (
 )
 
 // simulateRandomLivestreamViewer は特定の配信に対してライブコメントとリアクションを送信し続けるWorkerを動かす
-// randomViewLivestreamIDStart~randomViewLivestreamIDEnd の範囲内で特定の配信を選出し、その配信に対してライブコメント/リアクションする
+// randomViewLivestreamIdStart~randomViewLivestreamIdEnd の範囲内で特定の配信を選出し、その配信に対してライブコメント/リアクションする
 func simulateRandomLivestreamViewer(
 	ctx context.Context,
 	client *isupipe.Client,
 	loginUser loginUser,
-	randomViewLivestreamIDStart int,
-	randomViewLivestreamIDEnd int,
+	randomViewLivestreamIdStart int,
+	randomViewLivestreamIdEnd int,
 	scenarioName string,
 ) {
 	loginRequest := isupipe.LoginRequest{
@@ -37,9 +37,9 @@ func simulateRandomLivestreamViewer(
 
 	userSimulateWorker, err := worker.NewWorker(func(ctx context.Context, i int) {
 
-		randomLivestreamID := generator.GenerateIntBetween(randomViewLivestreamIDStart, randomViewLivestreamIDEnd)
+		randomLivestreamId := generator.GenerateIntBetween(randomViewLivestreamIdStart, randomViewLivestreamIdEnd)
 
-		if err := client.EnterLivestream(ctx, randomLivestreamID /* livestream id*/); err != nil {
+		if err := client.EnterLivestream(ctx, randomLivestreamId /* livestream id*/); err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
 				return
 			}
@@ -50,7 +50,7 @@ func simulateRandomLivestreamViewer(
 		postReactionReq := isupipe.PostReactionRequest{
 			EmojiName: generator.GenerateRandomReaction(),
 		}
-		postedReaction, err := client.PostReaction(ctx, randomLivestreamID /* livestream id*/, &postReactionReq)
+		postedReaction, err := client.PostReaction(ctx, randomLivestreamId /* livestream id*/, &postReactionReq)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
 				return
@@ -60,7 +60,7 @@ func simulateRandomLivestreamViewer(
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamID, postedReaction.ID); err != nil {
+		if err := checkPostedReactionConsistency(ctx, client, randomLivestreamId, postedReaction.Id); err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
 				return
 			}
@@ -75,7 +75,7 @@ func simulateRandomLivestreamViewer(
 			Comment: generator.GenerateRandomComment(),
 			Tip:     generator.GenerateTip(generator.TipLevel1),
 		}
-		postedLivecomment, err := client.PostLivecomment(ctx, randomLivestreamID /* livestream id*/, &postLivecommentReq)
+		postedLivecomment, err := client.PostLivecomment(ctx, randomLivestreamId /* livestream id*/, &postLivecommentReq)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
 				return
@@ -85,14 +85,14 @@ func simulateRandomLivestreamViewer(
 		}
 
 		// ちゃんと結果整合性が担保されているかチェック
-		if err := checkPostedLivecommentConsistency(ctx, client, randomLivestreamID, postedLivecomment.Id); err != nil {
+		if err := checkPostedLivecommentConsistency(ctx, client, randomLivestreamId, postedLivecomment.Id); err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
 				return
 			}
 			log.Printf("%s: %s\n", scenarioName, err.Error())
 		}
 
-		if err := client.LeaveLivestream(ctx, randomLivestreamID /* livestream id*/); err != nil {
+		if err := client.LeaveLivestream(ctx, randomLivestreamId /* livestream id*/); err != nil {
 			if errors.Is(err, context.DeadlineExceeded); err != nil {
 				return
 			}
@@ -119,24 +119,24 @@ func simulateRandomLivestreamViewer(
 func checkPostedReactionConsistency(
 	ctx context.Context,
 	client *isupipe.Client,
-	livestreamID int,
-	postedReactionID int,
+	livestreamId int,
+	postedReactionId int,
 ) error {
-	reactions, err := client.GetReactions(ctx, livestreamID)
+	reactions, err := client.GetReactions(ctx, livestreamId)
 	if err != nil {
 		return err
 	}
 
 	postedReactionFound := false
 	for _, r := range reactions {
-		if r.ID == postedReactionID {
+		if r.Id == postedReactionId {
 			postedReactionFound = true
 			break
 		}
 	}
 
 	if !postedReactionFound {
-		return bencherror.NewAssertionError(err, "投稿されたリアクション(id: %d)が取得できませんでした", postedReactionID)
+		return bencherror.NewAssertionError(err, "投稿されたリアクション(id: %d)が取得できませんでした", postedReactionId)
 	}
 
 	return nil
@@ -145,24 +145,24 @@ func checkPostedReactionConsistency(
 func checkPostedLivecommentConsistency(
 	ctx context.Context,
 	client *isupipe.Client,
-	livestreamID int,
-	postedLivecommentID int,
+	livestreamId int,
+	postedLivecommentId int,
 ) error {
-	livecomments, err := client.GetLivecomments(ctx, livestreamID)
+	livecomments, err := client.GetLivecomments(ctx, livestreamId)
 	if err != nil {
 		return err
 	}
 
 	postedLivecommentFound := false
 	for _, s := range livecomments {
-		if s.Id == postedLivecommentID {
+		if s.Id == postedLivecommentId {
 			postedLivecommentFound = true
 			break
 		}
 	}
 
 	if !postedLivecommentFound {
-		return bencherror.NewAssertionError(err, "投稿されたライブコメント(id: %d)が取得できませんでした", postedLivecommentID)
+		return bencherror.NewAssertionError(err, "投稿されたライブコメント(id: %d)が取得できませんでした", postedLivecommentId)
 	}
 
 	return nil

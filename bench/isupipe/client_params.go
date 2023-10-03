@@ -40,8 +40,8 @@ type (
 	}
 	PostLivecommentResponse struct {
 		Id           int       `json:"id"`
-		UserID       int       `json:"user_id"`
-		LivestreamID int       `json:"livestream_id"`
+		UserId       int       `json:"user_id"`
+		LivestreamId int       `json:"livestream_id"`
 		Comment      string    `json:"comment"`
 		Tip          int       `json:"tip"`
 		CreatedAt    time.Time `json:"created_at"`
@@ -63,8 +63,8 @@ type Theme struct {
 
 type Livecomment struct {
 	Id           int       `json:"id"`
-	UserID       int       `json:"user_id"`
-	LivestreamID int       `json:"livestream_id"`
+	UserId       int       `json:"user_id"`
+	LivestreamId int       `json:"livestream_id"`
 	Comment      string    `json:"comment"`
 	Tip          int       `json:"tip"`
 	ReportCount  int       `json:"report_count"`
@@ -73,15 +73,15 @@ type Livecomment struct {
 }
 
 type Reaction struct {
-	ID           int       `json:"id"`
+	Id           int       `json:"id"`
 	EmojiName    string    `json:"emoji_name"`
-	UserID       int       `json:"user_id"`
-	LivestreamID int       `json:"livestream_id"`
+	UserId       int       `json:"user_id"`
+	LivestreamId int       `json:"livestream_id"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
 type User struct {
-	ID          int    `json:"id"`
+	Id          int    `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
@@ -118,7 +118,7 @@ type LivecommentReport struct {
 }
 
 type Tag struct {
-	ID   int    `json:"id"`
+	Id   int    `json:"id"`
 	Name string `json:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `json:"created_at"`

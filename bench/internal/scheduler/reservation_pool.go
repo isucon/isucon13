@@ -9,18 +9,18 @@ import (
 const hotThreshold = 1
 
 type LivestreamPattern struct {
-	UserID      int
+	UserId      int
 	Title       string
 	Description string
 	StartAt     time.Time
 	EndAt       time.Time
 }
 
-func newLivestreamPattern(userID int, title string, description string, startAtS string, endAtS string) LivestreamPattern {
+func newLivestreamPattern(userId int, title string, description string, startAtS string, endAtS string) LivestreamPattern {
 	startAt, _ := time.Parse("2006-01-02 15:04:05", startAtS)
 	endAt, _ := time.Parse("2006-01-02 15:04:05", endAtS)
 	return LivestreamPattern{
-		UserID:      userID,
+		UserId:      userId,
 		Title:       title,
 		Description: description,
 		StartAt:     startAt,

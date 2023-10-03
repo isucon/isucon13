@@ -19,7 +19,7 @@ type loginUser struct {
 	Password string
 }
 
-// userID -> user
+// userId -> user
 var loginUsers = map[int]loginUser{
 	1: {
 		UserName: "井上 太郎",

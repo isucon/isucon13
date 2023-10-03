@@ -9,7 +9,7 @@ import (
 )
 
 type Tag struct {
-	ID   int    `db:"id"`
+	Id   int    `db:"id"`
 	Name string `db:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `db:"created_at"`
@@ -58,7 +58,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 	}
 
 	theme := Theme{}
-	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", user.ID); err != nil {
+	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", user.Id); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
