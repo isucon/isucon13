@@ -48,7 +48,7 @@ func Season2(ctx context.Context, webappIPAddress string) {
 		if err != nil {
 
 		}
-		client := userIDToClient[reservation.UserId]
+		client := userIdToClient[reservation.UserId]
 
 		reserveRequest := isupipe.ReserveLivestreamRequest{
 			Title:       reservation.Title,

@@ -28,6 +28,8 @@ clean:
 	$(RM) ./bin/bench_darwin_amd64
 	$(RM) ./bin/bench_linux_amd64
 	$(RM) ./bin/bench_linux_arm64
-	$(DOCKER_RM) isupipe
-	$(DOCKER_RM) mysql
+	$(DOCKER_RM) isupipe-isupipe
+	$(DOCKER_RM) isupipe-scenario
+	$(DOCKER_RM) mysql-isupipe
+	$(DOCKER_RM) mysql-scenario
 	sudo $(CLEANTEST)
