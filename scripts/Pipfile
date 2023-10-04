@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 faker = "*"
 ipython = "*"
+mecab-python3 = "*"
+markovify = "*"
 
 [dev-packages]
 
