@@ -12,9 +12,13 @@ import {
   BsCircleFill,
 } from 'react-icons/bs';
 import { Link } from 'react-router-dom';
+import { apiClient } from '~/api/client';
+import { useLiveStreams } from '~/api/hooks';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
+  const liveSterams = useLiveStreams();
+
   return (
     <div>
       <Stack
@@ -79,13 +83,11 @@ export default function IndexPage(): React.ReactElement {
           flexGrow={1}
           sx={{ padding: 2 }}
         >
-          {Array(10)
-            .fill(0)
-            .map((_, index) => (
-              <Grid key={index} xs={1}>
-                <VideoThumbnail />
-              </Grid>
-            ))}
+          {liveSterams.data?.map((stream, index) => (
+            <Grid key={index} xs={1}>
+              <VideoThumbnail liveSteram={stream} />
+            </Grid>
+          ))}
         </Grid>
       </Stack>
     </div>

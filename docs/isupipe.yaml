@@ -177,7 +177,7 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/GetLivestream"
-      operationId: "get-livestream-:livestreamid"
+      operationId: "get-livestream-_livestreamid"
       description: ライブストリーム視聴画面の情報取得
   "/livestream/{livestreamid}/moderate":
     parameters:
@@ -218,7 +218,7 @@ paths:
     get:
       summary: Your GET endpoint
       tags: []
-      operationId: "get-livestream-:livestreamid-livecomment"
+      operationId: "get-livestream-_livestreamid-livecomment"
       description: 当該ライブストリームのライブコメント取得
       responses:
         "200":
@@ -303,7 +303,7 @@ paths:
     get:
       summary: Your GET endpoint
       tags: []
-      operationId: "get-livestream-:livestreamid-reaction"
+      operationId: "get-livestream-_livestreamid-reaction"
       description: 当該ライブストリームのリアクション取得
       responses:
         "200":
@@ -358,7 +358,7 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/GetLivestreamStatistics"
-      operationId: "get-livestream-:livestreamid-statistics"
+      operationId: "get-livestream-_livestreamid-statistics"
       description: ライブストリームの統計情報取得
   /livestream/reservation:
     post:
@@ -707,6 +707,7 @@ components:
                 end_at: 0
   responses:
     GetTag:
+      description: Example response
       content:
         application/json:
           schema:

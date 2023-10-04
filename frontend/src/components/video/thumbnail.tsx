@@ -4,8 +4,12 @@ import Avatar from '@mui/joy/Avatar';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Schemas } from '~/api/types';
 
-export function VideoThumbnail(): React.ReactElement {
+export interface VideoThumbnailProps {
+  liveSteram: Schemas.Livestream;
+}
+export function VideoThumbnail(props: VideoThumbnailProps): React.ReactElement {
   return (
     <Link to="/watch" style={{ textDecoration: 'none' }}>
       <AspectRatio sx={{ borderRadius: 10 }}>
@@ -17,10 +21,10 @@ export function VideoThumbnail(): React.ReactElement {
       <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
         <Avatar />
         <div>
-          <Typography level="title-sm">ビデオタイトル</Typography>
-          <Typography level="body-sm">
+          <Typography level="title-sm">{props.liveSteram.title}</Typography>
+          <Typography level="body-sm" component="div">
             <Stack direction="row" spacing={2}>
-              <span>チャンネル名</span>
+              <span>{props.liveSteram.user_id}</span>
               <span>1234人視聴・12分前</span>
             </Stack>
           </Typography>

@@ -1,21 +1,24 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { CodeGenerator } from '@himenon/openapi-typescript-code-generator';
 import * as Templates from '@himenon/openapi-typescript-code-generator/templates';
 
 const main = () => {
-  const codeGenerator = new CodeGenerator('scripts/openapi/spec.yaml');
+  const codeGenerator = new CodeGenerator(
+    path.join(__dirname, '../../../docs/isupipe.yaml'),
+  );
 
   const apiClientGeneratorTemplate = {
-    generator: Templates.ApiClient.generator,
+    generator: Templates.ClassApiClient.generator,
     option: {},
   };
 
   const typeDefCode = codeGenerator.generateTypeDefinition();
   const apiClientCode = codeGenerator.generateCode([
     {
-      generator: () => {
-        return [`import { Schemas, RequestBodies } from "./types";`];
-      },
+      generator: () => [
+        `import { Schemas, RequestBodies, Responses } from "./types";`,
+      ],
     },
     codeGenerator.getAdditionalTypeDefinitionCustomCodeGenerator(),
     apiClientGeneratorTemplate,
