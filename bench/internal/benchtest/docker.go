@@ -72,7 +72,7 @@ func findProjectRoot() (string, error) {
 	return strings.Join(cwdParts[:sliceEnd], "/"), nil
 }
 
-func Setup() (*Resource, error) {
+func Setup(packageName string) (*Resource, error) {
 	baseDir, err := findProjectRoot()
 	if err != nil {
 		return nil, fmt.Errorf("find projectroot error: %w", err)
@@ -87,7 +87,7 @@ func Setup() (*Resource, error) {
 		return nil, fmt.Errorf("pool ping error: %w", err)
 	}
 
-	network, err := pool.CreateNetwork("isupipe")
+	network, err := pool.CreateNetwork(fmt.Sprintf("isupipe-%s", packageName))
 	if err != nil {
 		return nil, fmt.Errorf("create network error: %w", err)
 	}
@@ -97,7 +97,7 @@ func Setup() (*Resource, error) {
 	databaseResource, err := runContainer(pool, &dockertest.RunOptions{
 		Repository: "mysql/mysql-server",
 		Tag:        "8.0.31",
-		Name:       "mysql",
+		Name:       fmt.Sprintf("mysql-%s", packageName),
 		Env: []string{
 			"MYSQL_ROOT_HOST=%",
 			"MYSQL_ROOT_PASSWORD=root",
@@ -133,7 +133,7 @@ func Setup() (*Resource, error) {
 	webappResource, err := runContainer(pool, &dockertest.RunOptions{
 		Repository: "isupipe",
 		Tag:        "latest",
-		Name:       "isupipe",
+		Name:       fmt.Sprintf("isupipe-%s", packageName),
 		Env: []string{
 			fmt.Sprintf("ISUCON13_MYSQL_DIALCONFIG_ADDRESS=%s", databaseIp),
 		},

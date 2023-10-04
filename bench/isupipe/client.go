@@ -329,6 +329,10 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
+	if resp.StatusCode != pat.StatusCode {
+		return nil, bencherror.NewHttpResponseError(err, req)
+	}
+
 	benchscore.AddScore(benchscore.SuccessPostLivecomment)
 	benchscore.AddTipProfit(livecommentResponse.Tip)
 

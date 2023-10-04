@@ -1,4 +1,4 @@
-package scenario
+package isupipe
 
 import (
 	"log"
@@ -8,10 +8,11 @@ import (
 	"github.com/isucon/isucon13/bench/internal/benchtest"
 )
 
+// NOTE: パッケージ内では並列にテストを実行しないため、この変数で競合が起きない
 var webappIPAddress string
 
 func TestMain(m *testing.M) {
-	testResource, err := benchtest.Setup("scenario")
+	testResource, err := benchtest.Setup("isupipe")
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
