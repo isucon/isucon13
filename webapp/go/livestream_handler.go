@@ -22,28 +22,28 @@ type ReserveLivestreamRequest struct {
 }
 
 type LivestreamViewer struct {
-	UserId       int `db:"user_id"`
-	LivestreamId int `db:"livestream_id"`
+	UserId       int `json:"user_id" db:"user_id"`
+	LivestreamId int `json:"livestream_id" db:"livestream_id"`
 }
 
 type Livestream struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
-	Title        string    `db:"title"`
-	Description  string    `db:"description"`
-	PlaylistUrl  string    `db:"playlist_url"`
-	ThumbnailUrl string    `db:"thumbnail_url"`
-	ViewersCount int       `db:"viewers_count"`
-	StartAt      time.Time `db:"start_at"`
-	EndAt        time.Time `db:"end_at"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	Id           int       `json:"id" db:"id"`
+	UserId       int       `json:"user_id" db:"user_id"`
+	Title        string    `json:"title" db:"title"`
+	Description  string    `json:"description" db:"description"`
+	PlaylistUrl  string    `json:"playlist_url" db:"playlist_url"`
+	ThumbnailUrl string    `json:"thumbnail_url" db:"thumbnail_url"`
+	ViewersCount int       `json:"viewers_count" db:"viewers_count"`
+	StartAt      time.Time `json:"start_at" db:"start_at"`
+	EndAt        time.Time `json:"end_at" db:"end_at"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type LivestreamTag struct {
-	Id           int `db:"id"`
-	LivestreamId int `db:"livestream_id"`
-	TagId        int `db:"tag_id"`
+	Id           int `json:"id" db:"id"`
+	LivestreamId int `json:"livestream_id" db:"livestream_id"`
+	TagId        int `json:"tag_id" db:"tag_id"`
 }
 
 func reserveLivestreamHandler(c echo.Context) error {
@@ -157,6 +157,11 @@ func getLivestreamsHandler(c echo.Context) error {
 	// 複数件取得
 	var livestreams []*Livestream
 	if keyTagName == "" {
+		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	} else {
 		keyTag := Tag{}
 		if err := dbConn.GetContext(ctx, &keyTag, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -175,11 +180,6 @@ func getLivestreamsHandler(c echo.Context) error {
 			}
 
 			livestreams = append(livestreams, ls)
-		}
-	} else {
-		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
-			tx.Rollback()
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
 

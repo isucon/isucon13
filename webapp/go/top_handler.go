@@ -9,10 +9,10 @@ import (
 )
 
 type Tag struct {
-	Id   int    `db:"id"`
-	Name string `db:"name"`
+	Id   int    `json:"id" db:"id"`
+	Name string `json:"name" db:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `db:"created_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
 type TagsResponse struct {

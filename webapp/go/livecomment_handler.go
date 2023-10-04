@@ -27,12 +27,12 @@ type Livecomment struct {
 }
 
 type LivecommentReport struct {
-	Id            int       `db:"id"`
-	UserId        int       `db:"user_id"`
-	LivestreamId  int       `db:"livestream_id"`
-	LivecommentId int       `db:"livecomment_id"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	Id            int       `json:"id" db:"id"`
+	UserId        int       `json:"user_id" db:"user_id"`
+	LivestreamId  int       `json:"livestream_id" db:"livestream_id"`
+	LivecommentId int       `json:"livecomment_id" db:"livecomment_id"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 }
 
 type ModerateRequest struct {
@@ -40,9 +40,9 @@ type ModerateRequest struct {
 }
 
 type NGWord struct {
-	UserId       int    `db:"user_id"`
-	LivestreamId int    `db:"livestream_id"`
-	Word         string `db:"word"`
+	UserId       int    `json:"user_id" db:"user_id"`
+	LivestreamId int    `json:"livestream_id" db:"livestream_id"`
+	Word         string `json:"word" db:"word"`
 }
 
 func getLivecommentsHandler(c echo.Context) error {
