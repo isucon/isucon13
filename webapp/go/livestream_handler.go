@@ -167,7 +167,7 @@ func getLivestreamsHandler(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
-		var keyTaggedLivestreams []*Livestream
+		var keyTaggedLivestreams []*LivestreamTag
 		if err := tx.SelectContext(ctx, &keyTaggedLivestreams, "SELECT * FROM livestream_tags WHERE tag_id = ?", keyTag.Id); err != nil {
 			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -175,7 +175,7 @@ func getLivestreamsHandler(c echo.Context) error {
 
 		for _, keyTaggedLivestream := range keyTaggedLivestreams {
 			ls := &Livestream{}
-			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.Id); err != nil {
+			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.LivestreamId); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
