@@ -9,6 +9,9 @@
 import { Schemas, RequestBodies, Responses } from "./types";
 export type Response$get$tag$Status$200 = Responses.GetTag.Content;
 export type RequestBody$post$login = RequestBodies.Login.Content;
+export interface Response$get$users$Status$200 {
+    "application/json": Schemas.User[];
+}
 export type RequestBody$post$user = RequestBodies.PostUser.Content;
 export interface Response$post$user$Status$201 {
     "application/json": Schemas.User;
@@ -32,28 +35,37 @@ export interface Parameter$get$users$statistics {
 }
 export type Response$get$users$statistics$Status$200 = Responses.GetUserStatistics.Content;
 export interface Parameter$get$livestream {
-    limit?: number;
-    offset?: number;
+    /** 検索に使用するタグの名前 */
+    tag?: string;
 }
 export type Response$get$livestream$Status$200 = Responses.GetLivestreams.Content;
 export interface Parameter$get$livestream$_livestreamid {
     livestreamid: string;
 }
 export type Response$get$livestream$_livestreamid$Status$200 = Responses.GetLivestream.Content;
-export interface Parameter$get$livestream$_livestreamid$superchat {
+export interface Parameter$post$livestream$livestreamid$moderate {
     livestreamid: string;
 }
-export interface Response$get$livestream$_livestreamid$superchat$Status$200 {
-    "application/json": Schemas.Superchat[];
+export type RequestBody$post$livestream$livestreamid$moderate = RequestBodies.PostLivestreamModerate.Content;
+export interface Response$post$livestream$livestreamid$moderate$Status$201 {
+    "application/json": {
+        word_id?: number;
+    };
 }
-export interface Parameter$post$livestream$livestreamid$superchat {
+export interface Parameter$get$livestream$_livestreamid$livecomment {
+    livestreamid: string;
+}
+export interface Response$get$livestream$_livestreamid$livecomment$Status$200 {
+    "application/json": Schemas.Livecomment[];
+}
+export interface Parameter$post$livestream$livestreamid$livecomment {
     livestreamid: string;
     /** application/json */
     "Content-Type"?: string;
 }
-export type RequestBody$post$livestream$livestreamid$superchat = RequestBodies.PostSuperchat.Content;
-export interface Response$post$livestream$livestreamid$superchat$Status$201 {
-    "application/json": Schemas.Superchat;
+export type RequestBody$post$livestream$livestreamid$livecomment = RequestBodies.PostLivecomment.Content;
+export interface Response$post$livestream$livestreamid$livecomment$Status$201 {
+    "application/json": Schemas.Livecomment;
 }
 export interface Parameter$post$livestream$livestreamid$enter {
     livestreamid: string;
@@ -84,24 +96,25 @@ export type RequestBody$post$livestream$reservation = RequestBodies.ReserveLives
 export interface Response$post$livestream$reservation$Status$201 {
     "application/json": Schemas.Livestream;
 }
-export interface Parameter$get$search$livestream {
-    /** 検索に使用するタグの名前 */
-    tag?: string;
+export interface Parameter$get$livecomment$livecommentid$reports {
+    livestreamid: string;
 }
-export interface Response$get$search$livestream$Status$200 {
-    "application/json": Schemas.Livestream[];
+export interface Response$get$livecomment$livecommentid$reports$Status$200 {
+    "application/json": Schemas.LivecommentReport[];
 }
-export interface Parameter$post$superchat$superchatid$report {
-    superchatid: string;
+export interface Parameter$post$livecomment$livecommentid$report {
+    livecommentid: string;
+    livestreamid: string;
 }
-export interface Response$post$superchat$superchatid$report$Status$201 {
-    "application/json": Schemas.SuperchatReport;
+export interface Response$post$livecomment$livecommentid$report$Status$201 {
+    "application/json": Schemas.LivecommentReport;
 }
 export type ResponseContentType$get$tag = keyof Response$get$tag$Status$200;
 export type RequestContentType$post$login = keyof RequestBody$post$login;
 export interface Params$post$login {
     requestBody: RequestBody$post$login["application/json"];
 }
+export type ResponseContentType$get$users = keyof Response$get$users$Status$200;
 export type RequestContentType$post$user = keyof RequestBody$post$user;
 export type ResponseContentType$post$user = keyof Response$post$user$Status$201;
 export interface Params$post$user {
@@ -127,15 +140,21 @@ export type ResponseContentType$get$livestream$_livestreamid = keyof Response$ge
 export interface Params$get$livestream$_livestreamid {
     parameter: Parameter$get$livestream$_livestreamid;
 }
-export type ResponseContentType$get$livestream$_livestreamid$superchat = keyof Response$get$livestream$_livestreamid$superchat$Status$200;
-export interface Params$get$livestream$_livestreamid$superchat {
-    parameter: Parameter$get$livestream$_livestreamid$superchat;
+export type RequestContentType$post$livestream$livestreamid$moderate = keyof RequestBody$post$livestream$livestreamid$moderate;
+export type ResponseContentType$post$livestream$livestreamid$moderate = keyof Response$post$livestream$livestreamid$moderate$Status$201;
+export interface Params$post$livestream$livestreamid$moderate {
+    parameter: Parameter$post$livestream$livestreamid$moderate;
+    requestBody: RequestBody$post$livestream$livestreamid$moderate["application/json"];
 }
-export type RequestContentType$post$livestream$livestreamid$superchat = keyof RequestBody$post$livestream$livestreamid$superchat;
-export type ResponseContentType$post$livestream$livestreamid$superchat = keyof Response$post$livestream$livestreamid$superchat$Status$201;
-export interface Params$post$livestream$livestreamid$superchat {
-    parameter: Parameter$post$livestream$livestreamid$superchat;
-    requestBody: RequestBody$post$livestream$livestreamid$superchat["application/json"];
+export type ResponseContentType$get$livestream$_livestreamid$livecomment = keyof Response$get$livestream$_livestreamid$livecomment$Status$200;
+export interface Params$get$livestream$_livestreamid$livecomment {
+    parameter: Parameter$get$livestream$_livestreamid$livecomment;
+}
+export type RequestContentType$post$livestream$livestreamid$livecomment = keyof RequestBody$post$livestream$livestreamid$livecomment;
+export type ResponseContentType$post$livestream$livestreamid$livecomment = keyof Response$post$livestream$livestreamid$livecomment$Status$201;
+export interface Params$post$livestream$livestreamid$livecomment {
+    parameter: Parameter$post$livestream$livestreamid$livecomment;
+    requestBody: RequestBody$post$livestream$livestreamid$livecomment["application/json"];
 }
 export interface Params$post$livestream$livestreamid$enter {
     parameter: Parameter$post$livestream$livestreamid$enter;
@@ -162,13 +181,13 @@ export type ResponseContentType$post$livestream$reservation = keyof Response$pos
 export interface Params$post$livestream$reservation {
     requestBody: RequestBody$post$livestream$reservation["application/json"];
 }
-export type ResponseContentType$get$search$livestream = keyof Response$get$search$livestream$Status$200;
-export interface Params$get$search$livestream {
-    parameter: Parameter$get$search$livestream;
+export type ResponseContentType$get$livecomment$livecommentid$reports = keyof Response$get$livecomment$livecommentid$reports$Status$200;
+export interface Params$get$livecomment$livecommentid$reports {
+    parameter: Parameter$get$livecomment$livecommentid$reports;
 }
-export type ResponseContentType$post$superchat$superchatid$report = keyof Response$post$superchat$superchatid$report$Status$201;
-export interface Params$post$superchat$superchatid$report {
-    parameter: Parameter$post$superchat$superchatid$report;
+export type ResponseContentType$post$livecomment$livecommentid$report = keyof Response$post$livecomment$livecommentid$report$Status$201;
+export interface Params$post$livecomment$livecommentid$report {
+    parameter: Parameter$post$livecomment$livecommentid$report;
 }
 export type HttpMethod = "GET" | "PUT" | "POST" | "DELETE" | "OPTIONS" | "HEAD" | "PATCH" | "TRACE";
 export interface ObjectLike {
@@ -182,26 +201,28 @@ export interface QueryParameter {
 export interface QueryParameters {
     [key: string]: QueryParameter;
 }
-export type SuccessResponses = Response$get$tag$Status$200 | Response$post$user$Status$201 | Response$get$users$userid$Status$200 | Response$get$users$userid$theme$Status$200 | Response$get$users$statistics$Status$200 | Response$get$livestream$Status$200 | Response$get$livestream$_livestreamid$Status$200 | Response$get$livestream$_livestreamid$superchat$Status$200 | Response$post$livestream$livestreamid$superchat$Status$201 | Response$get$livestream$_livestreamid$reaction$Status$200 | Response$post$livestream$livestreamid$reaction$Status$201 | Response$get$livestream$_livestreamid$statistics$Status$200 | Response$post$livestream$reservation$Status$201 | Response$get$search$livestream$Status$200 | Response$post$superchat$superchatid$report$Status$201;
+export type SuccessResponses = Response$get$tag$Status$200 | Response$get$users$Status$200 | Response$post$user$Status$201 | Response$get$users$userid$Status$200 | Response$get$users$userid$theme$Status$200 | Response$get$users$statistics$Status$200 | Response$get$livestream$Status$200 | Response$get$livestream$_livestreamid$Status$200 | Response$post$livestream$livestreamid$moderate$Status$201 | Response$get$livestream$_livestreamid$livecomment$Status$200 | Response$post$livestream$livestreamid$livecomment$Status$201 | Response$get$livestream$_livestreamid$reaction$Status$200 | Response$post$livestream$livestreamid$reaction$Status$201 | Response$get$livestream$_livestreamid$statistics$Status$200 | Response$post$livestream$reservation$Status$201 | Response$get$livecomment$livecommentid$reports$Status$200 | Response$post$livecomment$livecommentid$report$Status$201;
 export namespace ErrorResponse {
     export type get$tag = void;
     export type post$login = void;
+    export type get$users = void;
     export type post$user = void;
     export type get$users$userid = void;
     export type get$users$userid$theme = void;
     export type get$users$statistics = void;
     export type get$livestream = void;
     export type get$livestream$_livestreamid = void;
-    export type get$livestream$_livestreamid$superchat = void;
-    export type post$livestream$livestreamid$superchat = void;
+    export type post$livestream$livestreamid$moderate = void;
+    export type get$livestream$_livestreamid$livecomment = void;
+    export type post$livestream$livestreamid$livecomment = void;
     export type post$livestream$livestreamid$enter = void;
     export type delete$livestream$livestreamid$enter = void;
     export type get$livestream$_livestreamid$reaction = void;
     export type post$livestream$livestreamid$reaction = void;
     export type get$livestream$_livestreamid$statistics = void;
     export type post$livestream$reservation = void;
-    export type get$search$livestream = void;
-    export type post$superchat$superchatid$report = void;
+    export type get$livecomment$livecommentid$reports = void;
+    export type post$livecomment$livecommentid$report = void;
 }
 export interface Encoding {
     readonly contentType?: string;
@@ -247,6 +268,17 @@ export class Client<RequestOption> {
             url,
             headers,
             requestBody: params.requestBody
+        }, option);
+    }
+    public async get$users(option?: RequestOption): Promise<Response$get$users$Status$200["application/json"]> {
+        const url = this.baseUrl + `/user`;
+        const headers = {
+            Accept: "application/json"
+        };
+        return this.apiClient.request({
+            httpMethod: "GET",
+            url,
+            headers
         }, option);
     }
     /**
@@ -312,8 +344,7 @@ export class Client<RequestOption> {
             Accept: "application/json"
         };
         const queryParameters: QueryParameters = {
-            limit: { value: params.parameter.limit, explode: false },
-            offset: { value: params.parameter.offset, explode: false }
+            tag: { value: params.parameter.tag, explode: false }
         };
         return this.apiClient.request({
             httpMethod: "GET",
@@ -337,12 +368,26 @@ export class Client<RequestOption> {
             headers
         }, option);
     }
+    /** 配信者がNGワードを登録するエンドポイント */
+    public async post$livestream$livestreamid$moderate(params: Params$post$livestream$livestreamid$moderate, option?: RequestOption): Promise<Response$post$livestream$livestreamid$moderate$Status$201["application/json"]> {
+        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/moderate`;
+        const headers = {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+        };
+        return this.apiClient.request({
+            httpMethod: "POST",
+            url,
+            headers,
+            requestBody: params.requestBody
+        }, option);
+    }
     /**
      * Your GET endpoint
-     * 当該ライブストリームのスパチャ取得
+     * 当該ライブストリームのライブコメント取得
      */
-    public async get$livestream$_livestreamid$superchat(params: Params$get$livestream$_livestreamid$superchat, option?: RequestOption): Promise<Response$get$livestream$_livestreamid$superchat$Status$200["application/json"]> {
-        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/superchat`;
+    public async get$livestream$_livestreamid$livecomment(params: Params$get$livestream$_livestreamid$livecomment, option?: RequestOption): Promise<Response$get$livestream$_livestreamid$livecomment$Status$200["application/json"]> {
+        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/livecomment`;
         const headers = {
             Accept: "application/json"
         };
@@ -352,9 +397,9 @@ export class Client<RequestOption> {
             headers
         }, option);
     }
-    /** ライブストリームに対するスパチャ投稿 */
-    public async post$livestream$livestreamid$superchat(params: Params$post$livestream$livestreamid$superchat, option?: RequestOption): Promise<Response$post$livestream$livestreamid$superchat$Status$201["application/json"]> {
-        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/superchat`;
+    /** ライブストリームに対するライブコメント投稿 */
+    public async post$livestream$livestreamid$livecomment(params: Params$post$livestream$livestreamid$livecomment, option?: RequestOption): Promise<Response$post$livestream$livestreamid$livecomment$Status$201["application/json"]> {
+        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/livecomment`;
         const headers = {
             "Content-Type": params.parameter["Content-Type"],
             Accept: "application/json"
@@ -443,23 +488,19 @@ export class Client<RequestOption> {
             requestBody: params.requestBody
         }, option);
     }
-    public async get$search$livestream(params: Params$get$search$livestream, option?: RequestOption): Promise<Response$get$search$livestream$Status$200["application/json"]> {
-        const url = this.baseUrl + `/search_livestream`;
+    public async get$livecomment$livecommentid$reports(params: Params$get$livecomment$livecommentid$reports, option?: RequestOption): Promise<Response$get$livecomment$livecommentid$reports$Status$200["application/json"]> {
+        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/report`;
         const headers = {
             Accept: "application/json"
-        };
-        const queryParameters: QueryParameters = {
-            tag: { value: params.parameter.tag, explode: false }
         };
         return this.apiClient.request({
             httpMethod: "GET",
             url,
-            headers,
-            queryParameters: queryParameters
+            headers
         }, option);
     }
-    public async post$superchat$superchatid$report(params: Params$post$superchat$superchatid$report, option?: RequestOption): Promise<Response$post$superchat$superchatid$report$Status$201["application/json"]> {
-        const url = this.baseUrl + `/superchat/${params.parameter.superchatid}/report`;
+    public async post$livecomment$livecommentid$report(params: Params$post$livecomment$livecommentid$report, option?: RequestOption): Promise<Response$post$livecomment$livecommentid$report$Status$201["application/json"]> {
+        const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}/livecomment/${params.parameter.livecommentid}/report`;
         const headers = {
             Accept: "application/json"
         };

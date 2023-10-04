@@ -7,7 +7,7 @@ export function useLiveStreams() {
   return useSWR('/livestream', () =>
     apiClient.get$livestream({
       parameter: {
-        limit: 20,
+        tag: 'chiar',
       },
     }),
   );

@@ -29,12 +29,17 @@ export namespace Schemas {
         display_name: string;
         description: string;
         created_at?: number;
+        updated_at?: number;
+        is_famous: boolean;
     }
     export interface Livestream {
         id?: number;
         user_id?: number;
         title?: string;
         description?: string;
+        playlist_url?: string;
+        thumbnail_url?: string;
+        viewers_count?: number;
         start_at?: number;
         end_at?: number;
         created_at?: number;
@@ -53,35 +58,37 @@ export namespace Schemas {
         updated_at?: number;
     }
     /** 上位チャットの投稿 */
-    export interface Superchat {
+    export interface Livecomment {
         id?: number;
         user_id?: number;
         livestream_id?: number;
         comment?: string;
         tip?: number;
+        report_count?: number;
         created_at?: number;
         updated_at?: number;
     }
-    export interface LivesteamStatistics {
+    export interface LivestreamStatistics {
         total_viewers?: number;
         total_tips?: number;
-        total_superchats?: number;
+        total_livecomments?: number;
         total_reactions?: number;
         previous_livestream_total_viewers_diff?: number;
         previous_livestream_total_tips_diff?: number;
-        previous_livestream_total_superchats_diff?: number;
+        previous_livestream_total_livecomments_diff?: number;
         previous_livestream_total_reactions_diff?: number;
     }
     export interface UserStatistics {
         average_viewers?: number;
         average_tips?: number;
-        average_superchats?: number;
+        average_livecomments?: number;
         average_reactions?: number;
     }
-    export interface SuperchatReport {
+    export interface LivecommentReport {
         id?: number;
         user_id?: number;
-        superchat_id?: number;
+        livestream_id?: number;
+        livecomment_id?: number;
         created_at?: number;
         updated_at?: number;
     }
@@ -126,17 +133,24 @@ export namespace Responses {
     /** Example response */
     export namespace GetLivestreamStatistics {
         export interface Content {
-            "application/json": Schemas.LivesteamStatistics;
+            "application/json": Schemas.LivestreamStatistics;
         }
     }
     /** Example response */
-    export namespace GetSuperchats {
+    export namespace GetLivecomments {
         export interface Content {
-            "application/json": Schemas.Superchat[];
+            "application/json": Schemas.Livecomment[];
         }
     }
 }
 export namespace RequestBodies {
+    export namespace PostLivestreamModerate {
+        export interface Content {
+            "application/json": {
+                ng_word?: string;
+            };
+        }
+    }
     export namespace PostUser {
         export interface Content {
             "application/json": {
@@ -163,7 +177,7 @@ export namespace RequestBodies {
             };
         }
     }
-    export namespace PostSuperchat {
+    export namespace PostLivecomment {
         export interface Content {
             "application/json": {
                 comment?: string;
@@ -174,8 +188,10 @@ export namespace RequestBodies {
     export namespace ReserveLivestream {
         export interface Content {
             "application/json": {
+                tags?: number[];
                 title?: string;
                 description?: string;
+                collaborators?: number[];
                 start_at?: number;
                 end_at?: number;
             };

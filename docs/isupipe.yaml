@@ -358,6 +358,8 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/GetLivestreamStatistics"
+        "404":
+          description: Not Found
       operationId: "get-livestream-_livestreamid-statistics"
       description: ライブストリームの統計情報取得
   /livestream/reservation:

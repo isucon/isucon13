@@ -83,7 +83,7 @@ export default function IndexPage(): React.ReactElement {
           flexGrow={1}
           sx={{ padding: 2 }}
         >
-          {liveSterams.data?.map((stream, index) => (
+          {liveSterams.data?.slice(0, 30).map((stream, index) => (
             <Grid key={index} xs={1}>
               <VideoThumbnail liveSteram={stream} />
             </Grid>
