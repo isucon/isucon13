@@ -22,30 +22,30 @@ const (
 )
 
 type User struct {
-	Id          int    `db:"id"`
-	Name        string `db:"name"`
-	DisplayName string `db:"display_name"`
-	Description string `db:"description"`
+	Id          int    `json:"id" db:"id"`
+	Name        string `json:"name" db:"name"`
+	DisplayName string `json:"display_name" db:"display_name"`
+	Description string `json:"description" db:"description"`
 	// HashedPassword is hashed password.
-	HashedPassword string `db:"password"`
+	HashedPassword string `json:"hashed_password" db:"password"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 
 	IsPopular bool `json:"is_popular"`
 }
 
 type Theme struct {
-	UserId   int  `db:"user_id"`
-	DarkMode bool `db:"dark_mode"`
+	UserId   int  `json:"user_id" db:"user_id"`
+	DarkMode bool `json:"dark_mode" db:"dark_mode"`
 }
 
 type Session struct {
 	// Id is an identifier that forms an UUIdv4.
-	Id     string `db:"id"`
-	UserId int    `db:"user_id"`
+	Id     string `json:"id" db:"id"`
+	UserId int    `json:"user_id" db:"user_id"`
 	// Expires is the UNIX timestamp that the sesison will be expired.
-	Expires int `db:"expires"`
+	Expires int `json:"expires" db:"expires"`
 }
 
 type PostUserRequest struct {
