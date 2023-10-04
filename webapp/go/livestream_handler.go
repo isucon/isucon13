@@ -157,6 +157,11 @@ func getLivestreamsHandler(c echo.Context) error {
 	// 複数件取得
 	var livestreams []*Livestream
 	if keyTagName == "" {
+		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	} else {
 		keyTag := Tag{}
 		if err := dbConn.GetContext(ctx, &keyTag, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -175,11 +180,6 @@ func getLivestreamsHandler(c echo.Context) error {
 			}
 
 			livestreams = append(livestreams, ls)
-		}
-	} else {
-		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
-			tx.Rollback()
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
 
