@@ -174,17 +174,15 @@ func Setup(packageName string) (*Resource, error) {
 }
 
 func Teardown(r *Resource) error {
-	/*
-		if err := r.pool.Purge(r.databaseResource); err != nil {
-			return err
-		}
-		if err := r.pool.Purge(r.webappResource); err != nil {
-			return err
-		}
-		if err := r.network.Close(); err != nil {
-			return err
-		}
-	*/
+	if err := r.pool.Purge(r.databaseResource); err != nil {
+		return err
+	}
+	if err := r.pool.Purge(r.webappResource); err != nil {
+		return err
+	}
+	if err := r.network.Close(); err != nil {
+		return err
+	}
 
 	return nil
 }
