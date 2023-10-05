@@ -115,6 +115,16 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	log.Printf("try to get user statistics...")
+	if _, err := client.GetUserStatistics(ctx, user.Id); err != nil {
+		return err
+	}
+
+	log.Printf("try to get livestream statistics...")
+	if _, err := client.GetLivestreamStatistics(ctx, livestream.Id); err != nil {
+		return err
+	}
+
 	log.Printf("try to leave livestream...")
 	if err := client.LeaveLivestream(ctx, livestream.Id); err != nil {
 		return err
