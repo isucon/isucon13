@@ -3,7 +3,9 @@ package scheduler
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/biogo/store/interval"
 )
@@ -13,13 +15,15 @@ import (
 // フェーズ切り替えの際、
 // FIXME: baseAtちゃんとした値に直す
 var (
-	Phase2ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
-	Phase3ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
-	Phase4ReservationScheduler = mustNewReservationScheduler(1719759600, 24*365/4+10)
+	Phase1ReservationScheduler = mustNewReservationScheduler(1711897200, (24*(30+31+30))-(24*1))
+	Phase2ReservationScheduler = mustNewReservationScheduler(1719759600, (24*(31+31+30))-(24*1))
+	Phase3ReservationScheduler = mustNewReservationScheduler(1727708400, (24*(31+30+31))-(24*1))
+	Phase4ReservationScheduler = mustNewReservationScheduler(1735657200, (24*(31+28+31))-(24*1))
 )
 
 func init() {
 	// スケジューラに初期データをロード
+	Phase1ReservationScheduler.loadReservations(phase1ReservationPool)
 	Phase2ReservationScheduler.loadReservations(phase2ReservationPool)
 }
 
@@ -27,6 +31,8 @@ func init() {
 // 一定のランダム要素がないと、ベンチ走行データを再利用してチートするなど考えられるため
 
 type ReservationScheduler struct {
+	reservationPool []*Reservation
+
 	// 実施された予約リクエストに基づいて、予約が少ない区間、予約が多い区間を割り出すために温度(予約成功回数)を保持しておく
 	// 予約リクエストに基づいて逐次的にカウントアップされる
 	intervalTempertures *IntervalTemperatures
@@ -52,6 +58,7 @@ func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler 
 		log.Fatalln(err)
 	}
 	return &ReservationScheduler{
+		reservationPool:     []*Reservation{},
 		intervalTempertures: intervalTempertures,
 		intTreeStates:       make(map[int]CommitState),
 		intervalTree:        &interval.IntTree{},
@@ -63,11 +70,29 @@ func (r *ReservationScheduler) loadReservations(reservations []*Reservation) {
 	for _, reservation := range reservations {
 		r.intervalTree.Insert(reservation, needFastInsertion)
 		r.intTreeStates[reservation.Id] = CommitState_None
+		r.reservationPool = append(r.reservationPool, reservation)
 	}
 	// Get, DoMatching*が呼び出される前に必ずRangesで調整しておく
 	// NOTE: 以後、区間木に対する挿入は行われないので逐次呼び出す必要はない
 	// AdjustRangeはLLRBノードの範囲(Range)を更新する関数. AdjustRangesはツリーを再帰的にこれを各ノードについて実施していく.
 	r.intervalTree.AdjustRanges()
+}
+
+func (r *ReservationScheduler) getStreamsFor(user *User) []*Reservation {
+	var reservations []*Reservation
+	for _, reservation := range r.reservationPool {
+		if reservation.UserId == user.UserId {
+			reservations = append(reservations, reservation)
+		}
+	}
+
+	return reservations
+}
+
+func (r *ReservationScheduler) GetStreamFor(user *User) *Reservation {
+	livestreams := r.getStreamsFor(user)
+	idx := rand.Intn(len(livestreams))
+	return livestreams[idx]
 }
 
 // CommitReservation は、予約追加リクエストが通ったことをintervalTemperturesに記録します
@@ -137,6 +162,8 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 		return nil, err
 	}
 
+	log.Printf("intervals = %s, %s\n", time.Unix(intervals[0].startAt.Unix(), 0), time.Unix(intervals[0].endAt.Unix(), 0))
+
 	for i := 0; i < len(intervals); i++ {
 		interval := intervals[i]
 		founds := r.intervalTree.Get(&Reservation{
@@ -144,6 +171,7 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(founds) == 0 {
+			log.Println("continue intervals")
 			continue
 		}
 

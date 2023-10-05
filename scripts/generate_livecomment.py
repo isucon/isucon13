@@ -4,6 +4,9 @@ import random
 import markovify
 import MeCab
 
+
+POSITIVE_COMMENT_FORMAT = "&PositiveComment{{ Comment: \"{comment}\" }},"
+
 def generate_positives(n=10):
     texts = []
     parsed_texts = []
@@ -12,7 +15,7 @@ def generate_positives(n=10):
             line = line.rstrip()
             if line:
                 parsed = MeCab.Tagger('-Owakati').parse(line)
-                texts.append(line)
+                texts.append(POSITIVE_COMMENT_FORMAT.format(comment=line))
                 parsed_texts.append(parsed)
     if n <= len(texts):
         return texts[:n]
@@ -23,9 +26,14 @@ def generate_positives(n=10):
         sentence = text_model.make_short_sentence(140)
         if sentence is None:
             continue
-        texts.append(sentence.replace(' ', ''))
+        comment = sentence.replace(' ', '')
+        positive_comment = POSITIVE_COMMENT_FORMAT.format(comment=comment)
+        texts.append(positive_comment)
 
     return texts
+
+
+NEGATIVE_COMMENT_FORMAT = "&NegativeComment{{Comment: \"{comment}\", NgWord: \"{ngword}\"}},"
 
 
 def generate_negatives(n=10):
@@ -38,16 +46,26 @@ def generate_negatives(n=10):
         for _ in range(n):
             ngword = random.choice(ngwords)
             fmt = random.choice(formats)
-            yield [fmt.format(word=ngword), ngword]
+            comment = NEGATIVE_COMMENT_FORMAT.format(
+                comment=fmt.format(word=ngword),
+                ngword=ngword
+            )
+            yield comment 
 
 def main():
     def command_positive(args):
+        print('package scheduler')
+        print('var positiveCommentPool = []*PositiveComment{')
         for positive in generate_positives(args.n):
             print(positive)
+        print('}')
 
     def command_negative(args):
+        print('package scheduler')
+        print('var negativeCommentPool = []*NegativeComment{')
         for negative in generate_negatives(args.n):
             print(negative)
+        print('}')
 
     def command_help(args):
         print(parser.parse_args([args.command, '--help']))

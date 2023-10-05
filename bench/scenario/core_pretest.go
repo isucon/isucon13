@@ -3,8 +3,8 @@ package scenario
 import (
 	"context"
 	"log"
-	"time"
 
+	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
@@ -53,13 +53,18 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	log.Printf("gethostshortreservation")
+	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
+	if err != nil {
+		return err
+	}
 	log.Printf("try to reserve livestream...")
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:        []int{1},
-		Title:       "test",
-		Description: "test",
-		StartAt:     time.Date(2024, 07, 12, 1, 0, 0, 0, time.Local).Unix(),
-		EndAt:       time.Date(2024, 07, 12, 2, 0, 0, 0, time.Local).Unix(),
+		Tags:        []int{},
+		Title:       reservation.Title,
+		Description: reservation.Description,
+		StartAt:     reservation.StartAt,
+		EndAt:       reservation.EndAt,
 	})
 	if err != nil {
 		return err
@@ -111,7 +116,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to get livestreams by tag...")
-	if err := client.GetLivestreamsByTag(ctx, "chair" /* tag name */); err != nil {
+	if err := client.GetLivestreamsByTag(ctx, "椅子" /* tag name */); err != nil {
 		return err
 	}
 

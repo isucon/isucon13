@@ -1,5 +1,21 @@
 package scheduler
 
+import (
+	"math/rand"
+	"time"
+)
+
+var (
+	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
+// GenerateIntBetween generates integer satisfies [min, max) constraint
+func GenerateIntBetween(min, max int) int {
+	return randomSource.Intn(max-min) + min
+}
+
+var LivecommentScheduler = mustNewLivecommentScheduler()
+
 // スパムを取り出す (ただし、なるべく投稿数の少ないスパム)
 // ライブコメントを取り出す (ただし、なるべく投稿数の少ないライブコメント)
 // チップを取り出す
@@ -23,13 +39,76 @@ package scheduler
 // 人気は、もちろん人気がまだないことが条件
 // それ以外、通常に分類され、ユーザは通常配信者と視聴者になる
 
-type LivestreamType int
+type Livecomment struct {
+	UserId       int
+	LivestreamId int
+	Comment      string
+	Tip          int
+}
 
-const (
-	LivestreamType_Normal  LivestreamType = iota
-	LivestreamType_Popular                // 人気
-	LivestreamType_Flame                  // 炎上
-)
+type PositiveComment struct {
+	Comment string
+}
 
-type LivecommentScheduler struct {
+type NegativeComment struct {
+	Comment string
+	NgWord  string
+}
+
+// どの配信に対して色々投げたらいいか、いい感じにしてくれる君
+
+// Positiveの方は、長いコメント、短いコメントみたいな感じで取れると良い
+
+// シナリオを書く際の疑問を列挙しよう
+// どこにスパムを投げればいい？
+// どこにスパチャを投げると、平等に投げられそう？
+// 人気配信はどこ？そこにスパチャや投げ銭を集中させたい
+//    人気配信は、人気ユーザに紐づく配信が用いられる
+//
+
+// ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
+//
+
+type StreamerStatistics struct {
+	NumLivecomments   int
+	TotalTips         int
+	TotalReportsCount int
+}
+
+type livecommentScheduler struct {
+	// 配信者ごと、ライブコメント数、投げ銭売上合計、スパム数の統計を取る
+	// 構造体は全部Livecommentなので、Commit, Abortを用意すればいいか
+	// ライブコメント、投げ銭は投稿時でどちらも扱えるけど、スパムはスパムメッセージなのかスパム報告なのか難しいな
+	streamerStats map[int]*StreamerStatistics
+}
+
+func mustNewLivecommentScheduler() *livecommentScheduler {
+	return &livecommentScheduler{}
+}
+
+// FIXME:
+
+func (s *livecommentScheduler) GetShortPositiveComment() *PositiveComment {
+	idx := rand.Intn(len(positiveCommentPool))
+	return positiveCommentPool[idx]
+}
+
+func (s *livecommentScheduler) GetLongPositiveComment() *PositiveComment {
+	idx := rand.Intn(len(positiveCommentPool))
+	return positiveCommentPool[idx]
+}
+
+func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
+	idx := rand.Intn(len(negativeCommentPool))
+	return negativeCommentPool[idx]
+}
+
+// 通常配信に対するチップ取得
+func (s *livecommentScheduler) GetTipsForStream() int {
+	return GenerateIntBetween(1, 1000)
+}
+
+// 人気配信に対するチップ取得
+func (s *livecommentScheduler) GetTipsForPopularStream() int {
+	return GenerateIntBetween(1000, 2000+1)
 }

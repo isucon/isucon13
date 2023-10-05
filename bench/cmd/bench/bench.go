@@ -119,11 +119,14 @@ var run = cli.Command{
 		bencherror.InitializeErrors(ctx)
 
 		lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
-		if err := benchmarker.runSeason1(benchCtx); err != nil {
-			return cli.NewExitError(err, 1)
-		}
+		// if err := benchmarker.runSeason1(benchCtx); err != nil {
+		// 	return cli.NewExitError(err, 1)
+		// }
 
 		lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
+		if err := benchmarker.runSeason2(benchCtx); err != nil {
+			return cli.NewExitError(err, 1)
+		}
 
 		lgr.Info("===== Benchmark - 第３負荷フェーズ開始 =====")
 

@@ -1,11 +1,10 @@
-DELETE FROM tags;
-DELETE FROM livestreams;
-DELETE FROM livecomments;
-DELETE FROM reactions;
-DELETE FROM livestream_viewers_history;
+DELETE FROM themes;
 DELETE FROM users;
-
-INSERT INTO tags (name) VALUES ('chair');
-INSERT INTO tags (name) VALUES ('fruits');
-INSERT INTO tags (name) VALUES ('cat');
-INSERT INTO tags (name) VALUES ('dog');
+DELETE FROM livestreams;
+DELETE FROM tags;
+DELETE FROM livestream_tags;
+DELETE FROM livestream_viewers_history;
+DELETE FROM livecomments;
+DELETE FROM livecomment_reports;
+DELETE FROM ng_words;
+DELETE FROM reactions;
