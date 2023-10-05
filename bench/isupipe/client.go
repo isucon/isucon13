@@ -723,6 +723,74 @@ func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
 	return paymentResp, nil
 }
 
+func (c *Client) GetUserStatistics(ctx context.Context, userId int, options ...AssertOption) (*UserStatistics, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
+	urlPath := fmt.Sprintf("/user/%d/statistics", userId)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
+	}
+
+	var stats *UserStatistics
+	if json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamId int, options ...AssertOption) (*LivestreamStatistics, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
+	urlPath := fmt.Sprintf("/livestream/%d/statistics", livestreamId)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
+	}
+
+	var stats *LivestreamStatistics
+	if json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // sendRequestはagent.Doをラップしたリクエスト送信関数
 // bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
 func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {

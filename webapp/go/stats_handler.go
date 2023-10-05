@@ -10,16 +10,23 @@ import (
 // FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
 
 type LivestreamStatistics struct {
-	MostTipLivecommentRanking []Livecomment
+	MostTipRanking            []TipRank      `json:"most_tip_ranking"`
+	MostPostedReactionRanking []ReactionRank `json:"most_posted_reaction_ranking"`
 }
 
 type UserStatistics struct {
-	ViewedLivestreamStatistics map[int]ViewedLivestreamStatistic `json:"viewed_livestream_statistics"`
+	TipRankPerLivestreams map[int]TipRank `json:"tip_rank_by_livestream"`
 }
 
-type ViewedLivestreamStatistic struct {
-	TipRank  int `json:"tip_rank"`
-	TotalTip int `json:"total_tip"`
+type TipRank struct {
+	Rank     int `json:"tip_rank" db:"tip_rank"`
+	TotalTip int `json:"total_tip" db:"total_tip"`
+}
+
+type ReactionRank struct {
+	Rank          int    `json:"reaction_rank" db:"reaction_rank"`
+	TotalReaction int    `json:"total_reaction" db:"total_reaction"`
+	EmojiName     string `json:"emoji_name" db:"emoji_name"`
 }
 
 func getUserStatisticsHandler(c echo.Context) error {
@@ -33,17 +40,17 @@ func getUserStatisticsHandler(c echo.Context) error {
 	userId := c.Param("user_id")
 
 	var viewedLivestreams []*LivestreamViewer
-	if err := dbConn.SelectContext(ctx, &viewedLivestreams, "SELECT * FROM livestream_viewers_history WHERE user_id = ?", userId); err != nil {
+	if err := dbConn.SelectContext(ctx, &viewedLivestreams, "SELECT user_id, livestream_id FROM livestream_viewers_history WHERE user_id = ?", userId); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	viewedLivestreamStatistics, err := queryTotalTipRankPerLivestream(ctx, userId, viewedLivestreams)
+	tipRankPerLivestreams, err := queryTotalTipRankPerViewedLivestream(ctx, userId, viewedLivestreams)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	stats := UserStatistics{
-		ViewedLivestreamStatistics: viewedLivestreamStatistics,
+		TipRankPerLivestreams: tipRankPerLivestreams,
 	}
 	return c.JSON(http.StatusOK, stats)
 }
@@ -57,50 +64,58 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 
 	livestreamId := c.Param("livestream_id")
 
-	livestream := Livestream{}
-	if err := dbConn.GetContext(ctx, &livestream, "SELECT user_id, start_at FROM livestreams WHERE id = ?", livestreamId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "livestream not found")
+	tipRanks := []TipRank{}
+	query := "SELECT SUM(tip) AS total_tip, RANK() OVER(ORDER BY SUM(tip) DESC) AS tip_rank " +
+		"FROM livecomments GROUP BY livestream_id " +
+		"HAVING livestream_id = ? ORDER BY total_tip DESC LIMIT 3"
+	if err := dbConn.SelectContext(ctx, &tipRanks, query, livestreamId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	reactionRanks := []ReactionRank{}
+	query = "SELECT COUNT(*) AS total_reaction, emoji_name, RANK() OVER(ORDER BY COUNT(*) DESC) AS reaction_rank " +
+		"FROM reactions GROUP BY livestream_id, emoji_name " +
+		"HAVING livestream_id = ? ORDER BY total_reaction DESC LIMIT 3"
+	if err := dbConn.SelectContext(ctx, &reactionRanks, query, livestreamId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	stats := LivestreamStatistics{
+		MostTipRanking:            tipRanks,
+		MostPostedReactionRanking: reactionRanks,
+	}
+	return c.JSON(http.StatusOK, stats)
 }
 
-func queryTotalTipRankPerLivestream(
+func queryTotalTipRankPerViewedLivestream(
 	ctx context.Context,
 	userId string,
 	viewedLivestreams []*LivestreamViewer,
-) (map[int]ViewedLivestreamStatistic, error) {
-	totalTipRankPerLivestream := make(map[int]ViewedLivestreamStatistic)
+) (map[int]TipRank, error) {
+	totalTipRankPerLivestream := make(map[int]TipRank)
 	// get total tip per viewed livestream
 	for _, viewedLivestream := range viewedLivestreams {
 		totalTip := 0
-		if err := dbConn.SelectContext(ctx, &totalTip, "SELECT SUM(tip) FROM livecomments WHERE user_id = ? AND livestream_id = ?", viewedLivestream.UserId, viewedLivestream.LivestreamId); err != nil {
+		if err := dbConn.GetContext(ctx, &totalTip, "SELECT SUM(tip) FROM livecomments WHERE user_id = ? AND livestream_id = ?", viewedLivestream.UserId, viewedLivestream.LivestreamId); err != nil {
 			return totalTipRankPerLivestream, err
 		}
 
-		totalTipRankPerLivestream[viewedLivestream.LivestreamId] = ViewedLivestreamStatistic{
+		totalTipRankPerLivestream[viewedLivestream.LivestreamId] = TipRank{
 			TotalTip: totalTip,
 		}
 	}
 
 	for livestreamId, stat := range totalTipRankPerLivestream {
-		type tipRank struct {
-			rank     int `db:"tip_rank"`
-			totalTip int `db:"total_tip"`
-		}
-		query := "SELECT SUM(tip) AS total_tip, RANK() OVER(ORDER BY SUM(tip) DESC) AS tip_rank" +
+		query := "SELECT SUM(tip) AS total_tip, RANK() OVER(ORDER BY SUM(tip) DESC) AS tip_rank " +
 			"FROM livecomments GROUP BY livestream_id " +
 			"HAVING livestream_id = ? AND total_tip = ?"
 
-		var rank *tipRank
-		if err := dbConn.SelectContext(ctx, &rank, query, livestreamId, stat.TotalTip); err != nil {
+		rank := TipRank{}
+		if err := dbConn.GetContext(ctx, &rank, query, livestreamId, stat.TotalTip); err != nil {
 			return totalTipRankPerLivestream, err
 		}
 
-		totalTipRankPerLivestream[livestreamId] = ViewedLivestreamStatistic{
-			TotalTip: rank.totalTip,
-			TipRank:  rank.rank,
-		}
+		totalTipRankPerLivestream[livestreamId] = rank
 
 	}
 

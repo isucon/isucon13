@@ -137,3 +137,22 @@ type PaymentResult struct {
 	Total    int
 	Payments []*Payment
 }
+
+type LivestreamStatistics struct {
+	MostTipRanking            []TipRank      `json:"most_tip_ranking"`
+	MostPostedReactionRanking []ReactionRank `json:"most_posted_reaction_ranking"`
+}
+
+type UserStatistics struct {
+	TipRankPerLivestreams map[int]TipRank `json:"tip_rank_by_livestream"`
+}
+
+type TipRank struct {
+	Rank     int `json:"tip_rank"`
+	TotalTip int `json:"total_tip"`
+}
+
+type ReactionRank struct {
+	Rank      int    `json:"reaction_rank"`
+	EmojiName string `json:"emoji_name"`
+}

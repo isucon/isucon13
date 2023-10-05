@@ -22,6 +22,7 @@ type ReserveLivestreamRequest struct {
 }
 
 type LivestreamViewer struct {
+	Id           int `json:"id" db:"id"`
 	UserId       int `json:"user_id" db:"user_id"`
 	LivestreamId int `json:"livestream_id" db:"livestream_id"`
 }
@@ -174,12 +175,12 @@ func getLivestreamsHandler(c echo.Context) error {
 		}
 
 		for _, keyTaggedLivestream := range keyTaggedLivestreams {
-			ls := &Livestream{}
+			ls := Livestream{}
 			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.LivestreamId); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
-			livestreams = append(livestreams, ls)
+			livestreams = append(livestreams, &ls)
 		}
 	}
 

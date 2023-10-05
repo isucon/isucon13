@@ -216,7 +216,7 @@ func getUsersHandler(c echo.Context) error {
 	}
 
 	var users []*User
-	if err := dbConn.SelectContext(ctx, &users, "SELECT * FROM users"); err != nil {
+	if err := dbConn.SelectContext(ctx, &users, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
