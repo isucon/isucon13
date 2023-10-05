@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -65,7 +66,7 @@ type LoginRequest struct {
 
 // ユーザ登録API
 // POST /user
-func userRegisterHandler(c echo.Context) error {
+func postUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	req := PostUserRequest{}
@@ -118,6 +119,14 @@ func userRegisterHandler(c echo.Context) error {
 	}
 
 	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if disablePowerDNS {
+		return c.JSON(http.StatusCreated, user)
+	}
+
+	if err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "30").Run(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -183,7 +192,7 @@ func loginHandler(c echo.Context) error {
 
 // ユーザ詳細API
 // GET /user/:userid
-func userHandler(c echo.Context) error {
+func getUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力

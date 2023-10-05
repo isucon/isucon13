@@ -136,6 +136,10 @@ func Setup(packageName string) (*Resource, error) {
 		Name:       fmt.Sprintf("isupipe-%s", packageName),
 		Env: []string{
 			fmt.Sprintf("ISUCON13_MYSQL_DIALCONFIG_ADDRESS=%s", databaseIp),
+			// fmt.Sprintf("ISUCON13_POWERDNS_HOST=%s", powerDNSIp),
+			"ISUCON13_POWERDNS_APIKEY=isudns",
+			"ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS=127.0.0.1",
+			"ISUCON13_POWERDNS_DISABLED=true",
 		},
 		Networks: []*dockertest.Network{
 			network,
@@ -147,7 +151,7 @@ func Setup(packageName string) (*Resource, error) {
 			return err
 		}
 
-		client := &http.Client{Timeout: 10 * time.Second}
+		client := &http.Client{Timeout: 30 * time.Second}
 		resp, err := client.Do(req)
 		if err != nil {
 			return err

@@ -49,6 +49,10 @@ services:
     container_name: webapp
     environment:
       ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
+      ISUCON13_POWERDNS_HOST: powerdns
+      ISUCON13_POWERDNS_APIKEY: isudns
+      ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS: 127.0.0.1
+      ISUCON13_POWERDNS_ENABLED: false
     ports:
       - 12345:12345
     depends_on:
