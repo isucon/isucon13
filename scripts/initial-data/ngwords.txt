@@ -21,7 +21,6 @@
 オープンリール
 オペレーティングシステム
 オンラインゲーム
-片仮名
 拡張現実
 拡張子
 画像処理
@@ -142,12 +141,12 @@ x86
 XHTML
 分散アルゴリズム
 ノード
-ピアツーピア (P2P)
+ピアツーピア
 レプリカ
 クラスター
 データベースシャーディング
 コンシステンシモデル
-分散ハッシュテーブル (DHT)
+分散ハッシュテーブル
 マップリデュース
 クォーラム
 分散トランザクション
@@ -193,7 +192,7 @@ APIゲートウェイ
 分散キャッシュ
 イベント駆動アーキテクチャ
 サーバーレス
-FaaS (Function as a Service)
+FaaS
 チェーンリプリケーション
 Gossipプロトコル
 ヒーリング
@@ -205,7 +204,7 @@ BASEプロパティ
 イデンポテンス
 コミットログ
 イベントソーシング
-CQRS (Command Query Responsibility Segregation)
+CQRS
 ハイブリッドクラウド
 マルチテナンシー
 データパーティショニング
@@ -242,12 +241,12 @@ CQRS (Command Query Responsibility Segregation)
 セッション
 セグメント
 ドメイン
-TLD (トップレベルドメイン)
+TLD
 URL
 URI
 FQDN
 ポートフォワーディング
-DMZ (デミリタライズドゾーン)
+DMZ
 NTP
 RSYNC
 L2TP
@@ -255,7 +254,7 @@ PPTP
 IPsec
 SSL VPN
 SD-WAN
-PoE (Power over Ethernet)
+PoE
 NETBIOS
 NetBEUI
 Samba
@@ -286,7 +285,7 @@ VDSL
 SDSL
 PPP
 PPPoE
-STP (Spanning Tree Protocol)
+STP
 RSTP
 MSTP
 ARPANET
@@ -311,8 +310,8 @@ SaaS
 パブリッククラウド
 プライベートクラウド
 ハイブリッドクラウド
-VPC (Virtual Private Cloud)
-SDN (Software Defined Networking)
+VPC
+SDN
 NFV
 Anycast
 Multicast
@@ -397,7 +396,7 @@ MTU
 再送
 パケットロス
 ジッタ
-ラウンドトリップタイム (RTT)
+ラウンドトリップタイム
 ピアリング
 プロキシ
 リバースプロキシ
@@ -425,7 +424,7 @@ DDNS
 BIND
 SSL証明書
 PKI
-CA (認証局)
+CA
 RSA
 AES
 DES

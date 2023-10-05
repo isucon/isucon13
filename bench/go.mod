@@ -10,6 +10,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.1
 	go.uber.org/zap v1.26.0
+	golang.org/x/sync v0.4.0
 )
 
 require (

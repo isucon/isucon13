@@ -141,9 +141,11 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	c.Logger().Infof("matching passwords %s == %s", user.HashedPassword, req.Password)
 	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
+		// return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

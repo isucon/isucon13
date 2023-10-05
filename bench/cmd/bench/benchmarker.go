@@ -16,6 +16,7 @@ func newBenchmarker() *benchmarker {
 }
 
 const Season1PassConditionTips = 10000
+const Season2PassConditionTips = 100000
 
 // season1 はSeason1シナリオを実行する
 // ctx には、context.WithTimeout()でタイムアウトが設定されたものが渡されることを想定
@@ -34,7 +35,7 @@ func (b *benchmarker) runSeason1(parentCtx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		scenario.Season1(ctx)
+		scenario.Phase1(ctx)
 	}()
 
 	// 時間切れか達成条件を満たすまで待ち、goroutineの終了を待ち合わせる
@@ -56,6 +57,37 @@ loop:
 }
 
 func (b *benchmarker) runSeason2(parentCtx context.Context) error {
+	ctx, cancel := context.WithCancel(parentCtx)
+
+	lgr := zap.S()
+
+	benchscore.SetAchivementGoal(Season2PassConditionTips)
+	lgr.Infof("シーズン2の達成条件は以下のとおりです")
+	lgr.Infof("投げ銭売上: %d", Season2PassConditionTips)
+
+	// NOTE: config.TargetBaseURLがあるので、いちいち引数で引き回さなくて良い
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		scenario.Phase2(ctx)
+	}()
+
+	// 時間切れか達成条件を満たすまで待ち、goroutineの終了を待ち合わせる
+loop:
+	for {
+		select {
+		case <-ctx.Done():
+			cancel()
+			break loop
+		case <-benchscore.Achieve():
+			// 目標達成
+			cancel()
+			break loop
+		}
+	}
+
+	wg.Wait()
 	return nil
 }
 
