@@ -158,6 +158,34 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, options ...AssertOp
 	return nil
 }
 
+func (c *Client) GetUserSession(ctx context.Context, options ...AssertOption) error {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
+	req, err := c.agent.NewRequest(http.MethodGet, "/user/me", nil)
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Client) GetUser(ctx context.Context, userId int, options ...AssertOption) error {
 	pat := ClientAssertPattern{
 		StatusCode: http.StatusOK,

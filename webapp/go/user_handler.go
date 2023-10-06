@@ -64,6 +64,37 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+func getUserSessionHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	sess, err := session.Get(defaultSessionIdKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+	userId, ok := sess.Values[defaultUserIdKey].(int)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	user := User{}
+	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+
+	popular, err := userIsPopular(ctx, userId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	user.IsPopular = popular
+
+	return c.JSON(http.StatusOK, user)
+}
+
 // ユーザ登録API
 // POST /user
 func postUserHandler(c echo.Context) error {

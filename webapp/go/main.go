@@ -171,6 +171,7 @@ func main() {
 	e.POST("/user", postUserHandler)
 	e.POST("/login", loginHandler)
 	e.GET("/user", getUsersHandler)
+	e.GET("/user/me", getUserSessionHandler)
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/user/:user_id", getUserHandler)
