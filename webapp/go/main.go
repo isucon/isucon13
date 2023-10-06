@@ -23,12 +23,21 @@ import (
 )
 
 const (
-	listenPort = 12345
+	listenPort                     = 12345
+	powerDNSHostEnvKey             = "ISUCON13_POWERDNS_HOST"
+	powerDNSAPIKeyEnvKey           = "ISUCON13_POWERDNS_APIKEY"
+	powerDNSSubdomainAddressEnvKey = "ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS"
+	// FIXME: ISUCON当日までに削除する
+	powerDNSDisableEnvKey = "ISUCON13_POWERDNS_DISABLED"
 )
 
 var (
-	dbConn *sqlx.DB
-	secret = []byte("defaultsecret")
+	disablePowerDNS          bool   = false
+	powerDNSHost             string = "localhost"
+	powerDNSAPIKey           string
+	powerDNSSubdomainAddress string
+	dbConn                   *sqlx.DB
+	secret                   = []byte("defaultsecret")
 )
 
 func init() {
@@ -159,12 +168,12 @@ func main() {
 	e.DELETE("/livestream/:livestream_id/enter", leaveLivestreamHandler)
 
 	// user
-	e.POST("/user", userRegisterHandler)
+	e.POST("/user", postUserHandler)
 	e.POST("/login", loginHandler)
 	e.GET("/user", getUsersHandler)
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
-	e.GET("/user/:user_id", userHandler)
+	e.GET("/user/:user_id", getUserHandler)
 	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
 
 	// stats
@@ -183,6 +192,28 @@ func main() {
 	conn.SetMaxOpenConns(10)
 	defer conn.Close()
 	dbConn = conn
+
+	host, ok := os.LookupEnv(powerDNSHostEnvKey)
+	if ok {
+		powerDNSHost = host
+	}
+	key, ok := os.LookupEnv(powerDNSAPIKeyEnvKey)
+	if !ok {
+		e.Logger.Fatalf("environ %s must be provided", powerDNSAPIKeyEnvKey)
+	}
+	powerDNSAPIKey = key
+	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
+	if !ok {
+		e.Logger.Fatalf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+	}
+	powerDNSSubdomainAddress = subdomainAddr
+
+	disabledEnv, _ := os.LookupEnv(powerDNSDisableEnvKey)
+	disabled, err := strconv.ParseBool(disabledEnv)
+	if err != nil {
+		disablePowerDNS = false
+	}
+	disablePowerDNS = disabled
 
 	// HTTPサーバ起動
 	listenAddr := net.JoinHostPort("", strconv.Itoa(listenPort))
