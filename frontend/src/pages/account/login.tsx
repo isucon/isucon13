@@ -8,6 +8,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { apiClient } from '~/api/client';
+import { useGlobalToastQueue } from '~/components/toast/toast';
 
 interface FormValues {
   username: string;
@@ -16,16 +17,36 @@ interface FormValues {
 
 export default function AccountPage(): React.ReactElement {
   const form = useForm<FormValues>();
+  const toast = useGlobalToastQueue();
 
   const onSubmit = async (data: FormValues) => {
-    console.log(data);
-    const res = await apiClient.post$login({
-      requestBody: {
-        username: data.username,
-        password: data.password,
-      },
-    });
-    console.log(res);
+    try {
+      const res = await apiClient.post$login({
+        requestBody: {
+          username: data.username,
+          password: data.password,
+        },
+      });
+      console.log(res);
+      toast.add(
+        {
+          type: 'success',
+          title: 'Login Success',
+          message: 'ログインに成功しました',
+        },
+        { timeout: 3000 },
+      );
+    } catch (e) {
+      console.warn(e);
+      toast.add(
+        {
+          type: 'error',
+          title: 'Login Failed',
+          message: 'ログインに失敗しました',
+        },
+        { timeout: 3000 },
+      );
+    }
   };
 
   return (

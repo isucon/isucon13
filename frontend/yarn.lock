@@ -1118,6 +1118,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-stately/toast@npm:^3.0.0-beta.1":
+  version: 3.0.0-nightly.4194
+  resolution: "@react-stately/toast@npm:3.0.0-nightly.4194"
+  dependencies:
+    "@swc/helpers": ^0.5.0
+    use-sync-external-store: ^1.2.0
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
+  checksum: f4287dfa8be3e7e64701571e8044dc258875ce1c5cc65af4ba7721350ad860962fa9b3423c9c8f78334682174d02f04c7a380ebad326cbcea4dfe2c7ea63b6cb
+  languageName: node
+  linkType: hard
+
 "@remix-run/router@npm:1.8.0":
   version: 1.8.0
   resolution: "@remix-run/router@npm:1.8.0"
@@ -1129,6 +1141,15 @@ __metadata:
   version: 0.27.8
   resolution: "@sinclair/typebox@npm:0.27.8"
   checksum: 00bd7362a3439021aa1ea51b0e0d0a0e8ca1351a3d54c606b115fdcc49b51b16db6e5f43b4fe7a28c38688523e22a94d49dd31168868b655f0d4d50f032d07a1
+  languageName: node
+  linkType: hard
+
+"@swc/helpers@npm:^0.5.0":
+  version: 0.5.2
+  resolution: "@swc/helpers@npm:0.5.2"
+  dependencies:
+    tslib: ^2.4.0
+  checksum: 51d7e3d8bd56818c49d6bfbd715f0dbeedc13cf723af41166e45c03e37f109336bbcb57a1f2020f4015957721aeb21e1a7fff281233d797ff7d3dd1f447fa258
   languageName: node
   linkType: hard
 
@@ -5240,6 +5261,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tslib@npm:^2.4.0":
+  version: 2.6.2
+  resolution: "tslib@npm:2.6.2"
+  checksum: 329ea56123005922f39642318e3d1f0f8265d1e7fcb92c633e0809521da75eeaca28d2cf96d7248229deb40e5c19adf408259f4b9640afd20d13aecc1430f3ad
+  languageName: node
+  linkType: hard
+
 "type-check@npm:^0.4.0, type-check@npm:~0.4.0":
   version: 0.4.0
   resolution: "type-check@npm:0.4.0"
@@ -5461,6 +5489,7 @@ __metadata:
     "@himenon/openapi-typescript-code-generator": ^0.27.1
     "@hookform/resolvers": ^3.3.1
     "@mui/joy": ^5.0.0-beta.5
+    "@react-stately/toast": ^3.0.0-beta.1
     "@types/d3-format": ^3.0.1
     "@types/react": ^18.2.21
     "@types/react-dom": ^18.2.7

@@ -10,6 +10,7 @@ import { useColorScheme } from '@mui/joy/styles';
 import React from 'react';
 import { MdChair, MdOutlineDarkMode, MdDarkMode } from 'react-icons/md';
 import { Link } from 'react-router-dom';
+import { Toast } from '../toast/toast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -94,6 +95,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
         </Stack>
       </Stack>
       <div style={{ paddingTop: '60px' }}>{props.children}</div>
+      <Toast />
     </div>
   );
 }
