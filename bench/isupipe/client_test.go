@@ -11,6 +11,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,24 +42,37 @@ func TestClient_Spam(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
+	streamer := scheduler.UserScheduler.SelectVTuber()
 	err = client.Login(ctx, &LoginRequest{
-		UserName: "井上 太郎",
-		Password: "o^E0K1Axj@",
+		UserName: streamer.Name,
+		Password: streamer.RawPassword,
 	})
 	assert.NoError(t, err)
 
+	livestreams, err := client.GetLivestreams(ctx)
+	assert.NoError(t, err)
+
+	myLivestreamId := -1
+	for _, ls := range livestreams {
+		if ls.UserId == streamer.UserId {
+			myLivestreamId = ls.Id
+		}
+	}
+
+	assert.NotEqual(t, -1, myLivestreamId, "the streamer doesn't have own livestream")
+
 	// FIXME: livecomment schedulerから取得するように変更
-	_, err = client.PostLivecomment(ctx, 1, &PostLivecommentRequest{
+	_, err = client.PostLivecomment(ctx, myLivestreamId, &PostLivecommentRequest{
 		Comment: "test is greaaaaaaaaaaaaaaaaaaaaat!",
 		Tip:     0,
 	})
 	assert.NoError(t, err)
 
 	// NGワードを追加(moderate)し、再度投稿してスパム判定されることをチェック
-	err = client.Moderate(ctx, 1, "test")
+	err = client.Moderate(ctx, myLivestreamId, "test")
 	assert.NoError(t, err)
 
-	_, err = client.PostLivecomment(ctx, 1, &PostLivecommentRequest{
+	_, err = client.PostLivecomment(ctx, myLivestreamId, &PostLivecommentRequest{
 		Comment: "test is greaaaaaaaaaaaaaaaaaaaaat!",
 		Tip:     0,
 	}, WithStatusCode(http.StatusBadRequest))

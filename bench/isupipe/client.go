@@ -466,6 +466,41 @@ func (c *Client) GetLivestream(
 	return nil
 }
 
+func (c *Client) GetLivestreams(
+	ctx context.Context,
+	options ...AssertOption,
+) ([]*Livestream, error) {
+	pat := ClientAssertPattern{
+		StatusCode: http.StatusOK,
+		DecodeBody: true,
+	}
+
+	for _, option := range options {
+		option(&pat)
+	}
+
+	req, err := c.agent.NewRequest(http.MethodGet, "/livestream", nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pat.assertStatuscode(req, resp); err != nil {
+		return nil, err
+	}
+
+	var livestreams []*Livestream
+	if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
+		return nil, err
+	}
+
+	return livestreams, nil
+}
+
 func (c *Client) GetLivestreamsByTag(
 	ctx context.Context,
 	tag string,
