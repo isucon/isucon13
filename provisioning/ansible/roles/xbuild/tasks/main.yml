@@ -1,0 +1,69 @@
+---
+- name: Install git
+  become: true
+  apt:
+    name: git
+    state: present
+
+- name: Install xbuild
+  become: true
+  git:
+    repo: https://github.com/tagomoris/xbuild.git
+    dest: /opt/xbuild
+    version: master
+    depth: 1
+
+- name: Create /home/isucon/local directory
+  become: true
+  file:
+    path: /home/isucon/local
+    state: directory
+    mode: 0777
+    owner: isucon
+    group: isucon
+
+- name: Install golang
+  become: true
+  shell:
+    cmd: /opt/xbuild/go-install 1.21 /home/isucon/local/golang
+
+- name: Change owner of golang
+  become: true
+  file:
+    path: /home/isucon/local/golang
+    state: directory
+    owner: isucon
+    group: isucon
+    recurse: true
+
+- name: Copy /home/isucon/.local.env
+  become: true
+  become_user: isucon
+  copy:
+    src: .local.env
+    dest: /home/isucon/.local.env
+    mode: 0644
+
+- name: Copy /home/isucon/.x
+  become: true
+  become_user: isucon
+  copy:
+    src: .x
+    dest: /home/isucon/.x
+    mode: 0755
+
+- name: Copy /home/isucon/.profile
+  become: true
+  become_user: isucon
+  copy:
+    src: .profile
+    dest: /home/isucon/.profile
+    mode: 0644
+
+- name: Copy /home/isucon/env
+  become: true
+  become_user: isucon
+  copy:
+    src: env
+    dest: /home/isucon/env
+    mode: 0755

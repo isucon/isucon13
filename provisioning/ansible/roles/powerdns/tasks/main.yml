@@ -1,0 +1,110 @@
+---
+- name: Copy sources.list.d/pdns.list
+  become: true
+  copy:
+    src: pdns.list
+    dest: /etc/apt/sources.list.d/pdns.list
+    mode: 0644
+
+- name: Copy preferences.d/auth-48
+  become: true
+  copy:
+    src: auth-48
+    dest: /etc/apt/preferences.d/auth-48
+    mode: 0644
+
+- name: Create /etc/apt/keyrings
+  become: true
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: 0755
+
+- name: Download keyrings/auth-48-pub.asc
+  get_url:
+    url: https://repo.powerdns.com/FD380FBB-pub.asc
+    dest: /etc/apt/keyrings/auth-48-pub.asc
+    mode: 0644
+
+- name: Update apt cache
+  become: true
+  apt:
+    update_cache: yes
+    cache_valid_time: 0
+
+- name: Install pdns and backend-mysql
+  become: true
+  apt:
+    name:
+      - pdns-server
+      - pdns-backend-mysql
+    state: present
+
+- name: Create isudns db on MySQL
+  become: true
+  shell: >
+    mysql -uroot -e "
+      DROP DATABASE IF EXISTS isudns;
+      CREATE DATABASE isudns;
+    "
+
+- name: Create tables onn isudns
+  become: true
+  shell: >
+    cat /usr/share/doc/pdns-backend-mysql/schema.mysql.sql|mysql -uroot isudns
+
+# XXX drop index
+- name: Create isudns db on MySQL
+  become: true
+  shell: >
+    mysql -uroot -e "
+      DROP INDEX IF nametype_index on records;
+    " isudns
+
+- name: Remove pdns.d/bind.conf
+  become: true
+  file:
+    state: absent
+    path: /etc/powerdns/pdns.d/bind.conf
+
+- name: Copy pdns.d/mysql.conf
+  become: true
+  copy:
+    src: mysql.conf
+    dest: /etc/powerdns/pdns.d/mysql.conf
+    mode: 0644
+
+- name: Chmod pdns.conf
+  become: true
+  file:
+    path: /etc/powerdns/pdns.conf
+    mode: 0644
+
+- name: Copy systemd/resolved.conf
+  become: true
+  copy:
+    src: resolved.conf
+    dest: /etc/systemd/resolved.conf
+    mode: 0644
+
+- name: symlink resolv.conf
+  become: true
+  file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: true
+
+- name: Stop systemd-resolved
+  become: true
+  service:
+    name: systemd-resolved
+    enabled: false
+    state: stopped
+
+- name: Start pdns
+  become: true
+  service:
+    name: pdns
+    enabled: true
+    state: restarted

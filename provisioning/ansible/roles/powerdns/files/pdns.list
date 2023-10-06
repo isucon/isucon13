@@ -1,0 +1,1 @@
+deb [signed-by=/etc/apt/keyrings/auth-48-pub.asc arch=amd64] http://repo.powerdns.com/ubuntu jammy-auth-48 main

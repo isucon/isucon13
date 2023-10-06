@@ -1,0 +1,20 @@
+- name: Install MySQL
+  become: true
+  apt:
+    name: mysql-server
+    state: present
+
+- name: Start mysql service
+  service:
+    name: mysql
+    enabled: true
+    state: started
+
+- name: Create isucon user on MySQL
+  become: true
+  shell: >
+    mysql -uroot -e "
+      CREATE USER IF NOT EXISTS 'isucon'@'localhost' IDENTIFIED BY 'isucon';
+      GRANT ALL PRIVILEGES ON *.* TO 'isucon'@'localhost' WITH GRANT OPTION;
+      FLUSH PRIVILEGES;
+    "

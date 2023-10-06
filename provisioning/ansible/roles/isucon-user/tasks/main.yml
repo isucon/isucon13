@@ -1,0 +1,50 @@
+---
+- name: Create isucon group
+  become: true
+  group:
+    name: isucon
+    gid: 1100
+    state: present
+    system: no
+
+- name: Create isucon user
+  become: true
+  user:
+    name: isucon
+    uid: 1100
+    group: isucon
+    password: isucon
+    home: /home/isucon
+    shell: /bin/bash
+    state: present
+    system: no
+
+- name: Chmod isucon home directory
+  become: true
+  file:
+    path: /home/isucon
+    mode: 0755
+
+- name: Create .ssh directory for isucon
+  become: true
+  file:
+    path: /home/isucon/.ssh
+    state: directory
+    mode: 0700
+    owner: isucon
+    group: isucon
+
+- name: Remove authorized_keys
+  become: true
+  file:
+    state: absent
+    path: /home/isucon/.ssh/authorized_keys
+
+- name: Add isucon to sudoers
+  become: true
+  copy:
+    content: "isucon  ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/99-isucon-user
+    owner: root
+    group: root
+    mode: 0440
