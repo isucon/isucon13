@@ -2,3 +2,10 @@
   become: true
   timezone:
     name: Asia/Tokyo
+
+- name: Copy sshd_config.d/pubkey.conf
+  become: true
+  copy:
+    src: pubkey.conf
+    dest: /etc/ssh/sshd_config.d/pubkey.conf
+    mode: 0644
