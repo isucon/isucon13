@@ -1,0 +1,33 @@
+all:
+  children:
+    application:
+    benchmarker:
+application:
+  hosts:
+    env1_app:
+      ansible_host: 13.114.118.33
+      ansible_user: root
+    env2_app:
+      ansible_host: 3.114.157.52
+      ansible_user: root
+    env3_app:
+      ansible_host: 43.206.30.142
+      ansible_user: root
+    env4_app:
+      ansible_host: 54.95.60.213
+      ansible_user: root
+benchmarker:
+  hosts:
+    env1_bench:
+      ansible_host: 35.78.12.143
+      ansible_user: root
+    env2_bench:
+      ansible_host: 18.180.66.249
+      ansible_user: root
+    env3_bench:
+      ansible_host: 54.92.119.204
+      ansible_user: root
+    env4_bench:
+      ansible_host: 43.206.15.17
+      ansible_user: root
+

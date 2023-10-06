@@ -1,0 +1,6 @@
+---
+- name: Send benchmarker binary 
+  become: yes
+  copy:
+    src: bench_linux_amd64
+    dest: /home/isucon/

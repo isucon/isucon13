@@ -1,0 +1,15 @@
+---
+- name: Send webapp tarball
+  become: yes
+  copy:
+    src: webapp.tar.gz
+    dest: /home/isucon/webapp.tar.gz
+- name: Extract webapp.tar.gz into /home/isucon
+  become: yes
+  ansible.builtin.unarchive:
+    src: /home/isucon/webapp.tar.gz
+    dest: /home/isucon/webapp
+- name: Remove webapp.tar.gz
+  ansible.builtin.file:
+    path: /home/isucon/webapp.tar.gz
+    state: absent
