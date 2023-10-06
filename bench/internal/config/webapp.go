@@ -1,3 +1,6 @@
 package config
 
-var TargetBaseURL string
+var (
+	TargetBaseURL    string
+	TargetNameserver string
+)

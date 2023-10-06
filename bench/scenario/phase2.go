@@ -15,15 +15,12 @@ import (
 
 // ライブコメントを投稿
 func runReserveScenario(ctx context.Context) error {
-	log.Println("run scenario")
 	// 配信者決定
 	vtuber := scheduler.UserScheduler.SelectVTuber()
 
 	// ログイン
-	log.Println("login")
 	vtuberClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -31,12 +28,10 @@ func runReserveScenario(ctx context.Context) error {
 		UserName: vtuber.Name,
 		Password: vtuber.RawPassword,
 	}); err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// 予約を実施
-	log.Println("reserve")
 	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
 	if err != nil {
 		log.Println(err)
@@ -52,14 +47,15 @@ func runReserveScenario(ctx context.Context) error {
 		EndAt:       reservation.EndAt,
 	})
 	if err != nil {
+		scheduler.Phase2ReservationScheduler.AbortReservation(reservation)
 		log.Println(err)
 		return err
 	}
+	scheduler.Phase2ReservationScheduler.CommitReservation(reservation)
 
 	// 作成された予約について、視聴者を生成して投げ銭を稼がせてあげる
 
 	// 視聴者を決定
-	log.Println("setup viewer")
 	viewer := scheduler.UserScheduler.SelectViewer()
 
 	viewerClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
@@ -77,11 +73,12 @@ func runReserveScenario(ctx context.Context) error {
 	}
 
 	// enter
-	log.Println("enter")
 	if err := viewerClient.EnterLivestream(ctx, livestream.Id); err != nil {
 		log.Println(err)
 		return err
 	}
+
+	// FIXME:
 
 	// FIXME: 時間枠の長さに合わせて投げ銭の機会を増やすため、forループの長さを変える
 	for i := 0; i < 10; i++ {
@@ -90,7 +87,6 @@ func runReserveScenario(ctx context.Context) error {
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
 
 		// 視聴者からライブコメント投稿 (投げ銭)
-		log.Println("post livecomment tips")
 		if _, err := viewerClient.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
 			Comment: comment.Comment,
 			Tip:     tip,
@@ -100,7 +96,6 @@ func runReserveScenario(ctx context.Context) error {
 	}
 
 	// leave
-	log.Println("leave")
 	if err := viewerClient.LeaveLivestream(ctx, livestream.Id); err != nil {
 		return err
 	}
@@ -113,7 +108,7 @@ func Phase2(ctx context.Context) error {
 
 	// 通常配信者
 	// countは広告費用係数に合わせて増やす
-	count := 30
+	count := 5
 	for i := 0; i < count; i++ {
 		eg.Go(func() error {
 			for {
@@ -122,6 +117,7 @@ func Phase2(ctx context.Context) error {
 					return nil
 				default:
 					runReserveScenario(ctx)
+					// スパム投稿, 報告、弾かれるチェック
 				}
 			}
 		})

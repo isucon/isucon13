@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -75,6 +76,8 @@ func Phase1(ctx context.Context) error {
 			for {
 				select {
 				case <-ctx.Done():
+					return ctx.Err()
+				case <-benchscore.Achieve():
 					return nil
 				default:
 					runPostLivecommentScenario(ctx)

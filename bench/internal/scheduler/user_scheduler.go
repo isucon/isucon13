@@ -17,14 +17,11 @@ import (
 
 var UserScheduler = mustNewUserScheduler()
 
-const negativeViewersLimit = 10
-
 type UserType int
 
 const (
 	UserType_Normal  UserType = iota
 	UserType_Popular          // 人気
-	UserType_Flame            // 炎上
 )
 
 type User struct {
@@ -40,7 +37,6 @@ type User struct {
 
 type userScheduler struct {
 	PopularLimit int
-	FlameLimit   int
 
 	vtuberCursorMu sync.Mutex
 	vtuberCursor   int
@@ -57,17 +53,16 @@ type userScheduler struct {
 
 func mustNewUserScheduler() *userScheduler {
 	sched := new(userScheduler)
+	// 人気配信者制限
 	sched.PopularLimit = 10
-	sched.FlameLimit = 3
+
+	// negative
 	sched.negativeCounts = make([]int, len(vtuberPool)+10)
 
-	// 人気、炎上配信者を設定
-	offset := rand.Intn(len(vtuberPool) - sched.PopularLimit - sched.FlameLimit)
+	// 人気配信者を設定
+	offset := rand.Intn(len(vtuberPool) - sched.PopularLimit)
 	for i := offset; i < offset+sched.PopularLimit; i++ {
 		vtuberPool[i].Type = UserType_Popular
-	}
-	for i := offset + sched.PopularLimit; i < offset+sched.PopularLimit+sched.FlameLimit; i++ {
-		vtuberPool[i].Type = UserType_Flame
 	}
 
 	return sched
@@ -75,15 +70,12 @@ func mustNewUserScheduler() *userScheduler {
 
 // 負荷レベルを上げる
 // 負荷フェーズの切替時、mainからこれを呼び出して負荷レベルを上昇させる
-func IncreaseWorkloadLevel(populars, flames int) {
+func IncreaseWorkloadLevel(populars int) {
 	for i := 0; i < len(vtuberPool); i++ {
 		if vtuberPool[i].Type == UserType_Normal {
 			if populars > 0 {
 				vtuberPool[i].Type = UserType_Popular
 				populars--
-			} else if flames > 0 {
-				vtuberPool[i].Type = UserType_Flame
-				flames--
 			} else {
 				return
 			}
@@ -172,12 +164,4 @@ func (s *userScheduler) SelectCollaborators(n int) []*User {
 		n = len(vtuberPool) - 1
 	}
 	return vtuberPool[:n]
-}
-
-const negativeThreshold = 10
-
-// 炎上配信をどうこうしたい場合に、ネガティブな視聴者を払い出す
-// こちらも参照が少ないものから選んでいく
-func (s *userScheduler) SelectNegativeViewer() {
-	// カウンターが一定値超えてるようなら、高い確率でネガティブな動きをするだろうということで選別して返す
 }

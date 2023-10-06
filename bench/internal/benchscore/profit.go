@@ -50,9 +50,7 @@ func AddTipProfit(tip int) error {
 
 	profit.Add(tag)
 	if profit.Sum() >= int64(goalSum) {
-		closeOnce.Do(func() {
-			close(achieveCh)
-		})
+		close(achieveCh)
 	}
 
 	return nil

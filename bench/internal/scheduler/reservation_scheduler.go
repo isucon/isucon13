@@ -1,14 +1,16 @@
 package scheduler
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
 	"sync"
-	"time"
 
 	"github.com/biogo/store/interval"
 )
+
+var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
 // NOTE: phase1は初期状態ですべての予約が埋まっている
 // FIXME: 各所でシーズン判定ができないと、選べなさそう。使う側はシーズンがわかっているので取り出せるが、clientから予約のたびにココに突っ込むとなると、どれに突っ込めばいいかもたないといけない
@@ -31,6 +33,7 @@ func init() {
 // 一定のランダム要素がないと、ベンチ走行データを再利用してチートするなど考えられるため
 
 type ReservationScheduler struct {
+	// 負荷フェーズごとに変わるので、プールを内部に保持
 	reservationPool []*Reservation
 
 	// 実施された予約リクエストに基づいて、予約が少ない区間、予約が多い区間を割り出すために温度(予約成功回数)を保持しておく
@@ -105,6 +108,8 @@ func (r *ReservationScheduler) CommitReservation(reservation *Reservation) {
 		reservation.EndAt,
 	)
 
+	// FIXME: 炎上配信の払い出し数をチェックし、まだ払い出せるなら成立した予約から炎上配信として扱えるようにしていく
+
 	r.reservations = append(r.reservations, reservation)
 
 	r.intTreeStates[int(reservation.Id)] = CommitState_Committed
@@ -123,7 +128,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 
 	intervals, err := r.intervalTempertures.findHotIntervals()
 	if err != nil {
-		return nil, err
+		return nil, ErrNoReservation
 	}
 
 	for i := len(intervals) - 1; i >= 0; i-- {
@@ -138,7 +143,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
-			continue
+			return nil, err
 		}
 
 		for i := len(reservations) - 1; i >= 0; i-- {
@@ -150,7 +155,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no hot long reservation")
+	return nil, ErrNoReservation
 }
 
 func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
@@ -159,10 +164,8 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 
 	intervals, err := r.intervalTempertures.findHotIntervals()
 	if err != nil {
-		return nil, err
+		return nil, ErrNoReservation
 	}
-
-	log.Printf("intervals = %s, %s\n", time.Unix(intervals[0].startAt.Unix(), 0), time.Unix(intervals[0].endAt.Unix(), 0))
 
 	for i := 0; i < len(intervals); i++ {
 		interval := intervals[i]
@@ -171,13 +174,12 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(founds) == 0 {
-			log.Println("continue intervals")
 			continue
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
-			continue
+			return nil, err
 		}
 
 		for i := 0; i < len(reservations); i++ {
@@ -189,7 +191,7 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no hot short reservation")
+	return nil, ErrNoReservation
 }
 
 func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
@@ -198,7 +200,7 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 
 	intervals, err := r.intervalTempertures.findColdIntervals()
 	if err != nil {
-		return nil, err
+		return nil, ErrNoReservation
 	}
 
 	for i := 0; i < len(intervals); i++ {
@@ -225,7 +227,7 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no hot long reservation")
+	return nil, ErrNoReservation
 }
 
 // 予約の突合処理に使う
