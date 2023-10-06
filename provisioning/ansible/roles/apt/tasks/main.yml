@@ -1,0 +1,41 @@
+---
+- name: Use jaist mirror
+  become: true
+  replace:
+    path: /etc/apt/sources.list
+    regexp: "http://archive.ubuntu.com/ubuntu"
+    replace: "http://ftp.jaist.ac.jp/pub/Linux/ubuntu/"
+    backup: yes
+
+- name: Update apt cache
+  become: true
+  apt:
+    update_cache: yes
+    cache_valid_time: 0
+
+- name: Install required packages
+  become: true
+  apt:
+    name:
+      - acl
+      - build-essential
+      - libxml2-dev
+      - pkg-config
+      - libsqlite3-dev
+      - libbz2-dev
+      - libcurl4-openssl-dev
+      - libpng-dev
+      - libjpeg-dev
+      - libonig-dev
+      - libreadline-dev
+      - libtidy-dev
+      - libxslt-dev
+      - libzip-dev
+      - autoconf
+      - bison
+      - dpkg-dev
+      - libgdbm-dev
+      - libssl-dev
+      - libreadline-dev
+      - libffi-dev
+      - zlib1g-dev

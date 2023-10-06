@@ -1,0 +1,9 @@
+---
+- hosts: application
+  roles:
+    - base
+    - apt
+    - isucon-user
+    - xbuild
+    - mysql
+    - powerdns
