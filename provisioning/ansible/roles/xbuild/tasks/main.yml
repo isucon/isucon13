@@ -25,7 +25,7 @@
 - name: Install golang
   become: true
   shell:
-    cmd: /opt/xbuild/go-install 1.21 /home/isucon/local/golang
+    cmd: /opt/xbuild/go-install 1.21.2 /home/isucon/local/golang
 
 - name: Change owner of golang
   become: true

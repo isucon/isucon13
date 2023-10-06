@@ -21,6 +21,7 @@
     mode: 0755
 
 - name: Download keyrings/auth-48-pub.asc
+  become: true
   get_url:
     url: https://repo.powerdns.com/FD380FBB-pub.asc
     dest: /etc/apt/keyrings/auth-48-pub.asc
@@ -58,7 +59,7 @@
   become: true
   shell: >
     mysql -uroot -e "
-      DROP INDEX IF nametype_index on records;
+      DROP INDEX nametype_index on records;
     " isudns
 
 - name: Remove pdns.d/bind.conf
