@@ -31,7 +31,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to get user(me)...")
-	if err := client.GetUserSession(); err != nil {
+	if err := client.GetUserSession(ctx); err != nil {
 		return err
 	}
 
