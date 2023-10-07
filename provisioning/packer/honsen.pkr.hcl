@@ -70,9 +70,7 @@ build {
   provisioner "ansible" {
     playbook_file = "../../provisioning/ansible/application.yml"
     host_alias = "application"
-    ansible_env_vars = [
-      "ANSIBLE_SSH_TRANSFER_METHOD=piped",
-    ]
+    use_proxy = false
   }
   provisioner "shell" {
     env = {
