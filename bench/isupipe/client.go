@@ -14,27 +14,26 @@ import (
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/config"
 )
 
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
 
 type Client struct {
 	agent *agent.Agent
-	// FIXME: dns resolver
+	// initialize用、課金用のagentを設ける
 }
-
-const DefaultClientBaseURL = "http://127.0.0.1:12345"
 
 func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
-		agent.WithBaseURL(DefaultClientBaseURL),
+		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 			// Custom DNS Resolver
 			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				nameserverAddress := "1.1.1.1"
+				nameserverAddress := config.TargetNameserver
 				dialTimeout := 10000 * time.Millisecond
 				dialer := net.Dialer{
 					Timeout: dialTimeout,

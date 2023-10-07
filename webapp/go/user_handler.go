@@ -123,19 +123,19 @@ func postUserHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
 	}
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user)
 	if err != nil {
 		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
 	}
 
 	userId, err := result.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
 	}
 
 	user.Id = int(userId)
@@ -146,14 +146,15 @@ func postUserHandler(c echo.Context) error {
 	}
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", theme); err != nil {
 		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
 	}
 
 	if disablePowerDNS {
+		c.Logger().Info("disbale dns")
 		return c.JSON(http.StatusCreated, user)
 	}
 
@@ -181,7 +182,6 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	c.Logger().Infof("matching passwords %s == %s", user.HashedPassword, req.Password)
 	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		// return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")

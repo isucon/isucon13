@@ -78,6 +78,7 @@ CREATE TABLE `livecomments` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+CREATE INDEX livecomments_covering ON livecomments(`created_at`, `user_id`, `tip`, `report_count`, `updated_at`, `comment`, `livestream_id`);
 
 -- ユーザからのライブコメントのスパム報告
 CREATE TABLE `livecomment_reports` (
@@ -100,6 +101,7 @@ CREATE TABLE `ng_words` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+CREATE INDEX ng_words_word ON ng_words(`word`);
 
 -- ライブ配信に対するリアクション
 CREATE TABLE `reactions` (
@@ -110,3 +112,4 @@ CREATE TABLE `reactions` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+CREATE INDEX reactions_covering ON reactions(`user_id`, `created_at`, `emoji_name`, `livestream_id`);

@@ -8,3 +8,4 @@ DELETE FROM livecomments;
 DELETE FROM livecomment_reports;
 DELETE FROM ng_words;
 DELETE FROM reactions;
+

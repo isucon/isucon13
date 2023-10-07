@@ -59,7 +59,7 @@ func (t *IntervalTemperatures) addInterval(startAtUnix int64, endAtUnix int64) {
 		baseOffset = startAt.Sub(baseAt) / time.Hour
 		length     = time.Unix(endAtUnix, 0).Sub(startAt) / time.Hour
 	)
-	for i := baseOffset; i <= baseOffset+length; i++ {
+	for i := baseOffset; i <= baseOffset+length && int(i) < len(t.intervalTemperatures); i++ {
 		t.intervalTemperatures[i]++
 	}
 }

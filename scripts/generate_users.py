@@ -190,9 +190,18 @@ def gen_user_theme_sql(user_id: int) -> str:
 
 def gen_user(n: int) -> str:
     users = []
+    password_cache = dict()
     for user_id in range(1, n+1):
         profile = fake.profile()
-        raw_password, hashed_password = passwords[(user_id-1)%100]
+        name = profile['username']
+        if name in password_cache:
+            # 名前が再利用される場合、そのパスワードも再利用
+            raw_password, hashed_password = password_cache[name]
+        else:
+            # 名前が新規に振られる場合、パスワードを作ってキャッシュに入れておく
+            raw_password, hashed_password = passwords[(user_id-1)%100]
+            password_cache[name] = (raw_password, hashed_password,)
+
         users.append(dict(
             user_id = user_id,
             name = profile['username'],

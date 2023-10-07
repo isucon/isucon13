@@ -89,10 +89,6 @@ func postLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if req.Tip < 0 || 20000 < req.Tip {
-		return echo.NewHTTPError(http.StatusBadRequest, "the tips in a live comment must be 1 <= tips <= 20000")
-	}
-
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

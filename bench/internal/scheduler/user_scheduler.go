@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"sync"
@@ -17,14 +18,11 @@ import (
 
 var UserScheduler = mustNewUserScheduler()
 
-const negativeViewersLimit = 10
-
 type UserType int
 
 const (
 	UserType_Normal  UserType = iota
 	UserType_Popular          // 人気
-	UserType_Flame            // 炎上
 )
 
 type User struct {
@@ -40,7 +38,12 @@ type User struct {
 
 type userScheduler struct {
 	PopularLimit int
-	FlameLimit   int
+
+	userCursorMu sync.Mutex
+	userCursor   int
+
+	season1CursorMu sync.Mutex
+	season1Cursor   int
 
 	vtuberCursorMu sync.Mutex
 	vtuberCursor   int
@@ -53,21 +56,23 @@ type userScheduler struct {
 
 	negativeCountsMu sync.RWMutex
 	negativeCounts   []int
+
+	committedMu sync.RWMutex
+	committed   []*User
 }
 
 func mustNewUserScheduler() *userScheduler {
 	sched := new(userScheduler)
+	// 人気配信者制限
 	sched.PopularLimit = 10
-	sched.FlameLimit = 3
+
+	// negative
 	sched.negativeCounts = make([]int, len(vtuberPool)+10)
 
-	// 人気、炎上配信者を設定
-	offset := rand.Intn(len(vtuberPool) - sched.PopularLimit - sched.FlameLimit)
+	// 人気配信者を設定
+	offset := rand.Intn(len(vtuberPool) - sched.PopularLimit)
 	for i := offset; i < offset+sched.PopularLimit; i++ {
 		vtuberPool[i].Type = UserType_Popular
-	}
-	for i := offset + sched.PopularLimit; i < offset+sched.PopularLimit+sched.FlameLimit; i++ {
-		vtuberPool[i].Type = UserType_Flame
 	}
 
 	return sched
@@ -75,15 +80,12 @@ func mustNewUserScheduler() *userScheduler {
 
 // 負荷レベルを上げる
 // 負荷フェーズの切替時、mainからこれを呼び出して負荷レベルを上昇させる
-func IncreaseWorkloadLevel(populars, flames int) {
+func IncreaseWorkloadLevel(populars int) {
 	for i := 0; i < len(vtuberPool); i++ {
 		if vtuberPool[i].Type == UserType_Normal {
 			if populars > 0 {
 				vtuberPool[i].Type = UserType_Popular
 				populars--
-			} else if flames > 0 {
-				vtuberPool[i].Type = UserType_Flame
-				flames--
 			} else {
 				return
 			}
@@ -118,9 +120,9 @@ func (u *userScheduler) BehaveTroubleMaker(viewer *User) bool {
 //
 // 人気に仕立て上げるかどうかはすべてこちらの采配次第
 // 実際に人気であるか (投稿数、スパム数などをもとに判断)を判定して返す
-func (u *userScheduler) IsPopular(user *User) bool {
-	return false
-}
+// func (u *userScheduler) IsPopular(user *User) bool {
+// 	return false
+// }
 
 // 人気になる候補を取得。人気に仕立てていく
 func (s *userScheduler) SelectPopularCandidate() (*User, error) {
@@ -144,14 +146,43 @@ func (s *userScheduler) SelectPopularCandidate() (*User, error) {
 	return nil, fmt.Errorf("人気VTuber候補を発見できませんでした")
 }
 
+// 未登録のユーザを払い出し
+func (s *userScheduler) SelectUser() (*User, error) {
+	s.userCursorMu.Lock()
+	defer s.userCursorMu.Unlock()
+
+	if s.userCursor >= len(userPool) {
+		return nil, fmt.Errorf("no more user")
+	}
+
+	user := userPool[s.userCursor]
+	return user, nil
+}
+
 // 普通の配信者でいいなら、Normalなものを探せばいい
 func (s *userScheduler) SelectVTuber() *User {
 	s.vtuberCursorMu.Lock()
 	defer s.vtuberCursorMu.Unlock()
 
-	vtuber := vtuberPool[s.vtuberCursor]
-	s.vtuberCursor = (s.vtuberCursor + 1) % len(vtuberPool)
+	if s.vtuberCursor >= len(s.committed) {
+		log.Fatalf("SelectVTuberにて、範囲外アクセス検出: cursor=%d, len=%d\n", s.vtuberCursor, len(s.committed))
+	}
+	vtuber := s.committed[s.vtuberCursor]
+	s.vtuberCursor = (s.vtuberCursor + 1) % len(s.committed)
 	return vtuber
+}
+
+func (s *userScheduler) SelectViewerForSeason1() *User {
+	s.season1CursorMu.Lock()
+	defer s.season1CursorMu.Unlock()
+
+	viewer := season1Users[s.season1Cursor]
+	s.season1Cursor = (s.season1Cursor + 1) % len(season1Users)
+	return viewer
+}
+
+func (s *userScheduler) SelectVTuberForSeason1() *User {
+	return s.SelectViewerForSeason1()
 }
 
 // viewerは、可能な限り何もしてない人から払い出していく
@@ -159,8 +190,12 @@ func (s *userScheduler) SelectViewer() *User {
 	s.viewerCursorMu.Lock()
 	defer s.viewerCursorMu.Unlock()
 
-	viewer := viewerPool[s.viewerCursor]
-	s.viewerCursor = (s.viewerCursor + 1) % len(viewerPool)
+	if s.viewerCursor >= len(s.committed) {
+		log.Fatalf("SelectViewerにて、範囲外アクセス検出: cursor=%d, len=%d\n", s.vtuberCursor, len(s.committed))
+	}
+	s.viewerCursor = s.viewerCursor % len(s.committed)
+	viewer := s.committed[s.viewerCursor]
+	s.viewerCursor++
 	return viewer
 }
 
@@ -174,10 +209,10 @@ func (s *userScheduler) SelectCollaborators(n int) []*User {
 	return vtuberPool[:n]
 }
 
-const negativeThreshold = 10
+// Commit は、ユーザが登録された際に呼び出すことで、登録済みユーザのみ払い出すことを保証します
+func (s *userScheduler) Commit(user *User) {
+	s.committedMu.Lock()
+	defer s.committedMu.Unlock()
 
-// 炎上配信をどうこうしたい場合に、ネガティブな視聴者を払い出す
-// こちらも参照が少ないものから選んでいく
-func (s *userScheduler) SelectNegativeViewer() {
-	// カウンターが一定値超えてるようなら、高い確率でネガティブな動きをするだろうということで選別して返す
+	s.committed = append(s.committed, user)
 }
