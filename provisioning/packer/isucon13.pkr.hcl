@@ -13,16 +13,16 @@ variable "revision" {
 }
 
 locals {
-  name = "isucon13-honsen-${formatdate("YYYYMMDD-hhmm", timestamp())}"
+  name = "isucon13-${formatdate("YYYYMMDD-hhmm", timestamp())}"
   ami_tags = {
-    Project  = "honsen"
-    Family   = "isucon13-honsen"
+    Project  = "isucon13"
+    Family   = "isucon13"
     Name     = "${local.name}"
     Revision = "${var.revision}"
     Packer   = "1"
   }
   run_tags = {
-    Project = "honsen"
+    Project = "isucon13"
     Name    = "packer-${local.name}"
     Packer  = "1"
     Ignore  = "1"
@@ -40,7 +40,7 @@ data "amazon-ami" "ubuntu-jammy" {
   region      = "ap-northeast-1"
 }
 
-source "amazon-ebs" "honsen" {
+source "amazon-ebs" "isucon13" {
   ami_name    = "${local.name}"
   ami_regions = ["ap-northeast-1"]
 
@@ -65,7 +65,7 @@ source "amazon-ebs" "honsen" {
 }
 
 build {
-  sources = ["source.amazon-ebs.honsen"]
+  sources = ["source.amazon-ebs.isucon13"]
 
   provisioner "ansible" {
     playbook_file = "../../provisioning/ansible/application.yml"
