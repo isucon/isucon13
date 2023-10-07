@@ -82,7 +82,7 @@ func Phase1(ctx context.Context) error {
 				case <-benchscore.Achieve():
 					return nil
 				default:
-					go runPostLivecommentScenario(ctx)
+					runPostLivecommentScenario(ctx)
 				}
 			}
 		})

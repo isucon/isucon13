@@ -175,9 +175,9 @@ func Phase3(ctx context.Context) error {
 				case <-ctx.Done():
 					return nil
 				default:
-					go runConcurrentReservation(ctx)
-					go runDnsAttackScenario()
-					go runSpamScenario(ctx)
+					runConcurrentReservation(ctx)
+					runDnsAttackScenario()
+					runSpamScenario(ctx)
 				}
 			}
 		})

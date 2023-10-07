@@ -123,7 +123,7 @@ func Phase4(ctx context.Context) error {
 				default:
 					// 高い並列性で書き込みまくる
 					// 合間にプロフィール閲覧、統計情報取得などを入れて、売上などのハードルにする
-					go runReserveScenario(ctx)
+					runReserveScenario(ctx)
 				}
 			}
 		})
