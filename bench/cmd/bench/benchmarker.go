@@ -16,7 +16,7 @@ func newBenchmarker() *benchmarker {
 }
 
 const Season1PassConditionTips = 10000
-const Season2PassConditionTips = 30000
+const Season2PassConditionTips = 20000
 const Season3PassConditionTips = 50000
 
 // season1 はSeason1シナリオを実行する
