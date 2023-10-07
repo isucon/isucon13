@@ -15,9 +15,9 @@ func newBenchmarker() *benchmarker {
 	return &benchmarker{}
 }
 
-const Season1PassConditionTips = 70000
-const Season2PassConditionTips = 90000
-const Season3PassConditionTips = 110000
+const Season1PassConditionTips = 10000
+const Season2PassConditionTips = 30000
+const Season3PassConditionTips = 50000
 
 // season1 はSeason1シナリオを実行する
 // ctx には、context.WithTimeout()でタイムアウトが設定されたものが渡されることを想定
