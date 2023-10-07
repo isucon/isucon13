@@ -109,3 +109,8 @@
     name: pdns
     enabled: true
     state: restarted
+
+- name: create zone
+  become: true
+  shell: |
+    pdnsutil create-zone u.isucon.dev
