@@ -9,3 +9,25 @@
     src: pubkey.conf
     dest: /etc/ssh/sshd_config.d/pubkey.conf
     mode: 0644
+
+- name: Set sysctl local_port_range
+  become: true
+  sysctl:
+    name: net.ipv4.ip_local_port_range
+    value: "10000 65535"
+    state: present
+    sysctl_set: true
+    reload: true
+
+- name: Configure pam limits
+  become: true
+  pam_limits:
+    domain: "*"
+    limit_type: "{{item.limit_type}}"
+    limit_item: "{{item.limit_item}}"
+    value: "{{item.value}}"
+  with_items:
+    - { limit_type: "-", limit_item: "nofile", value: 655360 }
+    - { limit_type: "-", limit_item: "nproc", value: 655360 }
+    - { limit_type: "soft", limit_item: "memlock", value: unlimited }
+    - { limit_type: "hard", limit_item: "memlock", value: unlimited }
