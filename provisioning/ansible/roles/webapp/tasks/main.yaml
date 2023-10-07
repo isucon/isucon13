@@ -1,7 +1,7 @@
 ---
 - name: Send webapp tarball
   become: yes
-  copy:
+  ansible.builtin.copy:
     src: webapp.tar.gz
     dest: /home/isucon/webapp.tar.gz
 - name: Extract webapp.tar.gz into /home/isucon
@@ -13,3 +13,13 @@
   ansible.builtin.file:
     path: /home/isucon/webapp.tar.gz
     state: absent
+- name: Put systemd service
+  become: yes
+  ansible.builtin.copy:
+    src: isupipe-go.service
+    dest: /etc/systemd/system/
+- name: Put systemd service env file
+  become: yes
+  ansible.builtin.template:
+    src: env.sh
+    dest: /home/isucon/

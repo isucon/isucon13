@@ -158,7 +158,7 @@ func postUserHandler(c echo.Context) error {
 		return c.JSON(http.StatusCreated, user)
 	}
 
-	if err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "30").Run(); err != nil {
+	if err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "a", "30", powerDNSSubdomainAddress).Run(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
