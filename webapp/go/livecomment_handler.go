@@ -116,6 +116,7 @@ func postLivecommentHandler(c echo.Context) error {
 		Comment:      req.Comment,
 		Tip:          req.Tip,
 	}
+	c.Logger().Infof("livecomment.tip = %d", livecomment.Tip)
 
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", livecomment)
 	if err != nil {

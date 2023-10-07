@@ -15,7 +15,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
@@ -33,6 +32,7 @@ var (
 	disablePowerDNS          bool = false
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
+	pdnsConn                 *sqlx.DB
 	secret                   = []byte("defaultsecret")
 )
 
@@ -54,7 +54,7 @@ func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
 	return conf, nil
 }
 
-func connectDB() (*sqlx.DB, error) {
+func connectDB(dbname string) (*sqlx.DB, error) {
 	const (
 		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
 		addrEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_ADDRESS"
@@ -73,7 +73,7 @@ func connectDB() (*sqlx.DB, error) {
 	conf.Addr = net.JoinHostPort("127.0.0.1", "3306")
 	conf.User = "isucon"
 	conf.Passwd = "isucon"
-	conf.DBName = "isupipe"
+	conf.DBName = dbname
 	conf.ParseTime = true
 
 	if v, ok := os.LookupEnv(networkTypeEnvKey); ok {
@@ -92,9 +92,7 @@ func connectDB() (*sqlx.DB, error) {
 	if v, ok := os.LookupEnv(passwordEnvKey); ok {
 		conf.Passwd = v
 	}
-	if v, ok := os.LookupEnv(dbNameEnvKey); ok {
-		conf.DBName = v
-	}
+	conf.DBName = dbname
 	if v, ok := os.LookupEnv(parseTimeEnvKey); ok {
 		parseTime, err := strconv.ParseBool(v)
 		if err != nil {
@@ -102,6 +100,7 @@ func connectDB() (*sqlx.DB, error) {
 		}
 		conf.ParseTime = parseTime
 	}
+	conf.InterpolateParams = true
 
 	return sqlx.Open("mysql", conf.FormatDSN())
 }
@@ -110,8 +109,9 @@ func initializeHandler(c echo.Context) error {
 	if out, err := exec.Command("./init.sh").CombinedOutput(); err != nil {
 		c.Logger().Warnf("init.sh failed with err=%s", string(out))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	} else {
+		log.Println("out", out)
 	}
-
 	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
 		AdvertiseLevel: 5,
@@ -121,9 +121,11 @@ func initializeHandler(c echo.Context) error {
 
 func main() {
 	e := echo.New()
+	e.JSONSerializer = &JSONSerializer{}
+
 	e.Debug = true
-	e.Logger.SetLevel(echolog.DEBUG)
-	e.Use(middleware.Logger())
+	e.Logger.SetLevel(echolog.ERROR)
+	//	e.Use(middleware.Logger())
 	cookieStore := sessions.NewCookieStore(secret)
 	// cookieStore.Options.Domain = "*.u.isucon.dev"
 	e.Use(session.Middleware(cookieStore))
@@ -181,14 +183,24 @@ func main() {
 	e.GET("/payment", GetPaymentResult)
 
 	// DB接続
-	conn, err := connectDB()
+	conn, err := connectDB("isupipe")
 	if err != nil {
 		e.Logger.Fatalf("failed to connect db: %v", err)
 		return
 	}
-	conn.SetMaxOpenConns(10)
+	conn.SetMaxOpenConns(32)
 	defer conn.Close()
 	dbConn = conn
+
+	// DB接続
+	conn, err = connectDB("isudns")
+	if err != nil {
+		e.Logger.Fatalf("failed to connect db: %v", err)
+		return
+	}
+	conn.SetMaxOpenConns(32)
+	defer conn.Close()
+	pdnsConn = conn
 
 	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
 	if !ok {

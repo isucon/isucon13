@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
-	"os/exec"
 	"strconv"
 	"time"
 
@@ -19,7 +19,7 @@ const (
 	defaultSessionIdKey      = "SESSIONId"
 	defaultSessionExpiresKey = "EXPIRES"
 	defaultUserIdKey         = "USERId"
-	bcryptDefaultCost        = 10
+	bcryptDefaultCost        = 4
 )
 
 type User struct {
@@ -109,6 +109,18 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "the username 'pipe' is reserved")
 	}
 
+	var u User
+	if err := dbConn.GetContext(ctx, &u, "SELECT * FROM users WHERE name = ? LIMIT 1", req.Name); err != nil {
+		if err != sql.ErrNoRows {
+			c.Logger().Printf("failed to get: username='%s', err=%+v", req.Name, err)
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
+	if u.Name != "" {
+		// already exists
+		return c.JSON(http.StatusCreated, u)
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptDefaultCost)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -129,6 +141,7 @@ func postUserHandler(c echo.Context) error {
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user)
 	if err != nil {
 		tx.Rollback()
+		c.Logger().Errorf("failed to insert user %s: %s", req.Name, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
 	}
 
@@ -153,13 +166,17 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
 	}
 
+	if _, err := pdnsConn.ExecContext(ctx,
+		"insert into records (content,ttl,prio,type,domain_id,disabled,name,ordername,auth) values ('192.168.0.11',30,0,'A',2,0,?,NULL,1);",
+		user.Name+"u.isucon.dev"); err != nil {
+		tx.Rollback()
+		c.Logger().Errorf("failed to insert record: %s", err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "record insertion failed")
+	}
+
 	if disablePowerDNS {
 		c.Logger().Info("disbale dns")
 		return c.JSON(http.StatusCreated, user)
-	}
-
-	if err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "a", "30", powerDNSSubdomainAddress).Run(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusCreated, user)
@@ -175,9 +192,11 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
+	time.Sleep(100 * time.Millisecond)
+
 	user := User{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	if err := dbConn.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
+	if err := dbConn.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ? LIMIT 1", req.UserName); err != nil {
 		c.Logger().Printf("failed to get: username='%s', err=%+v", req.UserName, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -305,17 +324,17 @@ func userIsPopular(ctx context.Context, userId int) (bool, error) {
 			return false, err
 		}
 
-		var livecomments []*Livecomment
-		if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
+		var tip struct {
+			TotalTip int `db:"total_tip"`
+			Comments int `db:"comments"`
+		}
+		if err := dbConn.SelectContext(ctx, &tip, "SELECT sum(tip) as total_tip, count(*) as comments FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
 			return false, err
 		}
 
-		for _, lc := range livecomments {
-			totalTips += lc.Tip
-		}
-
+		totalTips += int(tip.TotalTip)
 		totalSpamReports += spamReports
-		totalLivecomments += len(livecomments)
+		totalLivecomments += int(tip.Comments)
 	}
 
 	if totalSpamReports >= 10 {

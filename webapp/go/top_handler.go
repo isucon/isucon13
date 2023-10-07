@@ -53,7 +53,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 	username := strings.Split(host, ".")[0]
 
 	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT id FROM users WHERE name = ?", username); err != nil {
+	if err := dbConn.GetContext(ctx, &user, "SELECT id FROM users WHERE name = ? LIMIT 1", username); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
