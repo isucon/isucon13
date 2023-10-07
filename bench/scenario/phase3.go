@@ -18,9 +18,6 @@ var (
 
 // FIXME: 並列処理で同一時間帯にたくさん予約処理をかける
 func runConcurrentReservation(ctx context.Context) error {
-	if err := runRegisterScenario(ctx); err != nil {
-		return err
-	}
 	// 配信者決定
 	vtuber := scheduler.UserScheduler.SelectVTuber()
 
@@ -124,9 +121,6 @@ func runDnsAttackScenario() {
 
 // スパムを投稿しまくる
 func runSpamScenario(ctx context.Context) error {
-	if err := runRegisterScenario(ctx); err != nil {
-		return err
-	}
 	// 配信者を選定
 	vtuber := scheduler.UserScheduler.SelectVTuber()
 
@@ -167,6 +161,10 @@ func runSpamScenario(ctx context.Context) error {
 
 func Phase3(ctx context.Context) error {
 	var eg errgroup.Group
+
+	for i := 0; i < 20; i++ {
+		runRegisterScenario(ctx)
+	}
 
 	// 通常配信者
 	// countは広告費用係数に合わせて増やす

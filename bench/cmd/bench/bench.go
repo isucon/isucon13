@@ -53,17 +53,17 @@ func benchmark(ctx context.Context) error {
 	bencherror.InitPenalty(ctx)
 	bencherror.InitializeErrors(ctx)
 
-	// lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
-	// if err := benchmarker.runSeason1(benchCtx); err != nil {
-	// 	return err
-	// }
-	// scheduler.IncreaseWorkloadLevel(90)
+	lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
+	if err := benchmarker.runSeason1(benchCtx); err != nil {
+		return err
+	}
+	scheduler.IncreaseWorkloadLevel(90)
 
-	// lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
-	// if err := benchmarker.runSeason2(benchCtx); err != nil {
-	// 	return err
-	// }
-	// scheduler.IncreaseWorkloadLevel(400)
+	lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
+	if err := benchmarker.runSeason2(benchCtx); err != nil {
+		return err
+	}
+	scheduler.IncreaseWorkloadLevel(400)
 
 	lgr.Info("===== Benchmark - 第３負荷フェーズ開始 =====")
 	if err := benchmarker.runSeason3(benchCtx); err != nil {
