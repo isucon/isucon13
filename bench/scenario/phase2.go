@@ -141,7 +141,7 @@ func Phase2(ctx context.Context) error {
 				case <-ctx.Done():
 					return nil
 				default:
-					go runReserveScenario(ctx)
+					runReserveScenario(ctx)
 					// スパム投稿, 報告、弾かれるチェック
 				}
 			}
