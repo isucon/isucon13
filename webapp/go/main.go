@@ -24,17 +24,13 @@ import (
 
 const (
 	listenPort                     = 12345
-	powerDNSHostEnvKey             = "ISUCON13_POWERDNS_HOST"
-	powerDNSAPIKeyEnvKey           = "ISUCON13_POWERDNS_APIKEY"
 	powerDNSSubdomainAddressEnvKey = "ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS"
 	// FIXME: ISUCON当日までに削除する
 	powerDNSDisableEnvKey = "ISUCON13_POWERDNS_DISABLED"
 )
 
 var (
-	disablePowerDNS          bool   = false
-	powerDNSHost             string = "localhost"
-	powerDNSAPIKey           string
+	disablePowerDNS          bool = false
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
 	secret                   = []byte("defaultsecret")
@@ -194,15 +190,6 @@ func main() {
 	defer conn.Close()
 	dbConn = conn
 
-	host, ok := os.LookupEnv(powerDNSHostEnvKey)
-	if ok {
-		powerDNSHost = host
-	}
-	key, ok := os.LookupEnv(powerDNSAPIKeyEnvKey)
-	if !ok {
-		e.Logger.Fatalf("environ %s must be provided", powerDNSAPIKeyEnvKey)
-	}
-	powerDNSAPIKey = key
 	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
 	if !ok {
 		e.Logger.Fatalf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)

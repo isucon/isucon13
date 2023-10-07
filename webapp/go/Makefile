@@ -5,7 +5,7 @@ DOCKER_BUILD_OPTS=--no-cache
 
 DOCKER_RMI=sudo docker rmi -f
 
-DESTDIR=/tmp
+DESTDIR=.
 TAG=isupipe:latest
 
 build:
