@@ -1,3 +1,6 @@
+DARWIN_TARGET_ENV=GOOS=darwin GOARCH=arm64
+LINUX_TARGET_ENV=GOOS=linux GOARCH=amd64
+
 BUILD=go build
 
 DOCKER_BUILD=sudo docker build
@@ -9,7 +12,9 @@ DESTDIR=.
 TAG=isupipe:latest
 
 build:
-	$(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
+	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/isupipe_darwin -ldflags "-s -w"
+	CGO_ENABLED=0 $(LINUX_TARGET_ENV)  $(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
+	tar -zcvf ../../provisioning/ansible/roles/webapp/files/webapp.tar.gz ./
 .PHONY: build
 
 docker_image: clean build

@@ -98,3 +98,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 isupipe
+isupipe_darwin
