@@ -1,6 +1,7 @@
 package scheduler
 
-var vtuberPool = []*User{
+// FIXME: generate_user.py未反映
+var season1Users = []*User{
 	&User{UserId: 1, Name: "vabe", DisplayName: "坂本 聡太郎", Description: "普段医師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://ogawa.jp/\nメールアドレス: takuma43@hotmail.com\n", RawPassword: "wd44Ivk041", HashedPassword: "$2a$10$gjaotHZoumKefYz8oUlqCefwbx4IrsUzZ10RDyIWFGtbGkWAHV0xi"},
 	&User{UserId: 2, Name: "mmatsumoto", DisplayName: "清水 直人", Description: "普段配管工をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.yamamoto.com/\nメールアドレス: shotaikeda@hotmail.com\n", RawPassword: "8rJDRjD1R8", HashedPassword: "$2a$10$lqLqAQHiIHYMkIREWFGJUeTDQHPsvyOYV.O/bltC137DJ.HjQ25we"},
 	&User{UserId: 3, Name: "shoheihashimoto", DisplayName: "山下 太一", Description: "普段ウェディングプランナーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://sato.jp/\nメールアドレス: dsato@yahoo.com\n", RawPassword: "IHU8Kytw9v", HashedPassword: "$2a$10$TyLaDfioqHiEvmIfnK9LnOuIxyiSG4zE4q5cwQW3arjpUrKnuRBvm"},
@@ -101,6 +102,16 @@ var vtuberPool = []*User{
 	&User{UserId: 98, Name: "hanakosasaki", DisplayName: "中村 知実", Description: "普段寿司職人をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://okada.jp/\nメールアドレス: myamada@yahoo.com\n", RawPassword: "xdD3MjwsEU", HashedPassword: "$2a$10$gAI6Wcq7mKSXy3sFzk5afelzZCV9ezuDrJIfstOZp.P7oNBJGU8JO"},
 	&User{UserId: 99, Name: "kanaabe", DisplayName: "池田 美加子", Description: "普段ゲームクリエイターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://www.hayashi.jp/\nメールアドレス: moriyumiko@hotmail.com\n", RawPassword: "za8DDED1n4", HashedPassword: "$2a$10$w6DufZf17XMnjSkpzOjsXug0HzgUSWsqfLdzyCDoWOAmIpjRhpKh6"},
 	&User{UserId: 100, Name: "cnakajima", DisplayName: "渡辺 直子", Description: "普段歯科医師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://watanabe.jp/\nメールアドレス: ekimura@yahoo.com\n", RawPassword: "6LrTeZLbu6", HashedPassword: "$2a$10$tiHELF/Ycc98w8DfXGrQneik73LuLQg6FvYCRu3hsVPHMxpS5m/6u"},
+}
+
+var userPool []*User
+
+func init() {
+	userPool = append(userPool, vtuberPool...)
+	userPool = append(userPool, viewerPool...)
+}
+
+var vtuberPool = []*User{
 	&User{UserId: 101, Name: "suzukiyuki", DisplayName: "鈴木 陽一", Description: "普段グラフィックデザイナーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.kobayashi.com/\nメールアドレス: tsuzuki@hotmail.com\n", RawPassword: "wd44Ivk041", HashedPassword: "$2a$10$gjaotHZoumKefYz8oUlqCefwbx4IrsUzZ10RDyIWFGtbGkWAHV0xi"},
 	&User{UserId: 102, Name: "naotosaito", DisplayName: "阿部 直子", Description: "普段絵本作家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.ishikawa.org/\nメールアドレス: yoko96@hotmail.com\n", RawPassword: "8rJDRjD1R8", HashedPassword: "$2a$10$lqLqAQHiIHYMkIREWFGJUeTDQHPsvyOYV.O/bltC137DJ.HjQ25we"},
 	&User{UserId: 103, Name: "yokonakagawa", DisplayName: "池田 舞", Description: "普段音楽家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: https://www.tanaka.com/\nメールアドレス: yoichitanaka@yahoo.com\n", RawPassword: "IHU8Kytw9v", HashedPassword: "$2a$10$TyLaDfioqHiEvmIfnK9LnOuIxyiSG4zE4q5cwQW3arjpUrKnuRBvm"},

@@ -9,8 +9,3 @@ DELETE FROM livecomment_reports;
 DELETE FROM ng_words;
 DELETE FROM reactions;
 
-SET GLOBAL innodb_monitor_enable = '%';
-
-# performance-schema-consumer-events-stages-current= 1
-# performance-schema-consumer-events-stages-history= 1
-# performance-schema-consumer-events-stages-history-long= 1

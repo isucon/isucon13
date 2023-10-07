@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"sync"
@@ -38,6 +39,12 @@ type User struct {
 type userScheduler struct {
 	PopularLimit int
 
+	userCursorMu sync.Mutex
+	userCursor   int
+
+	season1CursorMu sync.Mutex
+	season1Cursor   int
+
 	vtuberCursorMu sync.Mutex
 	vtuberCursor   int
 
@@ -49,6 +56,9 @@ type userScheduler struct {
 
 	negativeCountsMu sync.RWMutex
 	negativeCounts   []int
+
+	committedMu sync.RWMutex
+	committed   []*User
 }
 
 func mustNewUserScheduler() *userScheduler {
@@ -110,9 +120,9 @@ func (u *userScheduler) BehaveTroubleMaker(viewer *User) bool {
 //
 // 人気に仕立て上げるかどうかはすべてこちらの采配次第
 // 実際に人気であるか (投稿数、スパム数などをもとに判断)を判定して返す
-func (u *userScheduler) IsPopular(user *User) bool {
-	return false
-}
+// func (u *userScheduler) IsPopular(user *User) bool {
+// 	return false
+// }
 
 // 人気になる候補を取得。人気に仕立てていく
 func (s *userScheduler) SelectPopularCandidate() (*User, error) {
@@ -136,14 +146,43 @@ func (s *userScheduler) SelectPopularCandidate() (*User, error) {
 	return nil, fmt.Errorf("人気VTuber候補を発見できませんでした")
 }
 
+// 未登録のユーザを払い出し
+func (s *userScheduler) SelectUser() (*User, error) {
+	s.userCursorMu.Lock()
+	defer s.userCursorMu.Unlock()
+
+	if s.userCursor >= len(userPool) {
+		return nil, fmt.Errorf("no more user")
+	}
+
+	user := userPool[s.userCursor]
+	return user, nil
+}
+
 // 普通の配信者でいいなら、Normalなものを探せばいい
 func (s *userScheduler) SelectVTuber() *User {
 	s.vtuberCursorMu.Lock()
 	defer s.vtuberCursorMu.Unlock()
 
-	vtuber := vtuberPool[s.vtuberCursor]
-	s.vtuberCursor = (s.vtuberCursor + 1) % len(vtuberPool)
+	if s.vtuberCursor >= len(s.committed) {
+		log.Fatalf("SelectVTuberにて、範囲外アクセス検出: cursor=%d, len=%d\n", s.vtuberCursor, len(s.committed))
+	}
+	vtuber := s.committed[s.vtuberCursor]
+	s.vtuberCursor = (s.vtuberCursor + 1) % len(s.committed)
 	return vtuber
+}
+
+func (s *userScheduler) SelectViewerForSeason1() *User {
+	s.season1CursorMu.Lock()
+	defer s.season1CursorMu.Unlock()
+
+	viewer := season1Users[s.season1Cursor]
+	s.season1Cursor = (s.season1Cursor + 1) % len(season1Users)
+	return viewer
+}
+
+func (s *userScheduler) SelectVTuberForSeason1() *User {
+	return s.SelectViewerForSeason1()
 }
 
 // viewerは、可能な限り何もしてない人から払い出していく
@@ -151,8 +190,12 @@ func (s *userScheduler) SelectViewer() *User {
 	s.viewerCursorMu.Lock()
 	defer s.viewerCursorMu.Unlock()
 
-	viewer := viewerPool[s.viewerCursor]
-	s.viewerCursor = (s.viewerCursor + 1) % len(viewerPool)
+	if s.viewerCursor >= len(s.committed) {
+		log.Fatalf("SelectViewerにて、範囲外アクセス検出: cursor=%d, len=%d\n", s.vtuberCursor, len(s.committed))
+	}
+	s.viewerCursor = s.viewerCursor % len(s.committed)
+	viewer := s.committed[s.viewerCursor]
+	s.viewerCursor++
 	return viewer
 }
 
@@ -164,4 +207,12 @@ func (s *userScheduler) SelectCollaborators(n int) []*User {
 		n = len(vtuberPool) - 1
 	}
 	return vtuberPool[:n]
+}
+
+// Commit は、ユーザが登録された際に呼び出すことで、登録済みユーザのみ払い出すことを保証します
+func (s *userScheduler) Commit(user *User) {
+	s.committedMu.Lock()
+	defer s.committedMu.Unlock()
+
+	s.committed = append(s.committed, user)
 }

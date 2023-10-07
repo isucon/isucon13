@@ -105,10 +105,15 @@ func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
 
 // 通常配信に対するチップ取得
 func (s *livecommentScheduler) GetTipsForStream() int {
-	return GenerateIntBetween(1, 1000)
+	return GenerateIntBetween(1, 4)
 }
 
 // 人気配信に対するチップ取得
 func (s *livecommentScheduler) GetTipsForPopularStream() int {
-	return GenerateIntBetween(1000, 2000+1)
+	n := rand.Intn(2)
+	if n == 1 {
+		return 5
+	} else {
+		return s.GetTipsForStream()
+	}
 }

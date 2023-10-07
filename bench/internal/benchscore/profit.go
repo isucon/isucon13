@@ -2,7 +2,8 @@ package benchscore
 
 import (
 	"context"
-	"sync"
+
+	"github.com/matryer/resync"
 
 	"github.com/isucon/isucandar/score"
 )
@@ -21,7 +22,7 @@ var (
 
 	achieveCh chan struct{}
 	goalSum   int
-	closeOnce sync.Once
+	closeOnce resync.Once
 )
 
 func initProfit(ctx context.Context) {
@@ -36,6 +37,7 @@ func initProfit(ctx context.Context) {
 func SetAchivementGoal(goal int) {
 	achieveCh = make(chan struct{})
 	goalSum = goal
+	closeOnce.Reset()
 }
 
 func Achieve() chan struct{} {
@@ -50,28 +52,30 @@ func AddTipProfit(tip int) error {
 
 	profit.Add(tag)
 	if profit.Sum() >= int64(goalSum) {
-		close(achieveCh)
+		closeOnce.Do(func() {
+			close(achieveCh)
+		})
 	}
 
 	return nil
 }
 
 func tipToProfitLevel(tip int) score.ScoreTag {
-	if tip == 0 {
+	switch tip {
+	case 0:
 		return TipProfitLevel0
-	} else if tip >= 1 && tip <= 500 {
+	case 1:
 		return TipProfitLevel1
-	} else if tip >= 500 && tip < 1000 {
+	case 2:
 		return TipProfitLevel2
-	} else if tip >= 1000 && tip < 5000 {
+	case 3:
 		return TipProfitLevel3
-	} else if tip >= 5000 && tip < 10000 {
+	case 4:
 		return TipProfitLevel4
-	} else if tip >= 10000 && tip <= 20000 {
+	case 5:
 		return TipProfitLevel5
-	} else {
-		// APIサーバが正しくtipsの下限と上限をバリデーションできているかチェックするロジックはここではない
-		panic("UNREACHABLE: uncovered tip value specified")
+	default:
+		return TipProfitLevel0
 	}
 }
 

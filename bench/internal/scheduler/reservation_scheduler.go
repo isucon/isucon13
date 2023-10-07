@@ -92,10 +92,13 @@ func (r *ReservationScheduler) getStreamsFor(user *User) []*Reservation {
 	return reservations
 }
 
-func (r *ReservationScheduler) GetStreamFor(user *User) *Reservation {
+func (r *ReservationScheduler) GetStreamFor(user *User) (*Reservation, error) {
 	livestreams := r.getStreamsFor(user)
+	if len(livestreams) == 0 {
+		return nil, fmt.Errorf("no livestreams")
+	}
 	idx := rand.Intn(len(livestreams))
-	return livestreams[idx]
+	return livestreams[idx], nil
 }
 
 // CommitReservation は、予約追加リクエストが通ったことをintervalTemperturesに記録します

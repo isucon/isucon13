@@ -15,6 +15,10 @@ func FinalcheckScenario(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	// payments := result.Payments
+
+	// var found bool
+
 	// 金額チェック
 	// total := scheduler.GetTotal()
 	// if result.Total

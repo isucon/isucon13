@@ -196,9 +196,7 @@ func getLivestreamsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, livestreams)
 }
 
-// FIXME: livestreamのカラムを追加し、視聴者数を増やす
-//
-//	viewerテーブルの廃止
+// viewerテーブルの廃止
 func enterLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {

@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"log"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -15,6 +14,9 @@ import (
 
 // ライブコメントを投稿
 func runReserveScenario(ctx context.Context) error {
+	if err := runRegisterScenario(ctx); err != nil {
+		return err
+	}
 	// 配信者決定
 	vtuber := scheduler.UserScheduler.SelectVTuber()
 
@@ -34,7 +36,6 @@ func runReserveScenario(ctx context.Context) error {
 	// 予約を実施
 	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -48,7 +49,6 @@ func runReserveScenario(ctx context.Context) error {
 	})
 	if err != nil {
 		scheduler.Phase2ReservationScheduler.AbortReservation(reservation)
-		log.Println(err)
 		return err
 	}
 	scheduler.Phase2ReservationScheduler.CommitReservation(reservation)
@@ -56,11 +56,13 @@ func runReserveScenario(ctx context.Context) error {
 	// 作成された予約について、視聴者を生成して投げ銭を稼がせてあげる
 
 	// 視聴者を決定
+	if err := runRegisterScenario(ctx); err != nil {
+		return err
+	}
 	viewer := scheduler.UserScheduler.SelectViewer()
 
 	viewerClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -68,13 +70,11 @@ func runReserveScenario(ctx context.Context) error {
 		UserName: viewer.Name,
 		Password: viewer.RawPassword,
 	}); err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// enter
 	if err := viewerClient.EnterLivestream(ctx, livestream.Id); err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -103,20 +103,45 @@ func runReserveScenario(ctx context.Context) error {
 	return nil
 }
 
+func runRegisterScenario(ctx context.Context) error {
+	// ユーザスケジューラから払い出し
+	user, err := scheduler.UserScheduler.SelectUser()
+	if err != nil {
+		return err
+	}
+
+	// ログイン
+	client, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
+	if err != nil {
+		return err
+	}
+
+	posted, err := client.PostUser(ctx, &isupipe.PostUserRequest{
+		Name:     user.Name,
+		Password: user.RawPassword,
+	})
+	if err != nil {
+		return err
+	}
+	user.UserId = posted.Id
+	scheduler.UserScheduler.Commit(user)
+
+	return nil
+}
+
 func Phase2(ctx context.Context) error {
 	var eg errgroup.Group
 
 	// 通常配信者
 	// countは広告費用係数に合わせて増やす
-	count := 5
-	for i := 0; i < count; i++ {
+	for i := 0; i < config.AdvertiseCost; i++ {
 		eg.Go(func() error {
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
 				default:
-					runReserveScenario(ctx)
+					go runReserveScenario(ctx)
 					// スパム投稿, 報告、弾かれるチェック
 				}
 			}

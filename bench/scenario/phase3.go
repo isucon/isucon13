@@ -3,7 +3,7 @@ package scenario
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -16,20 +16,17 @@ var (
 	ErrColdReservation = errors.New("coldな予約がこれ以上ありません")
 )
 
-// FIXME: coldで埋めていって、取れなくなったらhotで一斉に集中狙いしていく
-
-// FIXME: 予約の衝突を起こしそうなトラフィックを流す
-
-// coldな予約を探し、予約して配信の視聴者を生成
-// ただし、coldな無くなったらそうそうにやめる
-func runColdReservation(ctx context.Context) error {
+// FIXME: 並列処理で同一時間帯にたくさん予約処理をかける
+func runConcurrentReservation(ctx context.Context) error {
+	if err := runRegisterScenario(ctx); err != nil {
+		return err
+	}
 	// 配信者決定
 	vtuber := scheduler.UserScheduler.SelectVTuber()
 
 	// ログイン
 	vtuberClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -37,27 +34,43 @@ func runColdReservation(ctx context.Context) error {
 		UserName: vtuber.Name,
 		Password: vtuber.RawPassword,
 	}); err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// 予約を実施
-	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
-	if err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// 配信確定
-	livestream, err := vtuberClient.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:        []int{},
-		Title:       reservation.Title,
-		Description: reservation.Description,
-		StartAt:     reservation.StartAt,
-		EndAt:       reservation.EndAt,
+	var reserveGrp errgroup.Group
+	var livestream *isupipe.Livestream
+	// for i := 0; i < 10; i++ {
+	reserveGrp.Go(func() error {
+		// 予約を実施
+		reservation, err := scheduler.Phase3ReservationScheduler.GetHotShortReservation()
+		if err != nil {
+			return err
+		}
+
+		ls, err := vtuberClient.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+			Tags:        []int{},
+			Title:       reservation.Title,
+			Description: reservation.Description,
+			StartAt:     reservation.StartAt,
+			EndAt:       reservation.EndAt,
+		})
+		if err != nil {
+			// エラーが出る限り続ける
+			scheduler.Phase3ReservationScheduler.AbortReservation(reservation)
+			return nil
+		}
+		scheduler.Phase3ReservationScheduler.CommitReservation(reservation)
+
+		livestream = ls
+
+		return fmt.Errorf("stop reserve")
 	})
-	if err != nil {
-		return err
+	// }
+
+	reserveGrp.Wait()
+	if livestream == nil {
+		return fmt.Errorf("failed to reserve livestream")
 	}
 
 	// 作成された予約について、視聴者を生成して投げ銭を稼がせてあげる
@@ -67,7 +80,6 @@ func runColdReservation(ctx context.Context) error {
 
 	viewerClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -75,14 +87,11 @@ func runColdReservation(ctx context.Context) error {
 		UserName: viewer.Name,
 		Password: viewer.RawPassword,
 	}); err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// enter
-	log.Println("enter")
 	if err := viewerClient.EnterLivestream(ctx, livestream.Id); err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -93,7 +102,6 @@ func runColdReservation(ctx context.Context) error {
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
 
 		// 視聴者からライブコメント投稿 (投げ銭)
-		log.Println("post livecomment tips")
 		if _, err := viewerClient.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
 			Comment: comment.Comment,
 			Tip:     tip,
@@ -103,101 +111,6 @@ func runColdReservation(ctx context.Context) error {
 	}
 
 	// leave
-	log.Println("leave")
-	if err := viewerClient.LeaveLivestream(ctx, livestream.Id); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runHotReservation(ctx context.Context) error {
-	log.Println("run scenario")
-	// 配信者決定
-	vtuber := scheduler.UserScheduler.SelectVTuber()
-
-	// ログイン
-	log.Println("login")
-	vtuberClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	if err := vtuberClient.Login(ctx, &isupipe.LoginRequest{
-		UserName: vtuber.Name,
-		Password: vtuber.RawPassword,
-	}); err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// 予約を実施
-	log.Println("reserve")
-	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// 配信確定
-	livestream, err := vtuberClient.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:        []int{},
-		Title:       reservation.Title,
-		Description: reservation.Description,
-		StartAt:     reservation.StartAt,
-		EndAt:       reservation.EndAt,
-	})
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// 作成された予約について、視聴者を生成して投げ銭を稼がせてあげる
-
-	// 視聴者を決定
-	log.Println("setup viewer")
-	viewer := scheduler.UserScheduler.SelectViewer()
-
-	viewerClient, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
-		UserName: viewer.Name,
-		Password: viewer.RawPassword,
-	}); err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// enter
-	log.Println("enter")
-	if err := viewerClient.EnterLivestream(ctx, livestream.Id); err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// FIXME: 時間枠の長さに合わせて投げ銭の機会を増やすため、forループの長さを変える
-	for i := 0; i < 10; i++ {
-		// ライブコメント決定
-		comment := scheduler.LivecommentScheduler.GetShortPositiveComment()
-		tip := scheduler.LivecommentScheduler.GetTipsForStream()
-
-		// 視聴者からライブコメント投稿 (投げ銭)
-		log.Println("post livecomment tips")
-		if _, err := viewerClient.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
-			Comment: comment.Comment,
-			Tip:     tip,
-		}); err != nil {
-			return err
-		}
-	}
-
-	// leave
-	log.Println("leave")
 	if err := viewerClient.LeaveLivestream(ctx, livestream.Id); err != nil {
 		return err
 	}
@@ -210,32 +123,63 @@ func runDnsAttackScenario() {
 }
 
 // スパムを投稿しまくる
-func runSpamScenario() {
+func runSpamScenario(ctx context.Context) error {
+	if err := runRegisterScenario(ctx); err != nil {
+		return err
+	}
+	// 配信者を選定
+	vtuber := scheduler.UserScheduler.SelectVTuber()
 
+	livestream, err := scheduler.Phase3ReservationScheduler.GetStreamFor(vtuber)
+	if err != nil {
+		return err
+	}
+
+	// スパム
+	client, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
+	if err != nil {
+		return err
+	}
+
+	viewer := scheduler.UserScheduler.SelectViewer()
+	if err := client.Login(ctx, &isupipe.LoginRequest{
+		UserName: viewer.Name,
+		Password: viewer.RawPassword,
+	}); err != nil {
+		return err
+	}
+
+	comment := scheduler.LivecommentScheduler.GetNegativeComment()
+	if _, err := client.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
+		Comment: comment.Comment,
+		Tip:     0,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // 重複した予約を投げる
-func runOverlapReserveScenario() {
-
-}
+// func runOverlapReserveScenario() {
+// 	// FIXME: 予約済み一覧から適当に払い出し(rand)、それを使って同じ時間帯で予約すればいい
+// }
 
 func Phase3(ctx context.Context) error {
 	var eg errgroup.Group
 
 	// 通常配信者
 	// countは広告費用係数に合わせて増やす
-	count := 30
-	for i := 0; i < count; i++ {
+	for i := 0; i < config.AdvertiseCost; i++ {
 		eg.Go(func() error {
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
 				default:
-					runColdReservation(ctx)
-					runHotReservation(ctx)
-					runSpamScenario()
-					runOverlapReserveScenario()
+					go runConcurrentReservation(ctx)
+					go runDnsAttackScenario()
+					go runSpamScenario(ctx)
 				}
 			}
 		})

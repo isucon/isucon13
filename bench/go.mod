@@ -6,6 +6,7 @@ require (
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/isucon/isucandar v0.0.0-20220322062028-6dd56dc57d72
+	github.com/matryer/resync v0.0.0-20161211202428-d39c09a11215
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.1
@@ -18,6 +19,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
+	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

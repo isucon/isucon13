@@ -13,6 +13,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/logger"
+	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
 )
@@ -52,25 +53,28 @@ func benchmark(ctx context.Context) error {
 	bencherror.InitPenalty(ctx)
 	bencherror.InitializeErrors(ctx)
 
-	lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
-	if err := benchmarker.runSeason1(benchCtx); err != nil {
-		return err
-	}
+	// lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
+	// if err := benchmarker.runSeason1(benchCtx); err != nil {
+	// 	return err
+	// }
+	// scheduler.IncreaseWorkloadLevel(90)
 
-	lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
-	if err := benchmarker.runSeason2(benchCtx); err != nil {
-		return err
-	}
+	// lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
+	// if err := benchmarker.runSeason2(benchCtx); err != nil {
+	// 	return err
+	// }
+	// scheduler.IncreaseWorkloadLevel(400)
 
 	lgr.Info("===== Benchmark - 第３負荷フェーズ開始 =====")
-	// if err := benchmarker.runSeason3(benchCtx); err != nil {
-	// 	return err
-	// }
+	if err := benchmarker.runSeason3(benchCtx); err != nil {
+		return err
+	}
+	scheduler.IncreaseWorkloadLevel(500)
 
 	lgr.Info("===== Benchmark - 最終負荷フェーズ開始 =====")
-	// if err := benchmarker.runSeason4(benchCtx); err != nil {
-	// 	return err
-	// }
+	if err := benchmarker.runSeason4(benchCtx); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -147,17 +151,17 @@ var run = cli.Command{
 
 		_ = benchmark(ctx)
 
-		lgr.Info("===== Final check =====")
-		paymentClient, err := isupipe.NewClient(
-			agent.WithBaseURL(config.TargetBaseURL),
-		)
-		if err != nil {
-			return cli.NewExitError(err, 1)
-		}
+		// lgr.Info("===== Final check =====")
+		// paymentClient, err := isupipe.NewClient(
+		// 	agent.WithBaseURL(config.TargetBaseURL),
+		// )
+		// if err != nil {
+		// 	return cli.NewExitError(err, 1)
+		// }
 
-		if err := scenario.FinalcheckScenario(ctx, paymentClient); err != nil {
-			return cli.NewExitError(err, 1)
-		}
+		// if err := scenario.FinalcheckScenario(ctx, paymentClient); err != nil {
+		// 	return cli.NewExitError(err, 1)
+		// }
 
 		lgr.Info("===== System errors =====")
 		var systemErrors []string
@@ -176,7 +180,6 @@ var run = cli.Command{
 
 		score := benchscore.GetFinalScore()
 		msgs = append(msgs, fmt.Sprintf("スコア: %d", score))
-		lgr.Infof("スコア: %d", score)
 
 		profit := benchscore.GetFinalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
@@ -186,7 +189,6 @@ var run = cli.Command{
 		for code, penalty := range penalties {
 			message := fmt.Sprintf("ペナルティ[%s]: %d", code, penalty)
 			msgs = append(msgs, message)
-			lgr.Info(message)
 		}
 
 		return nil

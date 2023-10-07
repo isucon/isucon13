@@ -14,13 +14,16 @@ import (
 // ライブコメントを投稿
 func runPostLivecommentScenario(ctx context.Context) error {
 	// 配信者決定
-	vtuber := scheduler.UserScheduler.SelectVTuber()
+	vtuber := scheduler.UserScheduler.SelectVTuberForSeason1()
 
 	// 配信を決定
-	livestream := scheduler.Phase1ReservationScheduler.GetStreamFor(vtuber)
+	livestream, err := scheduler.Phase1ReservationScheduler.GetStreamFor(vtuber)
+	if err != nil {
+		return err
+	}
 
 	// 視聴者を決定
-	viewer := scheduler.UserScheduler.SelectViewer()
+	viewer := scheduler.UserScheduler.SelectViewerForSeason1()
 
 	// ログイン
 	client, err := isupipe.NewClient(agent.WithBaseURL(config.TargetBaseURL))
@@ -70,8 +73,7 @@ func Phase1(ctx context.Context) error {
 
 	// 通常視聴者
 	// countは広告費用係数に合わせて増やす
-	count := 30
-	for i := 0; i < count; i++ {
+	for i := 0; i < config.AdvertiseCost; i++ {
 		eg.Go(func() error {
 			for {
 				select {
@@ -80,7 +82,7 @@ func Phase1(ctx context.Context) error {
 				case <-benchscore.Achieve():
 					return nil
 				default:
-					runPostLivecommentScenario(ctx)
+					go runPostLivecommentScenario(ctx)
 				}
 			}
 		})
