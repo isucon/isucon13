@@ -10,12 +10,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type ReactionModel struct {
+	Id           int       `db:"id"`
+	EmojiName    string    `db:"emoji_name"`
+	UserId       int       `db:"user_id"`
+	LivestreamId int       `db:"livestream_id"`
+	CreatedAt    time.Time `db:"created_at"`
+}
+
 type Reaction struct {
-	Id           int       `json:"id" db:"id"`
-	EmojiName    string    `json:"emoji_name" db:"emoji_name"`
-	UserId       int       `json:"user_id" db:"user_id"`
-	LivestreamId int       `json:"livestream_id" db:"livestream_id"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	Id           int    `json:"id"`
+	EmojiName    string `json:"emoji_name"`
+	UserId       int    `json:"user_id"`
+	LivestreamId int    `json:"livestream_id"`
+	CreatedAt    int    `json:"created_at"`
 }
 
 type PostReactionRequest struct {
@@ -32,11 +40,21 @@ func getReactionsHandler(c echo.Context) error {
 
 	livestreamId := c.Param("livestream_id")
 
-	reactions := []Reaction{}
-	if err := dbConn.SelectContext(ctx, &reactions, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
+	reactionModels := []ReactionModel{}
+	if err := dbConn.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
+	reactions := make([]Reaction, len(reactionModels))
+	for i := range reactionModels {
+		reactions[i] = Reaction{
+			Id:           reactionModels[i].Id,
+			EmojiName:    reactionModels[i].EmojiName,
+			UserId:       reactionModels[i].UserId,
+			LivestreamId: reactionModels[i].LivestreamId,
+			CreatedAt:    int(reactionModels[i].CreatedAt.Unix()),
+		}
+	}
 	return c.JSON(http.StatusOK, reactions)
 }
 
@@ -64,7 +82,7 @@ func postReactionHandler(c echo.Context) error {
 
 	var req *PostReactionRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
@@ -72,13 +90,13 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reaction := Reaction{
+	reactionModel := ReactionModel{
 		UserId:       userId,
 		LivestreamId: livestreamId,
 		EmojiName:    req.EmojiName,
 	}
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name) VALUES (:user_id, :livestream_id, :emoji_name)", reaction)
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name) VALUES (:user_id, :livestream_id, :emoji_name)", reactionModel)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -94,6 +112,12 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reaction.Id = int(reactionId)
+	reaction := Reaction{
+		Id:           int(reactionId),
+		EmojiName:    reactionModel.EmojiName,
+		UserId:       reactionModel.UserId,
+		LivestreamId: reactionModel.LivestreamId,
+		CreatedAt:    int(reactionModel.CreatedAt.Unix()),
+	}
 	return c.JSON(http.StatusCreated, reaction)
 }
