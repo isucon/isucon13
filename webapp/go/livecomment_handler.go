@@ -146,7 +146,7 @@ func postLivecommentHandler(c echo.Context) error {
 	(SELECT ? AS text) AS t
 	WHERE t.text LIKE CONCAT('%', w.word, '%');
 	`
-	if err := tx.GetContext(ctx, &hitSpam, query, req.Comment); err != nil {
+	if err = tx.GetContext(ctx, &hitSpam, query, req.Comment); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

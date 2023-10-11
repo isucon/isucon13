@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -68,13 +70,17 @@ func getStreamerThemeHandler(c echo.Context) error {
 	username := strings.Split(host, ".")[0]
 
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username); err != nil {
+	err := dbConn.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username)
+	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	theme := Theme{}
 	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userModel.Id); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, theme)

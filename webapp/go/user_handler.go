@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os/exec"
 	"strconv"
@@ -94,8 +96,12 @@ func getUserSessionHandler(c echo.Context) error {
 	}
 
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId); err != nil {
+	err = dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId)
+	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	user, err := fillUserResponse(ctx, userModel)
@@ -203,12 +209,15 @@ func loginHandler(c echo.Context) error {
 
 	userModel := UserModel{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
-		c.Logger().Printf("failed to get: username='%s', err=%+v", req.UserName, err)
+	err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(userModel.HashedPassword), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(userModel.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		// return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
