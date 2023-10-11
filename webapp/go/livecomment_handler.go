@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -26,24 +27,36 @@ type LivecommentModel struct {
 	UpdatedAt    time.Time `db:"updated_at"`
 }
 
+func (lm LivecommentModel) ToLivecomment(owner User, livestream Livestream) Livecomment {
+	return Livecomment{
+		Id:          lm.Id,
+		User:        owner,
+		Livestream:  livestream,
+		Comment:     lm.Comment,
+		Tip:         lm.Tip,
+		ReportCount: lm.ReportCount,
+		CreatedAt:   int(lm.CreatedAt.Unix()),
+		UpdatedAt:   int(lm.UpdatedAt.Unix()),
+	}
+}
+
 type Livecomment struct {
-	Id           int    `json:"id"`
-	UserId       int    `json:"user_id"`
-	LivestreamId int    `json:"livestream_id"`
-	Comment      string `json:"comment"`
-	Tip          int    `json:"tip"`
-	ReportCount  int    `json:"report_count"`
-	CreatedAt    int    `json:"created_at"`
-	UpdatedAt    int    `json:"updated_at"`
+	Id          int        `json:"id"`
+	User        User       `json:"user"`
+	Livestream  Livestream `json:"livestream"`
+	Comment     string     `json:"comment"`
+	Tip         int        `json:"tip"`
+	ReportCount int        `json:"report_count"`
+	CreatedAt   int        `json:"created_at"`
+	UpdatedAt   int        `json:"updated_at"`
 }
 
 type LivecommentReport struct {
-	Id            int `json:"id"`
-	UserId        int `json:"user_id"`
-	LivestreamId  int `json:"livestream_id"`
-	LivecommentId int `json:"livecomment_id"`
-	CreatedAt     int `json:"created_at"`
-	UpdatedAt     int `json:"updated_at"`
+	Id          int         `json:"id"`
+	Reporter    User        `json:"reporter"`
+	Livecomment Livecomment `json:"livecomment"`
+	CreatedAt   int         `json:"created_at"`
+	UpdatedAt   int         `json:"updated_at"`
 }
 
 type LivecommentReportModel struct {
@@ -82,17 +95,14 @@ func getLivecommentsHandler(c echo.Context) error {
 
 	livecomments := make([]Livecomment, len(livecommentModels))
 	for i := range livecommentModels {
-		livecomments[i] = Livecomment{
-			Id:           livecommentModels[i].Id,
-			UserId:       livecommentModels[i].UserId,
-			LivestreamId: livecommentModels[i].LivestreamId,
-			Comment:      livecommentModels[i].Comment,
-			Tip:          livecommentModels[i].Tip,
-			ReportCount:  livecommentModels[i].ReportCount,
-			CreatedAt:    int(livecommentModels[i].CreatedAt.Unix()),
-			UpdatedAt:    int(livecommentModels[i].UpdatedAt.Unix()),
+		livecomment, err := modelToLivecomment(ctx, livecommentModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+
+		livecomments[i] = livecomment
 	}
+
 	return c.JSON(http.StatusOK, livecomments)
 }
 
@@ -124,6 +134,7 @@ func postLivecommentHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -136,10 +147,12 @@ func postLivecommentHandler(c echo.Context) error {
 	WHERE t.text LIKE CONCAT('%', w.word, '%');
 	`
 	if err := tx.GetContext(ctx, &hitSpam, query, req.Comment); err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	c.Logger().Infof("[hitSpam=%d] comment = %s", hitSpam, req.Comment)
 	if hitSpam >= 1 {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
 	}
 
@@ -161,20 +174,20 @@ func postLivecommentHandler(c echo.Context) error {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	livecommentModel.Id = int(livecommentId)
 
-	if err := tx.Commit(); err != nil {
+	createdAt := time.Now()
+	livecommentModel.CreatedAt = createdAt
+	livecommentModel.UpdatedAt = createdAt
+
+	livecomment, err := modelToLivecomment(ctx, livecommentModel)
+	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	createdAt := time.Now().Unix()
-	livecomment := Livecomment{
-		Id:           int(livecommentId),
-		UserId:       livecommentModel.UserId,
-		LivestreamId: livecommentModel.LivestreamId,
-		Comment:      livecommentModel.Comment,
-		Tip:          livecommentModel.Tip,
-		CreatedAt:    int(createdAt),
-		UpdatedAt:    int(createdAt),
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusCreated, livecomment)
@@ -208,24 +221,29 @@ func reportLivecommentHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// 配信者自身の配信に対するGETなのかを検証
 	var ownedLivestreams []*LivestreamModel
 	if err := tx.SelectContext(ctx, &ownedLivestreams, "SELECT * FROM livestreams WHERE id = ? AND user_id = ?", livestreamId, userId); err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	if len(ownedLivestreams) == 0 {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't get livecomment reports that other streamers own")
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)", &LivecommentReportModel{
+	reportModel := LivecommentReportModel{
 		UserId:        userId,
 		LivestreamId:  livestreamId,
 		LivecommentId: livecommentId,
-	})
+	}
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)", &reportModel)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -239,18 +257,21 @@ func reportLivecommentHandler(c echo.Context) error {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	reportModel.Id = int(reportId)
 
-	createdAt := time.Now().Unix()
-	report := &LivecommentReport{
-		Id:            int(reportId),
-		UserId:        userId,
-		LivestreamId:  livestreamId,
-		LivecommentId: livecommentId,
-		CreatedAt:     int(createdAt),
-		UpdatedAt:     int(createdAt),
+	createdAt := time.Now()
+	reportModel.CreatedAt = createdAt
+	reportModel.UpdatedAt = createdAt
+
+	report, err := modelToLivecommentReport(ctx, reportModel)
+	if err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tx.Commit()
 	return c.JSON(http.StatusCreated, report)
 }
 
@@ -283,15 +304,18 @@ func moderateNGWordHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// 配信者自身の配信に対するmoderateなのかを検証
 	var ownedLivestreams []*LivestreamModel
 	if err := tx.SelectContext(ctx, &ownedLivestreams, "SELECT * FROM livestreams WHERE id = ? AND user_id = ?", livestreamId, userId); err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	if len(ownedLivestreams) == 0 {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't moderate livestreams that other streamers own")
 	}
 
@@ -301,6 +325,7 @@ func moderateNGWordHandler(c echo.Context) error {
 		Word:         req.NGWord,
 	})
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -310,9 +335,73 @@ func moderateNGWordHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"word_id": wordId,
 	})
+}
+
+func modelToLivecomment(ctx context.Context, livecommentModel LivecommentModel) (Livecomment, error) {
+	commentOwnerModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &commentOwnerModel, "SELECT * FROM users WHERE id = ?", livecommentModel.UserId); err != nil {
+		return Livecomment{}, err
+	}
+	commentOwner, err := modelToUser(ctx, commentOwnerModel)
+	if err != nil {
+		return Livecomment{}, err
+	}
+
+	livestreamModel := LivestreamModel{}
+	if err := dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livecommentModel.LivestreamId); err != nil {
+		return Livecomment{}, err
+	}
+	livestream, err := modelToLivestream(ctx, livestreamModel)
+	if err != nil {
+		return Livecomment{}, err
+	}
+
+	livecomment := Livecomment{
+		Id:          livecommentModel.Id,
+		User:        commentOwner,
+		Livestream:  livestream,
+		Comment:     livecommentModel.Comment,
+		Tip:         livecommentModel.Tip,
+		ReportCount: livecommentModel.ReportCount,
+		CreatedAt:   int(livecommentModel.CreatedAt.Unix()),
+		UpdatedAt:   int(livecommentModel.UpdatedAt.Unix()),
+	}
+
+	return livecomment, nil
+}
+
+func modelToLivecommentReport(ctx context.Context, reportModel LivecommentReportModel) (LivecommentReport, error) {
+	reporterModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &reporterModel, "SELECT * FROM users WHERE id = ?", reportModel.UserId); err != nil {
+		return LivecommentReport{}, err
+	}
+	reporter, err := modelToUser(ctx, reporterModel)
+	if err != nil {
+		return LivecommentReport{}, err
+	}
+
+	livecommentModel := LivecommentModel{}
+	if err := dbConn.GetContext(ctx, &livecommentModel, "SELECT * FROM livecomments WHERE id = ?", reportModel.LivecommentId); err != nil {
+		return LivecommentReport{}, err
+	}
+	livecomment, err := modelToLivecomment(ctx, livecommentModel)
+	if err != nil {
+		return LivecommentReport{}, err
+	}
+
+	report := LivecommentReport{
+		Id:          reportModel.Id,
+		Reporter:    reporter,
+		Livecomment: livecomment,
+		CreatedAt:   int(reportModel.CreatedAt.Unix()),
+		UpdatedAt:   int(reportModel.UpdatedAt.Unix()),
+	}
+	return report, nil
 }

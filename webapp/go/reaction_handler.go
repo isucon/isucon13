@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -21,7 +22,7 @@ type ReactionModel struct {
 type Reaction struct {
 	Id           int    `json:"id"`
 	EmojiName    string `json:"emoji_name"`
-	UserId       int    `json:"user_id"`
+	User         User   `json:"user"`
 	LivestreamId int    `json:"livestream_id"`
 	CreatedAt    int    `json:"created_at"`
 }
@@ -47,14 +48,18 @@ func getReactionsHandler(c echo.Context) error {
 
 	reactions := make([]Reaction, len(reactionModels))
 	for i := range reactionModels {
-		reactions[i] = Reaction{
-			Id:           reactionModels[i].Id,
-			EmojiName:    reactionModels[i].EmojiName,
-			UserId:       reactionModels[i].UserId,
-			LivestreamId: reactionModels[i].LivestreamId,
-			CreatedAt:    int(reactionModels[i].CreatedAt.Unix()),
+		userModel := UserModel{}
+		if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModels[i].UserId); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		reaction, err := modelToReaction(ctx, reactionModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		reactions[i] = reaction
 	}
+
 	return c.JSON(http.StatusOK, reactions)
 }
 
@@ -107,17 +112,37 @@ func postReactionHandler(c echo.Context) error {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	reactionModel.Id = int(reactionId)
+
+	reaction, err := modelToReaction(ctx, reactionModel)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	return c.JSON(http.StatusCreated, reaction)
+}
+
+func modelToReaction(ctx context.Context, reactionModel ReactionModel) (Reaction, error) {
+	userModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserId); err != nil {
+		return Reaction{}, err
+	}
+	user, err := modelToUser(ctx, userModel)
+	if err != nil {
+		return Reaction{}, err
+	}
+
 	reaction := Reaction{
-		Id:           int(reactionId),
+		Id:           reactionModel.Id,
 		EmojiName:    reactionModel.EmojiName,
-		UserId:       reactionModel.UserId,
+		User:         user,
 		LivestreamId: reactionModel.LivestreamId,
 		CreatedAt:    int(reactionModel.CreatedAt.Unix()),
 	}
-	return c.JSON(http.StatusCreated, reaction)
+
+	return reaction, nil
 }

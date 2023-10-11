@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -44,7 +45,7 @@ type LivestreamModel struct {
 
 type Livestream struct {
 	Id           int    `json:"id"`
-	UserId       int    `json:"user_id"`
+	Owner        User   `json:"owner"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	PlaylistUrl  string `json:"playlist_url"`
@@ -86,6 +87,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -139,6 +141,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	livestreamModel.Id = int(livestreamId)
 
 	// タグ追加
 	for _, tagId := range req.Tags {
@@ -151,20 +154,14 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 	}
 
-	tx.Commit()
+	livestream, err := modelToLivestream(ctx, *livestreamModel)
+	if err != nil {
+		tx.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
-	livestream := Livestream{
-		Id:           int(livestreamId),
-		UserId:       livestreamModel.UserId,
-		Title:        livestreamModel.Title,
-		Description:  livestreamModel.Description,
-		PlaylistUrl:  livestreamModel.PlaylistUrl,
-		ThumbnailUrl: livestreamModel.ThumbnailUrl,
-		ViewersCount: livestreamModel.ViewersCount,
-		StartAt:      int(livestreamModel.StartAt.Unix()),
-		EndAt:        int(livestreamModel.EndAt.Unix()),
-		CreatedAt:    int(livestreamModel.CreatedAt.Unix()),
-		UpdatedAt:    int(livestreamModel.UpdatedAt.Unix()),
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusCreated, livestream)
@@ -176,6 +173,7 @@ func getLivestreamsHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -189,11 +187,13 @@ func getLivestreamsHandler(c echo.Context) error {
 	} else {
 		var tagIdList []int
 		if err := dbConn.SelectContext(ctx, &tagIdList, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
+			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE id IN (?)", tagIdList)
 		if err != nil {
+			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		var keyTaggedLivestreams []*LivestreamTagModel
@@ -205,6 +205,7 @@ func getLivestreamsHandler(c echo.Context) error {
 		for _, keyTaggedLivestream := range keyTaggedLivestreams {
 			ls := LivestreamModel{}
 			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.LivestreamId); err != nil {
+				tx.Rollback()
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
@@ -212,25 +213,18 @@ func getLivestreamsHandler(c echo.Context) error {
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	livestreams := make([]Livestream, len(livestreamModels))
 	for i := range livestreamModels {
-		livestreams[i] = Livestream{
-			Id:           livestreamModels[i].Id,
-			UserId:       livestreamModels[i].UserId,
-			Title:        livestreamModels[i].Title,
-			Description:  livestreamModels[i].Description,
-			PlaylistUrl:  livestreamModels[i].PlaylistUrl,
-			ThumbnailUrl: livestreamModels[i].ThumbnailUrl,
-			ViewersCount: livestreamModels[i].ViewersCount,
-			StartAt:      int(livestreamModels[i].StartAt.Unix()),
-			EndAt:        int(livestreamModels[i].EndAt.Unix()),
-			CreatedAt:    int(livestreamModels[i].CreatedAt.Unix()),
-			UpdatedAt:    int(livestreamModels[i].UpdatedAt.Unix()),
+		livestream, err := modelToLivestream(ctx, *livestreamModels[i])
+		if err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		livestreams[i] = livestream
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, livestreams)
@@ -261,6 +255,7 @@ func enterLivestreamHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -300,6 +295,7 @@ func leaveLivestreamHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -331,19 +327,11 @@ func getLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	livestream := Livestream{
-		Id:           livestreamId,
-		UserId:       livestreamModel.UserId,
-		Title:        livestreamModel.Title,
-		Description:  livestreamModel.Description,
-		PlaylistUrl:  livestreamModel.PlaylistUrl,
-		ThumbnailUrl: livestreamModel.ThumbnailUrl,
-		ViewersCount: livestreamModel.ViewersCount,
-		StartAt:      int(livestreamModel.StartAt.Unix()),
-		EndAt:        int(livestreamModel.EndAt.Unix()),
-		CreatedAt:    int(livestreamModel.CreatedAt.Unix()),
-		UpdatedAt:    int(livestreamModel.UpdatedAt.Unix()),
+	livestream, err := modelToLivestream(ctx, livestreamModel)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
 	return c.JSON(http.StatusOK, livestream)
 }
 
@@ -363,14 +351,38 @@ func getLivecommentReportsHandler(c echo.Context) error {
 
 	reports := make([]LivecommentReport, len(reportModels))
 	for i := range reportModels {
-		reports[i] = LivecommentReport{
-			Id:            reportModels[i].Id,
-			UserId:        reportModels[i].UserId,
-			LivestreamId:  reportModels[i].LivestreamId,
-			LivecommentId: reportModels[i].LivecommentId,
-			CreatedAt:     int(reportModels[i].CreatedAt.Unix()),
-			UpdatedAt:     int(reportModels[i].UpdatedAt.Unix()),
+		report, err := modelToLivecommentReport(ctx, *reportModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		reports[i] = report
 	}
+
 	return c.JSON(http.StatusOK, reports)
+}
+
+func modelToLivestream(ctx context.Context, livestreamModel LivestreamModel) (Livestream, error) {
+	ownerModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &ownerModel, "SELECT * FROM users WHERE id = ?", livestreamModel.UserId); err != nil {
+		return Livestream{}, err
+	}
+	owner, err := modelToUser(ctx, ownerModel)
+	if err != nil {
+		return Livestream{}, err
+	}
+
+	livestream := Livestream{
+		Id:           livestreamModel.Id,
+		Owner:        owner,
+		Title:        livestreamModel.Title,
+		Description:  livestreamModel.Description,
+		PlaylistUrl:  livestreamModel.PlaylistUrl,
+		ThumbnailUrl: livestreamModel.ThumbnailUrl,
+		ViewersCount: livestreamModel.ViewersCount,
+		StartAt:      int(livestreamModel.StartAt.Unix()),
+		EndAt:        int(livestreamModel.EndAt.Unix()),
+		CreatedAt:    int(livestreamModel.CreatedAt.Unix()),
+		UpdatedAt:    int(livestreamModel.UpdatedAt.Unix()),
+	}
+	return livestream, nil
 }

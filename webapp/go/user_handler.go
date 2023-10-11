@@ -43,12 +43,22 @@ type User struct {
 	CreatedAt int `json:"created_at"`
 	UpdatedAt int `json:"updated_at"`
 
-	IsPopular bool `json:"is_popular"`
+	IsPopular bool  `json:"is_popular"`
+	Theme     Theme `json:"theme"`
 }
 
 type Theme struct {
-	UserId   int  `json:"user_id" db:"user_id"`
-	DarkMode bool `json:"dark_mode" db:"dark_mode"`
+	Id        int  `json:"id"`
+	UserId    int  `json:"user_id"`
+	DarkMode  bool `json:"dark_mode"`
+	CreatedAt int  `json:"created_at"`
+}
+
+type ThemeModel struct {
+	Id        int       `db:"id"`
+	UserId    int       `db:"user_id"`
+	DarkMode  bool      `db:"dark_mode"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type PostUserRequest struct {
@@ -84,25 +94,14 @@ func getUserSessionHandler(c echo.Context) error {
 	}
 
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	popular, err := userIsPopular(ctx, userId)
+	user, err := modelToUser(ctx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-	user := User{
-		Id:          userId,
-		Name:        userModel.Name,
-		DisplayName: userModel.DisplayName,
-		Description: userModel.Description,
-		CreatedAt:   int(userModel.CreatedAt.Unix()),
-		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
-		IsPopular:   popular,
-	}
-
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -134,6 +133,7 @@ func postUserHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
 	}
 
@@ -151,11 +151,11 @@ func postUserHandler(c echo.Context) error {
 
 	userModel.Id = int(userId)
 
-	theme := Theme{
+	themeModel := ThemeModel{
 		UserId:   int(userId),
 		DarkMode: req.Theme.DarkMode,
 	}
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", theme); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
 	}
@@ -171,6 +171,12 @@ func postUserHandler(c echo.Context) error {
 		Description: userModel.Description,
 		CreatedAt:   int(userModel.CreatedAt.Unix()),
 		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
+		Theme: Theme{
+			Id:        themeModel.Id,
+			UserId:    themeModel.UserId,
+			DarkMode:  themeModel.DarkMode,
+			CreatedAt: int(themeModel.CreatedAt.Unix()),
+		},
 	}
 
 	if disablePowerDNS {
@@ -248,23 +254,15 @@ func getUserHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	popular, err := userIsPopular(ctx, userId)
+	user, err := modelToUser(ctx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-	user := User{
-		Id:          userId,
-		Name:        userModel.Name,
-		DisplayName: userModel.DisplayName,
-		Description: userModel.Description,
-		CreatedAt:   int(userModel.CreatedAt.Unix()),
-		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
-		IsPopular:   popular,
+		return err
 	}
 
 	return c.JSON(http.StatusOK, user)
@@ -284,19 +282,11 @@ func getUsersHandler(c echo.Context) error {
 
 	users := make([]User, len(userModels))
 	for i := range userModels {
-		popular, err := userIsPopular(ctx, userModels[i].Id)
+		user, err := modelToUser(ctx, *userModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		users[i] = User{
-			Id:          userModels[i].Id,
-			Name:        userModels[i].Name,
-			DisplayName: userModels[i].DisplayName,
-			Description: userModels[i].Description,
-			CreatedAt:   int(userModels[i].CreatedAt.Unix()),
-			UpdatedAt:   int(userModels[i].UpdatedAt.Unix()),
-			IsPopular:   popular,
-		}
+		users[i] = user
 	}
 
 	return c.JSON(http.StatusOK, users)
@@ -363,4 +353,34 @@ func userIsPopular(ctx context.Context, userId int) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func modelToUser(ctx context.Context, userModel UserModel) (User, error) {
+	themeModel := ThemeModel{}
+	if err := dbConn.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
+		return User{}, err
+	}
+
+	popular, err := userIsPopular(ctx, userModel.Id)
+	if err != nil {
+		return User{}, err
+	}
+
+	user := User{
+		Id:          userModel.Id,
+		Name:        userModel.Name,
+		DisplayName: userModel.DisplayName,
+		Description: userModel.Description,
+		CreatedAt:   int(userModel.CreatedAt.Unix()),
+		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
+		IsPopular:   popular,
+		Theme: Theme{
+			Id:        themeModel.Id,
+			UserId:    themeModel.UserId,
+			DarkMode:  themeModel.DarkMode,
+			CreatedAt: int(themeModel.CreatedAt.Unix()),
+		},
+	}
+
+	return user, nil
 }
