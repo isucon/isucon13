@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -323,8 +325,12 @@ func getLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	livestreamModel := LivestreamModel{}
-	if err := dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamId); err != nil {
+	err = dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamId)
+	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
