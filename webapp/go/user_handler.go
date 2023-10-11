@@ -98,7 +98,7 @@ func getUserSessionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	user, err := modelToUser(ctx, userModel)
+	user, err := fillUserResponse(ctx, userModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -260,7 +260,7 @@ func getUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	user, err := modelToUser(ctx, userModel)
+	user, err := fillUserResponse(ctx, userModel)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func getUsersHandler(c echo.Context) error {
 
 	users := make([]User, len(userModels))
 	for i := range userModels {
-		user, err := modelToUser(ctx, *userModels[i])
+		user, err := fillUserResponse(ctx, *userModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -355,7 +355,7 @@ func userIsPopular(ctx context.Context, userId int) (bool, error) {
 	return true, nil
 }
 
-func modelToUser(ctx context.Context, userModel UserModel) (User, error) {
+func fillUserResponse(ctx context.Context, userModel UserModel) (User, error) {
 	themeModel := ThemeModel{}
 	if err := dbConn.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
 		return User{}, err

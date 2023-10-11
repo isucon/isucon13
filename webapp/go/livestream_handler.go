@@ -154,7 +154,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 	}
 
-	livestream, err := modelToLivestream(ctx, *livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, *livestreamModel)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -215,7 +215,7 @@ func getLivestreamsHandler(c echo.Context) error {
 
 	livestreams := make([]Livestream, len(livestreamModels))
 	for i := range livestreamModels {
-		livestream, err := modelToLivestream(ctx, *livestreamModels[i])
+		livestream, err := fillLivestreamResponse(ctx, *livestreamModels[i])
 		if err != nil {
 			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -327,7 +327,7 @@ func getLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	livestream, err := modelToLivestream(ctx, livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -351,7 +351,7 @@ func getLivecommentReportsHandler(c echo.Context) error {
 
 	reports := make([]LivecommentReport, len(reportModels))
 	for i := range reportModels {
-		report, err := modelToLivecommentReport(ctx, *reportModels[i])
+		report, err := fillLivecommentReportResponse(ctx, *reportModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -361,12 +361,12 @@ func getLivecommentReportsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, reports)
 }
 
-func modelToLivestream(ctx context.Context, livestreamModel LivestreamModel) (Livestream, error) {
+func fillLivestreamResponse(ctx context.Context, livestreamModel LivestreamModel) (Livestream, error) {
 	ownerModel := UserModel{}
 	if err := dbConn.GetContext(ctx, &ownerModel, "SELECT * FROM users WHERE id = ?", livestreamModel.UserId); err != nil {
 		return Livestream{}, err
 	}
-	owner, err := modelToUser(ctx, ownerModel)
+	owner, err := fillUserResponse(ctx, ownerModel)
 	if err != nil {
 		return Livestream{}, err
 	}

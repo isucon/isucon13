@@ -52,7 +52,7 @@ func getReactionsHandler(c echo.Context) error {
 		if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModels[i].UserId); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		reaction, err := modelToReaction(ctx, reactionModels[i])
+		reaction, err := fillReactionResponse(ctx, reactionModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -114,7 +114,7 @@ func postReactionHandler(c echo.Context) error {
 	}
 	reactionModel.Id = int(reactionId)
 
-	reaction, err := modelToReaction(ctx, reactionModel)
+	reaction, err := fillReactionResponse(ctx, reactionModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -126,12 +126,12 @@ func postReactionHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, reaction)
 }
 
-func modelToReaction(ctx context.Context, reactionModel ReactionModel) (Reaction, error) {
+func fillReactionResponse(ctx context.Context, reactionModel ReactionModel) (Reaction, error) {
 	userModel := UserModel{}
 	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserId); err != nil {
 		return Reaction{}, err
 	}
-	user, err := modelToUser(ctx, userModel)
+	user, err := fillUserResponse(ctx, userModel)
 	if err != nil {
 		return Reaction{}, err
 	}
