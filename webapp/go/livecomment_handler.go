@@ -95,7 +95,7 @@ func getLivecommentsHandler(c echo.Context) error {
 
 	livecomments := make([]Livecomment, len(livecommentModels))
 	for i := range livecommentModels {
-		livecomment, err := modelToLivecomment(ctx, livecommentModels[i])
+		livecomment, err := fillLivecommentResponse(ctx, livecommentModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -180,7 +180,7 @@ func postLivecommentHandler(c echo.Context) error {
 	livecommentModel.CreatedAt = createdAt
 	livecommentModel.UpdatedAt = createdAt
 
-	livecomment, err := modelToLivecomment(ctx, livecommentModel)
+	livecomment, err := fillLivecommentResponse(ctx, livecommentModel)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -263,7 +263,7 @@ func reportLivecommentHandler(c echo.Context) error {
 	reportModel.CreatedAt = createdAt
 	reportModel.UpdatedAt = createdAt
 
-	report, err := modelToLivecommentReport(ctx, reportModel)
+	report, err := fillLivecommentReportResponse(ctx, reportModel)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -344,12 +344,12 @@ func moderateNGWordHandler(c echo.Context) error {
 	})
 }
 
-func modelToLivecomment(ctx context.Context, livecommentModel LivecommentModel) (Livecomment, error) {
+func fillLivecommentResponse(ctx context.Context, livecommentModel LivecommentModel) (Livecomment, error) {
 	commentOwnerModel := UserModel{}
 	if err := dbConn.GetContext(ctx, &commentOwnerModel, "SELECT * FROM users WHERE id = ?", livecommentModel.UserId); err != nil {
 		return Livecomment{}, err
 	}
-	commentOwner, err := modelToUser(ctx, commentOwnerModel)
+	commentOwner, err := fillUserResponse(ctx, commentOwnerModel)
 	if err != nil {
 		return Livecomment{}, err
 	}
@@ -358,7 +358,7 @@ func modelToLivecomment(ctx context.Context, livecommentModel LivecommentModel) 
 	if err := dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livecommentModel.LivestreamId); err != nil {
 		return Livecomment{}, err
 	}
-	livestream, err := modelToLivestream(ctx, livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
 	if err != nil {
 		return Livecomment{}, err
 	}
@@ -377,12 +377,12 @@ func modelToLivecomment(ctx context.Context, livecommentModel LivecommentModel) 
 	return livecomment, nil
 }
 
-func modelToLivecommentReport(ctx context.Context, reportModel LivecommentReportModel) (LivecommentReport, error) {
+func fillLivecommentReportResponse(ctx context.Context, reportModel LivecommentReportModel) (LivecommentReport, error) {
 	reporterModel := UserModel{}
 	if err := dbConn.GetContext(ctx, &reporterModel, "SELECT * FROM users WHERE id = ?", reportModel.UserId); err != nil {
 		return LivecommentReport{}, err
 	}
-	reporter, err := modelToUser(ctx, reporterModel)
+	reporter, err := fillUserResponse(ctx, reporterModel)
 	if err != nil {
 		return LivecommentReport{}, err
 	}
@@ -391,7 +391,7 @@ func modelToLivecommentReport(ctx context.Context, reportModel LivecommentReport
 	if err := dbConn.GetContext(ctx, &livecommentModel, "SELECT * FROM livecomments WHERE id = ?", reportModel.LivecommentId); err != nil {
 		return LivecommentReport{}, err
 	}
-	livecomment, err := modelToLivecomment(ctx, livecommentModel)
+	livecomment, err := fillLivecommentResponse(ctx, livecommentModel)
 	if err != nil {
 		return LivecommentReport{}, err
 	}
