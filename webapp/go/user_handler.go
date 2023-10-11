@@ -16,37 +16,49 @@ import (
 )
 
 const (
-	defaultSessionIdKey      = "SESSIONId"
+	defaultSessionIdKey      = "SESSIONID"
 	defaultSessionExpiresKey = "EXPIRES"
-	defaultUserIdKey         = "USERId"
+	defaultUserIdKey         = "USERID"
 	bcryptDefaultCost        = 10
 )
 
-type User struct {
-	Id          int    `json:"id" db:"id"`
-	Name        string `json:"name" db:"name"`
-	DisplayName string `json:"display_name" db:"display_name"`
-	Description string `json:"description" db:"description"`
+type UserModel struct {
+	Id          int    `db:"id"`
+	Name        string `db:"name"`
+	DisplayName string `db:"display_name"`
+	Description string `db:"description"`
 	// HashedPassword is hashed password.
-	HashedPassword string `json:"hashed_password" db:"password"`
+	HashedPassword string `db:"password"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
 
-	IsPopular bool `json:"is_popular"`
+type User struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	Description string `json:"description"`
+	// CreatedAt is the created timestamp that forms an UNIX time.
+	CreatedAt int `json:"created_at"`
+	UpdatedAt int `json:"updated_at"`
+
+	IsPopular bool  `json:"is_popular"`
+	Theme     Theme `json:"theme"`
 }
 
 type Theme struct {
-	UserId   int  `json:"user_id" db:"user_id"`
-	DarkMode bool `json:"dark_mode" db:"dark_mode"`
+	Id        int  `json:"id"`
+	UserId    int  `json:"user_id"`
+	DarkMode  bool `json:"dark_mode"`
+	CreatedAt int  `json:"created_at"`
 }
 
-type Session struct {
-	// Id is an identifier that forms an UUIdv4.
-	Id     string `json:"id" db:"id"`
-	UserId int    `json:"user_id" db:"user_id"`
-	// Expires is the UNIX timestamp that the sesison will be expired.
-	Expires int `json:"expires" db:"expires"`
+type ThemeModel struct {
+	Id        int       `db:"id"`
+	UserId    int       `db:"user_id"`
+	DarkMode  bool      `db:"dark_mode"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type PostUserRequest struct {
@@ -81,17 +93,15 @@ func getUserSessionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	userModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	popular, err := userIsPopular(ctx, userId)
+	user, err := modelToUser(ctx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	user.IsPopular = popular
-
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -114,7 +124,7 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	user := User{
+	userModel := UserModel{
 		Name:           req.Name,
 		DisplayName:    req.DisplayName,
 		Description:    req.Description,
@@ -123,10 +133,11 @@ func postUserHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
 	}
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user)
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
@@ -138,19 +149,34 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
 	}
 
-	user.Id = int(userId)
+	userModel.Id = int(userId)
 
-	theme := Theme{
+	themeModel := ThemeModel{
 		UserId:   int(userId),
 		DarkMode: req.Theme.DarkMode,
 	}
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", theme); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
+	}
+
+	user := User{
+		Id:          userModel.Id,
+		Name:        userModel.Name,
+		DisplayName: userModel.DisplayName,
+		Description: userModel.Description,
+		CreatedAt:   int(userModel.CreatedAt.Unix()),
+		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
+		Theme: Theme{
+			Id:        themeModel.Id,
+			UserId:    themeModel.UserId,
+			DarkMode:  themeModel.DarkMode,
+			CreatedAt: int(themeModel.CreatedAt.Unix()),
+		},
 	}
 
 	if disablePowerDNS {
@@ -175,14 +201,14 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
-	user := User{}
+	userModel := UserModel{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	if err := dbConn.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
 		c.Logger().Printf("failed to get: username='%s', err=%+v", req.UserName, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(userModel.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		// return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -194,11 +220,6 @@ func loginHandler(c echo.Context) error {
 	sessionEndAt := time.Now().Add(10 * time.Minute)
 
 	sessionId := uuid.NewString()
-	userSession := Session{
-		Id:      sessionId,
-		UserId:  user.Id,
-		Expires: int(sessionEndAt.Unix()),
-	}
 
 	sess, err := session.Get(defaultSessionIdKey, c)
 	if err != nil {
@@ -209,12 +230,9 @@ func loginHandler(c echo.Context) error {
 		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
 		Path:   "/",
 	}
-	sess.Values[defaultSessionIdKey] = userSession.Id
-	c.Logger().Infof("userSession.Id = %s", userSession.Id)
-	sess.Values[defaultUserIdKey] = userSession.UserId
-	c.Logger().Infof("userSession.UserId = %d", userSession.UserId)
+	sess.Values[defaultSessionIdKey] = sessionId
+	sess.Values[defaultUserIdKey] = userModel.Id
 	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
-	c.Logger().Infof("sessionEndAt = %s", sessionEndAt.String())
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -236,16 +254,16 @@ func getUserHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+
+	userModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	popular, err := userIsPopular(ctx, userId)
+	user, err := modelToUser(ctx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return err
 	}
-	user.IsPopular = popular
 
 	return c.JSON(http.StatusOK, user)
 }
@@ -257,16 +275,20 @@ func getUsersHandler(c echo.Context) error {
 		return err
 	}
 
-	var users []*User
-	if err := dbConn.SelectContext(ctx, &users, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
+	var userModels []*UserModel
+	if err := dbConn.SelectContext(ctx, &userModels, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	// FIXME: IsFamousのアルゴリズムを作る
-	for i := range users {
-		userIsPopular(ctx, users[i].Id)
-		users[i].IsPopular = true
+	users := make([]User, len(userModels))
+	for i := range userModels {
+		user, err := modelToUser(ctx, *userModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		users[i] = user
 	}
+
 	return c.JSON(http.StatusOK, users)
 }
 
@@ -291,31 +313,31 @@ func verifyUserSession(c echo.Context) error {
 }
 
 func userIsPopular(ctx context.Context, userId int) (bool, error) {
-	var livestreams []*Livestream
-	if err := dbConn.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
+	var livestreamModels []*LivestreamModel
+	if err := dbConn.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
 		return false, err
 	}
 
 	totalSpamReports := 0
 	totalTips := 0
 	totalLivecomments := 0
-	for _, ls := range livestreams {
+	for _, ls := range livestreamModels {
 		spamReports := 0
-		if err := dbConn.SelectContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
+		if err := dbConn.GetContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
 			return false, err
 		}
 
-		var livecomments []*Livecomment
-		if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
+		var livecommentModels []*LivecommentModel
+		if err := dbConn.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
 			return false, err
 		}
 
-		for _, lc := range livecomments {
+		for _, lc := range livecommentModels {
 			totalTips += lc.Tip
 		}
 
 		totalSpamReports += spamReports
-		totalLivecomments += len(livecomments)
+		totalLivecomments += len(livecommentModels)
 	}
 
 	if totalSpamReports >= 10 {
@@ -331,4 +353,34 @@ func userIsPopular(ctx context.Context, userId int) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func modelToUser(ctx context.Context, userModel UserModel) (User, error) {
+	themeModel := ThemeModel{}
+	if err := dbConn.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
+		return User{}, err
+	}
+
+	popular, err := userIsPopular(ctx, userModel.Id)
+	if err != nil {
+		return User{}, err
+	}
+
+	user := User{
+		Id:          userModel.Id,
+		Name:        userModel.Name,
+		DisplayName: userModel.DisplayName,
+		Description: userModel.Description,
+		CreatedAt:   int(userModel.CreatedAt.Unix()),
+		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
+		IsPopular:   popular,
+		Theme: Theme{
+			Id:        themeModel.Id,
+			UserId:    themeModel.UserId,
+			DarkMode:  themeModel.DarkMode,
+			CreatedAt: int(themeModel.CreatedAt.Unix()),
+		},
+	}
+
+	return user, nil
 }

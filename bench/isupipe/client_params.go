@@ -1,7 +1,5 @@
 package isupipe
 
-import "time"
-
 type InitializeResponse struct {
 	AdvertiseLevel int    `json:"advertise_level"`
 	Language       string `json:"language"`
@@ -39,13 +37,13 @@ type (
 		Tip     int    `json:"tip"`
 	}
 	PostLivecommentResponse struct {
-		Id           int       `json:"id"`
-		UserId       int       `json:"user_id"`
-		LivestreamId int       `json:"livestream_id"`
-		Comment      string    `json:"comment"`
-		Tip          int       `json:"tip"`
-		CreatedAt    time.Time `json:"created_at"`
-		UpdatedAt    time.Time `json:"updated_at"`
+		Id         int        `json:"id"`
+		User       User       `json:"user"`
+		Livestream Livestream `json:"livestream"`
+		Comment    string     `json:"comment"`
+		Tip        int        `json:"tip"`
+		CreatedAt  int        `json:"created_at"`
+		UpdatedAt  int        `json:"updated_at"`
 	}
 )
 
@@ -62,22 +60,22 @@ type Theme struct {
 }
 
 type Livecomment struct {
-	Id           int       `json:"id"`
-	UserId       int       `json:"user_id"`
-	LivestreamId int       `json:"livestream_id"`
-	Comment      string    `json:"comment"`
-	Tip          int       `json:"tip"`
-	ReportCount  int       `json:"report_count"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Id          int        `json:"id"`
+	User        User       `json:"user"`
+	Livestream  Livestream `json:"livestream"`
+	Comment     string     `json:"comment"`
+	Tip         int        `json:"tip"`
+	ReportCount int        `json:"report_count"`
+	CreatedAt   int        `json:"created_at"`
+	UpdatedAt   int        `json:"updated_at"`
 }
 
 type Reaction struct {
-	Id           int       `json:"id"`
-	EmojiName    string    `json:"emoji_name"`
-	UserId       int       `json:"user_id"`
-	LivestreamId int       `json:"livestream_id"`
-	CreatedAt    time.Time `json:"created_at"`
+	Id         int        `json:"id"`
+	EmojiName  string     `json:"emoji_name"`
+	User       User       `json:"user"`
+	Livestream Livestream `json:"livestream"`
+	CreatedAt  int        `json:"created_at"`
 }
 
 type User struct {
@@ -85,43 +83,40 @@ type User struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
-	// HashedPassword is hashed password.
-	HashedPassword string `json:"password"`
-	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt   int    `json:"created_at"`
+	UpdatedAt   int    `json:"updated_at"`
 
-	IsFamous bool `json:"is_famous"`
+	Theme     Theme `json:"theme"`
+	IsPopular bool  `json:"is_popular"`
 }
 
 type Livestream struct {
-	Id           int       `json:"id"`
-	UserId       int       `json:"user_id"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
-	PlaylistUrl  string    `json:"playlist_url"`
-	ThumbnailUrl string    `json:"thumbnail_url"`
-	ViewersCount int       `json:"viewers_count"`
-	StartAt      time.Time `json:"start_at"`
-	EndAt        time.Time `json:"end_at"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Id           int    `json:"id"`
+	Owner        User   `json:"owner"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	PlaylistUrl  string `json:"playlist_url"`
+	ThumbnailUrl string `json:"thumbnail_url"`
+	ViewersCount int    `json:"viewers_count"`
+	StartAt      int    `json:"start_at"`
+	EndAt        int    `json:"end_at"`
+	CreatedAt    int    `json:"created_at"`
+	UpdatedAt    int    `json:"updated_at"`
 }
 
 type LivecommentReport struct {
-	Id            int       `json:"id"`
-	UserId        int       `json:"user_id"`
-	LivestreamId  int       `json:"livestream_id"`
-	LivecommentId int       `json:"livecomment_id"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	Id          int         `json:"id"`
+	Reporter    User        `json:"reporter"`
+	Livecomment Livecomment `json:"livecomment"`
+	CreatedAt   int         `json:"created_at"`
+	UpdatedAt   int         `json:"updated_at"`
 }
 
 type Tag struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt int `json:"created_at"`
 }
 
 type TagsResponse struct {

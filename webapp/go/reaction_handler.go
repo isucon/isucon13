@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -10,12 +11,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type ReactionModel struct {
+	Id           int       `db:"id"`
+	EmojiName    string    `db:"emoji_name"`
+	UserId       int       `db:"user_id"`
+	LivestreamId int       `db:"livestream_id"`
+	CreatedAt    time.Time `db:"created_at"`
+}
+
 type Reaction struct {
-	Id           int       `json:"id" db:"id"`
-	EmojiName    string    `json:"emoji_name" db:"emoji_name"`
-	UserId       int       `json:"user_id" db:"user_id"`
-	LivestreamId int       `json:"livestream_id" db:"livestream_id"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	Id           int    `json:"id"`
+	EmojiName    string `json:"emoji_name"`
+	User         User   `json:"user"`
+	LivestreamId int    `json:"livestream_id"`
+	CreatedAt    int    `json:"created_at"`
 }
 
 type PostReactionRequest struct {
@@ -32,9 +41,23 @@ func getReactionsHandler(c echo.Context) error {
 
 	livestreamId := c.Param("livestream_id")
 
-	reactions := []Reaction{}
-	if err := dbConn.SelectContext(ctx, &reactions, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
+	reactionModels := []ReactionModel{}
+	if err := dbConn.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	reactions := make([]Reaction, len(reactionModels))
+	for i := range reactionModels {
+		userModel := UserModel{}
+		if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModels[i].UserId); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		reaction, err := modelToReaction(ctx, reactionModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		reactions[i] = reaction
 	}
 
 	return c.JSON(http.StatusOK, reactions)
@@ -64,7 +87,7 @@ func postReactionHandler(c echo.Context) error {
 
 	var req *PostReactionRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
@@ -72,13 +95,13 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reaction := Reaction{
+	reactionModel := ReactionModel{
 		UserId:       userId,
 		LivestreamId: livestreamId,
 		EmojiName:    req.EmojiName,
 	}
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name) VALUES (:user_id, :livestream_id, :emoji_name)", reaction)
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name) VALUES (:user_id, :livestream_id, :emoji_name)", reactionModel)
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -89,11 +112,37 @@ func postReactionHandler(c echo.Context) error {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	reactionModel.Id = int(reactionId)
+
+	reaction, err := modelToReaction(ctx, reactionModel)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reaction.Id = int(reactionId)
 	return c.JSON(http.StatusCreated, reaction)
+}
+
+func modelToReaction(ctx context.Context, reactionModel ReactionModel) (Reaction, error) {
+	userModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserId); err != nil {
+		return Reaction{}, err
+	}
+	user, err := modelToUser(ctx, userModel)
+	if err != nil {
+		return Reaction{}, err
+	}
+
+	reaction := Reaction{
+		Id:           reactionModel.Id,
+		EmojiName:    reactionModel.EmojiName,
+		User:         user,
+		LivestreamId: reactionModel.LivestreamId,
+		CreatedAt:    int(reactionModel.CreatedAt.Unix()),
+	}
+
+	return reaction, nil
 }

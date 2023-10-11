@@ -54,7 +54,7 @@ func TestClient_Spam(t *testing.T) {
 
 	myLivestreamId := -1
 	for _, ls := range livestreams {
-		if ls.UserId == streamer.UserId {
+		if ls.Owner.Id == streamer.UserId {
 			myLivestreamId = ls.Id
 		}
 	}

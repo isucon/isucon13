@@ -9,10 +9,17 @@ import (
 )
 
 type Tag struct {
-	Id   int    `json:"id" db:"id"`
-	Name string `json:"name" db:"name"`
+	Id   int    `json:"id"`
+	Name string `json:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	CreatedAt int `json:"created_at"`
+}
+
+type TagModel struct {
+	Id   int    `db:"id"`
+	Name string `db:"name"`
+	// CreatedAt is the created timestamp that forms an UNIX time.
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type TagsResponse struct {
@@ -22,11 +29,19 @@ type TagsResponse struct {
 func getTagHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	var tags []*Tag
-	if err := dbConn.SelectContext(ctx, &tags, "SELECT * FROM tags"); err != nil {
+	var tagModels []*TagModel
+	if err := dbConn.SelectContext(ctx, &tagModels, "SELECT * FROM tags"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	tags := make([]*Tag, len(tagModels))
+	for i := range tagModels {
+		tags[i] = &Tag{
+			Id:        tagModels[i].Id,
+			Name:      tagModels[i].Name,
+			CreatedAt: int(tagModels[i].CreatedAt.Unix()),
+		}
+	}
 	return c.JSON(http.StatusOK, &TagsResponse{
 		Tags: tags,
 	})
@@ -52,13 +67,13 @@ func getStreamerThemeHandler(c echo.Context) error {
 
 	username := strings.Split(host, ".")[0]
 
-	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT id FROM users WHERE name = ?", username); err != nil {
+	userModel := UserModel{}
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	theme := Theme{}
-	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", user.Id); err != nil {
+	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userModel.Id); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
