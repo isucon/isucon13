@@ -33,7 +33,7 @@ var (
 	disablePowerDNS          bool = false
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
-	secret                   = []byte("defaultsecret")
+	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
 )
 
 func init() {
