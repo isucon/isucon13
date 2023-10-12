@@ -211,7 +211,7 @@ func loginHandler(c echo.Context) error {
 	// usernameはUNIQUEなので、whereで一意に特定できる
 	err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName)
 	if errors.Is(err, sql.ErrNoRows) {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -219,8 +219,7 @@ func loginHandler(c echo.Context) error {
 
 	err = bcrypt.CompareHashAndPassword([]byte(userModel.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
-		// return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
