@@ -11,7 +11,10 @@ export interface VideoThumbnailProps {
 }
 export function VideoThumbnail(props: VideoThumbnailProps): React.ReactElement {
   return (
-    <Link to="/watch" style={{ textDecoration: 'none' }}>
+    <Link
+      to={`/watch/${props.liveSteram.id}`}
+      style={{ textDecoration: 'none' }}
+    >
       <AspectRatio sx={{ borderRadius: 10 }}>
         <img
           src="https://images.unsplash.com/photo-1527549993586-dff825b37782?auto=format&fit=crop&w=400"

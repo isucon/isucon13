@@ -2,15 +2,44 @@ import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
+import ButtonGroup from '@mui/joy/ButtonGroup';
 import Card from '@mui/joy/Card';
 import CardContent from '@mui/joy/CardContent';
 import CardOverflow from '@mui/joy/CardOverflow';
 import Input from '@mui/joy/Input';
+import Slider from '@mui/joy/Slider';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
+import { HiCurrencyYen } from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
 
+const chipTable = [
+  100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000,
+];
+
+export function chipColor(price: number): [string, boolean] {
+  // blue
+  if (price < 200) return ['#33d', true];
+  // light blue
+  if (price < 500) return ['#0dd', false];
+  // green
+  if (price < 1000) return ['#4c4', false];
+  // yellow
+  if (price < 2000) return ['#fb0', true];
+  // orange
+  if (price < 5000) return ['#f80', true];
+  // magenta
+  if (price < 10000) return ['#d0d', true];
+  // red
+  return ['#f00', true];
+}
+
 export default function WatchPage(): React.ReactElement {
+  const [commentMode, setCommentMode] = React.useState<'normal' | 'chip'>(
+    'normal',
+  );
+  const [chipAmount, setChipAmount] = React.useState(2000);
+
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
       <Stack direction="row" gap={2}>
@@ -70,18 +99,96 @@ export default function WatchPage(): React.ReactElement {
               py: 1,
             }}
           >
-            <Stack direction="row" spacing={2}>
-              <Avatar />
-              <Input
-                endDecorator={
-                  <Button variant="plain" color="neutral">
-                    送信
+            {commentMode === 'normal' && (
+              <>
+                <Stack direction="row">
+                  <Avatar />
+                  <Input
+                    endDecorator={
+                      <Button variant="plain" color="neutral">
+                        送信
+                      </Button>
+                    }
+                    placeholder="チャット…"
+                    sx={{ flexGrow: 1, ml: 2, mr: 1 }}
+                  />
+                  <Button
+                    variant="plain"
+                    color="neutral"
+                    sx={{ py: 0, px: 1 }}
+                    onClick={() => setCommentMode('chip')}
+                  >
+                    <HiCurrencyYen size="1.5rem" />
                   </Button>
-                }
-                placeholder="チャット…"
-                sx={{ flexGrow: 1 }}
-              />
-            </Stack>
+                </Stack>
+              </>
+            )}
+            {commentMode === 'chip' && (
+              <>
+                <Stack spacing={2}>
+                  <Typography level="body-lg" sx={{ py: 1 }}>
+                    チップを送る
+                  </Typography>
+                  {/* todo convert component */}
+                  <Stack
+                    sx={{
+                      p: 2,
+                      background: chipColor(chipAmount)[0],
+                      borderRadius: 10,
+                    }}
+                    spacing={1}
+                  >
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Avatar size="sm" />
+                      <Typography
+                        level="title-sm"
+                        sx={{
+                          color: chipColor(chipAmount)[1] ? '#fff' : '#000',
+                        }}
+                      >
+                        ユーザー名
+                      </Typography>
+                      <Typography
+                        level="body-md"
+                        sx={{
+                          color: chipColor(chipAmount)[1] ? '#fff' : '#000',
+                        }}
+                      >
+                        <span>￥{chipAmount}</span>
+                      </Typography>
+                    </Stack>
+                    <Input
+                      sx={{
+                        background: 'rgba(255,255,255,0.3)',
+                        color: chipColor(chipAmount)[1] ? '#fff' : '#000',
+                      }}
+                    />
+                  </Stack>
+                  <Slider
+                    defaultValue={4}
+                    step={1}
+                    marks
+                    min={0}
+                    max={10}
+                    scale={(x) => chipTable[x] ?? 0}
+                    valueLabelDisplay="auto"
+                    value={chipTable.indexOf(chipAmount)}
+                    onChange={(e, v) => setChipAmount(chipTable[v as number])}
+                  />
+                  <ButtonGroup buttonFlex="1 0 100px">
+                    <Button color="primary" variant="soft">
+                      チップを送信
+                    </Button>
+                    <Button
+                      color="neutral"
+                      onClick={() => setCommentMode('normal')}
+                    >
+                      キャンセル
+                    </Button>
+                  </ButtonGroup>
+                </Stack>
+              </>
+            )}
           </CardOverflow>
         </Card>
       </Stack>

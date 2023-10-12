@@ -12,12 +12,13 @@ import {
   BsCircleFill,
 } from 'react-icons/bs';
 import { Link } from 'react-router-dom';
-import { apiClient } from '~/api/client';
 import { useLiveStreams } from '~/api/hooks';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
   const liveSterams = useLiveStreams();
+  // TODO Remove
+  console.log(liveSterams.data);
 
   return (
     <div>
@@ -83,9 +84,16 @@ export default function IndexPage(): React.ReactElement {
           flexGrow={1}
           sx={{ padding: 2 }}
         >
-          {liveSterams.data?.slice(0, 30).map((stream, index) => (
+          {/* {liveSterams.data?.slice(0, 30).map((stream, index) => ( */}
+          {new Array(30).fill(0).map((stream, index) => (
             <Grid key={index} xs={1}>
-              <VideoThumbnail liveSteram={stream} />
+              <VideoThumbnail
+                liveSteram={{
+                  id: index,
+                  user_id: 12345,
+                  title: 'title',
+                }}
+              />
             </Grid>
           ))}
         </Grid>
