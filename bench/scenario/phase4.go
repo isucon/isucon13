@@ -73,7 +73,7 @@ func runReserveScenario2(ctx context.Context) error {
 			if _, err := viewerClient.GetLivestreamStatistics(ctx, livestream.Id); err != nil {
 				return err
 			}
-			if _, err := viewerClient.GetUserStatistics(ctx, vtuber.UserId); err != nil {
+			if _, err := viewerClient.GetUserStatistics(ctx, vtuber.Name); err != nil {
 				return err
 			}
 

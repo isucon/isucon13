@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -48,14 +50,23 @@ func getUserStatisticsHandler(c echo.Context) error {
 		return err
 	}
 
-	userId := c.Param("user_id")
+	username := c.Param("username")
 
-	var viewedLivestreams []*LivestreamViewerModel
-	if err := dbConn.SelectContext(ctx, &viewedLivestreams, "SELECT user_id, livestream_id FROM livestream_viewers_history WHERE user_id = ?", userId); err != nil {
+	userModel := UserModel{}
+	err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users where name = ?", username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tipRankModelPerLivestreams, err := queryTotalTipRankPerViewedLivestream(ctx, userId, viewedLivestreams)
+	var viewedLivestreams []*LivestreamViewerModel
+	if err := dbConn.SelectContext(ctx, &viewedLivestreams, "SELECT user_id, livestream_id FROM livestream_viewers_history WHERE user_id = ?", userModel.Id); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	tipRankModelPerLivestreams, err := queryTotalTipRankPerViewedLivestream(ctx, userModel.Id, viewedLivestreams)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -124,7 +135,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 
 func queryTotalTipRankPerViewedLivestream(
 	ctx context.Context,
-	userId string,
+	userId int,
 	viewedLivestreams []*LivestreamViewerModel,
 ) (map[int]TipRankModel, error) {
 	totalTipRankPerLivestream := make(map[int]TipRankModel)

@@ -186,8 +186,8 @@ func main() {
 	e.GET("/user/me", getUserSessionHandler)
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
-	e.GET("/user/:user_id", getUserHandler)
-	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
+	e.GET("/user/:username", getUserHandler)
+	e.GET("/user/:username/statistics", getUserStatisticsHandler)
 
 	// stats
 	// ライブコメント統計情報
