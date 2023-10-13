@@ -4,6 +4,7 @@ package main
 // sqlx的な参考: https://jmoiron.github.io/sqlx/
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -103,7 +105,22 @@ func connectDB() (*sqlx.DB, error) {
 		conf.ParseTime = parseTime
 	}
 
-	return sqlx.Open("mysql", conf.FormatDSN())
+	db, err := sqlx.Open("mysql", conf.FormatDSN())
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(10)
+
+	for i := 0; i < 10; i++ {
+		if err := db.Ping(); err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		return db, nil
+	}
+
+	return db, fmt.Errorf("failed to connect to MySQL")
 }
 
 func initializeHandler(c echo.Context) error {
