@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -89,8 +91,12 @@ func getLivecommentsHandler(c echo.Context) error {
 	livestreamId := c.Param("livestream_id")
 
 	livecommentModels := []LivecommentModel{}
-	if err := dbConn.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId); err != nil {
+	err := dbConn.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId)
+	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	livecomments := make([]Livecomment, len(livecommentModels))

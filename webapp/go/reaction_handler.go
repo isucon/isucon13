@@ -20,11 +20,11 @@ type ReactionModel struct {
 }
 
 type Reaction struct {
-	Id           int    `json:"id"`
-	EmojiName    string `json:"emoji_name"`
-	User         User   `json:"user"`
-	LivestreamId int    `json:"livestream_id"`
-	CreatedAt    int    `json:"created_at"`
+	Id         int        `json:"id"`
+	EmojiName  string     `json:"emoji_name"`
+	User       User       `json:"user"`
+	Livestream Livestream `json:"livestream"`
+	CreatedAt  int        `json:"created_at"`
 }
 
 type PostReactionRequest struct {
@@ -136,12 +136,21 @@ func fillReactionResponse(ctx context.Context, reactionModel ReactionModel) (Rea
 		return Reaction{}, err
 	}
 
+	livestreamModel := LivestreamModel{}
+	if err := dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", reactionModel.LivestreamId); err != nil {
+		return Reaction{}, err
+	}
+	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
+	if err != nil {
+		return Reaction{}, err
+	}
+
 	reaction := Reaction{
-		Id:           reactionModel.Id,
-		EmojiName:    reactionModel.EmojiName,
-		User:         user,
-		LivestreamId: reactionModel.LivestreamId,
-		CreatedAt:    int(reactionModel.CreatedAt.Unix()),
+		Id:         reactionModel.Id,
+		EmojiName:  reactionModel.EmojiName,
+		User:       user,
+		Livestream: livestream,
+		CreatedAt:  int(reactionModel.CreatedAt.Unix()),
 	}
 
 	return reaction, nil

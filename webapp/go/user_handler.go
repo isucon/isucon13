@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/http"
 	"os/exec"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -258,13 +257,10 @@ func getUserHandler(c echo.Context) error {
 		return err
 	}
 
-	userId, err := strconv.Atoi(c.Param("user_id"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+	username := c.Param("username")
 
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId); err != nil {
+	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", username); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 

@@ -31,7 +31,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	log.Printf("try to get user...")
-	if err := client.GetUser(ctx, user.Id /* user id */); err != nil {
+	if err := client.GetUser(ctx, user.Name); err != nil {
 		return err
 	}
 
@@ -58,7 +58,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:        []int{},
+		Tags:        []int{1, 2, 3, 4, 5},
 		Title:       reservation.Title,
 		Description: reservation.Description,
 		StartAt:     reservation.StartAt,
@@ -111,7 +111,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetUserStatistics(ctx, user.Id); err != nil {
+	if _, err := client.GetUserStatistics(ctx, user.Name); err != nil {
 		return err
 	}
 

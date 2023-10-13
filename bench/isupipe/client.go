@@ -188,7 +188,7 @@ func (c *Client) GetUserSession(ctx context.Context, options ...AssertOption) er
 	return nil
 }
 
-func (c *Client) GetUser(ctx context.Context, userId int, options ...AssertOption) error {
+func (c *Client) GetUser(ctx context.Context, username string, options ...AssertOption) error {
 	pat := ClientAssertPattern{
 		StatusCode: http.StatusOK,
 		DecodeBody: true,
@@ -198,7 +198,7 @@ func (c *Client) GetUser(ctx context.Context, userId int, options ...AssertOptio
 		option(&pat)
 	}
 
-	urlPath := fmt.Sprintf("/user/%d", userId)
+	urlPath := fmt.Sprintf("/user/%s", username)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -796,7 +796,7 @@ func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
 	return paymentResp, nil
 }
 
-func (c *Client) GetUserStatistics(ctx context.Context, userId int, options ...AssertOption) (*UserStatistics, error) {
+func (c *Client) GetUserStatistics(ctx context.Context, username string, options ...AssertOption) (*UserStatistics, error) {
 	pat := ClientAssertPattern{
 		StatusCode: http.StatusOK,
 		DecodeBody: true,
@@ -806,7 +806,7 @@ func (c *Client) GetUserStatistics(ctx context.Context, userId int, options ...A
 		option(&pat)
 	}
 
-	urlPath := fmt.Sprintf("/user/%d/statistics", userId)
+	urlPath := fmt.Sprintf("/user/%s/statistics", username)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
