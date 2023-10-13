@@ -522,11 +522,13 @@ func (c *Client) GetLivestreamsByTag(
 		option(&pat)
 	}
 
-	urlPath := fmt.Sprintf("/livestream?tag=%s", tag)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/livestream", nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
+	query := req.URL.Query()
+	query.Add("tag", tag)
+	req.URL.RawQuery = query.Encode()
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
