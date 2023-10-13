@@ -70,6 +70,7 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {
@@ -104,6 +105,7 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, options ...As
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -143,6 +145,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, options ...AssertOp
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -262,6 +265,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -301,6 +305,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -340,6 +345,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -381,6 +387,7 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommen
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -418,6 +425,7 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, 
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
@@ -718,6 +726,7 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, options 
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
+	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
