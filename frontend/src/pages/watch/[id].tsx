@@ -6,10 +6,12 @@ import ButtonGroup from '@mui/joy/ButtonGroup';
 import Card from '@mui/joy/Card';
 import CardContent from '@mui/joy/CardContent';
 import CardOverflow from '@mui/joy/CardOverflow';
+import IconButton from '@mui/joy/IconButton';
 import Input from '@mui/joy/Input';
 import Slider from '@mui/joy/Slider';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
+import { AiFillHeart } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
 
@@ -91,6 +93,19 @@ export default function WatchPage(): React.ReactElement {
                   </Stack>
                 ))}
             </Stack>
+            {commentMode === 'normal' && (
+              <Stack
+                sx={{
+                  position: 'absolute',
+                  bottom: '70px',
+                  right: '15px',
+                }}
+              >
+                <IconButton>
+                  <AiFillHeart size="1.5rem" color="#f23d5c" />
+                </IconButton>
+              </Stack>
+            )}
           </CardContent>
           <CardOverflow
             sx={{
