@@ -4,7 +4,6 @@ package main
 // sqlx的な参考: https://jmoiron.github.io/sqlx/
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"

@@ -93,6 +93,7 @@ type User struct {
 type Livestream struct {
 	Id           int    `json:"id"`
 	Owner        User   `json:"owner"`
+	Tags         []Tag  `json:"tags"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	PlaylistUrl  string `json:"playlist_url"`

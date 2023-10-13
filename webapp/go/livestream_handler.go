@@ -53,6 +53,7 @@ type Livestream struct {
 	PlaylistUrl  string `json:"playlist_url"`
 	ThumbnailUrl string `json:"thumbnail_url"`
 	ViewersCount int    `json:"viewers_count"`
+	Tags         []Tag  `json:"tags"`
 	StartAt      int    `json:"start_at"`
 	EndAt        int    `json:"end_at"`
 	CreatedAt    int    `json:"created_at"`
@@ -377,10 +378,30 @@ func fillLivestreamResponse(ctx context.Context, livestreamModel LivestreamModel
 		return Livestream{}, err
 	}
 
+	var livestreamTagModels []*LivestreamTagModel
+	if err := dbConn.SelectContext(ctx, &livestreamTagModels, "SELECT * FROM livestream_tags WHERE livestream_id = ?", livestreamModel.Id); err != nil {
+		return Livestream{}, err
+	}
+
+	tags := make([]Tag, len(livestreamTagModels))
+	for i := range livestreamTagModels {
+		tagModel := TagModel{}
+		if err := dbConn.GetContext(ctx, &tagModel, "SELECT * FROM tags WHERE id = ?", livestreamTagModels[i].Id); err != nil {
+			return Livestream{}, err
+		}
+
+		tags[i] = Tag{
+			Id:        tagModel.Id,
+			Name:      tagModel.Name,
+			CreatedAt: int(tagModel.CreatedAt.Unix()),
+		}
+	}
+
 	livestream := Livestream{
 		Id:           livestreamModel.Id,
 		Owner:        owner,
 		Title:        livestreamModel.Title,
+		Tags:         tags,
 		Description:  livestreamModel.Description,
 		PlaylistUrl:  livestreamModel.PlaylistUrl,
 		ThumbnailUrl: livestreamModel.ThumbnailUrl,
