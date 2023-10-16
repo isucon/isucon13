@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -77,7 +78,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func getUserSessionHandler(c echo.Context) error {
+func getUserSessionHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -94,8 +95,18 @@ func getUserSessionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	userModel := UserModel{}
-	err = dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId)
+	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -103,16 +114,21 @@ func getUserSessionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	user, err := fillUserResponse(ctx, userModel)
+	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, user)
 }
 
 // ユーザ登録API
 // POST /user
-func postUserHandler(c echo.Context) error {
+func postUserHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	req := PostUserRequest{}
@@ -138,19 +154,21 @@ func postUserHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
 	}
 
 	userId, err := result.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
 	}
 
@@ -161,27 +179,16 @@ func postUserHandler(c echo.Context) error {
 		DarkMode: req.Theme.DarkMode,
 	}
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
+	}
+
+	user, err := fillUserResponse(ctx, tx, userModel)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user response")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
-	}
-
-	user := User{
-		Id:          userModel.Id,
-		Name:        userModel.Name,
-		DisplayName: userModel.DisplayName,
-		Description: userModel.Description,
-		CreatedAt:   int(userModel.CreatedAt.Unix()),
-		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
-		Theme: Theme{
-			Id:        themeModel.Id,
-			UserId:    themeModel.UserId,
-			DarkMode:  themeModel.DarkMode,
-			CreatedAt: int(themeModel.CreatedAt.Unix()),
-		},
 	}
 
 	if disablePowerDNS {
@@ -190,7 +197,7 @@ func postUserHandler(c echo.Context) error {
 	}
 
 	if err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "a", "30", powerDNSSubdomainAddress).Run(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add A record to PowerDNS")
 	}
 
 	return c.JSON(http.StatusCreated, user)
@@ -198,7 +205,7 @@ func postUserHandler(c echo.Context) error {
 
 // ユーザログインAPI
 // POST /login
-func loginHandler(c echo.Context) error {
+func loginHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	req := LoginRequest{}
@@ -206,13 +213,27 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	userModel := UserModel{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName)
+	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
 	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -250,7 +271,7 @@ func loginHandler(c echo.Context) error {
 
 // ユーザ詳細API
 // GET /user/:userid
-func getUserHandler(c echo.Context) error {
+func getUserHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -259,38 +280,66 @@ func getUserHandler(c echo.Context) error {
 
 	username := c.Param("username")
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", username); err != nil {
+	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", username); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	user, err := fillUserResponse(ctx, userModel)
+	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
 		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, user)
 }
 
-func getUsersHandler(c echo.Context) error {
+func getUsersHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
 		return err
 	}
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	var userModels []*UserModel
-	if err := dbConn.SelectContext(ctx, &userModels, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
+	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	users := make([]User, len(userModels))
 	for i := range userModels {
-		user, err := fillUserResponse(ctx, *userModels[i])
+		user, err := fillUserResponse(ctx, tx, *userModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		users[i] = user
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, users)
@@ -316,9 +365,9 @@ func verifyUserSession(c echo.Context) error {
 	return nil
 }
 
-func userIsPopular(ctx context.Context, userId int) (bool, error) {
+func userIsPopular(ctx context.Context, tx *sqlx.Tx, userId int) (bool, error) {
 	var livestreamModels []*LivestreamModel
-	if err := dbConn.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
+	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
 		return false, err
 	}
 
@@ -327,12 +376,12 @@ func userIsPopular(ctx context.Context, userId int) (bool, error) {
 	totalLivecomments := 0
 	for _, ls := range livestreamModels {
 		spamReports := 0
-		if err := dbConn.GetContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
+		if err := tx.GetContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
 			return false, err
 		}
 
 		var livecommentModels []*LivecommentModel
-		if err := dbConn.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
+		if err := tx.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
 			return false, err
 		}
 
@@ -359,13 +408,13 @@ func userIsPopular(ctx context.Context, userId int) (bool, error) {
 	return true, nil
 }
 
-func fillUserResponse(ctx context.Context, userModel UserModel) (User, error) {
+func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (User, error) {
 	themeModel := ThemeModel{}
-	if err := dbConn.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
+	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
 		return User{}, err
 	}
 
-	popular, err := userIsPopular(ctx, userModel.Id)
+	popular, err := userIsPopular(ctx, tx, userModel.Id)
 	if err != nil {
 		return User{}, err
 	}

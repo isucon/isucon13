@@ -201,7 +201,7 @@ paths:
                 type: object
                 properties:
                   word_id:
-                    type: number
+                    type: integer
         "401":
           description: Unauthorized
         "403":
@@ -443,15 +443,19 @@ paths:
 components:
   schemas:
     Theme:
+      id:
+        type: integer
       dark_mode:
         type: boolean
+      created_at:
+        type: integer
     Tag:
       id:
         type: integer
       name:
         type: string
       created_at:
-        type: number
+        type: integer
     Reaction:
       id:
         type: integer
@@ -490,12 +494,15 @@ components:
           type: integer
         is_popular:
           type: boolean
+        theme:
+          $ref: "#/components/schemas/Theme"
       required:
         - id
         - name
         - display_name
         - description
         - is_popular
+        - theme
     Livestream:
       title: Livestream
       x-stoplight:
@@ -503,7 +510,7 @@ components:
       type: object
       properties:
         id:
-          type: number
+          type: integer
         owner:
           $ref: "#/components/schemas/User"
         tags:
@@ -519,15 +526,15 @@ components:
         thumbnail_url:
           type: string
         viewers_count:
-          type: number
+          type: integer
         start_at:
-          type: number
+          type: integer
         end_at:
-          type: number
+          type: integer
         created_at:
-          type: number
+          type: integer
         updated_at:
-          type: number
+          type: integer
     Livecomment:
       title: Livecomment
       x-stoplight:
@@ -536,7 +543,7 @@ components:
       description: 上位チャットの投稿
       properties:
         id:
-          type: number
+          type: integer
         user:
           $ref: "#/components/schemas/User"
         livestream:
@@ -544,13 +551,13 @@ components:
         comment:
           type: string
         tip:
-          type: number
+          type: integer
         report_count:
-          type: number
+          type: integer
         created_at:
-          type: number
+          type: integer
         updated_at:
-          type: number
+          type: integer
     LivestreamStatistics:
       title: LivestreamrStatistics
       type: object
@@ -561,18 +568,18 @@ components:
             type: object
             properties:
               tip_rank:
-                type: number
+                type: integer
               total_tip:
-                type: number
+                type: integer
         most_posted_reaction_ranking:
           type: array
           items:
             type: object
             properties:
               reaction_rank:
-                type: number
+                type: integer
               total_reaction:
-                type: number
+                type: integer
               emoji_name:
                 type: string
     UserStatistics:
@@ -590,15 +597,15 @@ components:
       type: object
       properties:
         id:
-          type: number
+          type: integer
         reporter:
           $ref: "#/components/schemas/User"
         livecomment:
           $ref: "#/components/schemas/Livecomment"
         created_at:
-          type: number
+          type: integer
         updated_at:
-          type: number
+          type: integer
   requestBodies:
     PostLivestreamModerate:
       content:
@@ -664,7 +671,7 @@ components:
               comment:
                 type: string
               tip:
-                type: number
+                type: integer
           examples:
             Example 1:
               value:
@@ -679,7 +686,7 @@ components:
               tags:
                 type: array
                 items:
-                  type: number
+                  type: integer
               title:
                 type: string
               description:
@@ -687,11 +694,11 @@ components:
               collaborators:
                 type: array
                 items:
-                  type: number
+                  type: integer
               start_at:
-                type: number
+                type: integer
               end_at:
-                type: number
+                type: integer
           examples:
             Example 1:
               value:
