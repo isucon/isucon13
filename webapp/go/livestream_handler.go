@@ -121,6 +121,7 @@ func reserveLivestreamHandler(c echo.Context) (err error) {
 		}
 	}
 
+	now := time.Now()
 	var (
 		startAt         = time.Unix(req.StartAt, 0)
 		endAt           = time.Unix(req.EndAt, 0)
@@ -132,9 +133,11 @@ func reserveLivestreamHandler(c echo.Context) (err error) {
 			ThumbnailUrl: "https://picsum.photos/200/300",
 			StartAt:      startAt,
 			EndAt:        endAt,
+			CreatedAt:    now,
+			UpdatedAt:    now,
 		}
 	)
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)", livestreamModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at, :created_at, :updated_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at, :created_at, :updated_at)", livestreamModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
