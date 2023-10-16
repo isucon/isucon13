@@ -32,7 +32,7 @@ type PostReactionRequest struct {
 	EmojiName string `json:"emoji_name"`
 }
 
-func getReactionsHandler(c echo.Context) (err error) {
+func getReactionsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -46,11 +46,7 @@ func getReactionsHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	reactionModels := []ReactionModel{}
 	if err := tx.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
@@ -74,7 +70,7 @@ func getReactionsHandler(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, reactions)
 }
 
-func postReactionHandler(c echo.Context) (err error) {
+func postReactionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
@@ -105,11 +101,7 @@ func postReactionHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	reactionModel := ReactionModel{
 		UserId:       userId,

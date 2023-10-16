@@ -65,7 +65,7 @@ type LivestreamTagModel struct {
 	TagId        int `db:"tag_id"`
 }
 
-func reserveLivestreamHandler(c echo.Context) (err error) {
+func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -91,11 +91,7 @@ func reserveLivestreamHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	// 2024/04/01 - 2025/03/31までの期間かチェック
 	var (
@@ -170,7 +166,7 @@ func reserveLivestreamHandler(c echo.Context) (err error) {
 	return c.JSON(http.StatusCreated, livestream)
 }
 
-func getLivestreamsHandler(c echo.Context) (err error) {
+func getLivestreamsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	keyTagName := c.QueryParam("tag")
 
@@ -178,11 +174,7 @@ func getLivestreamsHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	// 複数件取得
 	var livestreamModels []*LivestreamModel
@@ -232,7 +224,7 @@ func getLivestreamsHandler(c echo.Context) (err error) {
 }
 
 // viewerテーブルの廃止
-func enterLivestreamHandler(c echo.Context) (err error) {
+func enterLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -258,11 +250,7 @@ func enterLivestreamHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	viewer := LivestreamViewerModel{
 		UserId:       userId,
@@ -284,7 +272,7 @@ func enterLivestreamHandler(c echo.Context) (err error) {
 	return c.NoContent(http.StatusOK)
 }
 
-func leaveLivestreamHandler(c echo.Context) (err error) {
+func leaveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -300,11 +288,7 @@ func leaveLivestreamHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count - 1 WHERE id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -317,7 +301,7 @@ func leaveLivestreamHandler(c echo.Context) (err error) {
 	return c.NoContent(http.StatusOK)
 }
 
-func getLivestreamHandler(c echo.Context) (err error) {
+func getLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -333,11 +317,7 @@ func getLivestreamHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	livestreamModel := LivestreamModel{}
 	err = tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamId)
@@ -360,7 +340,7 @@ func getLivestreamHandler(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, livestream)
 }
 
-func getLivecommentReportsHandler(c echo.Context) (err error) {
+func getLivecommentReportsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -373,11 +353,7 @@ func getLivecommentReportsHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	var reportModels []*LivecommentReportModel
 	if err := tx.SelectContext(ctx, &reportModels, "SELECT * FROM livecomment_reports WHERE livestream_id = ?", livestreamId); err != nil {
