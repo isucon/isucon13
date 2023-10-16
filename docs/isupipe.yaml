@@ -630,7 +630,10 @@ components:
               password:
                 type: string
               theme:
-                $ref: "#/components/schemas/Theme"
+                type: object
+                properties:
+                  dark_mode:
+                    type: boolean
           examples:
             example-1:
               value:
