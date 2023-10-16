@@ -68,8 +68,12 @@ type PostUserRequest struct {
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	// Password is non-hashed password.
-	Password string `json:"password"`
-	Theme    Theme  `json:"theme"`
+	Password string               `json:"password"`
+	Theme    PostUserRequestTheme `json:"theme"`
+}
+
+type PostUserRequestTheme struct {
+	DarkMode bool `json:"dark_mode"`
 }
 
 type LoginRequest struct {
