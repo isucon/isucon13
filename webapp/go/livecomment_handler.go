@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
@@ -67,7 +68,7 @@ type NGWord struct {
 	Word         string `json:"word" db:"word"`
 }
 
-func getLivecommentsHandler(c echo.Context) error {
+func getLivecommentsHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -77,8 +78,18 @@ func getLivecommentsHandler(c echo.Context) error {
 
 	livestreamId := c.Param("livestream_id")
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	livecommentModels := []LivecommentModel{}
-	err := dbConn.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId)
+	err = tx.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -88,7 +99,7 @@ func getLivecommentsHandler(c echo.Context) error {
 
 	livecomments := make([]Livecomment, len(livecommentModels))
 	for i := range livecommentModels {
-		livecomment, err := fillLivecommentResponse(ctx, livecommentModels[i])
+		livecomment, err := fillLivecommentResponse(ctx, tx, livecommentModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -96,10 +107,14 @@ func getLivecommentsHandler(c echo.Context) error {
 		livecomments[i] = livecomment
 	}
 
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, livecomments)
 }
 
-func postLivecommentHandler(c echo.Context) error {
+func postLivecommentHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -127,9 +142,13 @@ func postLivecommentHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	var hitSpam int
 	query := `
@@ -140,12 +159,10 @@ func postLivecommentHandler(c echo.Context) error {
 	WHERE t.text LIKE CONCAT('%', w.word, '%');
 	`
 	if err = tx.GetContext(ctx, &hitSpam, query, req.Comment); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	c.Logger().Infof("[hitSpam=%d] comment = %s", hitSpam, req.Comment)
 	if hitSpam >= 1 {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
 	}
 
@@ -158,13 +175,11 @@ func postLivecommentHandler(c echo.Context) error {
 
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", livecommentModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	livecommentId, err := rs.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	livecommentModel.Id = int(livecommentId)
@@ -173,9 +188,8 @@ func postLivecommentHandler(c echo.Context) error {
 	livecommentModel.CreatedAt = createdAt
 	livecommentModel.UpdatedAt = createdAt
 
-	livecomment, err := fillLivecommentResponse(ctx, livecommentModel)
+	livecomment, err := fillLivecommentResponse(ctx, tx, livecommentModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -186,7 +200,7 @@ func postLivecommentHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, livecomment)
 }
 
-func reportLivecommentHandler(c echo.Context) error {
+func reportLivecommentHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -214,18 +228,20 @@ func reportLivecommentHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	// 配信者自身の配信に対するGETなのかを検証
 	var ownedLivestreams []*LivestreamModel
 	if err := tx.SelectContext(ctx, &ownedLivestreams, "SELECT * FROM livestreams WHERE id = ? AND user_id = ?", livestreamId, userId); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	if len(ownedLivestreams) == 0 {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't get livecomment reports that other streamers own")
 	}
 
@@ -236,18 +252,15 @@ func reportLivecommentHandler(c echo.Context) error {
 	}
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)", &reportModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentId); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	reportId, err := rs.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	reportModel.Id = int(reportId)
@@ -256,9 +269,8 @@ func reportLivecommentHandler(c echo.Context) error {
 	reportModel.CreatedAt = createdAt
 	reportModel.UpdatedAt = createdAt
 
-	report, err := fillLivecommentReportResponse(ctx, reportModel)
+	report, err := fillLivecommentReportResponse(ctx, tx, reportModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	if err := tx.Commit(); err != nil {
@@ -269,7 +281,7 @@ func reportLivecommentHandler(c echo.Context) error {
 }
 
 // NGワードを登録
-func moderateNGWordHandler(c echo.Context) error {
+func moderateNGWordHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -297,18 +309,20 @@ func moderateNGWordHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	// 配信者自身の配信に対するmoderateなのかを検証
 	var ownedLivestreams []*LivestreamModel
 	if err := tx.SelectContext(ctx, &ownedLivestreams, "SELECT * FROM livestreams WHERE id = ? AND user_id = ?", livestreamId, userId); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	if len(ownedLivestreams) == 0 {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't moderate livestreams that other streamers own")
 	}
 
@@ -318,13 +332,11 @@ func moderateNGWordHandler(c echo.Context) error {
 		Word:         req.NGWord,
 	})
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	wordId, err := rs.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -337,21 +349,21 @@ func moderateNGWordHandler(c echo.Context) error {
 	})
 }
 
-func fillLivecommentResponse(ctx context.Context, livecommentModel LivecommentModel) (Livecomment, error) {
+func fillLivecommentResponse(ctx context.Context, tx *sqlx.Tx, livecommentModel LivecommentModel) (Livecomment, error) {
 	commentOwnerModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &commentOwnerModel, "SELECT * FROM users WHERE id = ?", livecommentModel.UserId); err != nil {
+	if err := tx.GetContext(ctx, &commentOwnerModel, "SELECT * FROM users WHERE id = ?", livecommentModel.UserId); err != nil {
 		return Livecomment{}, err
 	}
-	commentOwner, err := fillUserResponse(ctx, commentOwnerModel)
+	commentOwner, err := fillUserResponse(ctx, tx, commentOwnerModel)
 	if err != nil {
 		return Livecomment{}, err
 	}
 
 	livestreamModel := LivestreamModel{}
-	if err := dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livecommentModel.LivestreamId); err != nil {
+	if err := tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livecommentModel.LivestreamId); err != nil {
 		return Livecomment{}, err
 	}
-	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, tx, livestreamModel)
 	if err != nil {
 		return Livecomment{}, err
 	}
@@ -370,21 +382,21 @@ func fillLivecommentResponse(ctx context.Context, livecommentModel LivecommentMo
 	return livecomment, nil
 }
 
-func fillLivecommentReportResponse(ctx context.Context, reportModel LivecommentReportModel) (LivecommentReport, error) {
+func fillLivecommentReportResponse(ctx context.Context, tx *sqlx.Tx, reportModel LivecommentReportModel) (LivecommentReport, error) {
 	reporterModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &reporterModel, "SELECT * FROM users WHERE id = ?", reportModel.UserId); err != nil {
+	if err := tx.GetContext(ctx, &reporterModel, "SELECT * FROM users WHERE id = ?", reportModel.UserId); err != nil {
 		return LivecommentReport{}, err
 	}
-	reporter, err := fillUserResponse(ctx, reporterModel)
+	reporter, err := fillUserResponse(ctx, tx, reporterModel)
 	if err != nil {
 		return LivecommentReport{}, err
 	}
 
 	livecommentModel := LivecommentModel{}
-	if err := dbConn.GetContext(ctx, &livecommentModel, "SELECT * FROM livecomments WHERE id = ?", reportModel.LivecommentId); err != nil {
+	if err := tx.GetContext(ctx, &livecommentModel, "SELECT * FROM livecomments WHERE id = ?", reportModel.LivecommentId); err != nil {
 		return LivecommentReport{}, err
 	}
-	livecomment, err := fillLivecommentResponse(ctx, livecommentModel)
+	livecomment, err := fillLivecommentResponse(ctx, tx, livecommentModel)
 	if err != nil {
 		return LivecommentReport{}, err
 	}

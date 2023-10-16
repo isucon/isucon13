@@ -65,7 +65,7 @@ type LivestreamTagModel struct {
 	TagId        int `db:"tag_id"`
 }
 
-func reserveLivestreamHandler(c echo.Context) error {
+func reserveLivestreamHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -89,9 +89,13 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	// 2024/04/01 - 2025/03/31までの期間かチェック
 	var (
@@ -101,7 +105,6 @@ func reserveLivestreamHandler(c echo.Context) error {
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
 	if !(reserveEndAt.Equal(termEndAt) || reserveEndAt.Before(termEndAt)) && (reserveStartAt.Equal(termStartAt) || reserveStartAt.After(termStartAt)) {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusBadRequest, "bad reservation time range")
 	}
 
@@ -113,7 +116,6 @@ func reserveLivestreamHandler(c echo.Context) error {
 		var founds int
 		if err := tx.SelectContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
 			// FIXME: スケジューラ実装ができてきたら、ちゃんとエラーを返すように
-			// tx.Rollback()
 			// return echo.NewHTTPError(http.StatusConflict, "schedule conflict")
 			c.Logger().Warn("schedule conflict")
 		}
@@ -134,13 +136,11 @@ func reserveLivestreamHandler(c echo.Context) error {
 	)
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)", livestreamModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	livestreamId, err := rs.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	livestreamModel.Id = int(livestreamId)
@@ -151,14 +151,12 @@ func reserveLivestreamHandler(c echo.Context) error {
 			LivestreamId: int(livestreamId),
 			TagId:        tagId,
 		}); err != nil {
-			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
 
-	livestream, err := fillLivestreamResponse(ctx, *livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -169,45 +167,44 @@ func reserveLivestreamHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, livestream)
 }
 
-func getLivestreamsHandler(c echo.Context) error {
+func getLivestreamsHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 	keyTagName := c.QueryParam("tag")
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	// 複数件取得
 	var livestreamModels []*LivestreamModel
 	if keyTagName == "" {
 		if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams"); err != nil {
-			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	} else {
 		var tagIdList []int
-		if err := dbConn.SelectContext(ctx, &tagIdList, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
-			tx.Rollback()
+		if err := tx.SelectContext(ctx, &tagIdList, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE id IN (?)", tagIdList)
 		if err != nil {
-			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		var keyTaggedLivestreams []*LivestreamTagModel
 		if err := tx.SelectContext(ctx, &keyTaggedLivestreams, query, params...); err != nil {
-			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		for _, keyTaggedLivestream := range keyTaggedLivestreams {
 			ls := LivestreamModel{}
 			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.LivestreamId); err != nil {
-				tx.Rollback()
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
@@ -217,9 +214,8 @@ func getLivestreamsHandler(c echo.Context) error {
 
 	livestreams := make([]Livestream, len(livestreamModels))
 	for i := range livestreamModels {
-		livestream, err := fillLivestreamResponse(ctx, *livestreamModels[i])
+		livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModels[i])
 		if err != nil {
-			tx.Rollback()
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		livestreams[i] = livestream
@@ -233,7 +229,7 @@ func getLivestreamsHandler(c echo.Context) error {
 }
 
 // viewerテーブルの廃止
-func enterLivestreamHandler(c echo.Context) error {
+func enterLivestreamHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -257,9 +253,13 @@ func enterLivestreamHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	viewer := LivestreamViewerModel{
 		UserId:       userId,
@@ -267,12 +267,10 @@ func enterLivestreamHandler(c echo.Context) error {
 	}
 
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers_history (user_id, livestream_id) VALUES(:user_id, :livestream_id)", viewer); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count + 1 WHERE id = ?", livestreamId); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -283,7 +281,7 @@ func enterLivestreamHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func leaveLivestreamHandler(c echo.Context) error {
+func leaveLivestreamHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -297,12 +295,15 @@ func leaveLivestreamHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count - 1 WHERE id = ?", livestreamId); err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -313,7 +314,7 @@ func leaveLivestreamHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func getLivestreamHandler(c echo.Context) error {
+func getLivestreamHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -324,8 +325,19 @@ func getLivestreamHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	livestreamModel := LivestreamModel{}
-	err = dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamId)
+	err = tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamId)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -333,15 +345,19 @@ func getLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, tx, livestreamModel)
 	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, livestream)
 }
 
-func getLivecommentReportsHandler(c echo.Context) error {
+func getLivecommentReportsHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -350,42 +366,56 @@ func getLivecommentReportsHandler(c echo.Context) error {
 
 	livestreamId := c.Param("livestream_id")
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	var reportModels []*LivecommentReportModel
-	if err := dbConn.SelectContext(ctx, &reportModels, "SELECT * FROM livecomment_reports WHERE livestream_id = ?", livestreamId); err != nil {
+	if err := tx.SelectContext(ctx, &reportModels, "SELECT * FROM livecomment_reports WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	reports := make([]LivecommentReport, len(reportModels))
 	for i := range reportModels {
-		report, err := fillLivecommentReportResponse(ctx, *reportModels[i])
+		report, err := fillLivecommentReportResponse(ctx, tx, *reportModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		reports[i] = report
 	}
 
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, reports)
 }
 
-func fillLivestreamResponse(ctx context.Context, livestreamModel LivestreamModel) (Livestream, error) {
+func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel LivestreamModel) (Livestream, error) {
 	ownerModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &ownerModel, "SELECT * FROM users WHERE id = ?", livestreamModel.UserId); err != nil {
+	if err := tx.GetContext(ctx, &ownerModel, "SELECT * FROM users WHERE id = ?", livestreamModel.UserId); err != nil {
 		return Livestream{}, err
 	}
-	owner, err := fillUserResponse(ctx, ownerModel)
+	owner, err := fillUserResponse(ctx, tx, ownerModel)
 	if err != nil {
 		return Livestream{}, err
 	}
 
 	var livestreamTagModels []*LivestreamTagModel
-	if err := dbConn.SelectContext(ctx, &livestreamTagModels, "SELECT * FROM livestream_tags WHERE livestream_id = ?", livestreamModel.Id); err != nil {
+	if err := tx.SelectContext(ctx, &livestreamTagModels, "SELECT * FROM livestream_tags WHERE livestream_id = ?", livestreamModel.Id); err != nil {
 		return Livestream{}, err
 	}
 
 	tags := make([]Tag, len(livestreamTagModels))
 	for i := range livestreamTagModels {
 		tagModel := TagModel{}
-		if err := dbConn.GetContext(ctx, &tagModel, "SELECT * FROM tags WHERE id = ?", livestreamTagModels[i].Id); err != nil {
+		if err := tx.GetContext(ctx, &tagModel, "SELECT * FROM tags WHERE id = ?", livestreamTagModels[i].Id); err != nil {
 			return Livestream{}, err
 		}
 

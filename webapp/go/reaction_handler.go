@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
@@ -31,7 +32,7 @@ type PostReactionRequest struct {
 	EmojiName string `json:"emoji_name"`
 }
 
-func getReactionsHandler(c echo.Context) error {
+func getReactionsHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -41,14 +42,24 @@ func getReactionsHandler(c echo.Context) error {
 
 	livestreamId := c.Param("livestream_id")
 
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+
 	reactionModels := []ReactionModel{}
-	if err := dbConn.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
+	if err := tx.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	reactions := make([]Reaction, len(reactionModels))
 	for i := range reactionModels {
-		reaction, err := fillReactionResponse(ctx, reactionModels[i])
+		reaction, err := fillReactionResponse(ctx, tx, reactionModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -56,10 +67,14 @@ func getReactionsHandler(c echo.Context) error {
 		reactions[i] = reaction
 	}
 
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, reactions)
 }
 
-func postReactionHandler(c echo.Context) error {
+func postReactionHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
@@ -90,6 +105,11 @@ func postReactionHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	reactionModel := ReactionModel{
 		UserId:       userId,
@@ -99,18 +119,16 @@ func postReactionHandler(c echo.Context) error {
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name) VALUES (:user_id, :livestream_id, :emoji_name)", reactionModel)
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	reactionId, err := result.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	reactionModel.Id = int(reactionId)
 
-	reaction, err := fillReactionResponse(ctx, reactionModel)
+	reaction, err := fillReactionResponse(ctx, tx, reactionModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -122,21 +140,21 @@ func postReactionHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, reaction)
 }
 
-func fillReactionResponse(ctx context.Context, reactionModel ReactionModel) (Reaction, error) {
+func fillReactionResponse(ctx context.Context, tx *sqlx.Tx, reactionModel ReactionModel) (Reaction, error) {
 	userModel := UserModel{}
-	if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserId); err != nil {
+	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserId); err != nil {
 		return Reaction{}, err
 	}
-	user, err := fillUserResponse(ctx, userModel)
+	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
 		return Reaction{}, err
 	}
 
 	livestreamModel := LivestreamModel{}
-	if err := dbConn.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", reactionModel.LivestreamId); err != nil {
+	if err := tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", reactionModel.LivestreamId); err != nil {
 		return Reaction{}, err
 	}
-	livestream, err := fillLivestreamResponse(ctx, livestreamModel)
+	livestream, err := fillLivestreamResponse(ctx, tx, livestreamModel)
 	if err != nil {
 		return Reaction{}, err
 	}

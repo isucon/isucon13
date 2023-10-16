@@ -28,12 +28,26 @@ type TagsResponse struct {
 	Tags []*Tag `json:"tags"`
 }
 
-func getTagHandler(c echo.Context) error {
+func getTagHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
-	var tagModels []*TagModel
-	if err := dbConn.SelectContext(ctx, &tagModels, "SELECT * FROM tags"); err != nil {
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
+	var tagModels []*TagModel
+
+	if err := tx.SelectContext(ctx, &tagModels, "SELECT * FROM tags"); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	tags := make([]*Tag, len(tagModels))
@@ -51,7 +65,7 @@ func getTagHandler(c echo.Context) error {
 
 // 配信者のテーマ取得API
 // GET /theme
-func getStreamerThemeHandler(c echo.Context) error {
+func getStreamerThemeHandler(c echo.Context) (err error) {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -60,17 +74,22 @@ func getStreamerThemeHandler(c echo.Context) error {
 		return err
 	}
 
-	hostHeaders := c.Request().Header["Host"]
-	if len(hostHeaders) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Host header must be specified")
+	hostHeader := c.Request().Host
+
+	username := strings.Split(hostHeader, ".")[0]
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-	host := hostHeaders[0]
-
-	username := strings.Split(host, ".")[0]
+	defer func() {
+		if e := tx.Rollback(); e != nil {
+			err = e
+		}
+	}()
 
 	userModel := UserModel{}
-	err := dbConn.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username)
+	err = tx.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -78,9 +97,13 @@ func getStreamerThemeHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	theme := Theme{}
-	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userModel.Id); err != nil {
+	theme := ThemeModel{}
+	if err := tx.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", userModel.Id); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, theme)
