@@ -66,7 +66,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tipRankModelPerLivestreams, err := queryTotalTipRankPerViewedLivestream(ctx, userModel.Id, viewedLivestreams)
+	tipRankModelPerLivestreams, err := queryTotalTipRankPerViewedLivestream(ctx, viewedLivestreams)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -135,7 +135,6 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 
 func queryTotalTipRankPerViewedLivestream(
 	ctx context.Context,
-	userId int,
 	viewedLivestreams []*LivestreamViewerModel,
 ) (map[int]TipRankModel, error) {
 	totalTipRankPerLivestream := make(map[int]TipRankModel)

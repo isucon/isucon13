@@ -26,7 +26,6 @@ type ReserveLivestreamRequest struct {
 }
 
 type LivestreamViewerModel struct {
-	Id           int `db:"id"`
 	UserId       int `db:"user_id"`
 	LivestreamId int `db:"livestream_id"`
 }

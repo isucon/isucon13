@@ -48,10 +48,6 @@ func getReactionsHandler(c echo.Context) error {
 
 	reactions := make([]Reaction, len(reactionModels))
 	for i := range reactionModels {
-		userModel := UserModel{}
-		if err := dbConn.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModels[i].UserId); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
 		reaction, err := fillReactionResponse(ctx, reactionModels[i])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
