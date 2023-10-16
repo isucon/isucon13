@@ -29,19 +29,6 @@ type LivecommentModel struct {
 	UpdatedAt    time.Time `db:"updated_at"`
 }
 
-func (lm LivecommentModel) ToLivecomment(owner User, livestream Livestream) Livecomment {
-	return Livecomment{
-		Id:          lm.Id,
-		User:        owner,
-		Livestream:  livestream,
-		Comment:     lm.Comment,
-		Tip:         lm.Tip,
-		ReportCount: lm.ReportCount,
-		CreatedAt:   int(lm.CreatedAt.Unix()),
-		UpdatedAt:   int(lm.UpdatedAt.Unix()),
-	}
-}
-
 type Livecomment struct {
 	Id          int        `json:"id"`
 	User        User       `json:"user"`
