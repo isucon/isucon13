@@ -166,14 +166,17 @@ func postLivecommentHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
 	}
 
+	now := time.Now()
 	livecommentModel := LivecommentModel{
 		UserId:       userId,
 		LivestreamId: livestreamId,
 		Comment:      req.Comment,
 		Tip:          req.Tip,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)", livecommentModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at, updated_at) VALUES (:user_id, :livestream_id, :comment, :tip, :created_at, :updated_at)", livecommentModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -183,10 +186,6 @@ func postLivecommentHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	livecommentModel.Id = int(livecommentId)
-
-	createdAt := time.Now()
-	livecommentModel.CreatedAt = createdAt
-	livecommentModel.UpdatedAt = createdAt
 
 	livecomment, err := fillLivecommentResponse(ctx, tx, livecommentModel)
 	if err != nil {
@@ -245,12 +244,15 @@ func reportLivecommentHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't get livecomment reports that other streamers own")
 	}
 
+	now := time.Now()
 	reportModel := LivecommentReportModel{
 		UserId:        userId,
 		LivestreamId:  livestreamId,
 		LivecommentId: livecommentId,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)", &reportModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at, updated_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at, :updated_at)", &reportModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -264,10 +266,6 @@ func reportLivecommentHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	reportModel.Id = int(reportId)
-
-	createdAt := time.Now()
-	reportModel.CreatedAt = createdAt
-	reportModel.UpdatedAt = createdAt
 
 	report, err := fillLivecommentReportResponse(ctx, tx, reportModel)
 	if err != nil {

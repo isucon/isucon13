@@ -145,13 +145,6 @@ func postUserHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	userModel := UserModel{
-		Name:           req.Name,
-		DisplayName:    req.DisplayName,
-		Description:    req.Description,
-		HashedPassword: string(hashedPassword),
-	}
-
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
@@ -162,7 +155,17 @@ func postUserHandler(c echo.Context) (err error) {
 		}
 	}()
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
+	now := time.Now()
+	userModel := UserModel{
+		Name:           req.Name,
+		DisplayName:    req.DisplayName,
+		Description:    req.Description,
+		HashedPassword: string(hashedPassword),
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password, created_at, updated_at) VALUES(:name, :display_name, :description, :password, :created_at, :updated_at)", userModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
 	}
@@ -175,10 +178,11 @@ func postUserHandler(c echo.Context) (err error) {
 	userModel.Id = int(userId)
 
 	themeModel := ThemeModel{
-		UserId:   int(userId),
-		DarkMode: req.Theme.DarkMode,
+		UserId:    int(userId),
+		DarkMode:  req.Theme.DarkMode,
+		CreatedAt: now,
 	}
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode, created_at) VALUES(:user_id, :dark_mode, :created_at)", themeModel); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
 	}
 
