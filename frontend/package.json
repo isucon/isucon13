@@ -16,6 +16,8 @@
     "generate-api-client": "ts-node -P scripts/openapi/tsconfig.build.json scripts/openapi/generate-api-client.ts"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.1.2",
+    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@hookform/resolvers": "^3.3.1",
@@ -23,6 +25,7 @@
     "@react-stately/toast": "^3.0.0-beta.1",
     "d3-format": "^3.1.0",
     "dayjs": "^1.11.9",
+    "emoji-mart": "^5.5.2",
     "events": "^3.3.0",
     "focus-visible": "^5.2.0",
     "react": "^18.2.0",

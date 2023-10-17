@@ -1,3 +1,5 @@
+import Picker from '@emoji-mart/react';
+import styled from '@emotion/styled';
 import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
@@ -11,7 +13,7 @@ import Input from '@mui/joy/Input';
 import Slider from '@mui/joy/Slider';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
-import { AiFillHeart } from 'react-icons/ai';
+import { AiFillHeart, AiOutlineClose } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
 
@@ -35,9 +37,9 @@ export function chipColor(price: number): [string, boolean] {
 }
 
 export default function WatchPage(): React.ReactElement {
-  const [commentMode, setCommentMode] = React.useState<'normal' | 'chip'>(
-    'normal',
-  );
+  const [commentMode, setCommentMode] = React.useState<
+    'normal' | 'chip' | 'emoji'
+  >('normal');
   const [chipAmount, setChipAmount] = React.useState(2000);
 
   return (
@@ -91,16 +93,26 @@ export default function WatchPage(): React.ReactElement {
                   </Stack>
                 ))}
             </Stack>
-            {commentMode === 'normal' && (
+            {commentMode !== 'chip' && (
               <Stack
                 sx={{
                   position: 'absolute',
-                  bottom: '70px',
+                  bottom: commentMode === 'emoji' ? '305px' : '70px',
                   right: '15px',
                 }}
               >
-                <IconButton>
-                  <AiFillHeart size="1.5rem" color="#f23d5c" />
+                <IconButton
+                  onClick={() =>
+                    setCommentMode((mode) =>
+                      mode === 'emoji' ? 'normal' : 'emoji',
+                    )
+                  }
+                >
+                  {commentMode === 'emoji' ? (
+                    <AiOutlineClose size="1.5rem" />
+                  ) : (
+                    <AiFillHeart size="1.5rem" color="#f23d5c" />
+                  )}
                 </IconButton>
               </Stack>
             )}
@@ -110,8 +122,20 @@ export default function WatchPage(): React.ReactElement {
               borderTop: (t) =>
                 `1px solid ${t.vars.palette.neutral.outlinedBorder}`,
               py: 1,
+              overflow: 'hidden',
             }}
           >
+            {commentMode === 'emoji' && (
+              <PickerWrapper>
+                <Picker
+                  onEmojiSelect={console.log}
+                  previewPosition="none"
+                  navPosition="bottom"
+                  skinTonePosition="none"
+                  dynamicWidth={true}
+                />
+              </PickerWrapper>
+            )}
             {commentMode === 'normal' && (
               <>
                 <Stack direction="row">
@@ -270,3 +294,13 @@ export default function WatchPage(): React.ReactElement {
     </Stack>
   );
 }
+
+const PickerWrapper = styled.div`
+  & > div {
+    margin: -12px -15px -9px;
+  }
+  & > div > em-emoji-picker {
+    width: 100%;
+    height: 300px;
+  }
+`;
