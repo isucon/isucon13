@@ -68,7 +68,7 @@ type NGWord struct {
 	Word         string `json:"word" db:"word"`
 }
 
-func getLivecommentsHandler(c echo.Context) (err error) {
+func getLivecommentsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -82,11 +82,7 @@ func getLivecommentsHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	livecommentModels := []LivecommentModel{}
 	err = tx.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", livestreamId)
@@ -114,7 +110,7 @@ func getLivecommentsHandler(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, livecomments)
 }
 
-func postLivecommentHandler(c echo.Context) (err error) {
+func postLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -144,11 +140,7 @@ func postLivecommentHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	var hitSpam int
 	query := `
@@ -199,7 +191,7 @@ func postLivecommentHandler(c echo.Context) (err error) {
 	return c.JSON(http.StatusCreated, livecomment)
 }
 
-func reportLivecommentHandler(c echo.Context) (err error) {
+func reportLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -229,11 +221,7 @@ func reportLivecommentHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	// 配信者自身の配信に対するGETなのかを検証
 	var ownedLivestreams []*LivestreamModel
@@ -279,7 +267,7 @@ func reportLivecommentHandler(c echo.Context) (err error) {
 }
 
 // NGワードを登録
-func moderateNGWordHandler(c echo.Context) (err error) {
+func moderateNGWordHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -309,11 +297,7 @@ func moderateNGWordHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	// 配信者自身の配信に対するmoderateなのかを検証
 	var ownedLivestreams []*LivestreamModel

@@ -82,7 +82,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func getUserSessionHandler(c echo.Context) (err error) {
+func getUserSessionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -103,11 +103,7 @@ func getUserSessionHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	userModel := UserModel{}
 	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId)
@@ -132,7 +128,7 @@ func getUserSessionHandler(c echo.Context) (err error) {
 
 // ユーザ登録API
 // POST /user
-func postUserHandler(c echo.Context) (err error) {
+func postUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	req := PostUserRequest{}
@@ -153,11 +149,7 @@ func postUserHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	now := time.Now()
 	userModel := UserModel{
@@ -213,7 +205,7 @@ func postUserHandler(c echo.Context) (err error) {
 
 // ユーザログインAPI
 // POST /login
-func loginHandler(c echo.Context) (err error) {
+func loginHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	req := LoginRequest{}
@@ -225,11 +217,7 @@ func loginHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	userModel := UserModel{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
@@ -279,7 +267,7 @@ func loginHandler(c echo.Context) (err error) {
 
 // ユーザ詳細API
 // GET /user/:userid
-func getUserHandler(c echo.Context) (err error) {
+func getUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
@@ -292,11 +280,7 @@ func getUserHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	userModel := UserModel{}
 	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", username); err != nil {
@@ -326,11 +310,7 @@ func getUsersHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	var userModels []*UserModel
 	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {

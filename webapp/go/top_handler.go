@@ -28,20 +28,16 @@ type TagsResponse struct {
 	Tags []*Tag `json:"tags"`
 }
 
-func getTagHandler(c echo.Context) (err error) {
+func getTagHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
-	var tagModels []*TagModel
+	defer tx.Rollback()
 
+	var tagModels []*TagModel
 	if err := tx.SelectContext(ctx, &tagModels, "SELECT * FROM tags"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -65,7 +61,7 @@ func getTagHandler(c echo.Context) (err error) {
 
 // 配信者のテーマ取得API
 // GET /theme
-func getStreamerThemeHandler(c echo.Context) (err error) {
+func getStreamerThemeHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -82,11 +78,7 @@ func getStreamerThemeHandler(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	defer func() {
-		if e := tx.Rollback(); e != nil {
-			err = e
-		}
-	}()
+	defer tx.Rollback()
 
 	userModel := UserModel{}
 	err = tx.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username)
