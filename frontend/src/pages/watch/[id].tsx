@@ -15,9 +15,7 @@ import { AiFillHeart } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
 
-const chipTable = [
-  100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 40000, 50000,
-];
+const chipTable = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
 export function chipColor(price: number): [string, boolean] {
   // blue
@@ -169,7 +167,7 @@ export default function WatchPage(): React.ReactElement {
                           color: chipColor(chipAmount)[1] ? '#fff' : '#000',
                         }}
                       >
-                        <span>￥{chipAmount}</span>
+                        <span>{chipAmount} ISU</span>
                       </Typography>
                     </Stack>
                     <Input
@@ -184,7 +182,7 @@ export default function WatchPage(): React.ReactElement {
                     step={1}
                     marks
                     min={0}
-                    max={10}
+                    max={7}
                     scale={(x) => chipTable[x] ?? 0}
                     valueLabelDisplay="auto"
                     value={chipTable.indexOf(chipAmount)}
