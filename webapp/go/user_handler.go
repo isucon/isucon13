@@ -51,7 +51,6 @@ type User struct {
 
 type Theme struct {
 	Id        int  `json:"id"`
-	UserId    int  `json:"user_id"`
 	DarkMode  bool `json:"dark_mode"`
 	CreatedAt int  `json:"created_at"`
 }
