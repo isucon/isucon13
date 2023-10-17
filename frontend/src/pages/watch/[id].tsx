@@ -16,6 +16,7 @@ import React from 'react';
 import { AiFillHeart, AiOutlineClose } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
+import { RandomReactions } from '~/components/reaction/reaction';
 
 const chipTable = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
@@ -93,14 +94,14 @@ export default function WatchPage(): React.ReactElement {
                   </Stack>
                 ))}
             </Stack>
-            {commentMode !== 'chip' && (
-              <Stack
-                sx={{
-                  position: 'absolute',
-                  bottom: commentMode === 'emoji' ? '305px' : '70px',
-                  right: '15px',
-                }}
-              >
+            <Stack
+              sx={{
+                position: 'absolute',
+                bottom: commentMode === 'emoji' ? '305px' : '70px',
+                right: '15px',
+              }}
+            >
+              {commentMode !== 'chip' && (
                 <IconButton
                   onClick={() =>
                     setCommentMode((mode) =>
@@ -114,8 +115,9 @@ export default function WatchPage(): React.ReactElement {
                     <AiFillHeart size="1.5rem" color="#f23d5c" />
                   )}
                 </IconButton>
-              </Stack>
-            )}
+              )}
+              <RandomReactions />
+            </Stack>
           </CardContent>
           <CardOverflow
             sx={{
@@ -133,6 +135,7 @@ export default function WatchPage(): React.ReactElement {
                   navPosition="bottom"
                   skinTonePosition="none"
                   dynamicWidth={true}
+                  set="twitter"
                 />
               </PickerWrapper>
             )}

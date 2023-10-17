@@ -1,4 +1,5 @@
-import emojiData from '@emoji-mart/data';
+// import emojiData from '@emoji-mart/data';
+import emojiData from '@emoji-mart/data/sets/14/twitter.json';
 import { init as emojiInit } from 'emoji-mart';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
