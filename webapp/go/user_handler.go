@@ -416,7 +416,6 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		IsPopular:   popular,
 		Theme: Theme{
 			Id:        themeModel.Id,
-			UserId:    themeModel.UserId,
 			DarkMode:  themeModel.DarkMode,
 			CreatedAt: int(themeModel.CreatedAt.Unix()),
 		},
