@@ -123,6 +123,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 		reactionRanks[i] = ReactionRank{
 			Rank:          reactionRankModels[i].Rank,
 			TotalReaction: reactionRankModels[i].TotalReaction,
+			EmojiName:     reactionRankModels[i].EmojiName,
 		}
 	}
 
