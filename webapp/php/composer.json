@@ -1,0 +1,8 @@
+{
+    "name": "isucon/isucon13-php",
+    "config": {
+        "process-timeout": 0,
+        "sort-packages": true
+    },
+    "require": {}
+}
