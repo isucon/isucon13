@@ -11,6 +11,7 @@ import {
   BsClockHistory,
   BsCircleFill,
 } from 'react-icons/bs';
+import { MdManageHistory } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { useLiveStreams } from '~/api/hooks';
 import { VideoThumbnail } from '~/components/video/thumbnail';
@@ -37,6 +38,12 @@ export default function IndexPage(): React.ReactElement {
           </SidebarButton>
           <SidebarButton startDecorator={<BsCollectionPlay size="20px" />}>
             登録チャンネル
+          </SidebarButton>
+          <SidebarButton
+            startDecorator={<MdManageHistory size="20px" />}
+            {...{ to: '/console' }}
+          >
+            管理画面
           </SidebarButton>
           <Divider
             orientation="horizontal"
