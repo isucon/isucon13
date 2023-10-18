@@ -4,6 +4,7 @@ from faker import Faker
 import sys
 import subprocess
 import pprint
+from collections import defaultdict
 
 # NOTE: bcrypt-toolを使ったパスワードハッシュ生成が非常に遅いので、事前に不足しない程度に生成してある
 passwords = [('wd44Ivk041', '$2a$10$gjaotHZoumKefYz8oUlqCefwbx4IrsUzZ10RDyIWFGtbGkWAHV0xi'),
@@ -190,21 +191,17 @@ def gen_user_theme_sql(user_id: int) -> str:
 
 def gen_user(n: int) -> str:
     users = []
-    password_cache = dict()
+    username_indexes = defaultdict(int)
     for user_id in range(1, n+1):
         profile = fake.profile()
         name = profile['username']
-        if name in password_cache:
-            # 名前が再利用される場合、そのパスワードも再利用
-            raw_password, hashed_password = password_cache[name]
-        else:
-            # 名前が新規に振られる場合、パスワードを作ってキャッシュに入れておく
-            raw_password, hashed_password = passwords[(user_id-1)%100]
-            password_cache[name] = (raw_password, hashed_password,)
+        name_idx = username_indexes[name]
+        username = f"{name}{name_idx}"
+        raw_password, hashed_password = passwords[(user_id-1)%100]
 
         users.append(dict(
             user_id = user_id,
-            name = profile['username'],
+            name = username,
             display_name = profile['name'],
             description = DESCRIPTION_FORMAT.format(
                 job=profile['job'],
@@ -214,6 +211,8 @@ def gen_user(n: int) -> str:
             raw_password = raw_password,
             hashed_password = hashed_password,
         ))
+
+        username_indexes[name] += 1
 
     return format_sql(users) + '\n\n\n' + format_go(users)
 
