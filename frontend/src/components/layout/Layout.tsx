@@ -1,6 +1,7 @@
 import { Global } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Typography } from '@mui/joy';
+import Autocomplete from '@mui/joy/Autocomplete';
 import Dropdown from '@mui/joy/Dropdown';
 import Menu from '@mui/joy/Menu';
 import MenuButton from '@mui/joy/MenuButton';
@@ -8,8 +9,13 @@ import MenuItem from '@mui/joy/MenuItem';
 import Stack from '@mui/joy/Stack';
 import { useColorScheme } from '@mui/joy/styles';
 import React from 'react';
-import { MdChair, MdOutlineDarkMode, MdDarkMode } from 'react-icons/md';
-import { Link } from 'react-router-dom';
+import {
+  MdChair,
+  MdOutlineDarkMode,
+  MdDarkMode,
+  MdSearch,
+} from 'react-icons/md';
+import { Link, useNavigate } from 'react-router-dom';
 import { Toast } from '../toast/toast';
 
 interface LayoutProps {
@@ -18,6 +24,18 @@ interface LayoutProps {
 export function Layout(props: LayoutProps): React.ReactElement {
   const colorScheme = useColorScheme();
   const mode = colorScheme.systemMode ?? colorScheme.mode;
+  const navigate = useNavigate();
+
+  function onChange(e: React.SyntheticEvent, value: string | null): void {
+    if (value) {
+      navigate({
+        pathname: '/search',
+        search: `?q=${value}`,
+      });
+    } else {
+      navigate('/');
+    }
+  }
 
   return (
     <div>
@@ -51,6 +69,13 @@ export function Layout(props: LayoutProps): React.ReactElement {
             ISUTUBE
           </Typography>
         </LogoLink>
+        <Stack>
+          <Autocomplete
+            options={['aaa', 'bbb', 'ccc']}
+            startDecorator={<MdSearch />}
+            onChange={onChange}
+          />
+        </Stack>
         <Stack direction="row" alignItems="center" spacing={2}>
           <div>
             <Dropdown>
