@@ -1,0 +1,20 @@
+{
+  "name": "isupipe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:node": "tsx watch src/node.ts"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.3",
+    "@types/node": "^20.9.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.2.0",
+    "hono": "^3.9.2"
+  }
+}
