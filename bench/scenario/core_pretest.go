@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -16,12 +17,27 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	// FIXME: 処理前、paymentが0円になってることをチェック
 	// FIXME: 処理後、paymentが指定金額になっていることをチェック
 
-	user, err := postUserPretest(ctx, client)
+	// FIXME: 処理前、統計情報がすべて0になっていることをチェック
+	// FIXME: いくつかの処理後、統計情報がピタリ一致することをチェック
+	//        (処理数、処理データにランダム性をもたせる)
+
+	user, err := client.PostUser(ctx, &isupipe.PostUserRequest{
+		Name:        "test",
+		DisplayName: "test",
+		Description: "blah blah blah",
+		Password:    testUserRawPassword,
+		Theme: isupipe.Theme{
+			DarkMode: true,
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	if err := loginPretest(ctx, client, user); err != nil {
+	if err := client.Login(ctx, &isupipe.LoginRequest{
+		UserName: user.Name,
+		Password: testUserRawPassword,
+	}); err != nil {
 		return err
 	}
 
@@ -46,14 +62,15 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	// return err
 	// }
 
-	if err := getTagsPretest(ctx, client); err != nil {
+	tagResponse, err := client.GetTags(ctx)
+	if err != nil {
 		return err
 	}
-	if _, err := client.GetTags(ctx); err != nil {
-		return err
+	if len(tagResponse.Tags) != scheduler.GetTagPoolLength() {
+		return fmt.Errorf("初期データのタグが正常に登録されていません: want=%d, but got=%d", scheduler.GetTagPoolLength(), len(tagResponse.Tags))
 	}
 
-	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
+	reservation, err := scheduler.ReservationSched.GetColdReservation()
 	if err != nil {
 		return err
 	}
@@ -65,10 +82,10 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		EndAt:       reservation.EndAt,
 	})
 	if err != nil {
-		scheduler.Phase2ReservationScheduler.AbortReservation(reservation)
+		scheduler.ReservationSched.AbortReservation(reservation)
 		return err
 	}
-	scheduler.Phase2ReservationScheduler.CommitReservation(reservation)
+	scheduler.ReservationSched.CommitReservation(reservation)
 
 	if _, err = client.GetLivecommentReports(ctx, livestream.Id); err != nil {
 		return err
@@ -98,7 +115,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	if _, err := client.PostReaction(ctx, livestream.Id /* livestream id*/, &isupipe.PostReactionRequest{
-		EmojiName: ":chair:",
+		EmojiName: "chair",
 	}); err != nil {
 		return err
 	}
@@ -123,10 +140,20 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	if err := assertBadLogin(ctx, client, user); err != nil {
+		return err
+	}
+	if err := assertPipeUserRegistration(ctx, client); err != nil {
+		return err
+	}
+	if err := assertUserUniqueConstraint(ctx, client); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func postUserPretest(ctx context.Context, client *isupipe.Client) (*isupipe.User, error) {
+func assertPipeUserRegistration(ctx context.Context, client *isupipe.Client) error {
 	// pipeユーザが弾かれることを確認
 	pipeReq := isupipe.PostUserRequest{
 		Name:        "pipe",
@@ -138,41 +165,34 @@ func postUserPretest(ctx context.Context, client *isupipe.Client) (*isupipe.User
 		},
 	}
 	if _, err := client.PostUser(ctx, &pipeReq, isupipe.WithStatusCode(http.StatusBadRequest), isupipe.DecodeBody(false)); err != nil {
-		return nil, bencherror.NewViolationError(err, "'pipe'ユーザの作成は拒否されなければなりません")
+		return fmt.Errorf("'pipe'ユーザの作成は拒否されなければなりません: %w", err)
 	}
 
-	// 正常系検証
-	testUserReq := isupipe.PostUserRequest{
-		Name:        "test",
-		DisplayName: "test",
-		Description: "blah blah blah",
-		Password:    testUserRawPassword,
+	return nil
+}
+
+func assertUserUniqueConstraint(ctx context.Context, client *isupipe.Client) error {
+	testDupReq := isupipe.PostUserRequest{
+		Name:        "aaa",
+		DisplayName: "hoge",
+		Description: "lorem ipsum",
+		Password:    "hogefugaaaa",
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
 	}
-	user, err := client.PostUser(ctx, &testUserReq)
-	if err != nil {
-		return nil, err
-	}
-
-	// usernameが重複する場合は作成に失敗すること
-	if _, err := client.PostUser(ctx, &testUserReq, isupipe.WithStatusCode(http.StatusInternalServerError), isupipe.DecodeBody(false)); err != nil {
-		return nil, bencherror.NewViolationError(err, "重複したユーザ名を含むリクエストはエラーを返さなければなりません")
-	}
-
-	return user, nil
-}
-
-func loginPretest(ctx context.Context, client *isupipe.Client, user *isupipe.User) error {
-	// 正常系検査
-	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: user.Name,
-		Password: testUserRawPassword,
-	}); err != nil {
+	if _, err := client.PostUser(ctx, &testDupReq); err != nil {
 		return err
 	}
 
+	if _, err := client.PostUser(ctx, &testDupReq, isupipe.WithStatusCode(http.StatusInternalServerError), isupipe.DecodeBody(false)); err != nil {
+		return fmt.Errorf("重複したユーザ名を含むリクエストはエラーを返さなければなりません: %w", err)
+	}
+
+	return nil
+}
+
+func assertBadLogin(ctx context.Context, client *isupipe.Client, user *isupipe.User) error {
 	// 存在しないユーザでログインされた場合はエラー
 	unknownUserReq := isupipe.LoginRequest{
 		UserName: "unknownUser4328904823",
@@ -190,20 +210,6 @@ func loginPretest(ctx context.Context, client *isupipe.Client, user *isupipe.Use
 	}
 	if err := client.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized), isupipe.DecodeBody(false)); err != nil {
 		return bencherror.NewViolationError(err, "パスワードが間違っているログインは無効です")
-	}
-
-	return nil
-}
-
-func getTagsPretest(ctx context.Context, client *isupipe.Client) error {
-	const preDefinedTagCount = 103
-	tags, err := client.GetTags(ctx)
-	if err != nil {
-		return err
-	}
-
-	if len(tags.Tags) != preDefinedTagCount {
-		return bencherror.NewViolationError(nil, "事前定義されたタグの数が足りません")
 	}
 
 	return nil

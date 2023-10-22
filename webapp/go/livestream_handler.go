@@ -113,7 +113,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		if err := tx.SelectContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
 			// FIXME: スケジューラ実装ができてきたら、ちゃんとエラーを返すように
 			// return echo.NewHTTPError(http.StatusConflict, "schedule conflict")
-			c.Logger().Warn("schedule conflict")
+			c.Logger().Warnf("schedule conflict: %+v", err)
 		}
 	}
 
@@ -133,7 +133,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 			UpdatedAt:    now,
 		}
 	)
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at, :created_at, :updated_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at, :created_at, :updated_at)", livestreamModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at, created_at, updated_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at, :created_at, :updated_at)", livestreamModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

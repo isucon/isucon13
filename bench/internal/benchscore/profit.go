@@ -17,11 +17,7 @@ const (
 )
 
 var (
-	profit *score.Score
-
-	achieveCh chan struct{}
-	goalSum   int
-
+	profit    *score.Score
 	closeOnce sync.Once
 )
 
@@ -34,10 +30,6 @@ func initProfit(ctx context.Context) {
 	profit.Set(TipProfitLevel5, 5)
 }
 
-func Achieve() chan struct{} {
-	return achieveCh
-}
-
 func AddTipProfit(tip int) error {
 	tag := tipToProfitLevel(tip)
 	if tag == TipProfitLevel0 {
@@ -45,11 +37,6 @@ func AddTipProfit(tip int) error {
 	}
 
 	profit.Add(tag)
-	if profit.Sum() >= int64(goalSum) {
-		closeOnce.Do(func() {
-			close(achieveCh)
-		})
-	}
 
 	return nil
 }

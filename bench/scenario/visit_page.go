@@ -5,7 +5,7 @@ import "context"
 // 訪問時に行うGET操作をまとめた関数郡
 
 func VisitTop(ctx context.Context) error {
-
+	return nil
 }
 
 // ライブ配信画面訪問

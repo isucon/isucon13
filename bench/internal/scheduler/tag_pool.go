@@ -105,3 +105,7 @@ var tagPool = [...]string{
 	"サプライズ",
 	"椅子",
 }
+
+func GetTagPoolLength() int {
+	return len(tagPool)
+}

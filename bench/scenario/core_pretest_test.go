@@ -14,7 +14,6 @@ func TestPretest(t *testing.T) {
 	ctx := context.Background()
 	benchscore.InitScore(ctx)
 	// bencherror.InitPenalty(ctx)
-	benchscore.SetAchivementGoal(0)
 
 	client, err := isupipe.NewClient(
 		agent.WithBaseURL(webappIPAddress),
