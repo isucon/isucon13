@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/isucon/isucandar/agent"
-	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/stretchr/testify/assert"
@@ -14,8 +13,7 @@ import (
 func TestPretest(t *testing.T) {
 	ctx := context.Background()
 	benchscore.InitScore(ctx)
-	bencherror.InitPenalty(ctx)
-	benchscore.SetAchivementGoal(0)
+	// bencherror.InitPenalty(ctx)
 
 	client, err := isupipe.NewClient(
 		agent.WithBaseURL(webappIPAddress),

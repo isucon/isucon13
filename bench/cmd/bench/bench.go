@@ -13,7 +13,6 @@ import (
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/logger"
-	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
 )
@@ -44,35 +43,17 @@ func uniqueMsgs(msgs []string) (uniqMsgs []string) {
 func benchmark(ctx context.Context) error {
 	lgr := zap.S()
 
-	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
-	defer cancelBench()
-
 	benchmarker := newBenchmarker()
 	// pretest, benchmarkにはこれら初期化が必要
 	benchscore.InitScore(ctx)
-	bencherror.InitPenalty(ctx)
+	// bencherror.InitPenalty(ctx)
 	bencherror.InitializeErrors(ctx)
 
-	lgr.Info("===== Benchmark - 第１負荷フェーズ開始 =====")
-	if err := benchmarker.runSeason1(benchCtx); err != nil {
-		return err
-	}
-	scheduler.IncreaseWorkloadLevel(90)
+	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
+	defer cancelBench()
 
-	lgr.Info("===== Benchmark - 第２負荷フェーズ開始 =====")
-	if err := benchmarker.runSeason2(benchCtx); err != nil {
-		return err
-	}
-	scheduler.IncreaseWorkloadLevel(400)
-
-	lgr.Info("===== Benchmark - 第３負荷フェーズ開始 =====")
-	if err := benchmarker.runSeason3(benchCtx); err != nil {
-		return err
-	}
-	scheduler.IncreaseWorkloadLevel(500)
-
-	lgr.Info("===== Benchmark - 最終負荷フェーズ開始 =====")
-	if err := benchmarker.runSeason4(benchCtx); err != nil {
+	if err := benchmarker.run(benchCtx); err != nil {
+		lgr.Warnf("ベンチマーク走行エラー", zap.Error(err))
 		return err
 	}
 
@@ -141,10 +122,8 @@ var run = cli.Command{
 
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitScore(ctx)
-		bencherror.InitPenalty(ctx)
+		// bencherror.InitPenalty(ctx)
 		bencherror.InitializeErrors(ctx)
-		// NOTE: チャネル初期化のため、目標を設定せずにpretest
-		benchscore.SetAchivementGoal(0)
 		if err := scenario.Pretest(ctx, pretestClient); err != nil {
 			return cli.NewExitError(err, 1)
 		}

@@ -37,7 +37,7 @@ func InitializeErrors(ctx context.Context) {
 
 func WrapError(code failure.StringCode, err error) error {
 	benchErrors.Add(failure.NewError(code, err))
-	AddPenalty(code)
+	// AddPenalty(code)
 	return fmt.Errorf("%s: %w", code, err)
 }
 

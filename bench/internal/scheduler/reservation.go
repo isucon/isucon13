@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/biogo/store/interval"
@@ -32,6 +33,7 @@ type Reservation struct {
 	UserId      int
 	Title       string
 	Description string
+	Tags        []string
 	StartAt     int64
 	EndAt       int64
 }
@@ -46,7 +48,8 @@ func mustNewReservation(id int, userId int, title string, description string, st
 		log.Fatalln(err)
 	}
 
-	return &Reservation{
+	tagCount := rand.Intn(10)
+	reservation := &Reservation{
 		Id:          id,
 		UserId:      userId,
 		Title:       title,
@@ -54,6 +57,12 @@ func mustNewReservation(id int, userId int, title string, description string, st
 		StartAt:     startAt.Unix(),
 		EndAt:       endAt.Unix(),
 	}
+	for i := 0; i < tagCount; i++ {
+		tagIdx := rand.Intn(len(tagPool))
+		reservation.Tags = append(reservation.Tags, tagPool[tagIdx])
+	}
+
+	return reservation
 }
 
 func (r *Reservation) Overlap(interval interval.IntRange) bool {

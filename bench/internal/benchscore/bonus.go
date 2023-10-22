@@ -7,7 +7,7 @@ import (
 	"github.com/isucon/isucandar/score"
 )
 
-type ScoreTag string
+type BonusTag string
 
 const (
 	SuccessGetTags score.ScoreTag = "success-get-tags"

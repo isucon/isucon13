@@ -2,8 +2,7 @@ package benchscore
 
 import (
 	"context"
-
-	"github.com/matryer/resync"
+	"sync"
 
 	"github.com/isucon/isucandar/score"
 )
@@ -18,11 +17,8 @@ const (
 )
 
 var (
-	profit *score.Score
-
-	achieveCh chan struct{}
-	goalSum   int
-	closeOnce resync.Once
+	profit    *score.Score
+	closeOnce sync.Once
 )
 
 func initProfit(ctx context.Context) {
@@ -34,16 +30,6 @@ func initProfit(ctx context.Context) {
 	profit.Set(TipProfitLevel5, 5)
 }
 
-func SetAchivementGoal(goal int) {
-	achieveCh = make(chan struct{})
-	goalSum = goal
-	closeOnce.Reset()
-}
-
-func Achieve() chan struct{} {
-	return achieveCh
-}
-
 func AddTipProfit(tip int) error {
 	tag := tipToProfitLevel(tip)
 	if tag == TipProfitLevel0 {
@@ -51,11 +37,6 @@ func AddTipProfit(tip int) error {
 	}
 
 	profit.Add(tag)
-	if profit.Sum() >= int64(goalSum) {
-		closeOnce.Do(func() {
-			close(achieveCh)
-		})
-	}
 
 	return nil
 }
