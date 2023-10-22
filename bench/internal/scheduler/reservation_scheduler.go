@@ -1,32 +1,28 @@
 package scheduler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"sync"
 
 	"github.com/biogo/store/interval"
+	"github.com/isucon/isucandar/pubsub"
 )
+
+// 同時配信枠数
+const numSlots = 2
 
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
-// NOTE: phase1は初期状態ですべての予約が埋まっている
-// FIXME: 各所でシーズン判定ができないと、選べなさそう。使う側はシーズンがわかっているので取り出せるが、clientから予約のたびにココに突っ込むとなると、どれに突っ込めばいいかもたないといけない
-// フェーズ切り替えの際、
-// FIXME: baseAtちゃんとした値に直す
 var (
-	Phase1ReservationScheduler = mustNewReservationScheduler(1711897200, (24*(30+31+30))-(24*1))
-	Phase2ReservationScheduler = mustNewReservationScheduler(1719759600, (24*(31+31+30))-(24*1))
-	Phase3ReservationScheduler = mustNewReservationScheduler(1727708400, (24*(31+30+31))-(24*1))
-	Phase4ReservationScheduler = mustNewReservationScheduler(1735657200, (24*(31+28+31))-(24*1))
+	ReservationSched = mustNewReservationScheduler(1711897200, (24 * 365))
 )
 
 func init() {
 	// スケジューラに初期データをロード
-	Phase1ReservationScheduler.loadReservations(phase1ReservationPool)
-	Phase2ReservationScheduler.loadReservations(phase2ReservationPool)
+	ReservationSched.loadReservations(reservationPool)
 }
 
 // FIXME: 予約のタイトルと説明文はベンチ走行中にランダムに割り当てる
@@ -50,12 +46,18 @@ type ReservationScheduler struct {
 	// 最終的にfinalcheckの突合に使う
 	reservationsMu sync.Mutex
 	reservations   []*Reservation
+
+	// FIXME: 振ったタグを覚えておく
+	// reservationid => []string{"tag1", "tag2", ...} という感じで持てばいいか
+
+	// FIXME: 予約完了してからライブ配信を取り出したいケースがある
+	// その場合、今予約完了していて利用可能な予約はあるのか判定しなければならない
+	// そこでPubSubを用いて判定するようにする
+	reservationPubSub        *pubsub.PubSub
+	popularReservationPubSub *pubsub.PubSub
 }
 
 func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler {
-	// 同時配信枠数
-	// FIXME: 最低限、枠数１、枠数２の場合はテストを十分に行っておきたい
-	const numSlots = 1
 	intervalTempertures, err := newIntervalTemperture(baseAt, numSlots, hours)
 	if err != nil {
 		log.Fatalln(err)
@@ -65,6 +67,7 @@ func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler 
 		intervalTempertures: intervalTempertures,
 		intTreeStates:       make(map[int]CommitState),
 		intervalTree:        &interval.IntTree{},
+		reservationPubSub:   pubsub.NewPubSub(),
 	}
 }
 
@@ -81,24 +84,18 @@ func (r *ReservationScheduler) loadReservations(reservations []*Reservation) {
 	r.intervalTree.AdjustRanges()
 }
 
-func (r *ReservationScheduler) getStreamsFor(user *User) []*Reservation {
-	var reservations []*Reservation
-	for _, reservation := range r.reservationPool {
-		if reservation.UserId == user.UserId {
-			reservations = append(reservations, reservation)
-		}
-	}
-
-	return reservations
+func (r *ReservationScheduler) GetPopularLivestream(ctx context.Context) (reservation *Reservation) {
+	r.popularReservationPubSub.Subscribe(ctx, func(v interface{}) {
+		reservation = v.(*Reservation)
+	})
+	return
 }
 
-func (r *ReservationScheduler) GetStreamFor(user *User) (*Reservation, error) {
-	livestreams := r.getStreamsFor(user)
-	if len(livestreams) == 0 {
-		return nil, fmt.Errorf("no livestreams")
-	}
-	idx := rand.Intn(len(livestreams))
-	return livestreams[idx], nil
+func (r *ReservationScheduler) GetLivestream(ctx context.Context) (reservation *Reservation) {
+	r.reservationPubSub.Subscribe(ctx, func(v interface{}) {
+		reservation = v.(*Reservation)
+	})
+	return
 }
 
 // CommitReservation は、予約追加リクエストが通ったことをintervalTemperturesに記録します
@@ -116,6 +113,12 @@ func (r *ReservationScheduler) CommitReservation(reservation *Reservation) {
 	r.reservations = append(r.reservations, reservation)
 
 	r.intTreeStates[int(reservation.Id)] = CommitState_Committed
+
+	if UserScheduler.IsPopularStreamer(reservation.UserId) {
+		r.popularReservationPubSub.Publish(reservation)
+	} else {
+		r.reservationPubSub.Publish(reservation)
+	}
 }
 
 func (r *ReservationScheduler) AbortReservation(reservation *Reservation) {

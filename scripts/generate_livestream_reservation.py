@@ -183,7 +183,7 @@ def dump(base_time, schedules, max_users, sqlpath, gopath):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--users', type=int, default=500, help='対象ユーザ数')
+    parser.add_argument('--users', type=int, default=1000, help='対象ユーザ数')
     # max_schedulesは生成するスケジュールの最大数。枠数と一致する
     # NOTE: 枠数を設定する場合、枠数だけスケジュールを重ねがけする
     #       すべてきれいに敷き詰めるように書いているので、単純に複数のスケジュール分SQL生成すればよい

@@ -108,6 +108,7 @@ passwords = [('wd44Ivk041', '$2a$10$gjaotHZoumKefYz8oUlqCefwbx4IrsUzZ10RDyIWFGtb
  ('za8DDED1n4', '$2a$10$w6DufZf17XMnjSkpzOjsXug0HzgUSWsqfLdzyCDoWOAmIpjRhpKh6'),
  ('6LrTeZLbu6', '$2a$10$tiHELF/Ycc98w8DfXGrQneik73LuLQg6FvYCRu3hsVPHMxpS5m/6u')]
 
+INITIAL_USER_COUNT = 100
 
 # SQL
 SQL_FORMAT="INSERT INTO users (id, name, display_name, description, password) VALUES ({user_id}, '{name}', '{display_name}', '{description}', '{password}');"
@@ -151,6 +152,7 @@ def format_sql(users):
 
 def format_go(users):
     mid = len(users)//2
+    assert(INITIAL_USER_COUNT < mid)
 
     output = "package scheduler\n"
 
@@ -214,6 +216,12 @@ def gen_user(n: int) -> str:
 
         username_indexes[name] += 1
 
+    with open('/tmp/user.sql', 'w') as f:
+        f.write(format_sql(users) + '\n')
+
+    with open('/tmp/user.go', 'w') as f:
+        f.write(format_go(users) + '\n')
+
     return format_sql(users) + '\n\n\n' + format_go(users)
 
 
@@ -228,7 +236,7 @@ def dump_passwords():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', type=int, default=10, help='生成数')
+    parser.add_argument('-n', type=int, default=1000, help='生成数')
     return parser.parse_args()
 
 

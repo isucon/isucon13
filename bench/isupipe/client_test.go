@@ -42,7 +42,8 @@ func TestClient_Spam(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	streamer := scheduler.UserScheduler.SelectVTuber()
+	streamer, err := scheduler.UserScheduler.PrepareStreamer()
+	assert.NoError(t, err)
 	err = client.Login(ctx, &LoginRequest{
 		UserName: streamer.Name,
 		Password: streamer.RawPassword,

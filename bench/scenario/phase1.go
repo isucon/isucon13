@@ -17,7 +17,7 @@ func runPostLivecommentScenario(ctx context.Context) error {
 	vtuber := scheduler.UserScheduler.SelectVTuberForSeason1()
 
 	// 配信を決定
-	livestream, err := scheduler.Phase1ReservationScheduler.GetStreamFor(vtuber)
+	livestream, err := scheduler.ReservationSched.GetStreamFor(vtuber)
 	if err != nil {
 		return err
 	}

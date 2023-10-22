@@ -14,10 +14,12 @@ func TestFindIntervals(t *testing.T) {
 		// 2024/04/01がテスト開始日
 		testStartUnix int64 = 1711897200
 		testStartAt         = time.Unix(testStartUnix, 0)
+		// 枠数1
+		maxTemperature = 1
 	)
 
 	// 5時間分取っておく
-	it, err := newIntervalTemperture(testStartUnix, 1, 5)
+	it, err := newIntervalTemperture(testStartUnix, int64(maxTemperature), 5)
 	assert.NoError(t, err)
 
 	var (
@@ -60,9 +62,31 @@ func TestFindIntervals(t *testing.T) {
 	assert.Equal(t, testStartAt.Add(4*time.Hour).Unix(), intervals[0].endAt.Unix())
 }
 
-// startAt = endAtの場合の扱いに関するテストを書く
-
 // FIXME: 枠数2 (maxTemperature>=2)のテストを書く
+func TestMaxTemperture_is_2(t *testing.T) {
+	var (
+		// 2024/04/01がテスト開始日
+		testStartUnix int64 = 1711897200
+		testStartAt         = time.Unix(testStartUnix, 0)
+		// 枠数1
+		maxTemperature = 1
+	)
+
+	// 24時間分取っておく
+	it, err := newIntervalTemperture(testStartUnix, int64(maxTemperature), 24)
+	assert.NoError(t, err)
+
+	_ = testStartAt
+	_ = it
+
+	// 1枠とって、hotと判定されるはず
+
+	// 他にも残り1枠を作ってみて、列挙できるか確認
+
+	// 2枠取ると、hotでも出てこないはず
+
+	//
+}
 
 // FIXME: ちらばって区間を追加したあと、Coldな区間を取得するテスト
 //        もれなく区間を得られることをチェック

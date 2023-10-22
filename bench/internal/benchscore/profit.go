@@ -2,8 +2,7 @@ package benchscore
 
 import (
 	"context"
-
-	"github.com/matryer/resync"
+	"sync"
 
 	"github.com/isucon/isucandar/score"
 )
@@ -22,7 +21,8 @@ var (
 
 	achieveCh chan struct{}
 	goalSum   int
-	closeOnce resync.Once
+
+	closeOnce sync.Once
 )
 
 func initProfit(ctx context.Context) {
@@ -32,12 +32,6 @@ func initProfit(ctx context.Context) {
 	profit.Set(TipProfitLevel3, 3)
 	profit.Set(TipProfitLevel4, 4)
 	profit.Set(TipProfitLevel5, 5)
-}
-
-func SetAchivementGoal(goal int) {
-	achieveCh = make(chan struct{})
-	goalSum = goal
-	closeOnce.Reset()
 }
 
 func Achieve() chan struct{} {
