@@ -58,7 +58,7 @@ interface LiveItemProps {
 function LiveItem(props: LiveItemProps): React.ReactElement {
   return (
     <Link
-      to={`/watch/${props.liveSteram.id}`}
+      to={`/console/live/${props.liveSteram.id}`}
       style={{ textDecoration: 'none' }}
     >
       <Card>
