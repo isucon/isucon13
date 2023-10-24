@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/biogo/store/interval"
@@ -33,7 +32,7 @@ type Reservation struct {
 	UserId      int
 	Title       string
 	Description string
-	Tags        []string
+	Tags        []int
 	StartAt     int64
 	EndAt       int64
 }
@@ -48,7 +47,8 @@ func mustNewReservation(id int, userId int, title string, description string, st
 		log.Fatalln(err)
 	}
 
-	tagCount := rand.Intn(10)
+	// FIXME: タグの採番がおかしくてwebappでエラーが出る
+	// tagCount := rand.Intn(10)
 	reservation := &Reservation{
 		Id:          id,
 		UserId:      userId,
@@ -57,10 +57,10 @@ func mustNewReservation(id int, userId int, title string, description string, st
 		StartAt:     startAt.Unix(),
 		EndAt:       endAt.Unix(),
 	}
-	for i := 0; i < tagCount; i++ {
-		tagIdx := rand.Intn(len(tagPool))
-		reservation.Tags = append(reservation.Tags, tagPool[tagIdx])
-	}
+	// for i := 0; i < tagCount; i++ {
+	// 	tagIdx := rand.Intn(len(tagPool))
+	// 	reservation.Tags = append(reservation.Tags, tagIdx)
+	// }
 
 	return reservation
 }

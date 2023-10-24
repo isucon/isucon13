@@ -1,18 +1,16 @@
 package scheduler
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
 	"sync"
 
 	"github.com/biogo/store/interval"
-	"github.com/isucon/isucandar/pubsub"
 )
 
 // 同時配信枠数
-const numSlots = 2
+const NumSlots = 2
 
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
@@ -49,16 +47,10 @@ type ReservationScheduler struct {
 
 	// FIXME: 振ったタグを覚えておく
 	// reservationid => []string{"tag1", "tag2", ...} という感じで持てばいいか
-
-	// FIXME: 予約完了してからライブ配信を取り出したいケースがある
-	// その場合、今予約完了していて利用可能な予約はあるのか判定しなければならない
-	// そこでPubSubを用いて判定するようにする
-	reservationPubSub        *pubsub.PubSub
-	popularReservationPubSub *pubsub.PubSub
 }
 
 func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler {
-	intervalTempertures, err := newIntervalTemperture(baseAt, numSlots, hours)
+	intervalTempertures, err := newIntervalTemperture(baseAt, NumSlots, hours)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -67,7 +59,6 @@ func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler 
 		intervalTempertures: intervalTempertures,
 		intTreeStates:       make(map[int]CommitState),
 		intervalTree:        &interval.IntTree{},
-		reservationPubSub:   pubsub.NewPubSub(),
 	}
 }
 
@@ -84,20 +75,6 @@ func (r *ReservationScheduler) loadReservations(reservations []*Reservation) {
 	r.intervalTree.AdjustRanges()
 }
 
-func (r *ReservationScheduler) GetPopularLivestream(ctx context.Context) (reservation *Reservation) {
-	r.popularReservationPubSub.Subscribe(ctx, func(v interface{}) {
-		reservation = v.(*Reservation)
-	})
-	return
-}
-
-func (r *ReservationScheduler) GetLivestream(ctx context.Context) (reservation *Reservation) {
-	r.reservationPubSub.Subscribe(ctx, func(v interface{}) {
-		reservation = v.(*Reservation)
-	})
-	return
-}
-
 // CommitReservation は、予約追加リクエストが通ったことをintervalTemperturesに記録します
 func (r *ReservationScheduler) CommitReservation(reservation *Reservation) {
 	r.reservationsMu.Lock()
@@ -112,18 +89,14 @@ func (r *ReservationScheduler) CommitReservation(reservation *Reservation) {
 
 	r.reservations = append(r.reservations, reservation)
 
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
 	r.intTreeStates[int(reservation.Id)] = CommitState_Committed
-
-	if UserScheduler.IsPopularStreamer(reservation.UserId) {
-		r.popularReservationPubSub.Publish(reservation)
-	} else {
-		r.reservationPubSub.Publish(reservation)
-	}
 }
 
 func (r *ReservationScheduler) AbortReservation(reservation *Reservation) {
-	r.reservationsMu.Lock()
-	defer r.reservationsMu.Unlock()
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
 
 	r.intTreeStates[int(reservation.Id)] = CommitState_None
 }
