@@ -35,11 +35,71 @@ export function chipColor(price: number): [string, boolean] {
   return ['#f00', true];
 }
 
+interface LiveComment {
+  id: string;
+  userName: string;
+  text: string;
+  chip?: number;
+}
+
 export default function LiveComment(): React.ReactElement {
   const [commentMode, setCommentMode] = React.useState<
     'normal' | 'chip' | 'emoji'
   >('normal');
   const [chipAmount, setChipAmount] = React.useState(2000);
+
+  const [liveComments, setLiveComments] = React.useState<LiveComment[]>([
+    {
+      id: '1',
+      userName: 'ユーザー名1',
+      text: 'メッセージ1',
+    },
+    {
+      id: '2',
+      userName: 'ユーザー名2',
+      text: 'メッセージ2',
+    },
+    {
+      id: '3',
+      userName: 'ユーザー名3',
+      text: 'メッセージ3',
+    },
+    {
+      id: '4',
+      userName: 'ユーザー名4',
+      text: 'メッセージ4',
+      chip: 2000,
+    },
+  ]);
+
+  const commentsRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    let counter = 4;
+    const timer = setInterval(() => {
+      counter++;
+      let chip: number | undefined;
+      if (Math.random() < 0.1) {
+        chip = chipTable[Math.floor(Math.random() * chipTable.length)];
+      }
+      setLiveComments((comments) =>
+        [
+          ...comments,
+          {
+            id: `comment-${counter}`,
+            userName: `ユーザー名${counter}`,
+            text: `メッセージ${counter}`,
+            chip,
+          },
+        ].splice(-50),
+      );
+    }, 300);
+    return () => clearInterval(timer);
+  }, []);
+  React.useLayoutEffect(() => {
+    if (commentsRef.current) {
+      commentsRef.current.scrollTop = commentsRef.current.scrollHeight;
+    }
+  }, [liveComments]);
 
   return (
     <>
@@ -54,6 +114,7 @@ export default function LiveComment(): React.ReactElement {
           <Typography level="title-lg">Chat</Typography>
         </CardOverflow>
         <CardContent
+          ref={commentsRef}
           sx={{
             overflowY: 'scroll',
             mx: '-16px',
@@ -71,17 +132,28 @@ export default function LiveComment(): React.ReactElement {
           }}
         >
           <Stack spacing={2}>
-            {Array(50)
-              .fill(0)
-              .map((_, i) => (
-                <Stack direction="row" spacing={1} key={i} alignItems="center">
+            {liveComments.map((comment) =>
+              comment.chip ? (
+                <TipComment
+                  key={comment.id}
+                  text={comment.text}
+                  amount={comment.chip}
+                />
+              ) : (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  key={comment.id}
+                  alignItems="center"
+                >
                   <Avatar size="sm" />
-                  <Typography level="title-sm">ユーザー名{i + 1}</Typography>
+                  <Typography level="title-sm">{comment.userName}</Typography>
                   <Typography level="body-md">
-                    <span>メッセージ{i + 1}</span>
+                    <span>{comment.text}</span>
                   </Typography>
                 </Stack>
-              ))}
+              ),
+            )}
           </Stack>
           <Stack
             sx={{
@@ -158,41 +230,7 @@ export default function LiveComment(): React.ReactElement {
                 <Typography level="body-lg" sx={{ py: 1 }}>
                   チップを送る
                 </Typography>
-                {/* todo convert component */}
-                <Stack
-                  sx={{
-                    p: 2,
-                    background: chipColor(chipAmount)[0],
-                    borderRadius: 10,
-                  }}
-                  spacing={1}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Avatar size="sm" />
-                    <Typography
-                      level="title-sm"
-                      sx={{
-                        color: chipColor(chipAmount)[1] ? '#fff' : '#000',
-                      }}
-                    >
-                      ユーザー名
-                    </Typography>
-                    <Typography
-                      level="body-md"
-                      sx={{
-                        color: chipColor(chipAmount)[1] ? '#fff' : '#000',
-                      }}
-                    >
-                      <span>{chipAmount} ISU</span>
-                    </Typography>
-                  </Stack>
-                  <Input
-                    sx={{
-                      background: 'rgba(255,255,255,0.3)',
-                      color: chipColor(chipAmount)[1] ? '#fff' : '#000',
-                    }}
-                  />
-                </Stack>
+                <TipComment text="" amount={chipAmount} isEditable />
                 <Slider
                   defaultValue={4}
                   step={1}
@@ -233,3 +271,57 @@ const PickerWrapper = styled.div`
     height: 300px;
   }
 `;
+
+interface TipCommentProps {
+  amount: number;
+  text: string;
+  isEditable?: boolean;
+  onChange?(text: string): void;
+}
+function TipComment(props: TipCommentProps): React.ReactElement {
+  const color = chipColor(props.amount);
+  return (
+    <Stack
+      sx={{
+        p: 2,
+        background: color[0],
+        borderRadius: 10,
+      }}
+      spacing={1}
+    >
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Avatar size="sm" />
+        <Typography
+          level="title-sm"
+          sx={{
+            color: color[1] ? '#fff' : '#000',
+          }}
+        >
+          ユーザー名
+        </Typography>
+        <Typography
+          level="body-md"
+          sx={{
+            color: color[1] ? '#fff' : '#000',
+          }}
+        >
+          <span>{props.amount} ISU</span>
+        </Typography>
+      </Stack>
+      {props.isEditable ? (
+        <Input
+          sx={{
+            background: 'rgba(255,255,255,0.3)',
+            color: color[1] ? '#fff' : '#000',
+          }}
+          value={props.text}
+          onChange={(e) => props.onChange?.(e.target.value)}
+        />
+      ) : (
+        <Typography level="body-md" sx={{ color: color[1] ? '#fff' : '#000' }}>
+          {props.text}
+        </Typography>
+      )}
+    </Stack>
+  );
+}
