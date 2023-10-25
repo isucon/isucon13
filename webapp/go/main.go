@@ -46,7 +46,7 @@ func init() {
 
 // FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
-	AdvertiseLevel int    `json:"advertise_level"`
+	AdvertiseLevel int64  `json:"advertise_level"`
 	Language       string `json:"language"`
 }
 

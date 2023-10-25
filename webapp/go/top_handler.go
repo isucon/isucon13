@@ -11,14 +11,14 @@ import (
 )
 
 type Tag struct {
-	Id   int    `json:"id"`
+	Id   int64  `json:"id"`
 	Name string `json:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int `json:"created_at"`
+	CreatedAt int64 `json:"created_at"`
 }
 
 type TagModel struct {
-	Id   int    `db:"id"`
+	Id   int64  `db:"id"`
 	Name string `db:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt time.Time `db:"created_at"`
@@ -51,7 +51,7 @@ func getTagHandler(c echo.Context) error {
 		tags[i] = &Tag{
 			Id:        tagModels[i].Id,
 			Name:      tagModels[i].Name,
-			CreatedAt: int(tagModels[i].CreatedAt.Unix()),
+			CreatedAt: tagModels[i].CreatedAt.Unix(),
 		}
 	}
 	return c.JSON(http.StatusOK, &TagsResponse{
@@ -101,7 +101,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 	theme := Theme{
 		Id:        themeModel.Id,
 		DarkMode:  themeModel.DarkMode,
-		CreatedAt: int(themeModel.CreatedAt.Unix()),
+		CreatedAt: themeModel.CreatedAt.Unix(),
 	}
 
 	return c.JSON(http.StatusOK, theme)

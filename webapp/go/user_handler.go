@@ -25,7 +25,7 @@ const (
 )
 
 type UserModel struct {
-	Id          int    `db:"id"`
+	Id          int64  `db:"id"`
 	Name        string `db:"name"`
 	DisplayName string `db:"display_name"`
 	Description string `db:"description"`
@@ -37,27 +37,27 @@ type UserModel struct {
 }
 
 type User struct {
-	Id          int    `json:"id"`
+	Id          int64  `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int `json:"created_at"`
-	UpdatedAt int `json:"updated_at"`
+	CreatedAt int64 `json:"created_at"`
+	UpdatedAt int64 `json:"updated_at"`
 
 	IsPopular bool  `json:"is_popular"`
 	Theme     Theme `json:"theme"`
 }
 
 type Theme struct {
-	Id        int  `json:"id"`
-	DarkMode  bool `json:"dark_mode"`
-	CreatedAt int  `json:"created_at"`
+	Id        int64 `json:"id"`
+	DarkMode  bool  `json:"dark_mode"`
+	CreatedAt int64 `json:"created_at"`
 }
 
 type ThemeModel struct {
-	Id        int       `db:"id"`
-	UserId    int       `db:"user_id"`
+	Id        int64     `db:"id"`
+	UserId    int64     `db:"user_id"`
 	DarkMode  bool      `db:"dark_mode"`
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -170,10 +170,10 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
 	}
 
-	userModel.Id = int(userId)
+	userModel.Id = userId
 
 	themeModel := ThemeModel{
-		UserId:    int(userId),
+		UserId:    userId,
 		DarkMode:  req.Theme.DarkMode,
 		CreatedAt: now,
 	}
@@ -352,14 +352,14 @@ func verifyUserSession(c echo.Context) error {
 	return nil
 }
 
-func userIsPopular(ctx context.Context, tx *sqlx.Tx, userId int) (bool, error) {
+func userIsPopular(ctx context.Context, tx *sqlx.Tx, userId int64) (bool, error) {
 	var livestreamModels []*LivestreamModel
 	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
 		return false, err
 	}
 
 	totalSpamReports := 0
-	totalTips := 0
+	totalTips := int64(0)
 	totalLivecomments := 0
 	for _, ls := range livestreamModels {
 		spamReports := 0
@@ -411,13 +411,13 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		Name:        userModel.Name,
 		DisplayName: userModel.DisplayName,
 		Description: userModel.Description,
-		CreatedAt:   int(userModel.CreatedAt.Unix()),
-		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
+		CreatedAt:   userModel.CreatedAt.Unix(),
+		UpdatedAt:   userModel.UpdatedAt.Unix(),
 		IsPopular:   popular,
 		Theme: Theme{
 			Id:        themeModel.Id,
 			DarkMode:  themeModel.DarkMode,
-			CreatedAt: int(themeModel.CreatedAt.Unix()),
+			CreatedAt: themeModel.CreatedAt.Unix(),
 		},
 	}
 

@@ -17,28 +17,28 @@ type LivestreamStatistics struct {
 }
 
 type UserStatistics struct {
-	TipRankPerLivestreams map[int]TipRank `json:"tip_rank_by_livestream"`
+	TipRankPerLivestreams map[int64]TipRank `json:"tip_rank_by_livestream"`
 }
 
 type TipRank struct {
-	Rank     int `json:"tip_rank"`
-	TotalTip int `json:"total_tip"`
+	Rank     int64 `json:"tip_rank"`
+	TotalTip int64 `json:"total_tip"`
 }
 
 type TipRankModel struct {
-	Rank     int `db:"tip_rank"`
-	TotalTip int `db:"total_tip"`
+	Rank     int64 `db:"tip_rank"`
+	TotalTip int64 `db:"total_tip"`
 }
 
 type ReactionRank struct {
-	Rank          int    `json:"reaction_rank"`
-	TotalReaction int    `json:"total_reaction"`
+	Rank          int64  `json:"reaction_rank"`
+	TotalReaction int64  `json:"total_reaction"`
 	EmojiName     string `json:"emoji_name"`
 }
 
 type ReactionRankModel struct {
-	Rank          int    `db:"reaction_rank"`
-	TotalReaction int    `db:"total_reaction"`
+	Rank          int64  `db:"reaction_rank"`
+	TotalReaction int64  `db:"total_reaction"`
 	EmojiName     string `db:"emoji_name"`
 }
 
@@ -71,7 +71,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	tipRankPerLivestream := make(map[int]TipRank)
+	tipRankPerLivestream := make(map[int64]TipRank)
 	for livestreamId, tipRankModel := range tipRankModelPerLivestreams {
 		tipRankPerLivestream[livestreamId] = TipRank{
 			Rank:     tipRankModel.Rank,
@@ -137,11 +137,11 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 func queryTotalTipRankPerViewedLivestream(
 	ctx context.Context,
 	viewedLivestreams []*LivestreamViewerModel,
-) (map[int]TipRankModel, error) {
-	totalTipRankPerLivestream := make(map[int]TipRankModel)
+) (map[int64]TipRankModel, error) {
+	totalTipRankPerLivestream := make(map[int64]TipRankModel)
 	// get total tip per viewed livestream
 	for _, viewedLivestream := range viewedLivestreams {
-		totalTip := 0
+		totalTip := int64(0)
 		if err := dbConn.GetContext(ctx, &totalTip, "SELECT SUM(tip) FROM livecomments WHERE user_id = ? AND livestream_id = ?", viewedLivestream.UserId, viewedLivestream.LivestreamId); err != nil {
 			return totalTipRankPerLivestream, err
 		}

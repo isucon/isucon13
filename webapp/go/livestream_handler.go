@@ -16,29 +16,29 @@ import (
 )
 
 type ReserveLivestreamRequest struct {
-	Tags        []int  `json:"tags"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Tags        []int64 `json:"tags"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
 	// NOTE: コラボ配信の際に便利な自動スケジュールチェック機能
 	// DBに記録しないが、コラボレーターがスケジュール的に問題ないか調べて、エラーを返す
-	Collaborators []int `json:"collaborators"`
-	StartAt       int64 `json:"start_at"`
-	EndAt         int64 `json:"end_at"`
+	Collaborators []int64 `json:"collaborators"`
+	StartAt       int64   `json:"start_at"`
+	EndAt         int64   `json:"end_at"`
 }
 
 type LivestreamViewerModel struct {
-	UserId       int `db:"user_id"`
-	LivestreamId int `db:"livestream_id"`
+	UserId       int64 `db:"user_id"`
+	LivestreamId int64 `db:"livestream_id"`
 }
 
 type LivestreamModel struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
+	Id           int64     `db:"id"`
+	UserId       int64     `db:"user_id"`
 	Title        string    `db:"title"`
 	Description  string    `db:"description"`
 	PlaylistUrl  string    `db:"playlist_url"`
 	ThumbnailUrl string    `db:"thumbnail_url"`
-	ViewersCount int       `db:"viewers_count"`
+	ViewersCount int64     `db:"viewers_count"`
 	StartAt      time.Time `db:"start_at"`
 	EndAt        time.Time `db:"end_at"`
 	CreatedAt    time.Time `db:"created_at"`
@@ -46,24 +46,24 @@ type LivestreamModel struct {
 }
 
 type Livestream struct {
-	Id           int    `json:"id"`
+	Id           int64  `json:"id"`
 	Owner        User   `json:"owner"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	PlaylistUrl  string `json:"playlist_url"`
 	ThumbnailUrl string `json:"thumbnail_url"`
-	ViewersCount int    `json:"viewers_count"`
+	ViewersCount int64  `json:"viewers_count"`
 	Tags         []Tag  `json:"tags"`
-	StartAt      int    `json:"start_at"`
-	EndAt        int    `json:"end_at"`
-	CreatedAt    int    `json:"created_at"`
-	UpdatedAt    int    `json:"updated_at"`
+	StartAt      int64  `json:"start_at"`
+	EndAt        int64  `json:"end_at"`
+	CreatedAt    int64  `json:"created_at"`
+	UpdatedAt    int64  `json:"updated_at"`
 }
 
 type LivestreamTagModel struct {
-	Id           int `db:"id"`
-	LivestreamId int `db:"livestream_id"`
-	TagId        int `db:"tag_id"`
+	Id           int64 `db:"id"`
+	LivestreamId int64 `db:"livestream_id"`
+	TagId        int64 `db:"tag_id"`
 }
 
 func reserveLivestreamHandler(c echo.Context) error {
@@ -107,8 +107,8 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	c.Logger().Info("check collaborators")
 	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる
-	var users []int
-	users = append(users, userId)
+	var users []int64
+	users = append(users, int64(userId))
 	users = append(users, req.Collaborators...)
 	for _, user := range users {
 		var founds int
@@ -125,7 +125,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		startAt         = time.Unix(req.StartAt, 0)
 		endAt           = time.Unix(req.EndAt, 0)
 		livestreamModel = &LivestreamModel{
-			UserId:       userId,
+			UserId:       int64(userId),
 			Title:        req.Title,
 			Description:  req.Description,
 			PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
@@ -147,13 +147,13 @@ func reserveLivestreamHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	livestreamModel.Id = int(livestreamId)
+	livestreamModel.Id = livestreamId
 
 	c.Logger().Info("insert tags")
 	// タグ追加
 	for _, tagId := range req.Tags {
 		if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)", &LivestreamTagModel{
-			LivestreamId: int(livestreamId),
+			LivestreamId: livestreamId,
 			TagId:        tagId,
 		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -259,8 +259,8 @@ func enterLivestreamHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	viewer := LivestreamViewerModel{
-		UserId:       userId,
-		LivestreamId: livestreamId,
+		UserId:       int64(userId),
+		LivestreamId: int64(livestreamId),
 	}
 
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers_history (user_id, livestream_id) VALUES(:user_id, :livestream_id)", viewer); err != nil {
@@ -408,7 +408,7 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 		tags[i] = Tag{
 			Id:        tagModel.Id,
 			Name:      tagModel.Name,
-			CreatedAt: int(tagModel.CreatedAt.Unix()),
+			CreatedAt: tagModel.CreatedAt.Unix(),
 		}
 	}
 
@@ -421,10 +421,10 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 		PlaylistUrl:  livestreamModel.PlaylistUrl,
 		ThumbnailUrl: livestreamModel.ThumbnailUrl,
 		ViewersCount: livestreamModel.ViewersCount,
-		StartAt:      int(livestreamModel.StartAt.Unix()),
-		EndAt:        int(livestreamModel.EndAt.Unix()),
-		CreatedAt:    int(livestreamModel.CreatedAt.Unix()),
-		UpdatedAt:    int(livestreamModel.UpdatedAt.Unix()),
+		StartAt:      livestreamModel.StartAt.Unix(),
+		EndAt:        livestreamModel.EndAt.Unix(),
+		CreatedAt:    livestreamModel.CreatedAt.Unix(),
+		UpdatedAt:    livestreamModel.UpdatedAt.Unix(),
 	}
 	return livestream, nil
 }
