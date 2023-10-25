@@ -11,7 +11,7 @@ paths:
     parameters: []
     get:
       summary: ""
-      operationid: get-tag
+      operationId: get-tag
       responses:
         "200":
           $ref: "#/components/responses/GetTag"
