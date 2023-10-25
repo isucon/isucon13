@@ -129,6 +129,7 @@ func getUserSessionHandler(c echo.Context) error {
 // POST /user
 func postUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	req := PostUserRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
@@ -206,6 +207,7 @@ func postUserHandler(c echo.Context) error {
 // POST /login
 func loginHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	req := LoginRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {

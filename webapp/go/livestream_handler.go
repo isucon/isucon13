@@ -68,6 +68,7 @@ type LivestreamTagModel struct {
 
 func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力

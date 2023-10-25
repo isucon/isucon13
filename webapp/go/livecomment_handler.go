@@ -115,6 +115,7 @@ func getLivecommentsHandler(c echo.Context) error {
 
 func postLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	if err := verifyUserSession(c); err != nil {
 		return err
@@ -272,6 +273,7 @@ func reportLivecommentHandler(c echo.Context) error {
 // NGワードを登録
 func moderateNGWordHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	if err := verifyUserSession(c); err != nil {
 		return err
