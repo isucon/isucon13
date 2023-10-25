@@ -7,4 +7,5 @@
     - xbuild
     - mysql
     - powerdns
+    - nginx
     - webapp
