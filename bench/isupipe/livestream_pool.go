@@ -12,7 +12,7 @@ type LivestreamPool struct {
 }
 
 func NewLivestreamPool(ctx context.Context) *LivestreamPool {
-	pool := pubsub.NewPubSub(1000)
+	pool := pubsub.NewPubSub(10000)
 	pool.Run(ctx)
 	return &LivestreamPool{
 		pool: pool,

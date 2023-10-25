@@ -22,7 +22,7 @@ type ClientPool struct {
 }
 
 func NewClientPool(ctx context.Context) *ClientPool {
-	pool := pubsub.NewPubSub(1000)
+	pool := pubsub.NewPubSub(2000)
 	pool.Run(ctx)
 	return &ClientPool{
 		pool: pool,

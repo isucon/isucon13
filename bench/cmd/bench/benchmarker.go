@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -53,7 +52,6 @@ func (b *benchmarker) runLoginWorkers(ctx context.Context) {
 	loginFn := func(p *isupipe.ClientPool) func(u *scheduler.User) {
 		return func(u *scheduler.User) {
 			go func() {
-				time.Sleep(100 * time.Millisecond)
 				client, err := isupipe.NewClient(
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
