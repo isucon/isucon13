@@ -3,6 +3,15 @@ version: '3.0'
 # FIXME: webappコンテナの起動
 
 services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./etc/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - 8443:80
+    depends_on:
+      - webapp
   mysql:
     image: mysql/mysql-server:8.0.31
     container_name: mysql
@@ -10,7 +19,7 @@ services:
       - "MYSQL_ROOT_HOST=%"
       - "MYSQL_ROOT_PASSWORD=root"
     volumes:
-      - ./sql/initdb.d:/docker-entrypoint-initdb.d
+      - ../webapp/sql/initdb.d:/docker-entrypoint-initdb.d
       - mysql_volume:/var/lib/mysql
     ports:
       - 3306:3306
@@ -36,17 +45,23 @@ services:
       # NOTE: gsqlite3バックエンドを読み込もうとするので、これを上書きしてしまう
       # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/Dockerfile-auth#L88 
       # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/dockerdata/pdns.conf#L3
-      - ./powerdns/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - ../webapp/powerdns/pdns.conf:/etc/powerdns/pdns.conf:ro
     restart: always
     depends_on:
       mysql:
         condition: service_healthy
 
   webapp:
-    build: ./go
+    build: 
+      context: ../webapp/go
     init: true
     working_dir: /home/isucon/webapp/go
     container_name: webapp
+    volumes:
+      - ../webapp/init.sh:/home/isucon/webapp/go/init.sh
+      - ../webapp/init.sql:/home/isucon/webapp/go/init.sql
+      - ../webapp/initial_users.sql:/home/isucon/webapp/go/initial_users.sql
+      - ../webapp/initial_tags.sql:/home/isucon/webapp/go/initial_tags.sql
     environment:
       ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
       ISUCON13_POWERDNS_HOST: powerdns
