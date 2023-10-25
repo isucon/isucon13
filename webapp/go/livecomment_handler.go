@@ -248,16 +248,15 @@ func reportLivecommentHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentId); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	reportId, err := rs.LastInsertId()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	reportModel.Id = reportId
+
+	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	report, err := fillLivecommentReportResponse(ctx, tx, reportModel)
 	if err != nil {
