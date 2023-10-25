@@ -383,25 +383,20 @@ func getLivecommentReportsHandler(c echo.Context) error {
 }
 
 func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel LivestreamModel) (Livestream, error) {
-	log.Println("fill livestream")
-	log.Printf("find user %d\n", livestreamModel.UserId)
 	ownerModel := UserModel{}
 	if err := tx.GetContext(ctx, &ownerModel, "SELECT * FROM users WHERE id = ?", livestreamModel.UserId); err != nil {
 		return Livestream{}, err
 	}
-	log.Println("fill user")
 	owner, err := fillUserResponse(ctx, tx, ownerModel)
 	if err != nil {
 		return Livestream{}, err
 	}
 
-	log.Println("fill tags")
 	var livestreamTagModels []*LivestreamTagModel
 	if err := tx.SelectContext(ctx, &livestreamTagModels, "SELECT * FROM livestream_tags WHERE livestream_id = ?", livestreamModel.Id); err != nil {
 		return Livestream{}, err
 	}
 
-	log.Println("fill tags2")
 	tags := make([]Tag, len(livestreamTagModels))
 	for i := range livestreamTagModels {
 		log.Printf("tag id = %d\n", livestreamTagModels[i].Id)
