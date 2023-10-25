@@ -42,7 +42,7 @@ func TestClient_Spam(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	streamer, err := scheduler.UserScheduler.PrepareStreamer()
+	streamer := scheduler.UserScheduler.GetRandomStreamer()
 	assert.NoError(t, err)
 	err = client.Login(ctx, &LoginRequest{
 		UserName: streamer.Name,

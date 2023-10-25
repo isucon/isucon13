@@ -43,7 +43,6 @@ func uniqueMsgs(msgs []string) (uniqMsgs []string) {
 func benchmark(ctx context.Context) error {
 	lgr := zap.S()
 
-	benchmarker := newBenchmarker()
 	// pretest, benchmarkにはこれら初期化が必要
 	benchscore.InitScore(ctx)
 	// bencherror.InitPenalty(ctx)
@@ -52,6 +51,7 @@ func benchmark(ctx context.Context) error {
 	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
 	defer cancelBench()
 
+	benchmarker := newBenchmarker(benchCtx)
 	if err := benchmarker.run(benchCtx); err != nil {
 		lgr.Warnf("ベンチマーク走行エラー", zap.Error(err))
 		return err

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -93,10 +94,10 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	// 2024/04/01 - 2025/03/31までの期間かチェック
+	// 2024/04/01からの１年間の期間内であるかチェック
 	var (
 		termStartAt    = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
-		termEndAt      = time.Date(2025, 3, 31, 0, 0, 0, 0, time.Local)
+		termEndAt      = time.Date(2025, 4, 1, 0, 0, 0, 0, time.Local)
 		reserveStartAt = time.Unix(req.StartAt, 0)
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
@@ -104,19 +105,21 @@ func reserveLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad reservation time range")
 	}
 
+	c.Logger().Info("check collaborators")
 	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる
 	var users []int
 	users = append(users, userId)
 	users = append(users, req.Collaborators...)
 	for _, user := range users {
 		var founds int
-		if err := tx.SelectContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
+		if err := tx.GetContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
 			// FIXME: スケジューラ実装ができてきたら、ちゃんとエラーを返すように
 			// return echo.NewHTTPError(http.StatusConflict, "schedule conflict")
 			c.Logger().Warnf("schedule conflict: %+v", err)
 		}
 	}
 
+	c.Logger().Info("check term")
 	now := time.Now()
 	var (
 		startAt         = time.Unix(req.StartAt, 0)
@@ -133,17 +136,20 @@ func reserveLivestreamHandler(c echo.Context) error {
 			UpdatedAt:    now,
 		}
 	)
+	c.Logger().Info("insert livestream")
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at, created_at, updated_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at, :created_at, :updated_at)", livestreamModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	c.Logger().Info("get inserted id")
 	livestreamId, err := rs.LastInsertId()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	livestreamModel.Id = int(livestreamId)
 
+	c.Logger().Info("insert tags")
 	// タグ追加
 	for _, tagId := range req.Tags {
 		if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)", &LivestreamTagModel{
@@ -393,6 +399,7 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 
 	tags := make([]Tag, len(livestreamTagModels))
 	for i := range livestreamTagModels {
+		log.Printf("tag id = %d\n", livestreamTagModels[i].Id)
 		tagModel := TagModel{}
 		if err := tx.GetContext(ctx, &tagModel, "SELECT * FROM tags WHERE id = ?", livestreamTagModels[i].Id); err != nil {
 			return Livestream{}, err
