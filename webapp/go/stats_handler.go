@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -92,7 +93,10 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamId := c.Param("livestream_id")
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	tipRankModels := []TipRankModel{}
 	query := "SELECT SUM(tip) AS total_tip, RANK() OVER(ORDER BY SUM(tip) DESC) AS tip_rank " +

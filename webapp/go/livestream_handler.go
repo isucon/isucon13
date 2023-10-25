@@ -353,7 +353,10 @@ func getLivecommentReportsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamId := c.Param("livestream_id")
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
