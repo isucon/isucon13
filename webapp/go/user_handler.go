@@ -267,7 +267,7 @@ func loginHandler(c echo.Context) error {
 }
 
 // ユーザ詳細API
-// GET /user/:userid
+// GET /user/:username
 func getUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
