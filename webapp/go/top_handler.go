@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -21,7 +20,7 @@ type TagModel struct {
 	Id   int64  `db:"id"`
 	Name string `db:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `db:"created_at"`
+	CreatedAt int64 `db:"created_at"`
 }
 
 type TagsResponse struct {
@@ -51,7 +50,7 @@ func getTagHandler(c echo.Context) error {
 		tags[i] = &Tag{
 			Id:        tagModels[i].Id,
 			Name:      tagModels[i].Name,
-			CreatedAt: tagModels[i].CreatedAt.Unix(),
+			CreatedAt: tagModels[i].CreatedAt,
 		}
 	}
 	return c.JSON(http.StatusOK, &TagsResponse{
@@ -101,7 +100,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 	theme := Theme{
 		Id:        themeModel.Id,
 		DarkMode:  themeModel.DarkMode,
-		CreatedAt: themeModel.CreatedAt.Unix(),
+		CreatedAt: themeModel.CreatedAt,
 	}
 
 	return c.JSON(http.StatusOK, theme)

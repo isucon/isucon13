@@ -3,21 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"strconv"
-	"time"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"net/http"
+	"strconv"
 )
 
 type ReactionModel struct {
-	Id           int64     `db:"id"`
-	EmojiName    string    `db:"emoji_name"`
-	UserId       int64     `db:"user_id"`
-	LivestreamId int64     `db:"livestream_id"`
-	CreatedAt    time.Time `db:"created_at"`
+	Id           int64  `db:"id"`
+	EmojiName    string `db:"emoji_name"`
+	UserId       int64  `db:"user_id"`
+	LivestreamId int64  `db:"livestream_id"`
+	CreatedAt    int64  `db:"created_at"`
 }
 
 type Reaction struct {
@@ -159,7 +157,7 @@ func fillReactionResponse(ctx context.Context, tx *sqlx.Tx, reactionModel Reacti
 		EmojiName:  reactionModel.EmojiName,
 		User:       user,
 		Livestream: livestream,
-		CreatedAt:  reactionModel.CreatedAt.Unix(),
+		CreatedAt:  reactionModel.CreatedAt,
 	}
 
 	return reaction, nil

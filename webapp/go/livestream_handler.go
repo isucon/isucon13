@@ -32,17 +32,17 @@ type LivestreamViewerModel struct {
 }
 
 type LivestreamModel struct {
-	Id           int64     `db:"id"`
-	UserId       int64     `db:"user_id"`
-	Title        string    `db:"title"`
-	Description  string    `db:"description"`
-	PlaylistUrl  string    `db:"playlist_url"`
-	ThumbnailUrl string    `db:"thumbnail_url"`
-	ViewersCount int64     `db:"viewers_count"`
-	StartAt      time.Time `db:"start_at"`
-	EndAt        time.Time `db:"end_at"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	Id           int64  `db:"id"`
+	UserId       int64  `db:"user_id"`
+	Title        string `db:"title"`
+	Description  string `db:"description"`
+	PlaylistUrl  string `db:"playlist_url"`
+	ThumbnailUrl string `db:"thumbnail_url"`
+	ViewersCount int64  `db:"viewers_count"`
+	StartAt      int64  `db:"start_at"`
+	EndAt        int64  `db:"end_at"`
+	CreatedAt    int64  `db:"created_at"`
+	UpdatedAt    int64  `db:"updated_at"`
 }
 
 type Livestream struct {
@@ -121,7 +121,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 
 	c.Logger().Info("check term")
-	now := time.Now()
+	now := time.Now().Unix()
 	var (
 		startAt         = time.Unix(req.StartAt, 0)
 		endAt           = time.Unix(req.EndAt, 0)
@@ -131,8 +131,8 @@ func reserveLivestreamHandler(c echo.Context) error {
 			Description:  req.Description,
 			PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
 			ThumbnailUrl: "https://picsum.photos/200/300",
-			StartAt:      startAt,
-			EndAt:        endAt,
+			StartAt:      startAt.Unix(),
+			EndAt:        endAt.Unix(),
 			CreatedAt:    now,
 			UpdatedAt:    now,
 		}
@@ -412,7 +412,7 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 		tags[i] = Tag{
 			Id:        tagModel.Id,
 			Name:      tagModel.Name,
-			CreatedAt: tagModel.CreatedAt.Unix(),
+			CreatedAt: tagModel.CreatedAt,
 		}
 	}
 
@@ -425,10 +425,10 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 		PlaylistUrl:  livestreamModel.PlaylistUrl,
 		ThumbnailUrl: livestreamModel.ThumbnailUrl,
 		ViewersCount: livestreamModel.ViewersCount,
-		StartAt:      livestreamModel.StartAt.Unix(),
-		EndAt:        livestreamModel.EndAt.Unix(),
-		CreatedAt:    livestreamModel.CreatedAt.Unix(),
-		UpdatedAt:    livestreamModel.UpdatedAt.Unix(),
+		StartAt:      livestreamModel.StartAt,
+		EndAt:        livestreamModel.EndAt,
+		CreatedAt:    livestreamModel.CreatedAt,
+		UpdatedAt:    livestreamModel.UpdatedAt,
 	}
 	return livestream, nil
 }

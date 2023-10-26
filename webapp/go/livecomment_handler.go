@@ -20,14 +20,14 @@ type PostLivecommentRequest struct {
 }
 
 type LivecommentModel struct {
-	Id           int64     `db:"id"`
-	UserId       int64     `db:"user_id"`
-	LivestreamId int64     `db:"livestream_id"`
-	Comment      string    `db:"comment"`
-	Tip          int64     `db:"tip"`
-	ReportCount  int64     `db:"report_count"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	Id           int64  `db:"id"`
+	UserId       int64  `db:"user_id"`
+	LivestreamId int64  `db:"livestream_id"`
+	Comment      string `db:"comment"`
+	Tip          int64  `db:"tip"`
+	ReportCount  int64  `db:"report_count"`
+	CreatedAt    int64  `db:"created_at"`
+	UpdatedAt    int64  `db:"updated_at"`
 }
 
 type Livecomment struct {
@@ -50,12 +50,12 @@ type LivecommentReport struct {
 }
 
 type LivecommentReportModel struct {
-	Id            int64     `db:"id"`
-	UserId        int64     `db:"user_id"`
-	LivestreamId  int64     `db:"livestream_id"`
-	LivecommentId int64     `db:"livecomment_id"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	Id            int64 `db:"id"`
+	UserId        int64 `db:"user_id"`
+	LivestreamId  int64 `db:"livestream_id"`
+	LivecommentId int64 `db:"livecomment_id"`
+	CreatedAt     int64 `db:"created_at"`
+	UpdatedAt     int64 `db:"updated_at"`
 }
 
 type ModerateRequest struct {
@@ -162,7 +162,7 @@ func postLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
 	}
 
-	now := time.Now()
+	now := time.Now().Unix()
 	livecommentModel := LivecommentModel{
 		UserId:       int64(userId),
 		LivestreamId: int64(livestreamId),
@@ -236,7 +236,7 @@ func reportLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't get livecomment reports that other streamers own")
 	}
 
-	now := time.Now()
+	now := time.Now().Unix()
 	reportModel := LivecommentReportModel{
 		UserId:        int64(userId),
 		LivestreamId:  int64(livestreamId),
@@ -361,8 +361,8 @@ func fillLivecommentResponse(ctx context.Context, tx *sqlx.Tx, livecommentModel 
 		Comment:     livecommentModel.Comment,
 		Tip:         livecommentModel.Tip,
 		ReportCount: livecommentModel.ReportCount,
-		CreatedAt:   livecommentModel.CreatedAt.Unix(),
-		UpdatedAt:   livecommentModel.UpdatedAt.Unix(),
+		CreatedAt:   livecommentModel.CreatedAt,
+		UpdatedAt:   livecommentModel.UpdatedAt,
 	}
 
 	return livecomment, nil
@@ -391,8 +391,8 @@ func fillLivecommentReportResponse(ctx context.Context, tx *sqlx.Tx, reportModel
 		Id:          reportModel.Id,
 		Reporter:    reporter,
 		Livecomment: livecomment,
-		CreatedAt:   reportModel.CreatedAt.Unix(),
-		UpdatedAt:   reportModel.UpdatedAt.Unix(),
+		CreatedAt:   reportModel.CreatedAt,
+		UpdatedAt:   reportModel.UpdatedAt,
 	}
 	return report, nil
 }

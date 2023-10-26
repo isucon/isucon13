@@ -32,8 +32,8 @@ type UserModel struct {
 	// HashedPassword is hashed password.
 	HashedPassword string `db:"password"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt int64 `db:"created_at"`
+	UpdatedAt int64 `db:"updated_at"`
 }
 
 type User struct {
@@ -56,10 +56,10 @@ type Theme struct {
 }
 
 type ThemeModel struct {
-	Id        int64     `db:"id"`
-	UserId    int64     `db:"user_id"`
-	DarkMode  bool      `db:"dark_mode"`
-	CreatedAt time.Time `db:"created_at"`
+	Id        int64 `db:"id"`
+	UserId    int64 `db:"user_id"`
+	DarkMode  bool  `db:"dark_mode"`
+	CreatedAt int64 `db:"created_at"`
 }
 
 type PostUserRequest struct {
@@ -151,7 +151,7 @@ func postUserHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	now := time.Now()
+	now := time.Now().Unix()
 	userModel := UserModel{
 		Name:           req.Name,
 		DisplayName:    req.DisplayName,
@@ -242,7 +242,7 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	sessionEndAt := time.Now().Add(10 * time.Minute)
+	sessionEndAt := time.Now().Add(1 * time.Hour)
 
 	sessionId := uuid.NewString()
 
@@ -413,13 +413,13 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		Name:        userModel.Name,
 		DisplayName: userModel.DisplayName,
 		Description: userModel.Description,
-		CreatedAt:   userModel.CreatedAt.Unix(),
-		UpdatedAt:   userModel.UpdatedAt.Unix(),
+		CreatedAt:   userModel.CreatedAt,
+		UpdatedAt:   userModel.UpdatedAt,
 		IsPopular:   popular,
 		Theme: Theme{
 			Id:        themeModel.Id,
 			DarkMode:  themeModel.DarkMode,
-			CreatedAt: themeModel.CreatedAt.Unix(),
+			CreatedAt: themeModel.CreatedAt,
 		},
 	}
 
