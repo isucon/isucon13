@@ -46,7 +46,7 @@ func init() {
 
 // FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
-	AdvertiseLevel int    `json:"advertise_level"`
+	AdvertiseLevel int64  `json:"advertise_level"`
 	Language       string `json:"language"`
 }
 
@@ -55,7 +55,7 @@ func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
 	return conf, nil
 }
 
-func connectDB() (*sqlx.DB, error) {
+func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 	const (
 		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
 		addrEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_ADDRESS"
@@ -112,6 +112,7 @@ func connectDB() (*sqlx.DB, error) {
 
 	for i := 0; i < 10; i++ {
 		if err := db.Ping(); err != nil {
+			logger.Errorf("failed to ping to MySQL: %v", err)
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -197,18 +198,18 @@ func main() {
 	e.GET("/payment", GetPaymentResult)
 
 	// DB接続
-	conn, err := connectDB()
+	conn, err := connectDB(e.Logger)
 	if err != nil {
-		e.Logger.Fatalf("failed to connect db: %v", err)
-		return
+		e.Logger.Errorf("failed to connect db: %v", err)
+		os.Exit(1)
 	}
-	conn.SetMaxOpenConns(10)
 	defer conn.Close()
 	dbConn = conn
 
 	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
 	if !ok {
-		e.Logger.Fatalf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		e.Logger.Errorf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		os.Exit(1)
 	}
 	powerDNSSubdomainAddress = subdomainAddr
 
@@ -222,6 +223,7 @@ func main() {
 	// HTTPサーバ起動
 	listenAddr := net.JoinHostPort("", strconv.Itoa(listenPort))
 	if err := e.Start(listenAddr); err != nil {
-		e.Logger.Fatal(err)
+		e.Logger.Errorf("failed to start HTTP server: %v", err)
+		os.Exit(1)
 	}
 }

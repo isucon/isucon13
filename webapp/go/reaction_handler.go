@@ -3,29 +3,27 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"strconv"
-	"time"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"net/http"
+	"strconv"
 )
 
 type ReactionModel struct {
-	Id           int       `db:"id"`
-	EmojiName    string    `db:"emoji_name"`
-	UserId       int       `db:"user_id"`
-	LivestreamId int       `db:"livestream_id"`
-	CreatedAt    time.Time `db:"created_at"`
+	Id           int64  `db:"id"`
+	EmojiName    string `db:"emoji_name"`
+	UserId       int64  `db:"user_id"`
+	LivestreamId int64  `db:"livestream_id"`
+	CreatedAt    int64  `db:"created_at"`
 }
 
 type Reaction struct {
-	Id         int        `json:"id"`
+	Id         int64      `json:"id"`
 	EmojiName  string     `json:"emoji_name"`
 	User       User       `json:"user"`
 	Livestream Livestream `json:"livestream"`
-	CreatedAt  int        `json:"created_at"`
+	CreatedAt  int64      `json:"created_at"`
 }
 
 type PostReactionRequest struct {
@@ -40,7 +38,10 @@ func getReactionsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamId := c.Param("livestream_id")
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
@@ -87,7 +88,7 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
@@ -104,8 +105,8 @@ func postReactionHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	reactionModel := ReactionModel{
-		UserId:       userId,
-		LivestreamId: livestreamId,
+		UserId:       int64(userId),
+		LivestreamId: int64(livestreamId),
 		EmojiName:    req.EmojiName,
 	}
 
@@ -118,7 +119,7 @@ func postReactionHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	reactionModel.Id = int(reactionId)
+	reactionModel.Id = reactionId
 
 	reaction, err := fillReactionResponse(ctx, tx, reactionModel)
 	if err != nil {
@@ -156,7 +157,7 @@ func fillReactionResponse(ctx context.Context, tx *sqlx.Tx, reactionModel Reacti
 		EmojiName:  reactionModel.EmojiName,
 		User:       user,
 		Livestream: livestream,
-		CreatedAt:  int(reactionModel.CreatedAt.Unix()),
+		CreatedAt:  reactionModel.CreatedAt,
 	}
 
 	return reaction, nil

@@ -25,41 +25,41 @@ const (
 )
 
 type UserModel struct {
-	Id          int    `db:"id"`
+	Id          int64  `db:"id"`
 	Name        string `db:"name"`
 	DisplayName string `db:"display_name"`
 	Description string `db:"description"`
 	// HashedPassword is hashed password.
 	HashedPassword string `db:"password"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt int64 `db:"created_at"`
+	UpdatedAt int64 `db:"updated_at"`
 }
 
 type User struct {
-	Id          int    `json:"id"`
+	Id          int64  `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int `json:"created_at"`
-	UpdatedAt int `json:"updated_at"`
+	CreatedAt int64 `json:"created_at"`
+	UpdatedAt int64 `json:"updated_at"`
 
 	IsPopular bool  `json:"is_popular"`
 	Theme     Theme `json:"theme"`
 }
 
 type Theme struct {
-	Id        int  `json:"id"`
-	DarkMode  bool `json:"dark_mode"`
-	CreatedAt int  `json:"created_at"`
+	Id        int64 `json:"id"`
+	DarkMode  bool  `json:"dark_mode"`
+	CreatedAt int64 `json:"created_at"`
 }
 
 type ThemeModel struct {
-	Id        int       `db:"id"`
-	UserId    int       `db:"user_id"`
-	DarkMode  bool      `db:"dark_mode"`
-	CreatedAt time.Time `db:"created_at"`
+	Id        int64 `db:"id"`
+	UserId    int64 `db:"user_id"`
+	DarkMode  bool  `db:"dark_mode"`
+	CreatedAt int64 `db:"created_at"`
 }
 
 type PostUserRequest struct {
@@ -93,7 +93,7 @@ func getUserSessionHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -129,6 +129,7 @@ func getUserSessionHandler(c echo.Context) error {
 // POST /user
 func postUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	req := PostUserRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
@@ -150,7 +151,7 @@ func postUserHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	now := time.Now()
+	now := time.Now().Unix()
 	userModel := UserModel{
 		Name:           req.Name,
 		DisplayName:    req.DisplayName,
@@ -170,10 +171,10 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
 	}
 
-	userModel.Id = int(userId)
+	userModel.Id = userId
 
 	themeModel := ThemeModel{
-		UserId:    int(userId),
+		UserId:    userId,
 		DarkMode:  req.Theme.DarkMode,
 		CreatedAt: now,
 	}
@@ -206,6 +207,7 @@ func postUserHandler(c echo.Context) error {
 // POST /login
 func loginHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	req := LoginRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
@@ -240,7 +242,7 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	sessionEndAt := time.Now().Add(10 * time.Minute)
+	sessionEndAt := time.Now().Add(1 * time.Hour)
 
 	sessionId := uuid.NewString()
 
@@ -255,7 +257,7 @@ func loginHandler(c echo.Context) error {
 	}
 	sess.Values[defaultSessionIdKey] = sessionId
 	sess.Values[defaultUserIdKey] = userModel.Id
-	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
+	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -265,7 +267,7 @@ func loginHandler(c echo.Context) error {
 }
 
 // ユーザ詳細API
-// GET /user/:userid
+// GET /user/:username
 func getUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
@@ -312,7 +314,7 @@ func getUsersHandler(c echo.Context) (err error) {
 	defer tx.Rollback()
 
 	var userModels []*UserModel
-	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
+	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name FROM users"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -345,21 +347,21 @@ func verifyUserSession(c echo.Context) error {
 	}
 
 	now := time.Now()
-	if now.Unix() > int64(sessionExpires.(int)) {
+	if now.Unix() > sessionExpires.(int64) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
 	}
 
 	return nil
 }
 
-func userIsPopular(ctx context.Context, tx *sqlx.Tx, userId int) (bool, error) {
+func userIsPopular(ctx context.Context, tx *sqlx.Tx, userId int64) (bool, error) {
 	var livestreamModels []*LivestreamModel
 	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
 		return false, err
 	}
 
 	totalSpamReports := 0
-	totalTips := 0
+	totalTips := int64(0)
 	totalLivecomments := 0
 	for _, ls := range livestreamModels {
 		spamReports := 0
@@ -411,13 +413,13 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		Name:        userModel.Name,
 		DisplayName: userModel.DisplayName,
 		Description: userModel.Description,
-		CreatedAt:   int(userModel.CreatedAt.Unix()),
-		UpdatedAt:   int(userModel.UpdatedAt.Unix()),
+		CreatedAt:   userModel.CreatedAt,
+		UpdatedAt:   userModel.UpdatedAt,
 		IsPopular:   popular,
 		Theme: Theme{
 			Id:        themeModel.Id,
 			DarkMode:  themeModel.DarkMode,
-			CreatedAt: int(themeModel.CreatedAt.Unix()),
+			CreatedAt: themeModel.CreatedAt,
 		},
 	}
 

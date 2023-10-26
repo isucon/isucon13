@@ -16,46 +16,46 @@ import (
 
 type PostLivecommentRequest struct {
 	Comment string `json:"comment"`
-	Tip     int    `json:"tip"`
+	Tip     int64  `json:"tip"`
 }
 
 type LivecommentModel struct {
-	Id           int       `db:"id"`
-	UserId       int       `db:"user_id"`
-	LivestreamId int       `db:"livestream_id"`
-	Comment      string    `db:"comment"`
-	Tip          int       `db:"tip"`
-	ReportCount  int       `db:"report_count"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	Id           int64  `db:"id"`
+	UserId       int64  `db:"user_id"`
+	LivestreamId int64  `db:"livestream_id"`
+	Comment      string `db:"comment"`
+	Tip          int64  `db:"tip"`
+	ReportCount  int64  `db:"report_count"`
+	CreatedAt    int64  `db:"created_at"`
+	UpdatedAt    int64  `db:"updated_at"`
 }
 
 type Livecomment struct {
-	Id          int        `json:"id"`
+	Id          int64      `json:"id"`
 	User        User       `json:"user"`
 	Livestream  Livestream `json:"livestream"`
 	Comment     string     `json:"comment"`
-	Tip         int        `json:"tip"`
-	ReportCount int        `json:"report_count"`
-	CreatedAt   int        `json:"created_at"`
-	UpdatedAt   int        `json:"updated_at"`
+	Tip         int64      `json:"tip"`
+	ReportCount int64      `json:"report_count"`
+	CreatedAt   int64      `json:"created_at"`
+	UpdatedAt   int64      `json:"updated_at"`
 }
 
 type LivecommentReport struct {
-	Id          int         `json:"id"`
+	Id          int64       `json:"id"`
 	Reporter    User        `json:"reporter"`
 	Livecomment Livecomment `json:"livecomment"`
-	CreatedAt   int         `json:"created_at"`
-	UpdatedAt   int         `json:"updated_at"`
+	CreatedAt   int64       `json:"created_at"`
+	UpdatedAt   int64       `json:"updated_at"`
 }
 
 type LivecommentReportModel struct {
-	Id            int       `db:"id"`
-	UserId        int       `db:"user_id"`
-	LivestreamId  int       `db:"livestream_id"`
-	LivecommentId int       `db:"livecomment_id"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	Id            int64 `db:"id"`
+	UserId        int64 `db:"user_id"`
+	LivestreamId  int64 `db:"livestream_id"`
+	LivecommentId int64 `db:"livecomment_id"`
+	CreatedAt     int64 `db:"created_at"`
+	UpdatedAt     int64 `db:"updated_at"`
 }
 
 type ModerateRequest struct {
@@ -63,8 +63,8 @@ type ModerateRequest struct {
 }
 
 type NGWord struct {
-	UserId       int    `json:"user_id" db:"user_id"`
-	LivestreamId int    `json:"livestream_id" db:"livestream_id"`
+	UserId       int64  `json:"user_id" db:"user_id"`
+	LivestreamId int64  `json:"livestream_id" db:"livestream_id"`
 	Word         string `json:"word" db:"word"`
 }
 
@@ -76,7 +76,10 @@ func getLivecommentsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamId := c.Param("livestream_id")
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
@@ -112,6 +115,7 @@ func getLivecommentsHandler(c echo.Context) error {
 
 func postLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	if err := verifyUserSession(c); err != nil {
 		return err
@@ -126,7 +130,7 @@ func postLivecommentHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
@@ -158,10 +162,10 @@ func postLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
 	}
 
-	now := time.Now()
+	now := time.Now().Unix()
 	livecommentModel := LivecommentModel{
-		UserId:       userId,
-		LivestreamId: livestreamId,
+		UserId:       int64(userId),
+		LivestreamId: int64(livestreamId),
 		Comment:      req.Comment,
 		Tip:          req.Tip,
 		CreatedAt:    now,
@@ -177,7 +181,7 @@ func postLivecommentHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	livecommentModel.Id = int(livecommentId)
+	livecommentModel.Id = livecommentId
 
 	livecomment, err := fillLivecommentResponse(ctx, tx, livecommentModel)
 	if err != nil {
@@ -212,7 +216,7 @@ func reportLivecommentHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -232,11 +236,11 @@ func reportLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't get livecomment reports that other streamers own")
 	}
 
-	now := time.Now()
+	now := time.Now().Unix()
 	reportModel := LivecommentReportModel{
-		UserId:        userId,
-		LivestreamId:  livestreamId,
-		LivecommentId: livecommentId,
+		UserId:        int64(userId),
+		LivestreamId:  int64(livestreamId),
+		LivecommentId: int64(livecommentId),
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
@@ -244,16 +248,15 @@ func reportLivecommentHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-
-	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentId); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	reportId, err := rs.LastInsertId()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	reportModel.Id = int(reportId)
+	reportModel.Id = reportId
+
+	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	report, err := fillLivecommentReportResponse(ctx, tx, reportModel)
 	if err != nil {
@@ -269,6 +272,7 @@ func reportLivecommentHandler(c echo.Context) error {
 // NGワードを登録
 func moderateNGWordHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	if err := verifyUserSession(c); err != nil {
 		return err
@@ -283,7 +287,7 @@ func moderateNGWordHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -309,8 +313,8 @@ func moderateNGWordHandler(c echo.Context) error {
 	}
 
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO ng_words(user_id, livestream_id, word) VALUES (:user_id, :livestream_id, :word)", &NGWord{
-		UserId:       userId,
-		LivestreamId: livestreamId,
+		UserId:       int64(userId),
+		LivestreamId: int64(livestreamId),
 		Word:         req.NGWord,
 	})
 	if err != nil {
@@ -357,8 +361,8 @@ func fillLivecommentResponse(ctx context.Context, tx *sqlx.Tx, livecommentModel 
 		Comment:     livecommentModel.Comment,
 		Tip:         livecommentModel.Tip,
 		ReportCount: livecommentModel.ReportCount,
-		CreatedAt:   int(livecommentModel.CreatedAt.Unix()),
-		UpdatedAt:   int(livecommentModel.UpdatedAt.Unix()),
+		CreatedAt:   livecommentModel.CreatedAt,
+		UpdatedAt:   livecommentModel.UpdatedAt,
 	}
 
 	return livecomment, nil
@@ -387,8 +391,8 @@ func fillLivecommentReportResponse(ctx context.Context, tx *sqlx.Tx, reportModel
 		Id:          reportModel.Id,
 		Reporter:    reporter,
 		Livecomment: livecomment,
-		CreatedAt:   int(reportModel.CreatedAt.Unix()),
-		UpdatedAt:   int(reportModel.UpdatedAt.Unix()),
+		CreatedAt:   reportModel.CreatedAt,
+		UpdatedAt:   reportModel.UpdatedAt,
 	}
 	return report, nil
 }

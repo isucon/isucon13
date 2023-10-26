@@ -10,22 +10,22 @@ import (
 // webappに課金サーバを兼任させる
 // とりあえずfinalcheck等を実装する上で必要なので用意
 type Payment struct {
-	ReservationId int `json:"reservation_id"`
-	Tip           int `json:"tip"`
+	ReservationId int64 `json:"reservation_id"`
+	Tip           int64 `json:"tip"`
 }
 
 type PaymentResult struct {
-	Total    int        `json:"total"`
+	Total    int64      `json:"total"`
 	Payments []*Payment `json:"payments"`
 }
 
 var (
-	total     int
+	total     int64
 	payments  []*Payment
 	paymentMu sync.RWMutex
 )
 
-func AddPayment(reservationId, tip int) {
+func AddPayment(reservationId, tip int64) {
 	paymentMu.Lock()
 	defer paymentMu.Unlock()
 
