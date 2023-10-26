@@ -1,14 +1,20 @@
 import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
-import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
+import Divider from '@mui/joy/Divider';
+import Skeleton from '@mui/joy/Skeleton';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { useLiveStream } from '~/api/hooks';
 import LiveComment from '~/components/video/comment';
 
 export default function WatchPage(): React.ReactElement {
+  const { id } = useParams();
+  const liveStream = useLiveStream(id ?? null);
+  console.log({ liveStream }, liveStream.isLoading, liveStream.data);
+
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
       <Stack direction="row" gap={2}>
@@ -22,36 +28,51 @@ export default function WatchPage(): React.ReactElement {
 
       <Stack direction="row" gap={2}>
         <Stack sx={{ flexBasis: '600px', flexGrow: 3 }}>
-          <Typography level="h3">動画タイトル</Typography>
+          <Typography level="h3">{liveStream.data?.title}</Typography>
           <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
             <Link to="/user">
               <Avatar />
             </Link>
             <div>
-              <Link to="/user" style={{ textDecoration: 'none' }}>
-                <Typography level="title-sm">チャンネル名</Typography>
-              </Link>
+              {liveStream.data === undefined ? (
+                <Skeleton variant="text" level="title-sm" width={100} />
+              ) : (
+                <Link to="/user" style={{ textDecoration: 'none' }}>
+                  <Typography level="title-sm">
+                    {liveStream.data?.owner?.display_name}
+                  </Typography>
+                </Link>
+              )}
               <Typography level="body-sm">
-                <Stack direction="row" spacing={2}>
-                  <span>チャンネル登録者数1234人</span>
-                </Stack>
+                <span>チャンネル登録者数****人</span>
               </Typography>
             </div>
-            <div>
+            {/* <div>
               <Button variant="outlined" color="neutral" sx={{ marginLeft: 3 }}>
                 チャンネル登録
               </Button>
-            </div>
+            </div> */}
           </Stack>
           <Card variant="plain" sx={{ my: 2 }}>
             <Stack direction="row" spacing={2}>
-              <Typography level="title-sm">1,234人が視聴中</Typography>
-              <Typography level="title-sm">2時間前にライブ配信開始</Typography>
+              {liveStream.data === undefined ? (
+                <Skeleton variant="text" level="title-sm" width={100} />
+              ) : (
+                <Typography level="title-sm">
+                  {liveStream.data?.viewers_count}人が視聴中
+                </Typography>
+              )}
+              <Typography level="title-sm">
+                ****時間前にライブ配信開始
+              </Typography>
             </Stack>
-            <Typography
-              level="body-md"
-              sx={{ whiteSpace: 'pre-wrap' }}
-            >{`説明文\n2行目\n三行目`}</Typography>
+            <Typography level="body-md" sx={{ whiteSpace: 'pre-wrap' }}>
+              {liveStream.data?.description}
+            </Typography>
+            <Divider sx={{ my: 2, mx: 0 }} />
+            <Typography level="body-md" sx={{ whiteSpace: 'pre-wrap' }}>
+              {liveStream.data?.owner?.description}
+            </Typography>
           </Card>
         </Stack>
         <Stack sx={{ flexBasis: '250px', flexGrow: 1, px: '16px' }}>

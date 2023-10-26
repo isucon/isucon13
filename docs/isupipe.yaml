@@ -73,6 +73,17 @@ paths:
       description: ユーザ登録
       requestBody:
         $ref: "#/components/requestBodies/PostUser"
+  /user/me:
+    get:
+      summary:
+      operationId: get-user-me
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
   "/users/{username}":
     parameters:
       - schema:
@@ -713,9 +724,12 @@ components:
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: "#/components/schemas/Tag"
+            type: object
+            properties:
+              tags:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
     GetUser:
       description: Example response
       content:
@@ -747,7 +761,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/LivestreamView"
+            $ref: "#/components/schemas/Livestream"
     GetLivestreamStatistics:
       description: Example response
       content:

@@ -5,7 +5,9 @@ import React from 'react';
 export interface ReactionProps {
   children: React.ReactNode;
 }
-export function Reaction(props: ReactionProps): React.ReactNode {
+export const Reaction = React.memo(function Reaction(
+  props: ReactionProps,
+): React.ReactNode {
   const elem = React.useRef<HTMLSpanElement>(null);
   const [isFinished, setIsFinished] = React.useState(false);
 
@@ -41,7 +43,7 @@ export function Reaction(props: ReactionProps): React.ReactNode {
       {props.children}
     </Emoji>
   );
-}
+});
 
 declare global {
   namespace JSX {

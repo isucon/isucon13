@@ -132,28 +132,9 @@ export default function LiveComment(): React.ReactElement {
           }}
         >
           <Stack spacing={2}>
-            {liveComments.map((comment) =>
-              comment.chip ? (
-                <TipComment
-                  key={comment.id}
-                  text={comment.text}
-                  amount={comment.chip}
-                />
-              ) : (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  key={comment.id}
-                  alignItems="center"
-                >
-                  <Avatar size="sm" />
-                  <Typography level="title-sm">{comment.userName}</Typography>
-                  <Typography level="body-md">
-                    <span>{comment.text}</span>
-                  </Typography>
-                </Stack>
-              ),
-            )}
+            {liveComments.map((comment) => (
+              <Comment key={comment.id} comment={comment} />
+            ))}
           </Stack>
           <Stack
             sx={{
@@ -271,6 +252,25 @@ const PickerWrapper = styled.div`
     height: 300px;
   }
 `;
+
+interface CommentProps {
+  comment: LiveComment;
+}
+const Comment = React.memo(function Comment({
+  comment,
+}: CommentProps): React.ReactElement {
+  return comment.chip ? (
+    <TipComment text={comment.text} amount={comment.chip} />
+  ) : (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Avatar size="sm" />
+      <Typography level="title-sm">{comment.userName}</Typography>
+      <Typography level="body-md">
+        <span>{comment.text}</span>
+      </Typography>
+    </Stack>
+  );
+});
 
 interface TipCommentProps {
   amount: number;

@@ -17,6 +17,7 @@ import {
 } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toast } from '../toast/toast';
+import { useTags, useUserMe } from '~/api/hooks';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -36,6 +37,9 @@ export function Layout(props: LayoutProps): React.ReactElement {
       navigate('/');
     }
   }
+
+  const tags = useTags();
+  const userMe = useUserMe();
 
   return (
     <div>
@@ -71,9 +75,10 @@ export function Layout(props: LayoutProps): React.ReactElement {
         </LogoLink>
         <Stack>
           <Autocomplete
-            options={['aaa', 'bbb', 'ccc']}
+            options={tags.data?.tags?.map((tag) => tag.name) ?? []}
             startDecorator={<MdSearch />}
             onChange={onChange}
+            loading={tags.isLoading}
           />
         </Stack>
         <Stack direction="row" alignItems="center" spacing={2}>
@@ -110,10 +115,13 @@ export function Layout(props: LayoutProps): React.ReactElement {
           </div>
           <div>
             <Dropdown>
-              <MenuButton>account</MenuButton>
+              <MenuButton>
+                {userMe.data ? userMe.data.name : '未ログイン'}
+              </MenuButton>
               <Menu>
-                <MenuItem>aaa</MenuItem>
-                <MenuItem>bbb</MenuItem>
+                <MenuItem component={Link} to="/account/login">
+                  ログイン
+                </MenuItem>
               </Menu>
             </Dropdown>
           </div>

@@ -15,6 +15,9 @@ export type RequestBody$post$user = RequestBodies.PostUser.Content;
 export interface Response$post$user$Status$201 {
   'application/json': Schemas.User;
 }
+export interface Response$get$user$me$Status$200 {
+  'application/json': Schemas.User;
+}
 export interface Parameter$get$users$username {
   username: string;
   /** セッションID */
@@ -126,6 +129,8 @@ export type ResponseContentType$post$user = keyof Response$post$user$Status$201;
 export interface Params$post$user {
   requestBody: RequestBody$post$user['application/json'];
 }
+export type ResponseContentType$get$user$me =
+  keyof Response$get$user$me$Status$200;
 export type ResponseContentType$get$users$username =
   keyof Response$get$users$username$Status$200;
 export interface Params$get$users$username {
@@ -236,6 +241,7 @@ export type SuccessResponses =
   | Response$get$tag$Status$200
   | Response$get$users$Status$200
   | Response$post$user$Status$201
+  | Response$get$user$me$Status$200
   | Response$get$users$username$Status$200
   | Response$get$theme$Status$200
   | Response$get$users$statistics$Status$200
@@ -255,6 +261,7 @@ export namespace ErrorResponse {
   export type post$login = void;
   export type get$users = void;
   export type post$user = void;
+  export type get$user$me = void;
   export type get$users$username = void;
   export type get$theme = void;
   export type get$users$statistics = void;
@@ -372,6 +379,22 @@ export class Client<RequestOption> {
         url,
         headers,
         requestBody: params.requestBody,
+      },
+      option,
+    );
+  }
+  public async get$user$me(
+    option?: RequestOption,
+  ): Promise<Response$get$user$me$Status$200['application/json']> {
+    const url = this.baseUrl + `/user/me`;
+    const headers = {
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'GET',
+        url,
+        headers,
       },
       option,
     );

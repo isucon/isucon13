@@ -68,13 +68,14 @@ export namespace Schemas {
     created_at?: number;
     updated_at?: number;
   }
-  export type LivestreamView = Schemas.LivestreamView;
 }
 export namespace Responses {
   /** Example response */
   export namespace GetTag {
     export interface Content {
-      'application/json': Schemas.Tag[];
+      'application/json': {
+        tags?: Schemas.Tag[];
+      };
     }
   }
   /** Example response */
@@ -104,7 +105,7 @@ export namespace Responses {
   /** Example response */
   export namespace GetLivestream {
     export interface Content {
-      'application/json': Schemas.LivestreamView;
+      'application/json': Schemas.Livestream;
     }
   }
   /** Example response */

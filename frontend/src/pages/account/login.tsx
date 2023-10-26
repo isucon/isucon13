@@ -6,7 +6,7 @@ import Input from '@mui/joy/Input';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '~/api/client';
 import { useGlobalToastQueue } from '~/components/toast/toast';
 
@@ -18,6 +18,7 @@ interface FormValues {
 export default function AccountPage(): React.ReactElement {
   const form = useForm<FormValues>();
   const toast = useGlobalToastQueue();
+  const navigate = useNavigate();
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -36,6 +37,7 @@ export default function AccountPage(): React.ReactElement {
         },
         { timeout: 3000 },
       );
+      navigate('/');
     } catch (e) {
       console.warn(e);
       toast.add(

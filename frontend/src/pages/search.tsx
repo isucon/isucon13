@@ -4,12 +4,18 @@ import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useLiveStreams } from '~/api/hooks';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function SearchResultPage(): React.ReactElement {
   // get query
   const [searchParams] = useSearchParams();
   const tag = searchParams.get('q');
+
+  const liveSterams = useLiveStreams({
+    tag: tag ?? '',
+  });
+  console.log('liveSterams', tag, liveSterams.data);
 
   return (
     <>
@@ -26,15 +32,9 @@ export default function SearchResultPage(): React.ReactElement {
             flexGrow={1}
             sx={{ padding: 2 }}
           >
-            {new Array(30).fill(0).map((stream, index) => (
+            {liveSterams.data?.map((stream, index) => (
               <Grid key={index} xs={1}>
-                <VideoThumbnail
-                  liveSteram={{
-                    id: index,
-                    user_id: 12345,
-                    title: 'title',
-                  }}
-                />
+                <VideoThumbnail liveSteram={stream} />
               </Grid>
             ))}
           </Grid>
