@@ -199,15 +199,16 @@ func main() {
 	// DB接続
 	conn, err := connectDB()
 	if err != nil {
-		e.Logger.Fatalf("failed to connect db: %v", err)
-		return
+		e.Logger.Errorf("failed to connect db: %v", err)
+		os.Exit(1)
 	}
 	defer conn.Close()
 	dbConn = conn
 
 	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
 	if !ok {
-		e.Logger.Fatalf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		e.Logger.Errorf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		os.Exit(1)
 	}
 	powerDNSSubdomainAddress = subdomainAddr
 
@@ -221,6 +222,7 @@ func main() {
 	// HTTPサーバ起動
 	listenAddr := net.JoinHostPort("", strconv.Itoa(listenPort))
 	if err := e.Start(listenAddr); err != nil {
-		e.Logger.Fatal(err)
+		e.Logger.Errorf("failed to start HTTP server: %v", err)
+		os.Exit(1)
 	}
 }
