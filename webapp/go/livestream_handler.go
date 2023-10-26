@@ -365,6 +365,24 @@ func getLivecommentReportsHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
+	var livestreamModel LivestreamModel
+	if err := tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamId); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	sess, err := session.Get(defaultSessionIdKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	if livestreamModel.UserId != userId {
+		return echo.NewHTTPError(http.StatusForbidden, "can't get other streamer's livecomment reports")
+	}
+
 	var reportModels []*LivecommentReportModel
 	if err := tx.SelectContext(ctx, &reportModels, "SELECT * FROM livecomment_reports WHERE livestream_id = ?", livestreamId); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
