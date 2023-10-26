@@ -314,7 +314,7 @@ func getUsersHandler(c echo.Context) (err error) {
 	defer tx.Rollback()
 
 	var userModels []*UserModel
-	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
+	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name FROM users"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
