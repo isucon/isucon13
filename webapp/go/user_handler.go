@@ -93,7 +93,7 @@ func getUserSessionHandler(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -257,7 +257,7 @@ func loginHandler(c echo.Context) error {
 	}
 	sess.Values[defaultSessionIdKey] = sessionId
 	sess.Values[defaultUserIdKey] = userModel.Id
-	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
+	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -347,7 +347,7 @@ func verifyUserSession(c echo.Context) error {
 	}
 
 	now := time.Now()
-	if now.Unix() > int64(sessionExpires.(int)) {
+	if now.Unix() > sessionExpires.(int64) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
 	}
 

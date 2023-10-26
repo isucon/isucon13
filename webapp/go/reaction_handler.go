@@ -88,7 +88,7 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	userId, ok := sess.Values[defaultUserIdKey].(int)
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
