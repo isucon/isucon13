@@ -81,17 +81,22 @@ export default function LiveComment(): React.ReactElement {
       if (Math.random() < 0.1) {
         chip = chipTable[Math.floor(Math.random() * chipTable.length)];
       }
-      setLiveComments((comments) =>
-        [
+      setLiveComments((comments) => {
+        const newList = [
           ...comments,
           {
-            id: `comment-${counter}`,
+            id: `comment-${counter}-${Date.now()}`,
             userName: `ユーザー名${counter}`,
             text: `メッセージ${counter}`,
             chip,
           },
-        ].splice(-50),
-      );
+        ];
+        if (newList.length > 40) {
+          return newList.splice(-30);
+        } else {
+          return newList;
+        }
+      });
     }, 300);
     return () => clearInterval(timer);
   }, []);
@@ -262,15 +267,30 @@ const Comment = React.memo(function Comment({
   return comment.chip ? (
     <TipComment text={comment.text} amount={comment.chip} />
   ) : (
-    <Stack direction="row" spacing={1} alignItems="center">
-      <Avatar size="sm" />
-      <Typography level="title-sm">{comment.userName}</Typography>
-      <Typography level="body-md">
-        <span>{comment.text}</span>
+    <CommentWrapper>
+      <Avatar size="sm" sx={{ position: 'absolute' }} />
+      <Typography component="div" sx={{ ml: '40px', pt: '2px' }}>
+        <Typography level="title-sm" component="span">
+          {comment.userName}
+        </Typography>
+        <Typography level="body-md" component="span" sx={{ ml: 1 }}>
+          <span>{comment.text}</span>
+        </Typography>
       </Typography>
-    </Stack>
+    </CommentWrapper>
+    // <Stack direction="row" spacing={1} alignItems="center">
+    //   <Avatar size="sm" />
+    //   <Typography level="title-sm">{comment.userName}</Typography>
+    //   <Typography level="body-md">
+    //     <span>{comment.text}</span>
+    //   </Typography>
+    // </Stack>
   );
 });
+
+const CommentWrapper = styled.div`
+  position: relative;
+`;
 
 interface TipCommentProps {
   amount: number;
