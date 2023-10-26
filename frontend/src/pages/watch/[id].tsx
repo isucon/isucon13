@@ -13,7 +13,6 @@ import LiveComment from '~/components/video/comment';
 export default function WatchPage(): React.ReactElement {
   const { id } = useParams();
   const liveStream = useLiveStream(id ?? null);
-  console.log({ liveStream }, liveStream.isLoading, liveStream.data);
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>

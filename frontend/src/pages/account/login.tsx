@@ -8,6 +8,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '~/api/client';
+import { useUserMe } from '~/api/hooks';
 import { useGlobalToastQueue } from '~/components/toast/toast';
 
 interface FormValues {
@@ -19,6 +20,13 @@ export default function AccountPage(): React.ReactElement {
   const form = useForm<FormValues>();
   const toast = useGlobalToastQueue();
   const navigate = useNavigate();
+
+  const userMe = useUserMe({
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+    revalidateOnMount: false,
+    revalidateOnReconnect: false,
+  });
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -37,6 +45,7 @@ export default function AccountPage(): React.ReactElement {
         },
         { timeout: 3000 },
       );
+      await Promise.all([userMe.mutate()]);
       navigate('/');
     } catch (e) {
       console.warn(e);

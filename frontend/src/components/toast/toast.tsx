@@ -44,7 +44,6 @@ export function ToastItem({
 }: {
   toast: QueuedToast<ToastItem>;
 }): React.ReactElement {
-  console.log(toast.timer);
   React.useEffect(() => {
     if (!toast.timer || !toast.timeout) {
       return;

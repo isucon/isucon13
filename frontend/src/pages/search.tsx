@@ -15,7 +15,6 @@ export default function SearchResultPage(): React.ReactElement {
   const liveSterams = useLiveStreams({
     tag: tag ?? '',
   });
-  console.log('liveSterams', tag, liveSterams.data);
 
   return (
     <>

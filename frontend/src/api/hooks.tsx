@@ -1,25 +1,29 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
-import useSWR from 'swr';
+import useSWR, { type SWRConfiguration } from 'swr';
 import { Parameter$get$livestream } from './apiClient';
 import { HTTPError, apiClient } from './client';
 
-export function useUserMe() {
-  return useSWR(`/user/me`, async () => {
-    try {
-      return await apiClient.get$user$me({});
-    } catch (e) {
-      if (e instanceof HTTPError) {
-        switch (e.response.status) {
-          case 403:
-            return null;
-          case 401:
-            return null;
+export function useUserMe(config?: SWRConfiguration) {
+  return useSWR(
+    `/user/me`,
+    async () => {
+      try {
+        return await apiClient.get$user$me({});
+      } catch (e) {
+        if (e instanceof HTTPError) {
+          switch (e.response.status) {
+            case 403:
+              return null;
+            case 401:
+              return null;
+          }
         }
+        throw e;
       }
-      throw e;
-    }
-  });
+    },
+    config,
+  );
 }
 
 export function useLiveStreams(params: Parameter$get$livestream) {
