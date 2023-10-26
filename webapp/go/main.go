@@ -55,7 +55,7 @@ func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
 	return conf, nil
 }
 
-func connectDB() (*sqlx.DB, error) {
+func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 	const (
 		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
 		addrEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_ADDRESS"
@@ -112,6 +112,7 @@ func connectDB() (*sqlx.DB, error) {
 
 	for i := 0; i < 10; i++ {
 		if err := db.Ping(); err != nil {
+			logger.Errorf("failed to ping to MySQL: %v", err)
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -197,7 +198,7 @@ func main() {
 	e.GET("/payment", GetPaymentResult)
 
 	// DB接続
-	conn, err := connectDB()
+	conn, err := connectDB(e.Logger)
 	if err != nil {
 		e.Logger.Errorf("failed to connect db: %v", err)
 		os.Exit(1)
