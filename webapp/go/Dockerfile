@@ -4,7 +4,7 @@ WORKDIR /tmp
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -y wget gcc g++ make sqlite3 locales locales-all && \
+    apt-get install -y curl wget gcc g++ make sqlite3 locales locales-all && \
     wget -q https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb && \
     apt-get -y install ./mysql-apt-config_0.8.22-1_all.deb && \
     apt-get -y update && \
@@ -16,6 +16,8 @@ USER isucon
 
 RUN mkdir -p /home/isucon/webapp/go
 WORKDIR /home/isucon/webapp/go
+COPY --chown=isucon:isucon ./pdnsutil /usr/local/bin/pdnsutil
+RUN chmod +x /usr/local/bin/pdnsutil
 COPY --chown=isucon:isucon ./ /home/isucon/webapp/go/
 RUN go build -o isupipe .
 

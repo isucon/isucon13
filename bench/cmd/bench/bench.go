@@ -66,9 +66,21 @@ var run = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:        "target",
-			Value:       "http://127.0.0.1:12345",
+			Value:       "http://pipe.u.isucon.dev:12345",
 			Destination: &config.TargetBaseURL,
 			EnvVar:      "BENCH_TARGET_URL",
+		},
+		cli.StringFlag{
+			Name:        "nameserver",
+			Value:       "127.0.0.1",
+			Destination: &config.TargetNameserver,
+			EnvVar:      "BENCH_NAMESERVER",
+		},
+		cli.IntFlag{
+			Name:        "dns-port",
+			Value:       53,
+			Destination: &config.DNSPort,
+			EnvVar:      "BENCH_DNS_PORT",
 		},
 		cli.StringFlag{
 			Name:        "assetdir",

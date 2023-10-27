@@ -26,12 +26,9 @@ import (
 const (
 	listenPort                     = 12345
 	powerDNSSubdomainAddressEnvKey = "ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS"
-	// FIXME: ISUCON当日までに削除する
-	powerDNSDisableEnvKey = "ISUCON13_POWERDNS_DISABLED"
 )
 
 var (
-	disablePowerDNS          bool = false
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
 	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
@@ -212,13 +209,6 @@ func main() {
 		os.Exit(1)
 	}
 	powerDNSSubdomainAddress = subdomainAddr
-
-	disabledEnv, _ := os.LookupEnv(powerDNSDisableEnvKey)
-	disabled, err := strconv.ParseBool(disabledEnv)
-	if err != nil {
-		disablePowerDNS = false
-	}
-	disablePowerDNS = disabled
 
 	// HTTPサーバ起動
 	listenAddr := net.JoinHostPort("", strconv.Itoa(listenPort))
