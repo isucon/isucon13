@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -66,13 +67,23 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return fmt.Errorf("初期データのタグが正常に登録されていません: want=%d, but got=%d", scheduler.GetTagPoolLength(), len(tagResponse.Tags))
 	}
 
+	var (
+		tagCount    = rand.Intn(5)
+		tagStartIdx = rand.Intn(len(tagResponse.Tags))
+		tagEndIdx   = min(tagStartIdx+tagCount, len(tagResponse.Tags))
+	)
+	var tags []int
+	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
+		tags = append(tags, tag.Id)
+	}
+
 	reservation, err := scheduler.ReservationSched.GetColdReservation()
 	if err != nil {
 		return err
 	}
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
 		// FIXME: webapp側でタグの採番がおかしく、エラーが出るので一時的に無効化
-		// Tags:        []int{1, 2, 3, 4, 5},
+		Tags:        tags,
 		Title:       reservation.Title,
 		Description: reservation.Description,
 		StartAt:     reservation.StartAt,
@@ -161,7 +172,7 @@ func assertPipeUserRegistration(ctx context.Context, client *isupipe.Client) err
 			DarkMode: true,
 		},
 	}
-	if _, err := client.PostUser(ctx, &pipeReq, isupipe.WithStatusCode(http.StatusBadRequest), isupipe.DecodeBody(false)); err != nil {
+	if _, err := client.PostUser(ctx, &pipeReq, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("'pipe'ユーザの作成は拒否されなければなりません: %w", err)
 	}
 
@@ -182,7 +193,7 @@ func assertUserUniqueConstraint(ctx context.Context, client *isupipe.Client) err
 		return err
 	}
 
-	if _, err := client.PostUser(ctx, &testDupReq, isupipe.WithStatusCode(http.StatusInternalServerError), isupipe.DecodeBody(false)); err != nil {
+	if _, err := client.PostUser(ctx, &testDupReq, isupipe.WithStatusCode(http.StatusInternalServerError)); err != nil {
 		return fmt.Errorf("重複したユーザ名を含むリクエストはエラーを返さなければなりません: %w", err)
 	}
 
@@ -196,7 +207,7 @@ func assertBadLogin(ctx context.Context, client *isupipe.Client, user *isupipe.U
 		Password: "unknownUser",
 	}
 
-	if err := client.Login(ctx, &unknownUserReq, isupipe.WithStatusCode(http.StatusUnauthorized), isupipe.DecodeBody(false)); err != nil {
+	if err := client.Login(ctx, &unknownUserReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
 		return bencherror.NewViolationError(err, "データベースに存在しないユーザからのログインは無効です")
 	}
 
@@ -205,7 +216,7 @@ func assertBadLogin(ctx context.Context, client *isupipe.Client, user *isupipe.U
 		UserName: user.Name,
 		Password: "wrongPassword",
 	}
-	if err := client.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized), isupipe.DecodeBody(false)); err != nil {
+	if err := client.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
 		return bencherror.NewViolationError(err, "パスワードが間違っているログインは無効です")
 	}
 

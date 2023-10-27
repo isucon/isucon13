@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+set -x
+
+#   0           1             2               3           4    5        6
+# ("pdnsutil", "add-record", "u.isucon.dev", "username", "a", "86400", "127.0.0.1")
+
+if [[ $# -ne 6 ]]; then
+    echo "Usage: pdnsutil add-record u.isucon.dev [USERNAME] [RECORD TYPE] [TTL] [CONTENT]"
+    exit 1
+fi
+
+
+if [[ ! $0 =~ pdnsutil$ ]]; then
+    echo "executable must be 'pdnsutil', but got $0"
+    exit 1
+fi
+if [[ $1 != "add-record" ]]; then
+    echo "command must be 'add-record', but got $1"
+    exit 1
+fi
+if [[ $2 != "u.isucon.dev" ]]; then
+    echo "zone must be 'u.isucon.dev', but got $2"
+    exit 1
+fi
+
+USERNAME=$3
+TYPE=$4
+if [[ $TYPE != "A" ]]; then
+    echo "record type must be 'A', but got $TYPE"
+    exit 1
+fi
+TTL=$5
+if [[ ! $TTL =~ ^[0-9]+$ ]]; then
+   echo "ttl must be number, but got $TTL"
+   exit 1
+fi
+CONTENT=$6
+if [[ ! $CONTENT =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    echo "content must be ipaddress, but got $CONTENT"
+    exit 1
+fi
+
+curl -X PATCH -H 'X-API-Key: isudns' \
+     --data '{"rrsets": [{"name": "'$USERNAME.u.isucon.dev.'", "type": "'$TYPE'", "ttl": '$TTL', "changetype":"REPLACE", "records": [{"content": "'$CONTENT'", "disabled": false}]}]}' \
+     http://powerdns:8081/api/v1/servers/localhost/zones/u.isucon.dev.

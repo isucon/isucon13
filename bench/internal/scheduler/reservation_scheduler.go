@@ -15,7 +15,7 @@ const NumSlots = 2
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
 var (
-	ReservationSched = mustNewReservationScheduler(1711897200, (24 * 365))
+	ReservationSched = mustNewReservationScheduler(1711897200, NumSlots, (24 * 365))
 )
 
 func init() {
@@ -49,8 +49,8 @@ type ReservationScheduler struct {
 	// reservationid => []string{"tag1", "tag2", ...} という感じで持てばいいか
 }
 
-func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler {
-	intervalTempertures, err := newIntervalTemperture(baseAt, NumSlots, hours)
+func mustNewReservationScheduler(baseAt int64, numSlots int64, hours int) *ReservationScheduler {
+	intervalTempertures, err := newIntervalTemperture(baseAt, numSlots, hours)
 	if err != nil {
 		log.Fatalln(err)
 	}
