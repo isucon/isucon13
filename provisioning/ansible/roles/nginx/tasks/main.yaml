@@ -1,17 +1,20 @@
 ---
 - name: "roles/nginx/tasks: Install package"
+  become: true
   apt:
     name:
-    - nginx
+      - nginx
     update_cache: yes
 
 - name: "roles/nginx/tasks: Mkdir for config files"
+  become: true
   file:
     path: /etc/nginx/conf.d
     state: directory
     mode: 0755
 
 - name: "roles/nginx/tasks: Deploy nginx configs"
+  become: true
   copy:
     src: "{{ item }}"
     dest: "/{{ item }}"
@@ -19,14 +22,16 @@
     group: "root"
     mode: "0644"
   with_items:
-  - etc/nginx/conf.d/nginx.conf
+    - etc/nginx/conf.d/nginx.conf
 
 - name: "roles/nginx/tasks: Delete default config"
+  become: true
   file:
     path: /etc/nginx/sites-enabled/default
     state: absent
 
 - name: "roles/nginx/tasks: Start nginx"
+  become: true
   systemd:
     daemon_reload: "yes"
     name: "nginx"

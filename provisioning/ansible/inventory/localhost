@@ -1,5 +1,5 @@
 [benchmarker]
-localhost
+localhost ansible_connection=local
 
 [application]
-localhost
+localhost ansible_connection=local
