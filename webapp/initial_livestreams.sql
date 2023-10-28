@@ -1,0 +1,1 @@
+INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES (1, 'テスト配信', 'サービステスト用の配信。部門ごとに記録するデータを分けたいので、将来的にはもう少し増やす。きっといつかやると思う。', 'https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8', 'https://picsum.photos/200/300', 1711897200, 1711900800);

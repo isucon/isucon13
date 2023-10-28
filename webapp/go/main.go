@@ -148,7 +148,7 @@ func main() {
 
 	// top
 	e.GET("/tag", getTagHandler)
-	e.GET("/theme", getStreamerThemeHandler)
+	e.GET("/user/:username/theme", getStreamerThemeHandler)
 
 	// livestream
 	// reserve livestream
@@ -178,10 +178,11 @@ func main() {
 	e.DELETE("/livestream/:livestream_id/enter", leaveLivestreamHandler)
 
 	// user
-	e.POST("/user", postUserHandler)
+	// FIXME: /user -> /register
+	e.POST("/register", registerHandler)
 	e.POST("/login", loginHandler)
 	e.GET("/user", getUsersHandler)
-	e.GET("/user/me", getUserSessionHandler)
+	e.GET("/user/me", getMeHandler)
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/user/:username", getUserHandler)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,6 +15,9 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
+
+// 同時配信可能予約枠数
+const NumReservationSlot = 2
 
 type ReserveLivestreamRequest struct {
 	Tags        []int64 `json:"tags"`
@@ -96,6 +100,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	// 2024/04/01からの１年間の期間内であるかチェック
+	c.Logger().Info("check term")
 	var (
 		termStartAt    = time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
 		termEndAt      = time.Date(2025, 3, 31, 0, 0, 0, 0, time.UTC)
@@ -108,27 +113,29 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	c.Logger().Info("check collaborators")
 	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる
+	// FIXME: 枠数を超過して予約しようとしていないか調べる
 	var users []int64
 	users = append(users, int64(userId))
 	users = append(users, req.Collaborators...)
 	for _, user := range users {
 		var founds int
 		if err := tx.GetContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
-			// FIXME: スケジューラ実装ができてきたら、ちゃんとエラーを返すように
-			// return echo.NewHTTPError(http.StatusConflict, "schedule conflict")
-			c.Logger().Warnf("schedule conflict: %+v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		}
+		if founds >= NumReservationSlot {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ユーザ%dが予約できません", user))
 		}
 	}
 
-	c.Logger().Info("check term")
 	now := time.Now().Unix()
 	var (
 		startAt         = time.Unix(req.StartAt, 0)
 		endAt           = time.Unix(req.EndAt, 0)
 		livestreamModel = &LivestreamModel{
-			UserId:       int64(userId),
-			Title:        req.Title,
-			Description:  req.Description,
+			UserId:      int64(userId),
+			Title:       req.Title,
+			Description: req.Description,
+			// FIXME: プレイリスト、サムネイルは配信環境より配信されるので、それらのURLをPOSTできるようにする
 			PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
 			ThumbnailUrl: "https://picsum.photos/200/300",
 			StartAt:      startAt.Unix(),
