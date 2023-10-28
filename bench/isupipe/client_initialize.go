@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -22,7 +23,10 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	var initializeResp *InitializeResponse
 	if json.NewDecoder(resp.Body).Decode(&initializeResp); err != nil {

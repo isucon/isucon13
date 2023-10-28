@@ -29,6 +29,7 @@ type Client struct {
 	assetAgent *agent.Agent
 }
 
+// FIXME: テスト用に、ネームサーバのアドレスや接続先アドレスなどをオプションで渡せるように
 func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
@@ -59,13 +60,13 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	for _, customOpt := range customOpts {
 		opts = append(opts, customOpt)
 	}
-	customAgent, err := agent.NewAgent(opts...)
+	agent, err := agent.NewAgent(opts...)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
 	return &Client{
-		agent: customAgent,
+		agent: agent,
 	}, nil
 }
 

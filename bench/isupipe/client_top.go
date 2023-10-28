@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -35,6 +36,10 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)

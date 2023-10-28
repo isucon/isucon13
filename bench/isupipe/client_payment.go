@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -26,7 +27,10 @@ func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	var paymentResp *PaymentResult
 	if json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {

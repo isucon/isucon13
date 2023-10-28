@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -39,7 +40,10 @@ func (c *Client) GetReactions(ctx context.Context, livestreamId int, opts ...Cli
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -78,6 +82,10 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/isucon/isucandar/agent"
@@ -46,6 +47,35 @@ func (c *Client) DownloadIcon(ctx context.Context, user *User, opts ...ClientOpt
 	return nil
 }
 
+func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOption) error {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	urlPath := fmt.Sprintf("/user/%s", username)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
+
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	benchscore.AddScore(benchscore.SuccessGetUser)
+	return nil
+}
+
 func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, error) {
 	var (
 		defaultStatusCode = http.StatusOK
@@ -61,7 +91,10 @@ func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, e
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -76,6 +109,34 @@ func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, e
 
 	benchscore.AddScore(benchscore.SuccessGetUsers)
 	return users, nil
+}
+
+// FIXME: meに変える
+func (c *Client) GetUserSession(ctx context.Context, opts ...ClientOption) error {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	req, err := c.agent.NewRequest(http.MethodGet, "/user/me", nil)
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
+
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	return nil
 }
 
 func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, opts ...ClientOption) (*User, error) {
@@ -100,6 +161,10 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, opts ...Clien
 		// sendRequestはWrapErrorを行っているのでそのままreturn
 		return nil, err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -137,6 +202,10 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	if err != nil {
 		return err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -162,56 +231,5 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	}
 
 	benchscore.AddScore(benchscore.SuccessLogin)
-	return nil
-}
-
-// FIXME: meに変える
-func (c *Client) GetUserSession(ctx context.Context, opts ...ClientOption) error {
-	var (
-		defaultStatusCode = http.StatusOK
-		o                 = newClientOptions(defaultStatusCode, opts...)
-	)
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/user/me", nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := sendRequest(ctx, c.agent, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
-	}
-
-	return nil
-}
-
-func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOption) error {
-	var (
-		defaultStatusCode = http.StatusOK
-		o                 = newClientOptions(defaultStatusCode, opts...)
-	)
-
-	urlPath := fmt.Sprintf("/user/%s", username)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := sendRequest(ctx, c.agent, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetUser)
 	return nil
 }

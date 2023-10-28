@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -66,7 +67,10 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, opts ...
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -99,7 +103,10 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, op
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -138,7 +145,10 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -175,6 +185,10 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommen
 	if err != nil {
 		return err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -208,7 +222,10 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)

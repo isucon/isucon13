@@ -46,7 +46,7 @@ func benchmark(ctx context.Context) error {
 	// pretest, benchmarkにはこれら初期化が必要
 	benchscore.InitScore(ctx)
 	// bencherror.InitPenalty(ctx)
-	bencherror.InitializeErrors(ctx)
+	bencherror.InitErrors(ctx)
 
 	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
 	defer cancelBench()
@@ -135,7 +135,7 @@ var run = cli.Command{
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitScore(ctx)
 		// bencherror.InitPenalty(ctx)
-		bencherror.InitializeErrors(ctx)
+		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, pretestClient); err != nil {
 			return cli.NewExitError(err, 1)
 		}

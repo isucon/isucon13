@@ -7,6 +7,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/pubsub"
 )
 
+// ClientPool は、ログイン後のクライアントプールです
 type ClientPool struct {
 	pool *pubsub.PubSub
 }
@@ -37,6 +38,7 @@ func (p *ClientPool) Put(ctx context.Context, c *Client) {
 	p.pool.Publish(ctx, c)
 }
 
+// LivestreamPool は、予約後のライブ配信プールです
 type LivestreamPool struct {
 	pool *pubsub.PubSub
 }

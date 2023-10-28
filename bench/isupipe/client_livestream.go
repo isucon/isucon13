@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -55,6 +56,10 @@ func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOpt
 	if err != nil {
 		return err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -84,6 +89,10 @@ func (c *Client) GetLivestream(
 	if err != nil {
 		return err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -111,6 +120,10 @@ func (c *Client) GetLivestreams(
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -148,6 +161,10 @@ func (c *Client) GetLivestreamsByTag(
 	if err != nil {
 		return err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -178,6 +195,10 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -209,7 +230,10 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, opts ...
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
@@ -235,7 +259,10 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int, opts ...
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
