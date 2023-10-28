@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -112,6 +114,9 @@ func (b *benchmarker) run(ctx context.Context) error {
 			if ok := b.sem.TryAcquire(1); ok {
 				go b.load(ctx)
 			}
+		}
+		if err := bencherror.CheckViolation(); err != nil && errors.Is(err, bencherror.ErrViolation) {
+			return err
 		}
 	}
 }

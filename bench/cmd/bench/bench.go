@@ -93,6 +93,12 @@ var run = cli.Command{
 			Destination: &config.SlackWebhookURL,
 			EnvVar:      "BENCH_SLACK_WEBHOOK_URL",
 		},
+		cli.StringFlag{
+			Name:        "logpath",
+			Destination: &config.LogPath,
+			EnvVar:      "BENCH_LOG_PATH",
+			Value:       "/tmp/isupipe-benchmarker.log",
+		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
@@ -154,7 +160,7 @@ var run = cli.Command{
 		// 	return cli.NewExitError(err, 1)
 		// }
 
-		lgr.Info("===== System errors =====")
+		lgr.Info("===== Errors =====")
 		var systemErrors []string
 		for _, msgs := range bencherror.GetFinalErrorMessages() {
 			for _, msg := range msgs {

@@ -2,6 +2,7 @@ package bencherror
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -10,7 +11,12 @@ import (
 )
 
 var (
-	// SystemError は、ベンチマーカ内部のエラー (継続不可。FIXME: スコアについての扱いどうするか)
+	ErrViolation = errors.New("仕様違反が発生しました")
+	ErrSystem    = errors.New("ベンチマーカーに問題が発生しました")
+)
+
+var (
+	// SystemError は、ベンチマーカ内部のエラー (継続不可。fail)
 	SystemError failure.StringCode = "system"
 	// BenchmarkApplicationError は、ベンチ走行中の一般的なエラー (減点)
 	BenchmarkApplicationError failure.StringCode = "benchmark-application"
@@ -73,4 +79,26 @@ func GetFinalPenalties() map[string]int64 {
 	})
 
 	return benchErrors.Count()
+}
+
+func CheckViolation() error {
+	counts := benchErrors.Count()
+
+	systemErrorCount, ok := counts[string(SystemError)]
+	if !ok {
+		return fmt.Errorf("[システム] システムエラーを取得できません")
+	}
+	if systemErrorCount > 0 {
+		return ErrSystem
+	}
+
+	violationCount, ok := counts[string(BenchmarkViolationError)]
+	if !ok {
+		return fmt.Errorf("[システム] 違反エラーを取得できません")
+	}
+	if violationCount > 0 {
+		return ErrViolation
+	}
+
+	return nil
 }
