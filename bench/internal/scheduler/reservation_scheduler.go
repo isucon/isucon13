@@ -15,7 +15,7 @@ const NumSlots = 2
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
 var (
-	ReservationSched = mustNewReservationScheduler(1711897200, NumSlots, (24 * 365))
+	ReservationSched = mustNewReservationScheduler(1711900800, NumSlots, (24*365)-1)
 )
 
 func init() {
@@ -66,7 +66,7 @@ func (r *ReservationScheduler) loadReservations(reservations []*Reservation) {
 	const needFastInsertion = true
 	for _, reservation := range reservations {
 		r.intervalTree.Insert(reservation, needFastInsertion)
-		r.intTreeStates[reservation.Id] = CommitState_None
+		r.intTreeStates[reservation.id] = CommitState_None
 		r.reservationPool = append(r.reservationPool, reservation)
 	}
 	// Get, DoMatching*が呼び出される前に必ずRangesで調整しておく
@@ -91,14 +91,14 @@ func (r *ReservationScheduler) CommitReservation(reservation *Reservation) {
 
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
-	r.intTreeStates[int(reservation.Id)] = CommitState_Committed
+	r.intTreeStates[int(reservation.id)] = CommitState_Committed
 }
 
 func (r *ReservationScheduler) AbortReservation(reservation *Reservation) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
-	r.intTreeStates[int(reservation.Id)] = CommitState_None
+	r.intTreeStates[int(reservation.id)] = CommitState_None
 }
 
 func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
@@ -126,7 +126,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 		}
 
 		for i := len(reservations) - 1; i >= 0; i-- {
-			id := reservations[i].Id
+			id := reservations[i].id
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
 				return reservations[i], nil
@@ -162,7 +162,7 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 		}
 
 		for i := 0; i < len(reservations); i++ {
-			id := reservations[i].Id
+			id := reservations[i].id
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
 				return reservations[i], nil
@@ -198,7 +198,7 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 		}
 
 		for _, reservation := range reservations {
-			id := reservation.Id
+			id := reservation.id
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
 				return reservation, nil

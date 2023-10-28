@@ -6,18 +6,18 @@ import (
 
 func init() {
 	// 人気配信者が走行ごと変わるようにシャッフルする
-	rand.Shuffle(len(vtuberPool), func(i, j int) { vtuberPool[i], vtuberPool[j] = vtuberPool[j], vtuberPool[i] })
+	rand.Shuffle(len(streamerPool), func(i, j int) { streamerPool[i], streamerPool[j] = streamerPool[j], streamerPool[i] })
 }
 
 var UserScheduler = mustNewUserScheduler()
 
 type User struct {
-	UserId         int
 	Name           string
 	DisplayName    string
 	Description    string
 	RawPassword    string
 	HashedPassword string
+	DarkMode       bool
 }
 
 type userScheduler struct {
@@ -30,15 +30,15 @@ const popularLimit = 50
 
 func mustNewUserScheduler() *userScheduler {
 	sched := new(userScheduler)
-	sched.popularStreamerPool = vtuberPool[:popularLimit]
-	sched.streamerPool = vtuberPool[popularLimit:]
+	sched.popularStreamerPool = streamerPool[:popularLimit]
+	sched.streamerPool = streamerPool[popularLimit:]
 
 	return sched
 }
 
-func (s *userScheduler) IsPopularStreamer(userId int) bool {
+func (s *userScheduler) IsPopularStreamer(name string) bool {
 	for _, streamer := range s.popularStreamerPool {
-		if streamer.UserId == userId {
+		if streamer.Name == name {
 			return true
 		}
 	}
@@ -81,10 +81,12 @@ func (s *userScheduler) RangeViewer(fn func(viewer *User)) {
 //
 // 予約スケジューラに、当該時刻の予約済みライブ配信を列挙せよと命令し、予約者を割り出す必要がある.
 // 予約構造にユーザIDは含まれるので、それをもとにユーザを割り出すことが可能.
+// FIXME: 完了した予約を、ユーザ情報と合わせて保持する区間木を新たに定義し、そこから取り出す
+// ベンチマーカーだけで完結するので、取り急ぎ保留
 func (s *userScheduler) SelectCollaborators(n int) []*User {
 	//
-	if n >= len(vtuberPool) {
-		n = len(vtuberPool) - 1
+	if n >= len(streamerPool) {
+		n = len(streamerPool) - 1
 	}
-	return vtuberPool[:n]
+	return streamerPool[:n]
 }

@@ -37,38 +37,6 @@ type (
 	}
 )
 
-type Theme struct {
-	DarkMode bool `json:"dark_mode"`
-}
-
-func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOption) error {
-	var (
-		defaultStatusCode = http.StatusOK
-		o                 = newClientOptions(defaultStatusCode, opts...)
-	)
-
-	// FIXME: 配信者のユーザ名を含めてリクエスト
-	req, err := c.agent.NewRequest(http.MethodGet, "/theme", nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-	resp, err := sendRequest(ctx, c.agent, req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-	}()
-
-	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetUserTheme)
-	return nil
-}
-
 func (c *Client) GetLivestream(
 	ctx context.Context,
 	livestreamId int,

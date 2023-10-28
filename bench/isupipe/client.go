@@ -55,7 +55,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 			},
 		}),
 		agent.WithNoCache(),
-		agent.WithTimeout(1 * time.Second),
+		agent.WithTimeout(10 * time.Second),
 	}
 	for _, customOpt := range customOpts {
 		opts = append(opts, customOpt)

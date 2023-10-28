@@ -49,7 +49,7 @@ func BasicStreamerColdReserveScenario(
 	}
 	scheduler.ReservationSched.CommitReservation(reservation)
 
-	if scheduler.UserScheduler.IsPopularStreamer(reservation.UserId) {
+	if scheduler.UserScheduler.IsPopularStreamer(reservation.UserName) {
 		popularLivestreamPool.Put(ctx, livestream)
 	} else {
 		livestreamPool.Put(ctx, livestream)

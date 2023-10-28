@@ -48,7 +48,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 	}
 }
 
-func (b *benchmarker) runLoginWorkers(ctx context.Context) {
+func (b *benchmarker) runClientProviders(ctx context.Context) {
 	loginFn := func(p *isupipe.ClientPool) func(u *scheduler.User) {
 		return func(u *scheduler.User) {
 			go func() {
@@ -56,6 +56,18 @@ func (b *benchmarker) runLoginWorkers(ctx context.Context) {
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
 				if err != nil {
+					return
+				}
+
+				if _, err := client.Register(ctx, &isupipe.RegisterRequest{
+					Name:        u.Name,
+					DisplayName: u.DisplayName,
+					Description: u.Description,
+					Password:    u.RawPassword,
+					Theme: isupipe.Theme{
+						DarkMode: true,
+					},
+				}); err != nil {
 					return
 				}
 
@@ -91,7 +103,7 @@ func (b *benchmarker) load(ctx context.Context) error {
 }
 
 func (b *benchmarker) run(ctx context.Context) error {
-	b.runLoginWorkers(ctx)
+	b.runClientProviders(ctx)
 	for {
 		select {
 		case <-ctx.Done():

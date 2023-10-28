@@ -3,10 +3,14 @@ package isupipe
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -27,7 +31,7 @@ type User struct {
 }
 
 type (
-	PostUserRequest struct {
+	RegisterRequest struct {
 		Name        string `json:"name"`
 		DisplayName string `json:"display_name"`
 		Description string `json:"description"`
@@ -41,6 +45,39 @@ type (
 		Password string `json:"password"`
 	}
 )
+
+type Theme struct {
+	DarkMode bool `json:"dark_mode"`
+}
+
+func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOption) error {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	// FIXME: 配信者のユーザ名を含めてリクエスト
+	endpoint := fmt.Sprintf("/user/%s/theme", streamer.Name)
+	req, err := c.agent.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	benchscore.AddScore(benchscore.SuccessGetUserTheme)
+	return nil
+}
 
 func (c *Client) DownloadIcon(ctx context.Context, user *User, opts ...ClientOption) error {
 	// FIXME: impl
@@ -139,7 +176,7 @@ func (c *Client) GetUserSession(ctx context.Context, opts ...ClientOption) error
 	return nil
 }
 
-func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, opts ...ClientOption) (*User, error) {
+func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...ClientOption) (*User, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -150,7 +187,7 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, opts ...Clien
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	req, err := c.agent.NewRequest(http.MethodPost, "/user", bytes.NewReader(payload))
+	req, err := c.agent.NewRequest(http.MethodPost, "/register", bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -216,6 +253,27 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	c.themeAgent, err = agent.NewAgent(
 		agent.WithBaseURL(fmt.Sprintf("http://%s:12345", domain)),
 		withClient(c.agent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			// Custom DNS Resolver
+			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				dialTimeout := 10000 * time.Millisecond
+				dialer := net.Dialer{
+					Timeout: dialTimeout,
+					Resolver: &net.Resolver{
+						PreferGo: true,
+						Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+							dialer := net.Dialer{Timeout: dialTimeout}
+							nameserver := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
+							return dialer.DialContext(ctx, "udp", nameserver)
+						},
+					},
+				}
+				return dialer.DialContext(ctx, network, address)
+			},
+		}),
 		agent.WithNoCache(),
 	)
 	if err != nil {

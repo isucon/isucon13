@@ -26,10 +26,9 @@ func ConvertFromIntInterface(i []interval.IntInterface) ([]*Reservation, error) 
 }
 
 type Reservation struct {
-	// Idは、ReservationSchedulerが識別するためのId.
-	// 簡単のため連番としている
-	Id          int
-	UserId      int
+	// NOTE: id は、webappで割り振られるIDではなく、ReservationSchedulerが管理する上で利用するもの
+	id          int
+	UserName    string
 	Title       string
 	Description string
 	Tags        []int
@@ -37,7 +36,7 @@ type Reservation struct {
 	EndAt       int64
 }
 
-func mustNewReservation(id int, userId int, title string, description string, startAtStr string, endAtStr string) *Reservation {
+func mustNewReservation(id int, UserName string, title string, description string, startAtStr string, endAtStr string) *Reservation {
 	startAt, err := time.Parse("2006-01-02 15:04:05", startAtStr)
 	if err != nil {
 		log.Fatalln(err)
@@ -50,8 +49,8 @@ func mustNewReservation(id int, userId int, title string, description string, st
 	// FIXME: タグの採番がおかしくてwebappでエラーが出る
 	// tagCount := rand.Intn(10)
 	reservation := &Reservation{
-		Id:          id,
-		UserId:      userId,
+		id:          id,
+		UserName:    UserName,
 		Title:       title,
 		Description: description,
 		StartAt:     startAt.Unix(),
@@ -82,7 +81,7 @@ func (r *Reservation) Overlap(interval interval.IntRange) bool {
 	}
 	return r.EndAt >= int64(interval.Start) && r.StartAt <= int64(interval.End)
 }
-func (r *Reservation) ID() uintptr { return uintptr(r.Id) }
+func (r *Reservation) ID() uintptr { return uintptr(r.id) }
 func (r *Reservation) Range() interval.IntRange {
 	return interval.IntRange{Start: int(r.StartAt), End: int(r.EndAt)}
 }
