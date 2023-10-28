@@ -4,7 +4,7 @@
 
 ```
 $ cd bench
-$ make build
+$ make linux_amd64
 $ mv bin/bench_linux_amd64 ../provisioning/ansible/roles/bench/files
 $ cd ..
 $ tar -zcvf webapp.tar.gz webapp
