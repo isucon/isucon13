@@ -21,6 +21,11 @@ return function (ContainerBuilder $containerBuilder) {
                     'path' => 'php://stdout',
                     'level' => Logger::DEBUG,
                 ],
+                'session' => [
+                    'lifetime' => 60000 /* 10 seconds */, // FIXME: 600
+                    'name' => 'SESSIONID',
+                    'domain' => '*.u.isucon.dev',
+                ],
             ]);
         },
     ]);

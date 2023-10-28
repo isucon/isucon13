@@ -2,6 +2,7 @@
     "name": "isucon/isucon13-php",
     "require": {
         "php": "^8.2",
+        "bryanjhv/slim-session": "^4.1",
         "monolog/monolog": "^2.8",
         "php-di/php-di": "^6.4",
         "slim/psr7": "^1.5",
