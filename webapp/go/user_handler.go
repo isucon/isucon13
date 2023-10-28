@@ -22,7 +22,7 @@ const (
 	defaultSessionExpiresKey = "EXPIRES"
 	defaultUserIdKey         = "USERID"
 	defaultUserNameKey       = "USERNAME"
-	bcryptDefaultCost        = 10
+	bcryptDefaultCost        = bcrypt.MinCost
 )
 
 type UserModel struct {
