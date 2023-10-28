@@ -46,7 +46,7 @@
   shell: >
     mysql -uroot -e "
       DROP DATABASE IF EXISTS isudns;
-      CREATE DATABASE isudns;
+      CREATE DATABASE IF NOT EXISTS isudns;
     "
 
 - name: Create tables onn isudns
