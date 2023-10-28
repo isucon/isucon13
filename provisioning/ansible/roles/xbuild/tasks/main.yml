@@ -18,23 +18,15 @@
   file:
     path: /home/isucon/local
     state: directory
-    mode: 0777
+    mode: 0755
     owner: isucon
     group: isucon
 
 - name: Install golang
   become: true
+  become_user: isucon
   shell:
     cmd: /opt/xbuild/go-install 1.21.2 /home/isucon/local/golang
-
-- name: Change owner of golang
-  become: true
-  file:
-    path: /home/isucon/local/golang
-    state: directory
-    owner: isucon
-    group: isucon
-    recurse: true
 
 - name: Copy /home/isucon/.local.env
   become: true
@@ -52,10 +44,11 @@
     dest: /home/isucon/.x
     mode: 0755
 
-- name: Copy /home/isucon/.profile
+- name: modify /home/isucon/.profile
   become: true
   become_user: isucon
-  copy:
-    src: .profile
-    dest: /home/isucon/.profile
-    mode: 0644
+  lineinfile:
+    path: /home/isucon/.profile
+    regexp: '^source \$HOME/\.local\.env$'
+    line: "source $HOME/.local.env"
+    insertafter: EOF
