@@ -11,7 +11,7 @@ LINUX_TARGET_ARM64_ENV=GOOS=linux GOARCH=arm64
 DOCKER_RM=sudo docker rm -f
 RM=rm -f
 
-.PHONY: all build test clean
+.PHONY: all build linux_amd64 test clean
 
 all: build
 
@@ -20,6 +20,8 @@ build: clean
 	$(LINUX_TARGET_ENV) $(BUILD) -o ./bin/bench_linux_amd64 ./cmd/bench
 	$(LINUX_TARGET_ARM64_ENV) $(BUILD) -o ./bin/bench_linux_arm64 ./cmd/bench
 
+linux_amd64:
+	$(LINUX_TARGET_ENV) $(BUILD) -o ./bin/bench_linux_amd64 ./cmd/bench
 
 test: clean
 	sudo $(TEST) $(TEST_FLAGS) ./...
