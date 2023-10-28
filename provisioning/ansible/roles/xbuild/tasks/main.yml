@@ -59,11 +59,3 @@
     src: .profile
     dest: /home/isucon/.profile
     mode: 0644
-
-- name: Copy /home/isucon/env
-  become: true
-  become_user: isucon
-  copy:
-    src: env
-    dest: /home/isucon/env
-    mode: 0755
