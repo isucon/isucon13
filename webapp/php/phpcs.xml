@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<ruleset name="My coding standard">
+    <!-- display progress -->
+    <arg value="p"/>
+    <!-- use colors in output -->
+    <arg name="colors"/>
+
+    <!-- inherit rules from: -->
+    <rule ref="PSR12">
+        <exclude name="Generic.Files.LineLength" />
+    </rule>
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+
+    <!-- Paths to check -->
+    <file>app</file>
+    <file>public</file>
+    <file>src</file>
+</ruleset>
