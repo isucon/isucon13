@@ -25,6 +25,7 @@ type Client struct {
 	themeAgent *agent.Agent
 
 	// 画像ダウンロード用agent
+	// キャッシュ可能
 	assetAgent *agent.Agent
 }
 
@@ -70,9 +71,9 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数
 // bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
-func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+func sendRequest(ctx context.Context, agent *agent.Agent, req *http.Request) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	resp, err := c.agent.Do(ctx, req)
+	resp, err := agent.Do(ctx, req)
 	if err != nil {
 		var (
 			netErr net.Error

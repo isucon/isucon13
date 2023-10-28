@@ -57,7 +57,7 @@ func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, e
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, opts ...Clien
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		// sendRequestはWrapErrorを行っているのでそのままreturn
 		return nil, err
@@ -133,7 +133,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
 	c.themeAgent, err = agent.NewAgent(
 		agent.WithBaseURL(fmt.Sprintf("http://%s:12345", domain)),
-		WithClient(c.agent.HttpClient),
+		withClient(c.agent.HttpClient),
 		agent.WithNoCache(),
 	)
 	if err != nil {
@@ -154,7 +154,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	}
 	c.assetAgent, err = agent.NewAgent(
 		agent.WithBaseURL(config.TargetBaseURL),
-		WithClient(c.agent.HttpClient),
+		withClient(c.agent.HttpClient),
 		// NOTE: 画像はキャッシュできるようにする
 	)
 	if err != nil {
@@ -177,7 +177,7 @@ func (c *Client) GetUserSession(ctx context.Context, opts ...ClientOption) error
 		return bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOpt
 		return bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}

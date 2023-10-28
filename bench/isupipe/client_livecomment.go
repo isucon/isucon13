@@ -62,7 +62,7 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, opts ...
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, op
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommen
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, 
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}

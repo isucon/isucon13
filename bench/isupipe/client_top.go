@@ -31,7 +31,7 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}

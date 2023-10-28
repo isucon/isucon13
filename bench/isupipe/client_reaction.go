@@ -35,7 +35,7 @@ func (c *Client) GetReactions(ctx context.Context, livestreamId int, opts ...Cli
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}

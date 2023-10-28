@@ -40,7 +40,7 @@ func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ..
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamId int, 
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}

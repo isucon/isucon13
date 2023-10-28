@@ -51,7 +51,7 @@ func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOpt
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (c *Client) GetLivestream(
 		return bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (c *Client) GetLivestreams(
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (c *Client) GetLivestreamsByTag(
 	query.Add("tag", tag)
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, opts ...
 	}
 	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int, opts ...
 		return bencherror.NewInternalError(err)
 	}
 
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return err
 	}
