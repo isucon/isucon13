@@ -1,8 +1,9 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
-	"sync"
 
 	"github.com/labstack/echo/v4"
 )
@@ -19,29 +20,26 @@ type PaymentResult struct {
 	Payments []*Payment `json:"payments"`
 }
 
-var (
-	total     int64
-	payments  []*Payment
-	paymentMu sync.RWMutex
-)
-
-func AddPayment(reservationId, tip int64) {
-	paymentMu.Lock()
-	defer paymentMu.Unlock()
-
-	payments = append(payments, &Payment{
-		ReservationId: reservationId,
-		Tip:           tip,
-	})
-	total += tip
-}
-
+// FIXME: 予約一覧を返す(payments)
 func GetPaymentResult(c echo.Context) error {
-	paymentMu.RLock()
-	defer paymentMu.RUnlock()
+	ctx := c.Request().Context()
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	defer tx.Rollback()
+
+	var total int64
+	if err := tx.GetContext(ctx, &total, "SELECT SUM(tip) FROM livecomments"); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.JSON(http.StatusOK, &PaymentResult{})
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		}
+	}
 
 	return c.JSON(http.StatusOK, &PaymentResult{
-		Total:    total,
-		Payments: payments,
+		Total: total,
 	})
 }
