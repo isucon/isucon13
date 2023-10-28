@@ -9,7 +9,13 @@ $ mv bin/bench_linux_amd64 ../provisioning/ansible/roles/bench/files
 $ cd ..
 $ tar -zcvf webapp.tar.gz webapp
 $ mv webapp.tar.gz provisioning/ansible/roles/webapp/files
-$ mv webapp.tar.gz provisioning/ansible/roles/webapp/files
+$ cd provisioning/ansible
+
+# ローカルの場合
+$ ansible-playbook -i inventory/localhost application.yaml
+$ ansible-playbook -i inventory/localhost benchmarker.yaml
+
+# リモートの場合
 $ ansible-playbook -i inventory/hosts.yaml application.yaml
 $ ansible-playbook -i inventory/hosts.yaml benchmarker.yaml
 ```
