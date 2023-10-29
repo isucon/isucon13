@@ -30,7 +30,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 
 	// FIXME: 広告費用から重さを計算する
 	// いったん固定値で設定しておく
-	var weight int64 = 10
+	var weight int64 = int64(config.AdvertiseCost)
 	lgr.Infof("負荷レベル: %d", weight)
 
 	popularStreamerClientPool := isupipe.NewClientPool(ctx)

@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
@@ -97,7 +98,7 @@ func BasicViewerScenario(
 	}
 
 	// FIXME: とりあえず固定値でやってるが、広告費用係数合わせる
-	for i := 0; i < 10; i++ {
+	for i := 0; i < config.AdvertiseCost*10; i++ {
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
 		if _, err := client.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
