@@ -113,6 +113,49 @@ func getLivecommentsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, livecomments)
 }
 
+func getNgwords(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
+
+	sess, err := session.Get(defaultSessionIdKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+	userId, ok := sess.Values[defaultUserIdKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
+	}
+
+	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer tx.Rollback()
+
+	var ngWords []*NGWord
+	if err := tx.SelectContext(ctx, &ngWords, "SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ?", userId, livestreamId); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.JSON(http.StatusOK, []*NGWord{})
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, ngWords)
+}
+
 func postLivecommentHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	defer c.Request().Body.Close()
@@ -145,6 +188,10 @@ func postLivecommentHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	defer tx.Rollback()
+
+	// FIXME: 改悪
+	// SELECT word FROM ng_words
+	// SELECT COUNT(*) FROM (SELECT 'I am hoge' AS text) AS texts INNER JOIN (SELECT CONCAT('%', 'am', '%') AS pattern) AS patterns ON texts.text LIKE patterns.pattern;
 
 	var hitSpam int
 	query := `

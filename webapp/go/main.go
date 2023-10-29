@@ -166,6 +166,7 @@ func main() {
 
 	// (配信者向け)ライブコメントの報告一覧取得API
 	e.GET("/livestream/:livestream_id/report", getLivecommentReportsHandler)
+	e.GET("/livestream/:livestream_id/ngwords", getNgwords)
 	// ライブコメント報告
 	e.POST("/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)

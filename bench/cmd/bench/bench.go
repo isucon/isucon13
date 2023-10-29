@@ -125,7 +125,7 @@ var run = cli.Command{
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
-		if initializeResp.AdvertiseLevel < 1 || 10 < initializeResp.AdvertiseLevel {
+		if initializeResp.AdvertiseLevel < 1 {
 			return cli.NewExitError("不正な広告レベル", 1)
 		}
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
