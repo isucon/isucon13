@@ -21,7 +21,8 @@ const (
 	defaultSessionIdKey      = "SESSIONID"
 	defaultSessionExpiresKey = "EXPIRES"
 	defaultUserIdKey         = "USERID"
-	bcryptDefaultCost        = 10
+	defaultUserNameKey       = "USERNAME"
+	bcryptDefaultCost        = bcrypt.MinCost
 )
 
 type UserModel struct {
@@ -81,7 +82,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func getUserSessionHandler(c echo.Context) error {
+func getMeHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -127,7 +128,7 @@ func getUserSessionHandler(c echo.Context) error {
 
 // ユーザ登録API
 // POST /user
-func postUserHandler(c echo.Context) error {
+func registerHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	defer c.Request().Body.Close()
 
@@ -182,6 +183,10 @@ func postUserHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
 	}
 
+	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "30", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, string(out))
+	}
+
 	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user response")
@@ -189,10 +194,6 @@ func postUserHandler(c echo.Context) error {
 
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
-	}
-
-	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "30", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, string(out))
 	}
 
 	return c.JSON(http.StatusCreated, user)
@@ -247,11 +248,14 @@ func loginHandler(c echo.Context) error {
 	}
 
 	sess.Options = &sessions.Options{
+		Domain: "u.isucon.dev",
 		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
 		Path:   "/",
 	}
 	sess.Values[defaultSessionIdKey] = sessionId
+	// FIXME: ユーザ名
 	sess.Values[defaultUserIdKey] = userModel.Id
+	sess.Values[defaultUserNameKey] = userModel.Name
 	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {

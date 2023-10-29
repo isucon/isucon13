@@ -21,7 +21,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	// FIXME: いくつかの処理後、統計情報がピタリ一致することをチェック
 	//        (処理数、処理データにランダム性をもたせる)
 
-	user, err := client.PostUser(ctx, &isupipe.PostUserRequest{
+	user, err := client.Register(ctx, &isupipe.RegisterRequest{
 		Name:        "test",
 		DisplayName: "test",
 		Description: "blah blah blah",
@@ -76,6 +76,8 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
 		tags = append(tags, tag.Id)
 	}
+
+	// FIXME: 枠数を超えて予約した場合にエラーになるか
 
 	reservation, err := scheduler.ReservationSched.GetColdReservation()
 	if err != nil {
@@ -163,7 +165,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 
 func assertPipeUserRegistration(ctx context.Context, client *isupipe.Client) error {
 	// pipeユーザが弾かれることを確認
-	pipeReq := isupipe.PostUserRequest{
+	pipeReq := isupipe.RegisterRequest{
 		Name:        "pipe",
 		DisplayName: "pipe",
 		Description: "blah blah blah",
@@ -172,7 +174,7 @@ func assertPipeUserRegistration(ctx context.Context, client *isupipe.Client) err
 			DarkMode: true,
 		},
 	}
-	if _, err := client.PostUser(ctx, &pipeReq, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
+	if _, err := client.Register(ctx, &pipeReq, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("'pipe'ユーザの作成は拒否されなければなりません: %w", err)
 	}
 
@@ -180,7 +182,7 @@ func assertPipeUserRegistration(ctx context.Context, client *isupipe.Client) err
 }
 
 func assertUserUniqueConstraint(ctx context.Context, client *isupipe.Client) error {
-	testDupReq := isupipe.PostUserRequest{
+	testDupReq := isupipe.RegisterRequest{
 		Name:        "aaa",
 		DisplayName: "hoge",
 		Description: "lorem ipsum",
@@ -189,11 +191,11 @@ func assertUserUniqueConstraint(ctx context.Context, client *isupipe.Client) err
 			DarkMode: true,
 		},
 	}
-	if _, err := client.PostUser(ctx, &testDupReq); err != nil {
+	if _, err := client.Register(ctx, &testDupReq); err != nil {
 		return err
 	}
 
-	if _, err := client.PostUser(ctx, &testDupReq, isupipe.WithStatusCode(http.StatusInternalServerError)); err != nil {
+	if _, err := client.Register(ctx, &testDupReq, isupipe.WithStatusCode(http.StatusInternalServerError)); err != nil {
 		return fmt.Errorf("重複したユーザ名を含むリクエストはエラーを返さなければなりません: %w", err)
 	}
 

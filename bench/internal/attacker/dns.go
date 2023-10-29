@@ -4,19 +4,22 @@ import (
 	"context"
 	"math/rand"
 	"net"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/isucon/isucon13/bench/internal/config"
 )
 
-const asciiLowercases = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+const (
+	asciiLowercase = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	specialChars   = "-."
+)
 
 type DnsWaterTortureAttacker struct {
-	resolver *net.Resolver
-
-	// isupipe.live
+	resolver     *net.Resolver
 	targetDomain string
-
-	concurrency int
+	concurrency  int
 }
 
 func NewDnsWaterTortureAttacker(nameserver string, targetDomain string, concurrency int) *DnsWaterTortureAttacker {
@@ -24,7 +27,7 @@ func NewDnsWaterTortureAttacker(nameserver string, targetDomain string, concurre
 		resolver: &net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				addr := net.JoinHostPort(nameserver, "53")
+				addr := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
 				dialer := net.Dialer{Timeout: time.Nanosecond}
 				return dialer.DialContext(ctx, "udp", addr)
 			},
@@ -36,7 +39,11 @@ func NewDnsWaterTortureAttacker(nameserver string, targetDomain string, concurre
 func (a *DnsWaterTortureAttacker) makePayload(length int) string {
 	buf := make([]byte, length)
 	for idx := range buf {
-		buf[idx] = asciiLowercases[rand.Intn(len(asciiLowercases))]
+		if idx != 0 && rand.Intn(5)%2 == 0 {
+			buf[idx] = specialChars[rand.Intn(len(specialChars))]
+		} else {
+			buf[idx] = asciiLowercase[rand.Intn(len(asciiLowercase))]
+		}
 	}
 	return string(buf)
 }
@@ -54,7 +61,6 @@ func (a *DnsWaterTortureAttacker) attack(ctx context.Context) error {
 
 func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) error {
 	var wg sync.WaitGroup
-
 	for i := 0; i < a.concurrency; i++ {
 		wg.Add(1)
 		go func() {

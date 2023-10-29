@@ -128,7 +128,7 @@ func initializeHandler(c echo.Context) error {
 
 	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
-		AdvertiseLevel: 5,
+		AdvertiseLevel: 10,
 		Language:       "golang",
 	})
 }
@@ -139,7 +139,7 @@ func main() {
 	e.Logger.SetLevel(echolog.DEBUG)
 	e.Use(middleware.Logger())
 	cookieStore := sessions.NewCookieStore(secret)
-	// cookieStore.Options.Domain = "*.u.isucon.dev"
+	cookieStore.Options.Domain = "*.u.isucon.dev"
 	e.Use(session.Middleware(cookieStore))
 	// e.Use(middleware.Recover())
 
@@ -148,7 +148,7 @@ func main() {
 
 	// top
 	e.GET("/tag", getTagHandler)
-	e.GET("/theme", getStreamerThemeHandler)
+	e.GET("/user/:username/theme", getStreamerThemeHandler)
 
 	// livestream
 	// reserve livestream
@@ -166,6 +166,7 @@ func main() {
 
 	// (配信者向け)ライブコメントの報告一覧取得API
 	e.GET("/livestream/:livestream_id/report", getLivecommentReportsHandler)
+	e.GET("/livestream/:livestream_id/ngwords", getNgwords)
 	// ライブコメント報告
 	e.POST("/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)
@@ -178,10 +179,11 @@ func main() {
 	e.DELETE("/livestream/:livestream_id/enter", leaveLivestreamHandler)
 
 	// user
-	e.POST("/user", postUserHandler)
+	// FIXME: /user -> /register
+	e.POST("/register", registerHandler)
 	e.POST("/login", loginHandler)
 	e.GET("/user", getUsersHandler)
-	e.GET("/user/me", getUserSessionHandler)
+	e.GET("/user/me", getMeHandler)
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/user/:username", getUserHandler)

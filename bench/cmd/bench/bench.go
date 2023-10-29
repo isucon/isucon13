@@ -46,7 +46,7 @@ func benchmark(ctx context.Context) error {
 	// pretest, benchmarkにはこれら初期化が必要
 	benchscore.InitScore(ctx)
 	// bencherror.InitPenalty(ctx)
-	bencherror.InitializeErrors(ctx)
+	bencherror.InitErrors(ctx)
 
 	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
 	defer cancelBench()
@@ -93,6 +93,12 @@ var run = cli.Command{
 			Destination: &config.SlackWebhookURL,
 			EnvVar:      "BENCH_SLACK_WEBHOOK_URL",
 		},
+		cli.StringFlag{
+			Name:        "logpath",
+			Destination: &config.LogPath,
+			EnvVar:      "BENCH_LOG_PATH",
+			Value:       "/tmp/isupipe-benchmarker.log",
+		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
@@ -119,7 +125,7 @@ var run = cli.Command{
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
-		if initializeResp.AdvertiseLevel < 1 || 10 < initializeResp.AdvertiseLevel {
+		if initializeResp.AdvertiseLevel < 1 {
 			return cli.NewExitError("不正な広告レベル", 1)
 		}
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
@@ -135,7 +141,7 @@ var run = cli.Command{
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitScore(ctx)
 		// bencherror.InitPenalty(ctx)
-		bencherror.InitializeErrors(ctx)
+		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, pretestClient); err != nil {
 			return cli.NewExitError(err, 1)
 		}
@@ -154,7 +160,7 @@ var run = cli.Command{
 		// 	return cli.NewExitError(err, 1)
 		// }
 
-		lgr.Info("===== System errors =====")
+		lgr.Info("===== Errors =====")
 		var systemErrors []string
 		for _, msgs := range bencherror.GetFinalErrorMessages() {
 			for _, msg := range msgs {

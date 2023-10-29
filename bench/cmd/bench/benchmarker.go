@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -28,7 +30,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 
 	// FIXME: 広告費用から重さを計算する
 	// いったん固定値で設定しておく
-	var weight int64 = 10
+	var weight int64 = int64(config.AdvertiseCost)
 	lgr.Infof("負荷レベル: %d", weight)
 
 	popularStreamerClientPool := isupipe.NewClientPool(ctx)
@@ -48,7 +50,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 	}
 }
 
-func (b *benchmarker) runLoginWorkers(ctx context.Context) {
+func (b *benchmarker) runClientProviders(ctx context.Context) {
 	loginFn := func(p *isupipe.ClientPool) func(u *scheduler.User) {
 		return func(u *scheduler.User) {
 			go func() {
@@ -56,6 +58,18 @@ func (b *benchmarker) runLoginWorkers(ctx context.Context) {
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
 				if err != nil {
+					return
+				}
+
+				if _, err := client.Register(ctx, &isupipe.RegisterRequest{
+					Name:        u.Name,
+					DisplayName: u.DisplayName,
+					Description: u.Description,
+					Password:    u.RawPassword,
+					Theme: isupipe.Theme{
+						DarkMode: true,
+					},
+				}); err != nil {
 					return
 				}
 
@@ -91,7 +105,7 @@ func (b *benchmarker) load(ctx context.Context) error {
 }
 
 func (b *benchmarker) run(ctx context.Context) error {
-	b.runLoginWorkers(ctx)
+	b.runClientProviders(ctx)
 	for {
 		select {
 		case <-ctx.Done():
@@ -100,6 +114,9 @@ func (b *benchmarker) run(ctx context.Context) error {
 			if ok := b.sem.TryAcquire(1); ok {
 				go b.load(ctx)
 			}
+		}
+		if err := bencherror.CheckViolation(); err != nil && errors.Is(err, bencherror.ErrViolation) {
+			return err
 		}
 	}
 }

@@ -40,17 +40,18 @@ func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *is
 func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client) error {
 
 	// ライブコメント一覧取得
-	livestreams, err := client.GetLivestreams(ctx)
+	// FIXME: 自分のライブストリーム一覧を取ってくる必要がある
+	_, err := client.GetLivestreams(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, livestream := range livestreams {
-		livestreamId := livestream.Id
-		if _, err := client.GetLivecommentReports(ctx, livestreamId); err != nil {
-			return err
-		}
-	}
+	// for _, livestream := range livestreams {
+	// 	livestreamId := livestream.Id
+	// 	if _, err := client.GetLivecommentReports(ctx, livestreamId); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	// NGワード一覧取得
 	// FIXME: webapp側にこのエンドポイントがないので実装から

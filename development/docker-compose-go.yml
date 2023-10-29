@@ -62,6 +62,7 @@ services:
       - ../webapp/init.sql:/home/isucon/webapp/go/init.sql
       - ../webapp/initial_users.sql:/home/isucon/webapp/go/initial_users.sql
       - ../webapp/initial_tags.sql:/home/isucon/webapp/go/initial_tags.sql
+      - ../webapp/initial_livestreams.sql:/home/isucon/webapp/go/initial_livestreams.sql
     environment:
       ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
       ISUCON13_POWERDNS_HOST: powerdns
