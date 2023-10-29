@@ -28,7 +28,6 @@ func ConvertFromIntInterface(i []interval.IntInterface) ([]*Reservation, error) 
 type Reservation struct {
 	// NOTE: id は、webappで割り振られるIDではなく、ReservationSchedulerが管理する上で利用するもの
 	id          int
-	UserName    string
 	Title       string
 	Description string
 	Tags        []int
@@ -36,6 +35,8 @@ type Reservation struct {
 	EndAt       int64
 }
 
+// FIXME: id, UserNameなど古い引数を廃止
+// 初期データ生成スクリプト側修正後実施
 func mustNewReservation(id int, UserName string, title string, description string, startAtStr string, endAtStr string) *Reservation {
 	startAt, err := time.Parse("2006-01-02 15:04:05", startAtStr)
 	if err != nil {
@@ -50,7 +51,6 @@ func mustNewReservation(id int, UserName string, title string, description strin
 	// tagCount := rand.Intn(10)
 	reservation := &Reservation{
 		id:          id,
-		UserName:    UserName,
 		Title:       title,
 		Description: description,
 		StartAt:     startAt.Unix(),
@@ -76,7 +76,7 @@ func (r *Reservation) Overlap(interval interval.IntRange) bool {
 		return false
 	}
 	if r.EndAt <= int64(interval.Start) {
-		// 予約開始が指定区間の開始以下である場合は含めない
+		// 予約終了が指定区間の開始以下である場合は含めない
 		return false
 	}
 	return r.EndAt >= int64(interval.Start) && r.StartAt <= int64(interval.End)

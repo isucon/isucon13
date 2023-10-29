@@ -35,7 +35,7 @@ func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ..
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/user/%s/statistics", username)
+	urlPath := fmt.Sprintf("/api/user/%s/statistics", username)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -70,7 +70,7 @@ func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamId int, 
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/statistics", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/statistics", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)

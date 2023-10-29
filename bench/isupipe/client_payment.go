@@ -18,7 +18,7 @@ type PaymentResult struct {
 }
 
 func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
-	req, err := c.agent.NewRequest(http.MethodGet, "/payment", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/payment", nil)
 	if err != nil {
 		return nil, err
 	}

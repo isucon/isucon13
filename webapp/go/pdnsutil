@@ -3,6 +3,9 @@
 set -euo pipefail
 set -x
 
+pdns_address=${ISUCON13_POWERDNS_ADDRESS:-powerdns}
+pdns_port=${ISUCON13_POWERDNS_PORT:-8081}
+
 #   0           1             2               3           4    5        6
 # ("pdnsutil", "add-record", "u.isucon.dev", "username", "a", "86400", "127.0.0.1")
 
@@ -44,4 +47,4 @@ fi
 
 curl -X PATCH -H 'X-API-Key: isudns' \
      --data '{"rrsets": [{"name": "'$USERNAME.u.isucon.dev.'", "type": "'$TYPE'", "ttl": '$TTL', "changetype":"REPLACE", "records": [{"content": "'$CONTENT'", "disabled": false}]}]}' \
-     http://powerdns:8081/api/v1/servers/localhost/zones/u.isucon.dev.
+     http://${pdns_address}:${pdns_port}/api/v1/servers/localhost/zones/u.isucon.dev.

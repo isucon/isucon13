@@ -1,0 +1,63 @@
+name: Bench Test
+on:
+  push:
+    paths:
+      - bench/**/*
+      - webapp/**/*
+      - development/**/*
+      - .github/workflows/bench-test.yml
+  pull_request:
+    paths:
+      - bench/**/*
+      - webapp/**/*
+      - development/**/*
+      - .github/workflows/bench-test.yml
+jobs:
+  test:
+    strategy:
+      matrix:
+        go:
+          - 1.21.1
+    name: Build
+    runs-on: [isucon13-ci]
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
+    # containers
+    - name: Setup containers(mysql,pdns,webapp)
+      working-directory: ./development
+      run: |
+        sudo docker compose -f docker-compose-go.yml down --volumes
+        sudo docker compose -f docker-compose-go.yml up -d --build
+        sudo docker compose -f docker-compose-go.yml ps
+
+    # bench
+    - name: "[bench] Get deps"
+      working-directory: ./bench
+      env:
+        TZ: Asia/Tokyo
+      run: |
+        go get -v -t -d ./...
+
+    - name: "[bench] Test"
+      working-directory: ./bench
+      env:
+        TZ: Asia/Tokyo
+      run: |
+        go test -v ./...
+
+    - name: "[bench] Benchmark"
+      working-directory: ./bench
+      env:
+        TZ: Asia/Tokyo
+      run: |
+        make build
+        ./bin/bench_linux_amd64 run --dns-port=1053
+

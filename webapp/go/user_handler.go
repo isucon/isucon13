@@ -40,14 +40,13 @@ type UserModel struct {
 type User struct {
 	Id          int64  `json:"id"`
 	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	Description string `json:"description"`
+	DisplayName string `json:"display_name,omitempty"`
+	Description string `json:"description,omitempty"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int64 `json:"created_at"`
-	UpdatedAt int64 `json:"updated_at"`
+	CreatedAt int64 `json:"created_at,omitempty"`
+	UpdatedAt int64 `json:"updated_at,omitempty"`
 
-	IsPopular bool  `json:"is_popular"`
-	Theme     Theme `json:"theme"`
+	Theme Theme `json:"theme,omitempty"`
 }
 
 type Theme struct {
@@ -353,57 +352,9 @@ func verifyUserSession(c echo.Context) error {
 	return nil
 }
 
-func userIsPopular(ctx context.Context, tx *sqlx.Tx, userId int64) (bool, error) {
-	var livestreamModels []*LivestreamModel
-	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
-		return false, err
-	}
-
-	totalSpamReports := 0
-	totalTips := int64(0)
-	totalLivecomments := 0
-	for _, ls := range livestreamModels {
-		spamReports := 0
-		if err := tx.GetContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
-			return false, err
-		}
-
-		var livecommentModels []*LivecommentModel
-		if err := tx.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
-			return false, err
-		}
-
-		for _, lc := range livecommentModels {
-			totalTips += lc.Tip
-		}
-
-		totalSpamReports += spamReports
-		totalLivecomments += len(livecommentModels)
-	}
-
-	if totalSpamReports >= 10 {
-		return false, nil
-	}
-
-	if totalTips < 1000 {
-		return false, nil
-	}
-
-	if totalLivecomments < 50 {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (User, error) {
 	themeModel := ThemeModel{}
 	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
-		return User{}, err
-	}
-
-	popular, err := userIsPopular(ctx, tx, userModel.Id)
-	if err != nil {
 		return User{}, err
 	}
 
@@ -414,7 +365,6 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		Description: userModel.Description,
 		CreatedAt:   userModel.CreatedAt,
 		UpdatedAt:   userModel.UpdatedAt,
-		IsPopular:   popular,
 		Theme: Theme{
 			Id:        themeModel.Id,
 			DarkMode:  themeModel.DarkMode,

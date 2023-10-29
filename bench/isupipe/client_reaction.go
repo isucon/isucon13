@@ -30,7 +30,7 @@ func (c *Client) GetReactions(ctx context.Context, livestreamId int, opts ...Cli
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -71,7 +71,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
