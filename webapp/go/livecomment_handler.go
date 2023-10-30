@@ -63,6 +63,7 @@ type ModerateRequest struct {
 }
 
 type NGWord struct {
+	Id           int64  `json:"id" db:"id"`
 	UserId       int64  `json:"user_id" db:"user_id"`
 	LivestreamId int64  `json:"livestream_id" db:"livestream_id"`
 	Word         string `json:"word" db:"word"`
