@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -69,9 +68,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 		return err
 	}
 
-	hostHeader := c.Request().Host
-
-	username := strings.Split(hostHeader, ".")[0]
+	username := c.Param("username")
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
