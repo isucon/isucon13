@@ -189,25 +189,32 @@ func postLivecommentHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	// FIXME: 改悪
-	// SELECT word FROM ng_words
-	// SELECT COUNT(*) FROM (SELECT 'I am hoge' AS text) AS texts INNER JOIN (SELECT CONCAT('%', 'am', '%') AS pattern) AS patterns ON texts.text LIKE patterns.pattern;
-
-	var hitSpam int
-	query := `
-	SELECT COUNT(*) AS cnt
-	FROM ng_words AS w
-	CROSS JOIN
-	(SELECT ? AS text) AS t
-	WHERE t.text LIKE CONCAT('%', w.word, '%');
-	`
-	if err = tx.GetContext(ctx, &hitSpam, query, req.Comment); err != nil {
+	// スパム判定
+	var ngwords []*NGWord
+	if err := tx.SelectContext(ctx, &ngwords, "SELECT * FROM ng_words"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	c.Logger().Infof("[hitSpam=%d] comment = %s", hitSpam, req.Comment)
-	if hitSpam >= 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
+
+	var hitSpam int
+	for _, ngword := range ngwords {
+		query := `
+		SELECT COUNT(*)
+		FROM
+		(SELECT ? AS text) AS texts
+		INNER JOIN
+		(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+		ON texts.text LIKE patterns.pattern;
+		`
+		if err := tx.GetContext(ctx, &hitSpam, query, req.Comment, ngword.Word); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		c.Logger().Infof("[hitSpam=%d] comment = %s", hitSpam, req.Comment)
+		if hitSpam >= 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
+		}
 	}
+
+	// FIXME: 視聴者からのスパム報告と突合して検査するとボーナス加点
 
 	now := time.Now().Unix()
 	livecommentModel := LivecommentModel{
