@@ -50,7 +50,7 @@ type Theme struct {
 	DarkMode bool `json:"dark_mode"`
 }
 
-func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOption) error {
+func (c *Client) GetStreamerTheme(ctx context.Context, streamer *User, opts ...ClientOption) (*Theme, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -60,11 +60,11 @@ func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOpt
 	endpoint := fmt.Sprintf("/api/user/%s/theme", streamer.Name)
 	req, err := c.agent.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -72,11 +72,18 @@ func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOpt
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var theme *Theme
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&theme); err != nil {
+			return nil, err
+		}
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetUserTheme)
-	return nil
+	return theme, nil
 }
 
 func (c *Client) DownloadIcon(ctx context.Context, user *User, opts ...ClientOption) error {

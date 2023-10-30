@@ -7,15 +7,13 @@ import (
 	"sync"
 
 	"github.com/biogo/store/interval"
+	"github.com/isucon/isucon13/bench/internal/config"
 )
-
-// 同時配信枠数
-const NumSlots = 2
 
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
 var (
-	ReservationSched = mustNewReservationScheduler(1711900800, NumSlots, (24*365)-1)
+	ReservationSched = mustNewReservationScheduler(config.BaseAt, config.NumSlots, config.NumHours)
 )
 
 func init() {

@@ -84,6 +84,10 @@ func (c *Client) IsPopular() bool {
 	return c.isPopular
 }
 
+func (c *Client) IsTooSlow(startTime, endTime time.Time) bool {
+	return endTime.Sub(startTime) >= config.RequestTooSlowThreshold
+}
+
 // sendRequestはagent.Doをラップしたリクエスト送信関数
 // bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
 func sendRequest(ctx context.Context, agent *agent.Agent, req *http.Request) (*http.Response, error) {

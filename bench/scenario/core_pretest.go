@@ -3,7 +3,6 @@ package scenario
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 
@@ -54,18 +53,15 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	// FIXME
-
-	// if err := client.GetStreamerTheme(ctx, user.Id /* user id */); err != nil {
-	// return err
-	// }
+	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
+		return err
+	}
 
 	tagResponse, err := client.GetTags(ctx)
 	if err != nil {
 		return err
 	}
 	if len(tagResponse.Tags) != scheduler.GetTagPoolLength() {
-		log.Printf("invalid tags = %+v\n", tagResponse.Tags)
 		return fmt.Errorf("初期データのタグが正常に登録されていません: want=%d, but got=%d", scheduler.GetTagPoolLength(), len(tagResponse.Tags))
 	}
 

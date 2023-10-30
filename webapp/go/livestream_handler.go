@@ -70,6 +70,13 @@ type LivestreamTagModel struct {
 	TagId        int64 `db:"tag_id"`
 }
 
+type ReservationSlotModel struct {
+	Id      int64 `db:"id"`
+	Slot    int64 `db:"slot"`
+	StartAt int64 `db:"start_at"`
+	EndAt   int64 `db:"end_at"`
+}
+
 func reserveLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	defer c.Request().Body.Close()
@@ -103,7 +110,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	c.Logger().Info("check term")
 	var (
 		termStartAt    = time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
-		termEndAt      = time.Date(2025, 3, 31, 0, 0, 0, 0, time.UTC)
+		termEndAt      = time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC)
 		reserveStartAt = time.Unix(req.StartAt, 0)
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
@@ -112,8 +119,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 
 	c.Logger().Info("check collaborators")
-	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる
-	// FIXME: 枠数を超過して予約しようとしていないか調べる
+	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる (ある人は同時に複数の配信に物理的に出れない)
 	var users []int64
 	users = append(users, int64(userId))
 	users = append(users, req.Collaborators...)
@@ -124,6 +130,23 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 		if founds >= NumReservationSlot {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ユーザ%dが予約できません", user))
+		}
+	}
+
+	// 予約枠をみて、予約が可能か調べる
+	var slots []*ReservationSlotModel
+	if err := tx.SelectContext(ctx, &slots, "SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ?", req.StartAt, req.EndAt); err != nil {
+		c.Logger().Warnf("予約枠一覧取得でエラー発生: %+v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	for _, slot := range slots {
+		var count int
+		if err := tx.GetContext(ctx, &count, "SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?", slot.StartAt, slot.EndAt); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		}
+		c.Logger().Infof("%d ~ %d予約枠の残数 = %d\n", slot.StartAt, slot.EndAt, slot.Slot)
+		if count < 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("予約区間 %d ~ %dが予約できません", req.StartAt, req.EndAt))
 		}
 	}
 
@@ -144,6 +167,12 @@ func reserveLivestreamHandler(c echo.Context) error {
 			UpdatedAt:    now,
 		}
 	)
+
+	c.Logger().Info("insert reservation slot")
+	if _, err := tx.ExecContext(ctx, "UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?", req.StartAt, req.EndAt); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	c.Logger().Info("insert livestream")
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at, created_at, updated_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at, :created_at, :updated_at)", livestreamModel)
 	if err != nil {
