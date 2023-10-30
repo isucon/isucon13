@@ -4,12 +4,6 @@
   ansible.builtin.copy:
     src: webapp.tar.gz
     dest: /home/isucon/webapp.tar.gz
-- name: Mkdir /home/isucon/webapp
-  become: true
-  become_user: isucon
-  ansible.builtin.file:
-    path: /home/isucon/webapp
-    state: directory
 - name: Extract webapp.tar.gz into /home/isucon
   become: true
   become_user: isucon
@@ -21,6 +15,8 @@
   ansible.builtin.file:
     path: /home/isucon/webapp.tar.gz
     state: absent
+- name: Tasks for isupipe-go
+  include_tasks: go.yaml
 - name: Put systemd service
   become: true
   ansible.builtin.copy:
@@ -31,3 +27,9 @@
   ansible.builtin.template:
     src: env.sh
     dest: /home/isucon/
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-go
+    enabled: true
+    state: restarted
