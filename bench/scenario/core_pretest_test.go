@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
@@ -18,6 +19,7 @@ func TestPretest(t *testing.T) {
 
 	client, err := isupipe.NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
+		agent.WithTimeout(1*time.Minute),
 	)
 	if err != nil {
 		t.Fatal(err)
