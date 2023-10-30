@@ -33,3 +33,11 @@ func assertSearchLivestream() {
 }
 
 // FIXME: いくらか画面表示内容に問題がないことをチェックする
+
+// moderateにより登録されたNGワードが含まれるコメントが残っていたら失格
+// FIXME: ベンチ側では、ngワードのmoderate後に含まれる投稿を見つけたら失格扱いにする
+func assertModeratedComment() {
+	// NGワード一覧取得
+
+	// １つづつ検査
+}

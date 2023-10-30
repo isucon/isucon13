@@ -53,11 +53,9 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	// FIXME
-
-	// if err := client.GetStreamerTheme(ctx, user.Id /* user id */); err != nil {
-	// return err
-	// }
+	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
+		return err
+	}
 
 	tagResponse, err := client.GetTags(ctx)
 	if err != nil {

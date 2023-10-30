@@ -63,6 +63,7 @@ type ModerateRequest struct {
 }
 
 type NGWord struct {
+	Id           int64  `json:"id" db:"id"`
 	UserId       int64  `json:"user_id" db:"user_id"`
 	LivestreamId int64  `json:"livestream_id" db:"livestream_id"`
 	Word         string `json:"word" db:"word"`
@@ -141,7 +142,7 @@ func getNgwords(c echo.Context) error {
 	defer tx.Rollback()
 
 	var ngWords []*NGWord
-	if err := tx.SelectContext(ctx, &ngWords, "SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ?", userId, livestreamId); err != nil {
+	if err := tx.SelectContext(ctx, &ngWords, "SELECT id, user_id, livestream_id, word FROM ng_words WHERE user_id = ? AND livestream_id = ?", userId, livestreamId); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusOK, []*NGWord{})
 		} else {
@@ -189,25 +190,57 @@ func postLivecommentHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	// FIXME: 改悪
-	// SELECT word FROM ng_words
-	// SELECT COUNT(*) FROM (SELECT 'I am hoge' AS text) AS texts INNER JOIN (SELECT CONCAT('%', 'am', '%') AS pattern) AS patterns ON texts.text LIKE patterns.pattern;
-
-	var hitSpam int
-	query := `
-	SELECT COUNT(*) AS cnt
-	FROM ng_words AS w
-	CROSS JOIN
-	(SELECT ? AS text) AS t
-	WHERE t.text LIKE CONCAT('%', w.word, '%');
-	`
-	if err = tx.GetContext(ctx, &hitSpam, query, req.Comment); err != nil {
+	// スパム判定
+	var ngwords []*NGWord
+	if err := tx.SelectContext(ctx, &ngwords, "SELECT id, user_id, livestream_id, word FROM ng_words"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	c.Logger().Infof("[hitSpam=%d] comment = %s", hitSpam, req.Comment)
-	if hitSpam >= 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
+
+	var hitSpam int
+	for _, ngword := range ngwords {
+		query := `
+		SELECT COUNT(*)
+		FROM
+		(SELECT ? AS text) AS texts
+		INNER JOIN
+		(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+		ON texts.text LIKE patterns.pattern;
+		`
+		if err := tx.GetContext(ctx, &hitSpam, query, req.Comment, ngword.Word); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		c.Logger().Infof("[hitSpam=%d] comment = %s", hitSpam, req.Comment)
+		if hitSpam >= 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "このコメントがスパム判定されました")
+		}
 	}
+
+	// NGワードにヒットする過去の投稿も全削除する
+	for _, ngword := range ngwords {
+		// ライブコメント一覧取得
+		var livecomments []*Livecomment
+		if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments"); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		for _, livecomment := range livecomments {
+			query := `
+			DELETE FROM livecomments
+			WHERE
+			(SELECT COUNT(*)
+			FROM
+			(SELECT ? AS text) AS texts
+			INNER JOIN
+			(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+			ON texts.text LIKE patterns.pattern) >= 1;
+			`
+			if _, err := tx.ExecContext(ctx, query, livecomment.Comment, ngword.Word); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+		}
+	}
+
+	// FIXME: 視聴者からのスパム報告と突合して検査するとボーナス加点
 
 	now := time.Now().Unix()
 	livecommentModel := LivecommentModel{

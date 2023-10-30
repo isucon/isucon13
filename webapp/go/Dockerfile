@@ -16,8 +16,6 @@ USER isucon
 
 RUN mkdir -p /home/isucon/webapp/go
 WORKDIR /home/isucon/webapp/go
-COPY --chown=isucon:isucon ./pdnsutil /usr/local/bin/pdnsutil
-RUN chmod +x /usr/local/bin/pdnsutil
 COPY --chown=isucon:isucon ./ /home/isucon/webapp/go/
 RUN go build -o isupipe .
 

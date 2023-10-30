@@ -30,11 +30,20 @@ CREATE TABLE `livestreams` (
   `playlist_url` VARCHAR(255) NOT NULL,
   `thumbnail_url` VARCHAR(255) NOT NULL,
   -- リアルタイムな視聴者数
+  -- FIXME: viewers_countを分離
   `viewers_count` BIGINT DEFAULT 0 NOT NULL,
   `start_at` BIGINT NOT NULL,
   `end_at` BIGINT NOT NULL,
   `created_at` BIGINT NOT NULL DEFAULT 0,
   `updated_at` BIGINT NOT NULL DEFAULT 0
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+-- ライブ配信予約枠
+CREATE TABLE `reservation_slots` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `slot` BIGINT NOT NULL,
+  `start_at` BIGINT NOT NULL,
+  `end_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブストリームに付与される、サービスで定義されたタグ

@@ -13,6 +13,7 @@ fake = Faker('ja-JP')
 # FIXME: playlist_url, thumbnail_urlが固定なので、データが用意でき次第置き換えるように
 # FIXME: livestream_texts、もうちょっと増やしたい
 
+# FIXME: id, usernameを外す
 GO_FORMAT="\tmustNewReservation({id}, \"{username}\", \"{title}\", \"{description}\", \"{start_at}\", \"{end_at}\"),\n"
 
 livestream_texts = [
