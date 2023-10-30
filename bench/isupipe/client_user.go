@@ -26,8 +26,7 @@ type User struct {
 	CreatedAt   int    `json:"created_at"`
 	UpdatedAt   int    `json:"updated_at"`
 
-	Theme     Theme `json:"theme"`
-	IsPopular bool  `json:"is_popular"`
+	Theme Theme `json:"theme"`
 }
 
 type (
@@ -57,7 +56,7 @@ func (c *Client) GetTheme(ctx context.Context, streamer *User, opts ...ClientOpt
 	)
 
 	// FIXME: 配信者のユーザ名を含めてリクエスト
-	endpoint := fmt.Sprintf("/user/%s/theme", streamer.Name)
+	endpoint := fmt.Sprintf("/api/user/%s/theme", streamer.Name)
 	req, err := c.agent.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -90,7 +89,7 @@ func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOpt
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/user/%s", username)
+	urlPath := fmt.Sprintf("/api/user/%s", username)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -119,7 +118,7 @@ func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, e
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/user", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/user", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -148,21 +147,20 @@ func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, e
 	return users, nil
 }
 
-// FIXME: meに変える
-func (c *Client) GetUserSession(ctx context.Context, opts ...ClientOption) error {
+func (c *Client) GetMe(ctx context.Context, opts ...ClientOption) (*User, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/user/me", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/user/me", nil)
 	if err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -170,10 +168,17 @@ func (c *Client) GetUserSession(ctx context.Context, opts ...ClientOption) error
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	return nil
+	var user *User
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+	}
+
+	return user, nil
 }
 
 func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...ClientOption) (*User, error) {
@@ -187,7 +192,7 @@ func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...Clien
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	req, err := c.agent.NewRequest(http.MethodPost, "/register", bytes.NewReader(payload))
+	req, err := c.agent.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -229,7 +234,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 		return bencherror.NewInternalError(err)
 	}
 
-	req, err := c.agent.NewRequest(http.MethodPost, "/login", bytes.NewReader(payload))
+	req, err := c.agent.NewRequest(http.MethodPost, "/api/login", bytes.NewReader(payload))
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
@@ -248,10 +253,12 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
+	c.username = r.UserName
+
 	// cookieを流用して各種ページアクセス用agentを初期化
 	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
 	c.themeAgent, err = agent.NewAgent(
-		agent.WithBaseURL(fmt.Sprintf("http://%s:12345", domain)),
+		agent.WithBaseURL(fmt.Sprintf("http://%s:%d", domain, config.TargetPort)),
 		withClient(c.agent.HttpClient),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{

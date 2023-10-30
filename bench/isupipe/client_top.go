@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math/rand"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -27,7 +28,7 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/tag", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/tag", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -53,5 +54,22 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 	}
 
 	benchscore.AddScore(benchscore.SuccessGetTags)
+	return tags, nil
+}
+
+func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int, error) {
+	resp, err := c.GetTags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rand.Shuffle(len(resp.Tags), func(i, j int) {
+		resp.Tags[i], resp.Tags[j] = resp.Tags[j], resp.Tags[i]
+	})
+
+	var tags []int
+	for i := 0; i < n; i++ {
+		tags = append(tags, resp.Tags[i].Id)
+	}
+
 	return tags, nil
 }

@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	listenPort                     = 12345
+	listenPort                     = 8080
 	powerDNSSubdomainAddressEnvKey = "ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS"
 )
 
@@ -144,57 +144,57 @@ func main() {
 	// e.Use(middleware.Recover())
 
 	// 初期化
-	e.POST("/initialize", initializeHandler)
+	e.POST("/api/initialize", initializeHandler)
 
 	// top
-	e.GET("/tag", getTagHandler)
-	e.GET("/user/:username/theme", getStreamerThemeHandler)
+	e.GET("/api/tag", getTagHandler)
+	e.GET("/api/user/:username/theme", getStreamerThemeHandler)
 
 	// livestream
 	// reserve livestream
-	e.POST("/livestream/reservation", reserveLivestreamHandler)
+	e.POST("/api/livestream/reservation", reserveLivestreamHandler)
 	// list livestream
-	e.GET("/livestream", getLivestreamsHandler)
+	e.GET("/api/livestream", getLivestreamsHandler)
 	// get livestream
-	e.GET("/livestream/:livestream_id", getLivestreamHandler)
+	e.GET("/api/livestream/:livestream_id", getLivestreamHandler)
 	// get polling livecomment timeline
-	e.GET("/livestream/:livestream_id/livecomment", getLivecommentsHandler)
+	e.GET("/api/livestream/:livestream_id/livecomment", getLivecommentsHandler)
 	// ライブコメント投稿
-	e.POST("/livestream/:livestream_id/livecomment", postLivecommentHandler)
-	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
-	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
+	e.POST("/api/livestream/:livestream_id/livecomment", postLivecommentHandler)
+	e.POST("/api/livestream/:livestream_id/reaction", postReactionHandler)
+	e.GET("/api/livestream/:livestream_id/reaction", getReactionsHandler)
 
 	// (配信者向け)ライブコメントの報告一覧取得API
-	e.GET("/livestream/:livestream_id/report", getLivecommentReportsHandler)
-	e.GET("/livestream/:livestream_id/ngwords", getNgwords)
+	e.GET("/api/livestream/:livestream_id/report", getLivecommentReportsHandler)
+	e.GET("/api/livestream/:livestream_id/ngwords", getNgwords)
 	// ライブコメント報告
-	e.POST("/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
+	e.POST("/api/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)
-	e.POST("/livestream/:livestream_id/moderate", moderateNGWordHandler)
+	e.POST("/api/livestream/:livestream_id/moderate", moderateNGWordHandler)
 
 	// livestream_viewersにINSERTするため必要
 	// ユーザ視聴開始 (viewer)
-	e.POST("/livestream/:livestream_id/enter", enterLivestreamHandler)
+	e.POST("/api/livestream/:livestream_id/enter", enterLivestreamHandler)
 	// ユーザ視聴終了 (viewer)
-	e.DELETE("/livestream/:livestream_id/enter", leaveLivestreamHandler)
+	e.DELETE("/api/livestream/:livestream_id/enter", leaveLivestreamHandler)
 
 	// user
 	// FIXME: /user -> /register
-	e.POST("/register", registerHandler)
-	e.POST("/login", loginHandler)
-	e.GET("/user", getUsersHandler)
-	e.GET("/user/me", getMeHandler)
+	e.POST("/api/register", registerHandler)
+	e.POST("/api/login", loginHandler)
+	e.GET("/api/user", getUsersHandler)
+	e.GET("/api/user/me", getMeHandler)
 	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
-	e.GET("/user/:username", getUserHandler)
-	e.GET("/user/:username/statistics", getUserStatisticsHandler)
+	e.GET("/api/user/:username", getUserHandler)
+	e.GET("/api/user/:username/statistics", getUserStatisticsHandler)
 
 	// stats
 	// ライブコメント統計情報
-	e.GET("/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
+	e.GET("/api/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
 
 	// 課金情報
-	e.GET("/payment", GetPaymentResult)
+	e.GET("/api/payment", GetPaymentResult)
 
 	// DB接続
 	conn, err := connectDB(e.Logger)

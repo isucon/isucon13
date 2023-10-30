@@ -66,7 +66,7 @@ var run = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:        "target",
-			Value:       "http://pipe.u.isucon.dev:12345",
+			Value:       fmt.Sprintf("http://pipe.u.isucon.dev:%d", config.TargetPort),
 			Destination: &config.TargetBaseURL,
 			EnvVar:      "BENCH_TARGET_URL",
 		},
@@ -112,10 +112,10 @@ var run = cli.Command{
 		lgr.Info("===== Prepare benchmarker =====")
 		// FIXME: アセット読み込み
 
-		lgr.Info("===== Initialize webapp =====")
+		lgr.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(
 			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(20*time.Second),
+			agent.WithTimeout(30*time.Second),
 		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
@@ -130,7 +130,7 @@ var run = cli.Command{
 		}
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
 
-		lgr.Info("===== Pretest webapp =====")
+		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
 		pretestClient, err := isupipe.NewClient(
 			agent.WithBaseURL(config.TargetBaseURL),
 		)
@@ -146,6 +146,7 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 
+		lgr.Info("ベンチマーク走行を開始します")
 		_ = benchmark(ctx)
 
 		// lgr.Info("===== Final check =====")
@@ -160,7 +161,7 @@ var run = cli.Command{
 		// 	return cli.NewExitError(err, 1)
 		// }
 
-		lgr.Info("===== Errors =====")
+		lgr.Info("===== ベンチ走行中エラー =====")
 		var systemErrors []string
 		for _, msgs := range bencherror.GetFinalErrorMessages() {
 			for _, msg := range msgs {
@@ -172,7 +173,7 @@ var run = cli.Command{
 			lgr.Warn(systemError)
 		}
 
-		lgr.Info("===== Calculate final score =====")
+		lgr.Info("===== ベンチ走行結果 =====")
 		var msgs []string
 
 		score := benchscore.GetFinalScore()

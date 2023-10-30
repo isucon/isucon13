@@ -13,7 +13,7 @@ type InitializeResponse struct {
 }
 
 func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
-	req, err := c.agent.NewRequest(http.MethodPost, "/initialize", nil)
+	req, err := c.agent.NewRequest(http.MethodPost, "/api/initialize", nil)
 	if err != nil {
 		return nil, err
 	}

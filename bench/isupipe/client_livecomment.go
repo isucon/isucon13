@@ -57,7 +57,7 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, opts ...
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -93,7 +93,7 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, op
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/report", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/report", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -134,7 +134,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -174,7 +174,7 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommen
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment/%d/report", livestreamId, livecommentId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment/%d/report", livestreamId, livecommentId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -204,7 +204,7 @@ func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, 
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/moderate", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/moderate", livestreamId)
 	payload, err := json.Marshal(&ModerateRequest{
 		NGWord: ngWord,
 	})

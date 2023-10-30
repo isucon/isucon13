@@ -28,6 +28,11 @@ func BasicStreamerColdReserveScenario(
 	}
 	defer streamerPool.Put(ctx, client) // 使い終わったらお片付け
 
+	username, err := client.LoginUserName()
+	if err != nil {
+		return err
+	}
+
 	if err := VisitLivestreamAdmin(ctx, client); err != nil {
 		return err
 	}
@@ -37,8 +42,13 @@ func BasicStreamerColdReserveScenario(
 		return err
 	}
 
-	// FIXME: webapp側でタグ採番がおかしく、Tagを指定するとエラーになる
+	tags, err := client.GetRandomTags(ctx, 5)
+	if err != nil {
+		return err
+	}
+
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+		Tags:        tags,
 		Title:       reservation.Title,
 		Description: reservation.Description,
 		StartAt:     reservation.StartAt,
@@ -50,7 +60,7 @@ func BasicStreamerColdReserveScenario(
 	}
 	scheduler.ReservationSched.CommitReservation(reservation)
 
-	if scheduler.UserScheduler.IsPopularStreamer(reservation.UserName) {
+	if scheduler.UserScheduler.IsPopularStreamer(username) {
 		popularLivestreamPool.Put(ctx, livestream)
 	} else {
 		livestreamPool.Put(ctx, livestream)

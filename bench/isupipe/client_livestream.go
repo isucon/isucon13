@@ -47,7 +47,7 @@ func (c *Client) GetLivestream(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -79,7 +79,7 @@ func (c *Client) GetLivestreams(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/livestream", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -117,7 +117,7 @@ func (c *Client) GetLivestreamsByTag(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/livestream", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream", nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
@@ -153,7 +153,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	req, err := c.themeAgent.NewRequest(http.MethodPost, "/livestream/reservation", bytes.NewReader(payload))
+	req, err := c.themeAgent.NewRequest(http.MethodPost, "/api/livestream/reservation", bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -187,7 +187,7 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, opts ...
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -217,7 +217,7 @@ func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int, opts ...
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamId)
 	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)

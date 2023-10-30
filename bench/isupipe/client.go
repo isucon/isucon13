@@ -18,7 +18,8 @@ import (
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
 
 type Client struct {
-	agent *agent.Agent
+	agent    *agent.Agent
+	username string
 
 	// ユーザカスタムテーマ適用ページアクセス用agent
 	// ライブ配信画面など
@@ -68,6 +69,14 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 	return &Client{
 		agent: agent,
 	}, nil
+}
+
+func (c *Client) LoginUserName() (string, error) {
+	if len(c.username) == 0 {
+		return "", bencherror.NewInternalError(fmt.Errorf("未ログインクライアントです"))
+	}
+
+	return c.username, nil
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数
