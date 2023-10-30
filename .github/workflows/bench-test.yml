@@ -6,12 +6,6 @@ on:
       - webapp/**/*
       - development/**/*
       - .github/workflows/bench-test.yml
-  pull_request:
-    paths:
-      - bench/**/*
-      - webapp/**/*
-      - development/**/*
-      - .github/workflows/bench-test.yml
 jobs:
   test:
     strategy:
