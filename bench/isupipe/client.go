@@ -18,8 +18,9 @@ import (
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
 
 type Client struct {
-	agent    *agent.Agent
-	username string
+	agent     *agent.Agent
+	username  string
+	isPopular bool
 
 	// ユーザカスタムテーマ適用ページアクセス用agent
 	// ライブ配信画面など
@@ -77,6 +78,10 @@ func (c *Client) LoginUserName() (string, error) {
 	}
 
 	return c.username, nil
+}
+
+func (c *Client) IsPopular() bool {
+	return c.isPopular
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数

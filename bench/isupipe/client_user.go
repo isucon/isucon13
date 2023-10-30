@@ -16,6 +16,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
 type User struct {
@@ -223,6 +224,8 @@ func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...Clien
 	return user, nil
 }
 
+// ログインを行う.
+// NOTE: ログイン後はログインユーザとして振る舞うので、各種agentやユーザ名、人気ユーザであるかの判定フラグなどの情報もここで確定する
 func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
@@ -254,6 +257,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	}
 
 	c.username = r.UserName
+	c.isPopular = scheduler.UserScheduler.IsPopularStreamer(c.username)
 
 	// cookieを流用して各種ページアクセス用agentを初期化
 	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
