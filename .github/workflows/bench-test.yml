@@ -45,7 +45,7 @@ jobs:
       env:
         TZ: Asia/Tokyo
       run: |
-        go test -v ./...
+        go test -p=1 -v ./...
 
     - name: "[bench] Benchmark"
       working-directory: ./bench
