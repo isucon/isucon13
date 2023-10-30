@@ -1,0 +1,7 @@
+---
+- name: Build isupipe-go
+  become: yes
+  shell: >
+    /home/isucon/local/golang/bin/go build -o isupipe -ldflags "-s -w"
+  args:
+    chdir: /home/isucon/webapp/go/

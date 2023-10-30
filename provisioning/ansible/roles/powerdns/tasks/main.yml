@@ -49,7 +49,7 @@
       CREATE DATABASE IF NOT EXISTS isudns;
     "
 
-- name: Create tables onn isudns
+- name: Create tables on isudns
   become: true
   shell: >
     cat /usr/share/doc/pdns-backend-mysql/schema.mysql.sql|mysql -uroot isudns
