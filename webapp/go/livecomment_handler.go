@@ -215,6 +215,31 @@ func postLivecommentHandler(c echo.Context) error {
 		}
 	}
 
+	// NGワードにヒットする過去の投稿も全削除する
+	for _, ngword := range ngwords {
+		// ライブコメント一覧取得
+		var livecomments []*Livecomment
+		if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments"); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		for _, livecomment := range livecomments {
+			query := `
+			DELETE FROM livecomments
+			WHERE
+			(SELECT COUNT(*)
+			FROM
+			(SELECT ? AS text) AS texts
+			INNER JOIN
+			(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+			ON texts.text LIKE patterns.pattern) >= 1;
+			`
+			if _, err := tx.ExecContext(ctx, query, livecomment.Comment, ngword.Word); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+		}
+	}
+
 	// FIXME: 視聴者からのスパム報告と突合して検査するとボーナス加点
 
 	now := time.Now().Unix()
