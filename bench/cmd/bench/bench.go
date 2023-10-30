@@ -115,7 +115,7 @@ var run = cli.Command{
 		lgr.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(
 			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(30*time.Second),
+			agent.WithTimeout(1*time.Minute),
 		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
