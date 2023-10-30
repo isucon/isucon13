@@ -142,7 +142,7 @@ func getNgwords(c echo.Context) error {
 	defer tx.Rollback()
 
 	var ngWords []*NGWord
-	if err := tx.SelectContext(ctx, &ngWords, "SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ?", userId, livestreamId); err != nil {
+	if err := tx.SelectContext(ctx, &ngWords, "SELECT id, user_id, livestream_id, word FROM ng_words WHERE user_id = ? AND livestream_id = ?", userId, livestreamId); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusOK, []*NGWord{})
 		} else {
@@ -192,7 +192,7 @@ func postLivecommentHandler(c echo.Context) error {
 
 	// スパム判定
 	var ngwords []*NGWord
-	if err := tx.SelectContext(ctx, &ngwords, "SELECT * FROM ng_words"); err != nil {
+	if err := tx.SelectContext(ctx, &ngwords, "SELECT id, user_id, livestream_id, word FROM ng_words"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
