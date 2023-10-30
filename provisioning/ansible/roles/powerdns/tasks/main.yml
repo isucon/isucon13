@@ -75,10 +75,11 @@
     dest: /etc/powerdns/pdns.d/mysql.conf
     mode: 0644
 
-- name: Chmod pdns.conf
+- name: Copy pdns.conf
   become: true
-  file:
-    path: /etc/powerdns/pdns.conf
+  copy:
+    src: pdns.conf
+    dest: /etc/powerdns/pdns.conf
     mode: 0644
 
 - name: Copy systemd/resolved.conf
@@ -114,3 +115,16 @@
   become: true
   shell: |
     pdnsutil create-zone u.isucon.dev
+
+- name: create A record for u.isucon.dev
+  become: true
+  shell: |
+    mysql -uisucon -pisucon isudns -e "INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'u.isucon.dev', 'A', '{{ ansible_default_ipv4.address }}', 3600, NULL);"
+- name: create A record for pipe.u.isucon.dev
+  become: true
+  shell: |
+    mysql -uisucon -pisucon isudns -e "INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'pipe.u.isucon.dev', 'A', '{{ ansible_default_ipv4.address }}', 3600, NULL);"
+- name: create A record for test001.u.isucon.dev
+  become: true
+  shell: |
+    mysql -uisucon -pisucon isudns -e "INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'test001.u.isucon.dev', 'A', '{{ ansible_default_ipv4.address }}', 3600, NULL);"
