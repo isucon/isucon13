@@ -13,6 +13,7 @@ import LiveComment from '~/components/video/comment';
 export default function WatchPage(): React.ReactElement {
   const { id } = useParams();
   const liveStream = useLiveStream(id ?? null);
+  const idNum = id ? parseInt(id) : null;
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
@@ -21,7 +22,11 @@ export default function WatchPage(): React.ReactElement {
           <video />
         </AspectRatio>
         <Stack sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
-          <LiveComment />
+          <LiveComment
+            type="real"
+            livestream_id={idNum ?? 0}
+            is_loading={idNum === null || liveStream.isLoading}
+          />
         </Stack>
       </Stack>
 

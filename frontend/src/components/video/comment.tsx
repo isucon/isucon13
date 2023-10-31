@@ -9,11 +9,16 @@ import CardContent from '@mui/joy/CardContent';
 import CardOverflow from '@mui/joy/CardOverflow';
 import IconButton from '@mui/joy/IconButton';
 import Input from '@mui/joy/Input';
+import Skeleton from '@mui/joy/Skeleton';
 import Slider from '@mui/joy/Slider';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { AiFillHeart, AiOutlineClose } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
+import { apiClient } from '~/api/client';
+import { useLiveStreamComment } from '~/api/hooks';
+import { Schemas } from '~/api/types';
 import { RandomReactions } from '~/components/reaction/reaction';
 
 const chipTable = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
@@ -35,76 +40,185 @@ export function chipColor(price: number): [string, boolean] {
   return ['#f00', true];
 }
 
-interface LiveComment {
-  id: string;
-  userName: string;
-  text: string;
-  chip?: number;
+// interface LiveComment {
+//   id: string;
+//   userName: string;
+//   text: string;
+//   chip?: number;
+// }
+
+export interface LiveCommentProps {
+  type: 'real' | 'random'; // real: 実際のAPIコールを伴う, random: ランダムコメントでのデモ
+  livestream_id: number;
+  is_loading?: boolean;
 }
 
-export default function LiveComment(): React.ReactElement {
+export default function LiveComment(
+  props: LiveCommentProps,
+): React.ReactElement {
   const [commentMode, setCommentMode] = React.useState<
     'normal' | 'chip' | 'emoji'
   >('normal');
   const [chipAmount, setChipAmount] = React.useState(2000);
 
-  const [liveComments, setLiveComments] = React.useState<LiveComment[]>([
-    {
-      id: '1',
-      userName: 'ユーザー名1',
-      text: 'メッセージ1',
-    },
-    {
-      id: '2',
-      userName: 'ユーザー名2',
-      text: 'メッセージ2',
-    },
-    {
-      id: '3',
-      userName: 'ユーザー名3',
-      text: 'メッセージ3',
-    },
-    {
-      id: '4',
-      userName: 'ユーザー名4',
-      text: 'メッセージ4',
-      chip: 2000,
-    },
-  ]);
+  const [localLiveComments, setLocalLiveComments] = React.useState<
+    Schemas.Livecomment[]
+  >([]);
+  const remoteLiveComment = useLiveStreamComment(
+    props.type === 'real' ? props.livestream_id.toString() : null,
+  );
+  const liveComments: Schemas.Livecomment[] =
+    props.type === 'real' ? remoteLiveComment.data ?? [] : localLiveComments;
+
+  const counterRef = React.useRef(0);
+  React.useEffect(() => {
+    if (props.type === 'real') {
+      let timer: number | undefined = undefined;
+      const cb = async () => {
+        await remoteLiveComment.mutate();
+        timer = setTimeout(cb, 3000); // fetch interval
+      };
+      cb();
+      return () => {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      };
+    } else {
+      const timer = setInterval(() => {
+        counterRef.current++;
+        let tip: number | undefined;
+        if (Math.random() < 0.1) {
+          tip = chipTable[Math.floor(Math.random() * chipTable.length)];
+        }
+        setLocalLiveComments((comments) => {
+          const newList = [
+            ...comments,
+            {
+              id: counterRef.current,
+              user: {
+                id: counterRef.current,
+                name: `user-${counterRef.current}`,
+                display_name: `ユーザー名${counterRef.current}`,
+                description: '',
+                is_popular: false,
+                theme: '',
+              },
+              comment: `メッセージ${counterRef.current}`,
+              tip: tip,
+            } satisfies Schemas.Livecomment,
+          ];
+          if (newList.length > 40) {
+            return newList.splice(-30);
+          } else {
+            return newList;
+          }
+        });
+      }, 300);
+      return () => clearInterval(timer);
+    }
+  }, [props.type]);
 
   const commentsRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    let counter = 4;
-    const timer = setInterval(() => {
-      counter++;
-      let chip: number | undefined;
-      if (Math.random() < 0.1) {
-        chip = chipTable[Math.floor(Math.random() * chipTable.length)];
-      }
-      setLiveComments((comments) => {
-        const newList = [
-          ...comments,
-          {
-            id: `comment-${counter}-${Date.now()}`,
-            userName: `ユーザー名${counter}`,
-            text: `メッセージ${counter}`,
-            chip,
-          },
-        ];
-        if (newList.length > 40) {
-          return newList.splice(-30);
-        } else {
-          return newList;
-        }
-      });
-    }, 300);
-    return () => clearInterval(timer);
-  }, []);
   React.useLayoutEffect(() => {
     if (commentsRef.current) {
       commentsRef.current.scrollTop = commentsRef.current.scrollHeight;
     }
   }, [liveComments]);
+
+  const form = useForm<{ normalComment: string; tipComment: string }>({
+    defaultValues: {
+      normalComment: '',
+      tipComment: '',
+    },
+  });
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const submitNormal = React.useCallback(async () => {
+    if (props.type === 'real') {
+      const comment = form.getValues('normalComment');
+      setIsSubmitting(true);
+      try {
+        await apiClient.post$livestream$livestreamid$livecomment({
+          parameter: {
+            livestreamid: props.livestream_id.toString(),
+          },
+          requestBody: {
+            comment: comment,
+          },
+        });
+        remoteLiveComment.mutate();
+        form.setValue('normalComment', '');
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      const comment = form.getValues('normalComment');
+      setLocalLiveComments((comments) => {
+        counterRef.current++;
+        return [
+          ...comments,
+          {
+            id: counterRef.current,
+            user: {
+              id: counterRef.current,
+              name: `user-${counterRef.current}`,
+              display_name: `ユーザー名${counterRef.current}`,
+              description: '',
+              is_popular: false,
+              theme: '',
+            },
+            comment: comment,
+            tip: undefined,
+          } satisfies Schemas.Livecomment,
+        ];
+      });
+      form.setValue('normalComment', '');
+    }
+  }, [form, props.type]);
+
+  const submitTip = React.useCallback(async () => {
+    if (props.type === 'real') {
+      const comment = form.getValues('tipComment');
+      setIsSubmitting(true);
+      try {
+        await apiClient.post$livestream$livestreamid$livecomment({
+          parameter: {
+            livestreamid: props.livestream_id.toString(),
+          },
+          requestBody: {
+            comment: comment,
+            tip: chipAmount,
+          },
+        });
+        remoteLiveComment.mutate();
+        form.setValue('tipComment', '');
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      const comment = form.getValues('tipComment');
+      setLocalLiveComments((comments) => {
+        counterRef.current++;
+        return [
+          ...comments,
+          {
+            id: counterRef.current,
+            user: {
+              id: counterRef.current,
+              name: `user-${counterRef.current}`,
+              display_name: `ユーザー名${counterRef.current}`,
+              description: '',
+              is_popular: false,
+              theme: '',
+            },
+            comment: comment,
+            tip: chipAmount,
+          } satisfies Schemas.Livecomment,
+        ];
+      });
+      form.setValue('tipComment', '');
+    }
+  }, [form, props.type, chipAmount]);
 
   return (
     <>
@@ -136,16 +250,30 @@ export default function LiveComment(): React.ReactElement {
             },
           }}
         >
-          <Stack spacing={2}>
-            {liveComments.map((comment) => (
-              <Comment key={comment.id} comment={comment} />
-            ))}
+          <Stack spacing={2} sx={{ wordBreak: 'break-all' }}>
+            {props.is_loading ||
+            (props.type === 'real' && remoteLiveComment.isLoading) ? (
+              <>
+                <Skeleton variant="text" />
+                <Skeleton variant="text" />
+                <Skeleton variant="text" />
+              </>
+            ) : (
+              liveComments.map((comment) => (
+                <Comment key={comment.id} comment={comment} />
+              ))
+            )}
           </Stack>
           <Stack
             sx={{
               position: 'absolute',
-              bottom: commentMode === 'emoji' ? '305px' : '70px',
-              right: '15px',
+              bottom:
+                commentMode === 'emoji'
+                  ? '305px'
+                  : commentMode === 'normal'
+                  ? '70px'
+                  : '300px',
+              right: commentMode === 'chip' ? '45px' : '15px',
             }}
           >
             {commentMode !== 'chip' && (
@@ -191,8 +319,14 @@ export default function LiveComment(): React.ReactElement {
               <Stack direction="row">
                 <Avatar />
                 <Input
+                  {...form.register('normalComment')}
                   endDecorator={
-                    <Button variant="plain" color="neutral">
+                    <Button
+                      variant="plain"
+                      color="neutral"
+                      onClick={() => submitNormal()}
+                      loading={isSubmitting}
+                    >
                       送信
                     </Button>
                   }
@@ -216,7 +350,18 @@ export default function LiveComment(): React.ReactElement {
                 <Typography level="body-lg" sx={{ py: 1 }}>
                   チップを送る
                 </Typography>
-                <TipComment text="" amount={chipAmount} isEditable />
+                <Controller
+                  control={form.control}
+                  name="tipComment"
+                  render={({ field }) => (
+                    <TipComment
+                      text={field.value}
+                      onChange={(text) => field.onChange(text)}
+                      amount={chipAmount}
+                      isEditable
+                    />
+                  )}
+                />
                 <Slider
                   defaultValue={4}
                   step={1}
@@ -229,7 +374,12 @@ export default function LiveComment(): React.ReactElement {
                   onChange={(e, v) => setChipAmount(chipTable[v as number])}
                 />
                 <ButtonGroup buttonFlex="1 0 100px">
-                  <Button color="primary" variant="soft">
+                  <Button
+                    color="primary"
+                    variant="soft"
+                    onClick={() => submitTip()}
+                    loading={isSubmitting}
+                  >
                     チップを送信
                   </Button>
                   <Button
@@ -259,22 +409,22 @@ const PickerWrapper = styled.div`
 `;
 
 interface CommentProps {
-  comment: LiveComment;
+  comment: Schemas.Livecomment;
 }
 const Comment = React.memo(function Comment({
   comment,
 }: CommentProps): React.ReactElement {
-  return comment.chip ? (
-    <TipComment text={comment.text} amount={comment.chip} />
+  return comment.tip ? (
+    <TipComment text={comment.comment ?? ''} amount={comment.tip ?? 0} />
   ) : (
     <CommentWrapper>
       <Avatar size="sm" sx={{ position: 'absolute' }} />
       <Typography component="div" sx={{ ml: '40px', pt: '2px' }}>
         <Typography level="title-sm" component="span">
-          {comment.userName}
+          {comment.user?.display_name ?? ''}
         </Typography>
         <Typography level="body-md" component="span" sx={{ ml: 1 }}>
-          <span>{comment.text}</span>
+          <span>{comment.comment ?? ''}</span>
         </Typography>
       </Typography>
     </CommentWrapper>

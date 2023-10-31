@@ -31,7 +31,7 @@ export default function WatchPage(): React.ReactElement {
               <Link to="/user" style={{ textDecoration: 'none' }}>
                 <Typography level="title-sm">チャンネル名</Typography>
               </Link>
-              <Typography level="body-sm">
+              <Typography level="body-sm" component="div">
                 <Stack direction="row" spacing={2}>
                   <span>チャンネル登録者数1234人</span>
                 </Stack>
@@ -56,7 +56,7 @@ export default function WatchPage(): React.ReactElement {
         </Stack>
 
         <Stack sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
-          <LiveComment />
+          <LiveComment type="random" livestream_id={1} />
         </Stack>
         <Stack direction="column" sx={{ flexBasis: '300px', flexGrow: 1 }}>
           <Stack direction="row" sx={{ mb: 1, alignItems: 'center' }}>

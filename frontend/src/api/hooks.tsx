@@ -35,8 +35,18 @@ export function useLiveStreams(params: Parameter$get$livestream) {
 }
 
 export function useLiveStream(id: string | null) {
-  return useSWR(id ?? `/livestream/${id}/`, () =>
+  return useSWR(id && `/livestream/${id}/`, () =>
     apiClient.get$livestream$_livestreamid({
+      parameter: {
+        livestreamid: id ?? '',
+      },
+    }),
+  );
+}
+
+export function useLiveStreamComment(id: string | null) {
+  return useSWR(id && `/livestream/${id}/livecomment`, () =>
+    apiClient.get$livestream$_livestreamid$livecomment({
       parameter: {
         livestreamid: id ?? '',
       },
