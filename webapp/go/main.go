@@ -110,7 +110,7 @@ func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	return db, fmt.Errorf("failed to connect to MySQL")
+	return db, nil
 }
 
 func initializeHandler(c echo.Context) error {

@@ -12,7 +12,7 @@ TAG=isupipe:latest
 build:
 	$(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
 
-.PHONY: build
+.PHONY: docker_image
 docker_image: clean build
 	$(DOCKER_BUILD) -t $(TAG) . $(DOCKER_BUILD_OPTS)
 
