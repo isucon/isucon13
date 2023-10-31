@@ -20,3 +20,8 @@ $ ansible-playbook -i inventory/localhost benchmark.yml
 $ ansible-playbook -i inventory/hosts.yaml application.yml
 $ ansible-playbook -i inventory/hosts.yaml benchmark.yml
 ```
+
+## 証明書について
+
+*.t.isucon.dev の証明書はISUCON12予選のレポジトリにあるものを使っています
+https://github.com/isucon/isucon12-qualify
