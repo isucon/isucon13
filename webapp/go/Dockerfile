@@ -1,4 +1,4 @@
-FROM golang:1.21.3-bookworm
+FROM golang:1.21.0-bookworm
 
 WORKDIR /tmp
 ENV DEBIAN_FRONTEND=noninteractive
