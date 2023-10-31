@@ -107,14 +107,8 @@ func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 	}
 	db.SetMaxOpenConns(10)
 
-	for i := 0; i < 10; i++ {
-		if err := db.Ping(); err != nil {
-			logger.Errorf("failed to ping to MySQL: %v", err)
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		return db, nil
+	if err := db.Ping(); err != nil {
+		return nil, err
 	}
 
 	return db, fmt.Errorf("failed to connect to MySQL")
