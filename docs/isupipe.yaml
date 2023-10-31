@@ -552,8 +552,6 @@ components:
           type: string
         tip:
           type: integer
-        report_count:
-          type: integer
         created_at:
           type: integer
         updated_at:

@@ -82,13 +82,11 @@ CREATE TABLE `livecomments` (
   -- 単位はISU (1,2,3,4,5, ...などわかりやすい数値で良い気がする)
   -- 色は、青、水、黄緑、黃、マゼンタ、赤の６段階 (ココらへんはフロントエンドでいい感じにしてもらう)
   `tip` BIGINT NOT NULL,
-  -- スパム報告数
-  `report_count` BIGINT DEFAULT 0 NOT NULL,
   `created_at` BIGINT NOT NULL DEFAULT 0,
   `updated_at` BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
-CREATE INDEX livecomments_covering ON livecomments(`created_at`, `user_id`, `tip`, `report_count`, `updated_at`, `comment`, `livestream_id`);
+CREATE INDEX livecomments_covering ON livecomments(`created_at`, `user_id`, `tip`, `updated_at`, `comment`, `livestream_id`);
 
 -- ユーザからのライブコメントのスパム報告
 CREATE TABLE `livecomment_reports` (

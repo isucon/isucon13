@@ -13,14 +13,13 @@ import (
 )
 
 type Livecomment struct {
-	ID          int        `json:"id"`
-	User        User       `json:"user"`
-	Livestream  Livestream `json:"livestream"`
-	Comment     string     `json:"comment"`
-	Tip         int        `json:"tip"`
-	ReportCount int        `json:"report_count"`
-	CreatedAt   int        `json:"created_at"`
-	UpdatedAt   int        `json:"updated_at"`
+	ID         int        `json:"id"`
+	User       User       `json:"user"`
+	Livestream Livestream `json:"livestream"`
+	Comment    string     `json:"comment"`
+	Tip        int        `json:"tip"`
+	CreatedAt  int        `json:"created_at"`
+	UpdatedAt  int        `json:"updated_at"`
 }
 
 type LivecommentReport struct {
@@ -122,6 +121,8 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int, op
 	benchscore.AddScore(benchscore.SuccessGetLivecommentReports)
 	return reports, nil
 }
+
+func (c *Client) GetNgwords(ctx context.Context)
 
 func (c *Client) PostLivecomment(ctx context.Context, livestreamID int, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
 	var (
