@@ -62,6 +62,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	// FIXME: livestream_viewers_historyのレコードがDELETEされるようになるので、統計情報見直し
 	var viewedLivestreams []*LivestreamViewerModel
 	if err := dbConn.SelectContext(ctx, &viewedLivestreams, "SELECT user_id, livestream_id FROM livestream_viewers_history WHERE user_id = ?", userModel.ID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

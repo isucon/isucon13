@@ -30,8 +30,6 @@ CREATE TABLE `livestreams` (
   `playlist_url` VARCHAR(255) NOT NULL,
   `thumbnail_url` VARCHAR(255) NOT NULL,
   -- リアルタイムな視聴者数
-  -- FIXME: viewers_countを分離
-  `viewers_count` BIGINT DEFAULT 0 NOT NULL,
   `start_at` BIGINT NOT NULL,
   `end_at` BIGINT NOT NULL,
   `created_at` BIGINT NOT NULL DEFAULT 0,

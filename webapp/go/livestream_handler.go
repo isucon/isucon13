@@ -42,7 +42,6 @@ type LivestreamModel struct {
 	Description  string `db:"description"`
 	PlaylistUrl  string `db:"playlist_url"`
 	ThumbnailUrl string `db:"thumbnail_url"`
-	ViewersCount int64  `db:"viewers_count"`
 	StartAt      int64  `db:"start_at"`
 	EndAt        int64  `db:"end_at"`
 	CreatedAt    int64  `db:"created_at"`
@@ -56,7 +55,6 @@ type Livestream struct {
 	Description  string `json:"description"`
 	PlaylistUrl  string `json:"playlist_url"`
 	ThumbnailUrl string `json:"thumbnail_url"`
-	ViewersCount int64  `json:"viewers_count"`
 	Tags         []Tag  `json:"tags"`
 	StartAt      int64  `json:"start_at"`
 	EndAt        int64  `json:"end_at"`
@@ -304,10 +302,6 @@ func enterLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count + 1 WHERE id = ?", livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -321,6 +315,15 @@ func leaveLivestreamHandler(c echo.Context) error {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
 		return err
 	}
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	userId, ok := sess.Values[defaultUserIDKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
+	}
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
@@ -333,7 +336,7 @@ func leaveLivestreamHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, "UPDATE livestreams SET viewers_count = viewers_count - 1 WHERE id = ?", livestreamID); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?", userId, livestreamID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -478,7 +481,6 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 		Description:  livestreamModel.Description,
 		PlaylistUrl:  livestreamModel.PlaylistUrl,
 		ThumbnailUrl: livestreamModel.ThumbnailUrl,
-		ViewersCount: livestreamModel.ViewersCount,
 		StartAt:      livestreamModel.StartAt,
 		EndAt:        livestreamModel.EndAt,
 		CreatedAt:    livestreamModel.CreatedAt,
