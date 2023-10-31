@@ -33,14 +33,14 @@ func BasicViewerScenario(
 		return err
 	}
 
-	if err := client.EnterLivestream(ctx, livestream.Id); err != nil {
+	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 
 	for i := 0; i < config.AdvertiseCost*10; i++ {
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
-		if _, err := client.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
+		if _, err := client.PostLivecomment(ctx, livestream.ID, &isupipe.PostLivecommentRequest{
 			Comment: livecomment.Comment,
 			Tip:     tip,
 		}); err != nil {
@@ -48,14 +48,14 @@ func BasicViewerScenario(
 		}
 
 		emojiName := scheduler.GetReaction()
-		if _, err := client.PostReaction(ctx, livestream.Id, &isupipe.PostReactionRequest{
+		if _, err := client.PostReaction(ctx, livestream.ID, &isupipe.PostReactionRequest{
 			EmojiName: emojiName,
 		}); err != nil {
 			return err
 		}
 	}
 
-	if err := client.LeaveLivestream(ctx, livestream.Id); err != nil {
+	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 

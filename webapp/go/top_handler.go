@@ -9,14 +9,14 @@ import (
 )
 
 type Tag struct {
-	Id   int64  `json:"id"`
+	ID   int64  `json:"id"`
 	Name string `json:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt int64 `json:"created_at"`
 }
 
 type TagModel struct {
-	Id   int64  `db:"id"`
+	ID   int64  `db:"id"`
 	Name string `db:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt int64 `db:"created_at"`
@@ -47,7 +47,7 @@ func getTagHandler(c echo.Context) error {
 	tags := make([]*Tag, len(tagModels))
 	for i := range tagModels {
 		tags[i] = &Tag{
-			Id:        tagModels[i].Id,
+			ID:        tagModels[i].ID,
 			Name:      tagModels[i].Name,
 			CreatedAt: tagModels[i].CreatedAt,
 		}
@@ -86,7 +86,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 	}
 
 	themeModel := ThemeModel{}
-	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
+	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -95,7 +95,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 	}
 
 	theme := Theme{
-		Id:        themeModel.Id,
+		ID:        themeModel.ID,
 		DarkMode:  themeModel.DarkMode,
 		CreatedAt: themeModel.CreatedAt,
 	}

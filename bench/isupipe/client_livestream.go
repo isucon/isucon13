@@ -13,7 +13,7 @@ import (
 )
 
 type Livestream struct {
-	Id           int    `json:"id"`
+	ID           int    `json:"id"`
 	Owner        User   `json:"owner"`
 	Tags         []Tag  `json:"tags"`
 	Title        string `json:"title"`
@@ -39,7 +39,7 @@ type (
 
 func (c *Client) GetLivestream(
 	ctx context.Context,
-	livestreamId int,
+	livestreamID int,
 	opts ...ClientOption,
 ) error {
 	var (
@@ -47,7 +47,7 @@ func (c *Client) GetLivestream(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -181,13 +181,13 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return livestream, nil
 }
 
-func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, opts ...ClientOption) error {
+func (c *Client) EnterLivestream(ctx context.Context, livestreamID int, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -211,13 +211,13 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, opts ...
 	return nil
 }
 
-func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int, opts ...ClientOption) error {
+func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)

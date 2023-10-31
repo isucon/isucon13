@@ -12,7 +12,7 @@ import (
 )
 
 type Tag struct {
-	Id   int    `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 	// CreatedAt is the created timestamp that forms an UNIX time.
 	CreatedAt int `json:"created_at"`
@@ -68,7 +68,7 @@ func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int, error) {
 
 	var tags []int
 	for i := 0; i < n; i++ {
-		tags = append(tags, resp.Tags[i].Id)
+		tags = append(tags, resp.Tags[i].ID)
 	}
 
 	return tags, nil

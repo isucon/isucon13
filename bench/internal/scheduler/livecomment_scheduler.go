@@ -40,8 +40,8 @@ var LivecommentScheduler = mustNewLivecommentScheduler()
 // それ以外、通常に分類され、ユーザは通常配信者と視聴者になる
 
 type Livecomment struct {
-	UserId       int
-	LivestreamId int
+	UserID       int
+	LivestreamID int
 	Comment      string
 	Tip          int
 }
