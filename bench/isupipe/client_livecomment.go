@@ -122,7 +122,8 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int, op
 	return reports, nil
 }
 
-func (c *Client) GetNgwords(ctx context.Context)
+// FIXME: 実装
+// func (c *Client) GetNgwords(ctx context.Context)
 
 func (c *Client) PostLivecomment(ctx context.Context, livestreamID int, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
 	var (
