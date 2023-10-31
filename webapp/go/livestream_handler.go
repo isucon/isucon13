@@ -320,7 +320,7 @@ func leaveLivestreamHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	userId, ok := sess.Values[defaultUserIDKey].(int64)
+	userID, ok := sess.Values[defaultUserIDKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
@@ -336,7 +336,7 @@ func leaveLivestreamHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?", userId, livestreamID); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?", userID, livestreamID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
