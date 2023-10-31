@@ -8,7 +8,7 @@ import (
 )
 
 type Payment struct {
-	ReservationId int
+	ReservationID int
 	Tip           int
 }
 

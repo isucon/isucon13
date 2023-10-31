@@ -11,7 +11,7 @@ import (
 // webappに課金サーバを兼任させる
 // とりあえずfinalcheck等を実装する上で必要なので用意
 type Payment struct {
-	ReservationId int64 `json:"reservation_id"`
+	ReservationID int64 `json:"reservation_id"`
 	Tip           int64 `json:"tip"`
 }
 

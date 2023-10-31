@@ -17,20 +17,20 @@ type PostReactionRequest struct {
 }
 
 type Reaction struct {
-	Id         int        `json:"id"`
+	ID         int        `json:"id"`
 	EmojiName  string     `json:"emoji_name"`
 	User       User       `json:"user"`
 	Livestream Livestream `json:"livestream"`
 	CreatedAt  int        `json:"created_at"`
 }
 
-func (c *Client) GetReactions(ctx context.Context, livestreamId int, opts ...ClientOption) ([]Reaction, error) {
+func (c *Client) GetReactions(ctx context.Context, livestreamID int, opts ...ClientOption) ([]Reaction, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -60,7 +60,7 @@ func (c *Client) GetReactions(ctx context.Context, livestreamId int, opts ...Cli
 	return reactions, nil
 }
 
-func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest, opts ...ClientOption) (*Reaction, error) {
+func (c *Client) PostReaction(ctx context.Context, livestreamID int, r *PostReactionRequest, opts ...ClientOption) (*Reaction, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -71,7 +71,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReac
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)

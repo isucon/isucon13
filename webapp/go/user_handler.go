@@ -18,15 +18,15 @@ import (
 )
 
 const (
-	defaultSessionIdKey      = "SESSIONID"
+	defaultSessionIDKey      = "SESSIONID"
 	defaultSessionExpiresKey = "EXPIRES"
-	defaultUserIdKey         = "USERID"
+	defaultUserIDKey         = "USERID"
 	defaultUserNameKey       = "USERNAME"
 	bcryptDefaultCost        = bcrypt.MinCost
 )
 
 type UserModel struct {
-	Id          int64  `db:"id"`
+	ID          int64  `db:"id"`
 	Name        string `db:"name"`
 	DisplayName string `db:"display_name"`
 	Description string `db:"description"`
@@ -38,7 +38,7 @@ type UserModel struct {
 }
 
 type User struct {
-	Id          int64  `json:"id"`
+	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -50,14 +50,14 @@ type User struct {
 }
 
 type Theme struct {
-	Id        int64 `json:"id"`
+	ID        int64 `json:"id"`
 	DarkMode  bool  `json:"dark_mode"`
 	CreatedAt int64 `json:"created_at"`
 }
 
 type ThemeModel struct {
-	Id        int64 `db:"id"`
-	UserId    int64 `db:"user_id"`
+	ID        int64 `db:"id"`
+	UserID    int64 `db:"user_id"`
 	DarkMode  bool  `db:"dark_mode"`
 	CreatedAt int64 `db:"created_at"`
 }
@@ -89,11 +89,11 @@ func getMeHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIdKey, c)
+	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
-	userId, ok := sess.Values[defaultUserIdKey].(int64)
+	userID, ok := sess.Values[defaultUserIDKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -105,7 +105,7 @@ func getMeHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	userModel := UserModel{}
-	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userId)
+	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -166,15 +166,15 @@ func registerHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
 	}
 
-	userId, err := result.LastInsertId()
+	userID, err := result.LastInsertId()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
 	}
 
-	userModel.Id = userId
+	userModel.ID = userID
 
 	themeModel := ThemeModel{
-		UserId:    userId,
+		UserID:    userID,
 		DarkMode:  req.Theme.DarkMode,
 		CreatedAt: now,
 	}
@@ -239,9 +239,9 @@ func loginHandler(c echo.Context) error {
 
 	sessionEndAt := time.Now().Add(1 * time.Hour)
 
-	sessionId := uuid.NewString()
+	sessionID := uuid.NewString()
 
-	sess, err := session.Get(defaultSessionIdKey, c)
+	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -251,9 +251,9 @@ func loginHandler(c echo.Context) error {
 		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
 		Path:   "/",
 	}
-	sess.Values[defaultSessionIdKey] = sessionId
+	sess.Values[defaultSessionIDKey] = sessionID
 	// FIXME: ユーザ名
-	sess.Values[defaultUserIdKey] = userModel.Id
+	sess.Values[defaultUserIDKey] = userModel.ID
 	sess.Values[defaultUserNameKey] = userModel.Name
 	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
@@ -333,7 +333,7 @@ func getUsersHandler(c echo.Context) (err error) {
 }
 
 func verifyUserSession(c echo.Context) error {
-	sess, err := session.Get(defaultSessionIdKey, c)
+	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -354,19 +354,19 @@ func verifyUserSession(c echo.Context) error {
 
 func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (User, error) {
 	themeModel := ThemeModel{}
-	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.Id); err != nil {
+	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
 		return User{}, err
 	}
 
 	user := User{
-		Id:          userModel.Id,
+		ID:          userModel.ID,
 		Name:        userModel.Name,
 		DisplayName: userModel.DisplayName,
 		Description: userModel.Description,
 		CreatedAt:   userModel.CreatedAt,
 		UpdatedAt:   userModel.UpdatedAt,
 		Theme: Theme{
-			Id:        themeModel.Id,
+			ID:        themeModel.ID,
 			DarkMode:  themeModel.DarkMode,
 			CreatedAt: themeModel.CreatedAt,
 		},

@@ -64,13 +64,13 @@ func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ..
 	return stats, nil
 }
 
-func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamId int, opts ...ClientOption) (*LivestreamStatistics, error) {
+func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int, opts ...ClientOption) (*LivestreamStatistics, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/statistics", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/statistics", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)

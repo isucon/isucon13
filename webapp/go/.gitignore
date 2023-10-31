@@ -1,3 +1,5 @@
+isupipe
+
 # Created by https://www.toptal.com/developers/gitignore/api/go,macos,windows,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,macos,windows,linux
 
@@ -97,4 +99,3 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-isupipe

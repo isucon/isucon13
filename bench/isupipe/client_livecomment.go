@@ -13,7 +13,7 @@ import (
 )
 
 type Livecomment struct {
-	Id          int        `json:"id"`
+	ID          int        `json:"id"`
 	User        User       `json:"user"`
 	Livestream  Livestream `json:"livestream"`
 	Comment     string     `json:"comment"`
@@ -24,7 +24,7 @@ type Livecomment struct {
 }
 
 type LivecommentReport struct {
-	Id          int         `json:"id"`
+	ID          int         `json:"id"`
 	Reporter    User        `json:"reporter"`
 	Livecomment Livecomment `json:"livecomment"`
 	CreatedAt   int         `json:"created_at"`
@@ -37,7 +37,7 @@ type (
 		Tip     int    `json:"tip"`
 	}
 	PostLivecommentResponse struct {
-		Id         int        `json:"id"`
+		ID         int        `json:"id"`
 		User       User       `json:"user"`
 		Livestream Livestream `json:"livestream"`
 		Comment    string     `json:"comment"`
@@ -51,13 +51,13 @@ type ModerateRequest struct {
 	NGWord string `json:"ng_word"`
 }
 
-func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, opts ...ClientOption) ([]Livecomment, error) {
+func (c *Client) GetLivecomments(ctx context.Context, livestreamID int, opts ...ClientOption) ([]Livecomment, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -87,13 +87,13 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, opts ...
 	return livecomments, nil
 }
 
-func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, opts ...ClientOption) ([]LivecommentReport, error) {
+func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int, opts ...ClientOption) ([]LivecommentReport, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/report", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/report", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -123,7 +123,7 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, op
 	return reports, nil
 }
 
-func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamID int, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -134,7 +134,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -168,13 +168,13 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostL
 	return livecommentResponse, nil
 }
 
-func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommentId int, opts ...ClientOption) error {
+func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommentID int, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment/%d/report", livestreamId, livecommentId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment/%d/report", livestreamID, livecommentID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -198,13 +198,13 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommen
 	return nil
 }
 
-func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, opts ...ClientOption) error {
+func (c *Client) Moderate(ctx context.Context, livestreamID int, ngWord string, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/moderate", livestreamId)
+	urlPath := fmt.Sprintf("/api/livestream/%d/moderate", livestreamID)
 	payload, err := json.Marshal(&ModerateRequest{
 		NGWord: ngWord,
 	})

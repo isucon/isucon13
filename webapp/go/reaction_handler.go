@@ -11,15 +11,15 @@ import (
 )
 
 type ReactionModel struct {
-	Id           int64  `db:"id"`
+	ID           int64  `db:"id"`
 	EmojiName    string `db:"emoji_name"`
-	UserId       int64  `db:"user_id"`
-	LivestreamId int64  `db:"livestream_id"`
+	UserID       int64  `db:"user_id"`
+	LivestreamID int64  `db:"livestream_id"`
 	CreatedAt    int64  `db:"created_at"`
 }
 
 type Reaction struct {
-	Id         int64      `json:"id"`
+	ID         int64      `json:"id"`
 	EmojiName  string     `json:"emoji_name"`
 	User       User       `json:"user"`
 	Livestream Livestream `json:"livestream"`
@@ -38,7 +38,7 @@ func getReactionsHandler(c echo.Context) error {
 		return err
 	}
 
-	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -50,7 +50,7 @@ func getReactionsHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	reactionModels := []ReactionModel{}
-	if err := tx.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamId); err != nil {
+	if err := tx.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamID); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
@@ -73,7 +73,7 @@ func getReactionsHandler(c echo.Context) error {
 
 func postReactionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
-	livestreamId, err := strconv.Atoi(c.Param("livestream_id"))
+	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -83,12 +83,12 @@ func postReactionHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIdKey, c)
+	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	userId, ok := sess.Values[defaultUserIdKey].(int64)
+	userID, ok := sess.Values[defaultUserIDKey].(int64)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
@@ -105,8 +105,8 @@ func postReactionHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	reactionModel := ReactionModel{
-		UserId:       int64(userId),
-		LivestreamId: int64(livestreamId),
+		UserID:       int64(userID),
+		LivestreamID: int64(livestreamID),
 		EmojiName:    req.EmojiName,
 	}
 
@@ -115,11 +115,11 @@ func postReactionHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	reactionId, err := result.LastInsertId()
+	reactionID, err := result.LastInsertId()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	reactionModel.Id = reactionId
+	reactionModel.ID = reactionID
 
 	reaction, err := fillReactionResponse(ctx, tx, reactionModel)
 	if err != nil {
@@ -135,7 +135,7 @@ func postReactionHandler(c echo.Context) error {
 
 func fillReactionResponse(ctx context.Context, tx *sqlx.Tx, reactionModel ReactionModel) (Reaction, error) {
 	userModel := UserModel{}
-	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserId); err != nil {
+	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", reactionModel.UserID); err != nil {
 		return Reaction{}, err
 	}
 	user, err := fillUserResponse(ctx, tx, userModel)
@@ -144,7 +144,7 @@ func fillReactionResponse(ctx context.Context, tx *sqlx.Tx, reactionModel Reacti
 	}
 
 	livestreamModel := LivestreamModel{}
-	if err := tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", reactionModel.LivestreamId); err != nil {
+	if err := tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", reactionModel.LivestreamID); err != nil {
 		return Reaction{}, err
 	}
 	livestream, err := fillLivestreamResponse(ctx, tx, livestreamModel)
@@ -153,7 +153,7 @@ func fillReactionResponse(ctx context.Context, tx *sqlx.Tx, reactionModel Reacti
 	}
 
 	reaction := Reaction{
-		Id:         reactionModel.Id,
+		ID:         reactionModel.ID,
 		EmojiName:  reactionModel.EmojiName,
 		User:       user,
 		Livestream: livestream,

@@ -26,7 +26,7 @@ func VisitTop(ctx context.Context, client *isupipe.Client) error {
 func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
 	// FIXME: 統計情報取得
-	_, err := client.GetLivestreamStatistics(ctx, livestream.Id)
+	_, err := client.GetLivestreamStatistics(ctx, livestream.ID)
 	if err != nil {
 		return err
 	}
@@ -47,8 +47,8 @@ func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	// for _, livestream := range livestreams {
-	// 	livestreamId := livestream.Id
-	// 	if _, err := client.GetLivecommentReports(ctx, livestreamId); err != nil {
+	// 	livestreamID := livestream.ID
+	// 	if _, err := client.GetLivecommentReports(ctx, livestreamID); err != nil {
 	// 		return err
 	// 	}
 	// }

@@ -26,7 +26,7 @@ func FinalcheckScenario(ctx context.Context, client *isupipe.Client) error {
 	// 予約の整合性チェック
 	for _, payment := range result.Payments {
 		_ = payment
-		// payment.ReservationId
+		// payment.ReservationID
 	}
 
 	lgr.Infof("result = %+v\n", result)

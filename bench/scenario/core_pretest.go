@@ -72,7 +72,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	)
 	var tags []int
 	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
-		tags = append(tags, tag.Id)
+		tags = append(tags, tag.ID)
 	}
 
 	// FIXME: 枠数を超えて予約した場合にエラーになるか
@@ -95,18 +95,18 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 	scheduler.ReservationSched.CommitReservation(reservation)
 
-	if _, err = client.GetLivecommentReports(ctx, livestream.Id); err != nil {
+	if _, err = client.GetLivecommentReports(ctx, livestream.ID); err != nil {
 		return err
 	}
-	if err = client.GetLivestream(ctx, livestream.Id); err != nil {
-		return err
-	}
-
-	if err := client.EnterLivestream(ctx, livestream.Id); err != nil {
+	if err = client.GetLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 
-	livecomment, err := client.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
+	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
+		return err
+	}
+
+	livecomment, err := client.PostLivecomment(ctx, livestream.ID, &isupipe.PostLivecommentRequest{
 		Comment: "test",
 		Tip:     3,
 	})
@@ -114,21 +114,21 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetLivecomments(ctx, livestream.Id /* livestream id*/); err != nil {
+	if _, err := client.GetLivecomments(ctx, livestream.ID /* livestream id*/); err != nil {
 		return err
 	}
 
-	if err := client.ReportLivecomment(ctx, livestream.Id, livecomment.Id); err != nil {
+	if err := client.ReportLivecomment(ctx, livestream.ID, livecomment.ID); err != nil {
 		return err
 	}
 
-	if _, err := client.PostReaction(ctx, livestream.Id /* livestream id*/, &isupipe.PostReactionRequest{
+	if _, err := client.PostReaction(ctx, livestream.ID /* livestream id*/, &isupipe.PostReactionRequest{
 		EmojiName: "chair",
 	}); err != nil {
 		return err
 	}
 
-	if _, err := client.GetReactions(ctx, livestream.Id /* livestream id*/); err != nil {
+	if _, err := client.GetReactions(ctx, livestream.ID /* livestream id*/); err != nil {
 		return err
 	}
 
@@ -140,11 +140,11 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetLivestreamStatistics(ctx, livestream.Id); err != nil {
+	if _, err := client.GetLivestreamStatistics(ctx, livestream.ID); err != nil {
 		return err
 	}
 
-	if err := client.LeaveLivestream(ctx, livestream.Id); err != nil {
+	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 
