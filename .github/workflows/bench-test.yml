@@ -45,6 +45,7 @@ jobs:
       env:
         TZ: Asia/Tokyo
       run: |
+        go clean -testcache
         go test -p=1 -v ./...
 
     - name: "[bench] Benchmark"

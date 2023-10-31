@@ -1,12 +1,23 @@
 DELETE FROM themes;
+ALTER TABLE `themes` auto_increment = 1;
 DELETE FROM users;
+ALTER TABLE `users` auto_increment = 1;
 DELETE FROM livestreams;
+ALTER TABLE `livestreams` auto_increment = 1;
 DELETE FROM reservation_slots;
+ALTER TABLE `reservation_slots` auto_increment = 1;
 DELETE FROM tags;
+ALTER TABLE `tags` auto_increment = 1;
 DELETE FROM livestream_tags;
+ALTER TABLE `livestream_tags` auto_increment = 1;
 DELETE FROM livestream_viewers_history;
+ALTER TABLE `livestream_viewers_history` auto_increment = 1;
 DELETE FROM livecomments;
+ALTER TABLE `livecomments` auto_increment = 1;
 DELETE FROM livecomment_reports;
+ALTER TABLE `livecomment_reports` auto_increment = 1;
 DELETE FROM ng_words;
+ALTER TABLE `ng_words` auto_increment = 1;
 DELETE FROM reactions;
+ALTER TABLE `reactions` auto_increment = 1;
 
