@@ -11,22 +11,19 @@ import (
 )
 
 type LivestreamStatistics struct {
-	MostTipRanking            []TipRank      `json:"most_tip_ranking"`
-	MostPostedReactionRanking []ReactionRank `json:"most_posted_reaction_ranking"`
+	Rank           int64 `json:"rank"`
+	ViewersCount   int64 `json:"viewers_count"`
+	TotalReactions int64 `json:"total_reactions"`
+	TotalReports   int64 `json:"total_reports"`
+	MaxTip         int64 `json:"max_tip"`
 }
 
 type UserStatistics struct {
-	TipRankPerLivestreams map[int]TipRank `json:"tip_rank_by_livestream"`
-}
-
-type TipRank struct {
-	Rank     int `json:"tip_rank"`
-	TotalTip int `json:"total_tip"`
-}
-
-type ReactionRank struct {
-	Rank      int    `json:"reaction_rank"`
-	EmojiName string `json:"emoji_name"`
+	Rank              int64 `json:"rank"`
+	ViewersCount      int64 `json:"viewers_count"`
+	TotalReactions    int64 `json:"total_reactions"`
+	TotalLivecomments int64 `json:"total_livecomments"`
+	TotalTip          int64 `json:"total_tip"`
 }
 
 func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ...ClientOption) (*UserStatistics, error) {

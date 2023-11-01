@@ -20,9 +20,6 @@ func TestClientUser_Login(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	_, err = client.Initialize(ctx)
-	assert.NoError(t, err)
-
 	streamer := scheduler.UserScheduler.GetRandomStreamer()
 	assert.NoError(t, err)
 
