@@ -68,7 +68,7 @@ func (c *Client) GetLivestream(
 	return nil
 }
 
-func (c *Client) GetLivestreams(
+func (c *Client) SearchLivestreams(
 	ctx context.Context,
 	opts ...ClientOption,
 ) ([]*Livestream, error) {
@@ -77,7 +77,7 @@ func (c *Client) GetLivestreams(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream/search", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -105,7 +105,42 @@ func (c *Client) GetLivestreams(
 	return livestreams, nil
 }
 
-func (c *Client) GetLivestreamsByTag(
+// 自分のライブ配信一覧取得
+func (c *Client) GetLivestreams(ctx context.Context, opts ...ClientOption) ([]*Livestream, error) {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream", nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var livestreams []*Livestream
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+	}
+
+	return livestreams, nil
+}
+
+func (c *Client) SearchLivestreamsByTag(
 	ctx context.Context,
 	tag string,
 	opts ...ClientOption,
@@ -115,7 +150,7 @@ func (c *Client) GetLivestreamsByTag(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream", nil)
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream/search", nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}

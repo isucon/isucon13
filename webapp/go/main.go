@@ -147,7 +147,8 @@ func main() {
 	// reserve livestream
 	e.POST("/api/livestream/reservation", reserveLivestreamHandler)
 	// list livestream
-	e.GET("/api/livestream", getLivestreamsHandler)
+	e.GET("/api/livestream/search", searchLivestreamsHandler)
+	e.GET("/api/livestream", getUserLivestreamsHandler)
 	// get livestream
 	e.GET("/api/livestream/:livestream_id", getLivestreamHandler)
 	// get polling livecomment timeline

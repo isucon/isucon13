@@ -244,7 +244,7 @@ func registerHandler(c echo.Context) error {
 		HashedPassword: string(hashedPassword),
 	}
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password, created_at, updated_at) VALUES(:name, :display_name, :description, :password, :created_at, :updated_at)", userModel)
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
 	}
@@ -260,7 +260,7 @@ func registerHandler(c echo.Context) error {
 		UserID:   userID,
 		DarkMode: req.Theme.DarkMode,
 	}
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode, created_at) VALUES(:user_id, :dark_mode, :created_at)", themeModel); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
 	}
 

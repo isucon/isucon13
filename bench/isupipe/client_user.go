@@ -131,7 +131,7 @@ func (c *Client) PostIcon(ctx context.Context, r *PostIconRequest, opts ...Clien
 
 	// FIXME: 配信者のユーザ名を含めてリクエスト
 	endpoint := "/api/icon"
-	req, err := c.agent.NewRequest(http.MethodGet, endpoint, bytes.NewReader(payload))
+	req, err := c.agent.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}

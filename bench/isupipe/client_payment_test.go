@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// FIXME: 変動をテスト
 func TestPayment(t *testing.T) {
 	ctx := context.Background()
 
@@ -23,4 +24,5 @@ func TestPayment(t *testing.T) {
 	// 投げ銭投稿
 
 	// 変動チェック
+	_ = result1
 }
