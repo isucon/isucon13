@@ -28,7 +28,6 @@ export namespace Schemas {
     description?: string;
     playlist_url?: string;
     thumbnail_url?: string;
-    viewers_count?: number;
     start_at?: number;
     end_at?: number;
     created_at?: number;
@@ -41,7 +40,6 @@ export namespace Schemas {
     livestream?: Schemas.Livestream;
     comment?: string;
     tip?: number;
-    report_count?: number;
     created_at?: number;
     updated_at?: number;
   }
