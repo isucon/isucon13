@@ -31,12 +31,19 @@ var (
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
 	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
+	numReservationSlot       = 2
 )
 
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	if secretKey, ok := os.LookupEnv("ISUCON13_SESSION_SECRETKEY"); ok {
 		secret = []byte(secretKey)
+	}
+	if slotStr, ok := os.LookupEnv("ISUCON13_NUM_RESERVATION_SLOT"); ok {
+		slot, err := strconv.Atoi(slotStr)
+		if err == nil {
+			numReservationSlot = slot
+		}
 	}
 }
 

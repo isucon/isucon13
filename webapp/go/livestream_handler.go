@@ -15,9 +15,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// 同時配信可能予約枠数
-const NumReservationSlot = 2
-
 type ReserveLivestreamRequest struct {
 	Tags        []int64 `json:"tags"`
 	Title       string  `json:"title"`
@@ -122,7 +119,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		if err := tx.GetContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
-		if founds >= NumReservationSlot {
+		if founds >= numReservationSlot {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ユーザ%dが予約できません", user))
 		}
 	}
