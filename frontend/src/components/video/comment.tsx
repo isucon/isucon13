@@ -1,3 +1,4 @@
+import { Emoji } from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import styled from '@emotion/styled';
 import { Typography } from '@mui/joy';
@@ -17,9 +18,13 @@ import { Controller, useForm } from 'react-hook-form';
 import { AiFillHeart, AiOutlineClose } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
 import { apiClient } from '~/api/client';
-import { useLiveStreamComment } from '~/api/hooks';
+import { useLiveStreamComment, useLiveStreamReaction } from '~/api/hooks';
 import { Schemas } from '~/api/types';
-import { RandomReactions } from '~/components/reaction/reaction';
+import {
+  RandomReactions,
+  Reaction,
+  ReactionView,
+} from '~/components/reaction/reaction';
 
 const chipTable = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
@@ -75,7 +80,10 @@ export default function LiveComment(
     if (props.type === 'real') {
       let timer: number | undefined = undefined;
       const cb = async () => {
-        await remoteLiveComment.mutate();
+        await Promise.all([
+          remoteLiveComment.mutate(),
+          remoteReaction.mutate(),
+        ]);
         timer = setTimeout(cb, 3000); // fetch interval
       };
       cb();
@@ -220,6 +228,30 @@ export default function LiveComment(
     }
   }, [form, props.type, chipAmount]);
 
+  const remoteReaction = useLiveStreamReaction(
+    props.type === 'real' ? props.livestream_id.toString() : null,
+  );
+  const reactions: Reaction[] =
+    remoteReaction.data?.map(
+      (r) => ({ id: r.id, shortcodes: r.emoji_name }) satisfies Reaction,
+    ) ?? [];
+  const onEmojiSelect = React.useCallback(
+    async (emoji: Emoji & { shortcodes: string }) => {
+      if (props.type === 'real') {
+        await apiClient.post$livestream$livestreamid$reaction({
+          parameter: {
+            livestreamid: props.livestream_id.toString(),
+          },
+          requestBody: {
+            emoji_name: emoji.shortcodes,
+          },
+        });
+        await remoteReaction.mutate();
+      }
+    },
+    [],
+  );
+
   return (
     <>
       <Card sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
@@ -291,7 +323,11 @@ export default function LiveComment(
                 )}
               </IconButton>
             )}
-            <RandomReactions />
+            {props.type === 'real' ? (
+              <ReactionView reactions={reactions} />
+            ) : (
+              <RandomReactions />
+            )}
           </Stack>
         </CardContent>
         <CardOverflow
@@ -305,7 +341,7 @@ export default function LiveComment(
           {commentMode === 'emoji' && (
             <PickerWrapper>
               <Picker
-                onEmojiSelect={console.log}
+                onEmojiSelect={onEmojiSelect}
                 previewPosition="none"
                 navPosition="bottom"
                 skinTonePosition="none"

@@ -4,6 +4,7 @@ import React from 'react';
 
 export interface ReactionProps {
   children: React.ReactNode;
+  onFinished?: () => void;
 }
 export const Reaction = React.memo(function Reaction(
   props: ReactionProps,
@@ -29,11 +30,12 @@ export const Reaction = React.memo(function Reaction(
     if (e) {
       const handler = () => {
         setIsFinished(true);
+        props.onFinished?.();
       };
       e.addEventListener('animationend', handler);
       return () => e.removeEventListener('animationend', handler);
     }
-  }, []);
+  }, [props.onFinished]);
 
   if (isFinished) {
     return null;
@@ -74,6 +76,29 @@ export function RandomReactions(): React.ReactElement {
     return () => clearInterval(timer);
   }, []);
   return <RandomReactionsWrapper>{reactions}</RandomReactionsWrapper>;
+}
+
+export interface Reaction {
+  id: string;
+  shortcodes: string;
+}
+export interface ReactionViewProps {
+  reactions: Reaction[];
+  onFinished?(id: string): void;
+}
+export function ReactionView({
+  reactions,
+  onFinished,
+}: ReactionViewProps): React.ReactElement {
+  return (
+    <>
+      {reactions.map((r) => (
+        <Reaction key={r.id} onFinished={() => onFinished?.(r.id)}>
+          <em-emoji shortcodes={r.shortcodes} set="twitter"></em-emoji>
+        </Reaction>
+      ))}
+    </>
+  );
 }
 
 const RandomReactionsWrapper = styled.div`

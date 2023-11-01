@@ -54,6 +54,16 @@ export function useLiveStreamComment(id: string | null) {
   );
 }
 
+export function useLiveStreamReaction(id: string | null) {
+  return useSWR(id && `/livestream/${id}/reaction`, () =>
+    apiClient.get$livestream$_livestreamid$reaction({
+      parameter: {
+        livestreamid: id ?? '',
+      },
+    }),
+  );
+}
+
 export function useTags() {
   return useSWR('/tags', () => apiClient.get$tag());
 }
