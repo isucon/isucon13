@@ -23,7 +23,6 @@ type Livestream struct {
 	StartAt      int    `json:"start_at"`
 	EndAt        int    `json:"end_at"`
 	CreatedAt    int    `json:"created_at"`
-	UpdatedAt    int    `json:"updated_at"`
 }
 
 type (

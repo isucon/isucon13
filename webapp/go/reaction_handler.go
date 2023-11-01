@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
-	"net/http"
-	"strconv"
 )
 
 type ReactionModel struct {
@@ -108,6 +110,7 @@ func postReactionHandler(c echo.Context) error {
 		UserID:       int64(userID),
 		LivestreamID: int64(livestreamID),
 		EmojiName:    req.EmojiName,
+		CreatedAt:    time.Now().Unix(),
 	}
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name) VALUES (:user_id, :livestream_id, :emoji_name)", reactionModel)

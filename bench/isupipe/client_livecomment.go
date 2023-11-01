@@ -19,7 +19,6 @@ type Livecomment struct {
 	Comment    string     `json:"comment"`
 	Tip        int        `json:"tip"`
 	CreatedAt  int        `json:"created_at"`
-	UpdatedAt  int        `json:"updated_at"`
 }
 
 type LivecommentReport struct {
@@ -27,7 +26,6 @@ type LivecommentReport struct {
 	Reporter    User        `json:"reporter"`
 	Livecomment Livecomment `json:"livecomment"`
 	CreatedAt   int         `json:"created_at"`
-	UpdatedAt   int         `json:"updated_at"`
 }
 
 type (
@@ -42,7 +40,6 @@ type (
 		Comment    string     `json:"comment"`
 		Tip        int        `json:"tip"`
 		CreatedAt  int        `json:"created_at"`
-		UpdatedAt  int        `json:"updated_at"`
 	}
 )
 

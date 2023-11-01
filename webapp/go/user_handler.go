@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -25,16 +27,22 @@ const (
 	bcryptDefaultCost        = bcrypt.MinCost
 )
 
+var fallbackImage []byte
+
+func init() {
+	b, err := os.ReadFile("./NoImage.jpg")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fallbackImage = b
+}
+
 type UserModel struct {
-	ID          int64  `db:"id"`
-	Name        string `db:"name"`
-	DisplayName string `db:"display_name"`
-	Description string `db:"description"`
-	// HashedPassword is hashed password.
+	ID             int64  `db:"id"`
+	Name           string `db:"name"`
+	DisplayName    string `db:"display_name"`
+	Description    string `db:"description"`
 	HashedPassword string `db:"password"`
-	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int64 `db:"created_at"`
-	UpdatedAt int64 `db:"updated_at"`
 }
 
 type User struct {
@@ -42,24 +50,18 @@ type User struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
-	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int64 `json:"created_at,omitempty"`
-	UpdatedAt int64 `json:"updated_at,omitempty"`
-
-	Theme Theme `json:"theme,omitempty"`
+	Theme       Theme  `json:"theme,omitempty"`
 }
 
 type Theme struct {
-	ID        int64 `json:"id"`
-	DarkMode  bool  `json:"dark_mode"`
-	CreatedAt int64 `json:"created_at"`
+	ID       int64 `json:"id"`
+	DarkMode bool  `json:"dark_mode"`
 }
 
 type ThemeModel struct {
-	ID        int64 `db:"id"`
-	UserID    int64 `db:"user_id"`
-	DarkMode  bool  `db:"dark_mode"`
-	CreatedAt int64 `db:"created_at"`
+	ID       int64 `db:"id"`
+	UserID   int64 `db:"user_id"`
+	DarkMode bool  `db:"dark_mode"`
 }
 
 type PostUserRequest struct {
@@ -79,6 +81,90 @@ type LoginRequest struct {
 	UserName string `json:"username"`
 	// Password is non-hashed password.
 	Password string `json:"password"`
+}
+
+type PostIconRequest struct {
+	Image []byte `json:"image"`
+}
+
+type PostIconResponse struct {
+	ID int64 `json:"id"`
+}
+
+func getIconHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	username := c.Param("username")
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer tx.Rollback()
+
+	var user UserModel
+	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", username); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var image []byte
+	if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", user.ID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Blob(http.StatusOK, "image/jpeg", fallbackImage)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	return c.Blob(http.StatusOK, "image/jpeg", image)
+}
+
+func postIconHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+	userID, ok := sess.Values[defaultUserIDKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	var req PostIconRequest
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer tx.Rollback()
+
+	rs, err := tx.ExecContext(ctx, "INSERT INTO icons (user_id, image) VALUES (?, ?)", userID, req.Image)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	iconID, err := rs.LastInsertId()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, &PostIconResponse{
+		ID: iconID,
+	})
 }
 
 func getMeHandler(c echo.Context) error {
@@ -151,14 +237,11 @@ func registerHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	now := time.Now().Unix()
 	userModel := UserModel{
 		Name:           req.Name,
 		DisplayName:    req.DisplayName,
 		Description:    req.Description,
 		HashedPassword: string(hashedPassword),
-		CreatedAt:      now,
-		UpdatedAt:      now,
 	}
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password, created_at, updated_at) VALUES(:name, :display_name, :description, :password, :created_at, :updated_at)", userModel)
@@ -174,9 +257,8 @@ func registerHandler(c echo.Context) error {
 	userModel.ID = userID
 
 	themeModel := ThemeModel{
-		UserID:    userID,
-		DarkMode:  req.Theme.DarkMode,
-		CreatedAt: now,
+		UserID:   userID,
+		DarkMode: req.Theme.DarkMode,
 	}
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode, created_at) VALUES(:user_id, :dark_mode, :created_at)", themeModel); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
@@ -363,12 +445,9 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		Name:        userModel.Name,
 		DisplayName: userModel.DisplayName,
 		Description: userModel.Description,
-		CreatedAt:   userModel.CreatedAt,
-		UpdatedAt:   userModel.UpdatedAt,
 		Theme: Theme{
-			ID:        themeModel.ID,
-			DarkMode:  themeModel.DarkMode,
-			CreatedAt: themeModel.CreatedAt,
+			ID:       themeModel.ID,
+			DarkMode: themeModel.DarkMode,
 		},
 	}
 

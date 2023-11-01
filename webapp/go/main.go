@@ -181,6 +181,8 @@ func main() {
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/api/user/:username", getUserHandler)
 	e.GET("/api/user/:username/statistics", getUserStatisticsHandler)
+	e.GET("/api/user/:username/icon", getIconHandler)
+	e.POST("/api/icon", postIconHandler)
 
 	// stats
 	// ライブコメント統計情報

@@ -1,7 +1,9 @@
-DELETE FROM themes;
-ALTER TABLE `themes` auto_increment = 1;
 DELETE FROM users;
 ALTER TABLE `users` auto_increment = 1;
+DELETE FROM themes;
+ALTER TABLE `themes` auto_increment = 1;
+DELETE FROM icons;
+ALTER TABLE `icons` auto_increment = 1;
 DELETE FROM livestreams;
 ALTER TABLE `livestreams` auto_increment = 1;
 DELETE FROM reservation_slots;

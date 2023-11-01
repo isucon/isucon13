@@ -7,14 +7,8 @@ import (
 	"net/http"
 )
 
-type Payment struct {
-	ReservationID int
-	Tip           int
-}
-
 type PaymentResult struct {
-	Total    int
-	Payments []*Payment
+	TotalTip int `json:"total_tip"`
 }
 
 func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {

@@ -40,7 +40,23 @@ func TestClientUser_Login(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
+	// 自身の情報確認
 	user, err := client.GetMe(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, streamer.Name, user.Name)
+
+	// テーマ取得
+	theme, err := client.GetStreamerTheme(ctx, user)
+	assert.NoError(t, err)
+	assert.Equal(t, streamer.DarkMode, theme.DarkMode)
+
+	// アイコンアップロード・取得
+	image := scheduler.IconSched.GetRandomIcon()
+	_, err = client.PostIcon(ctx, &PostIconRequest{
+		Image: image.Image,
+	})
+	assert.NoError(t, err)
+
+	err = client.GetIcon(ctx, user.Name)
+	assert.NoError(t, err)
 }
