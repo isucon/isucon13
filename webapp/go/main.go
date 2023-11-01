@@ -31,12 +31,19 @@ var (
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
 	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
+	numReservationSlot       = 2
 )
 
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	if secretKey, ok := os.LookupEnv("ISUCON13_SESSION_SECRETKEY"); ok {
 		secret = []byte(secretKey)
+	}
+	if slotStr, ok := os.LookupEnv("ISUCON13_NUM_RESERVATION_SLOT"); ok {
+		slot, err := strconv.Atoi(slotStr)
+		if err == nil {
+			numReservationSlot = slot
+		}
 	}
 }
 
@@ -147,7 +154,8 @@ func main() {
 	// reserve livestream
 	e.POST("/api/livestream/reservation", reserveLivestreamHandler)
 	// list livestream
-	e.GET("/api/livestream", getLivestreamsHandler)
+	e.GET("/api/livestream/search", searchLivestreamsHandler)
+	e.GET("/api/livestream", getUserLivestreamsHandler)
 	// get livestream
 	e.GET("/api/livestream/:livestream_id", getLivestreamHandler)
 	// get polling livecomment timeline
@@ -181,6 +189,8 @@ func main() {
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/api/user/:username", getUserHandler)
 	e.GET("/api/user/:username/statistics", getUserStatisticsHandler)
+	e.GET("/api/user/:username/icon", getIconHandler)
+	e.POST("/api/icon", postIconHandler)
 
 	// stats
 	// ライブコメント統計情報

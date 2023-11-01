@@ -19,7 +19,6 @@ type Livecomment struct {
 	Comment    string     `json:"comment"`
 	Tip        int        `json:"tip"`
 	CreatedAt  int        `json:"created_at"`
-	UpdatedAt  int        `json:"updated_at"`
 }
 
 type LivecommentReport struct {
@@ -27,7 +26,6 @@ type LivecommentReport struct {
 	Reporter    User        `json:"reporter"`
 	Livecomment Livecomment `json:"livecomment"`
 	CreatedAt   int         `json:"created_at"`
-	UpdatedAt   int         `json:"updated_at"`
 }
 
 type (
@@ -42,12 +40,19 @@ type (
 		Comment    string     `json:"comment"`
 		Tip        int        `json:"tip"`
 		CreatedAt  int        `json:"created_at"`
-		UpdatedAt  int        `json:"updated_at"`
 	}
 )
 
 type ModerateRequest struct {
 	NGWord string `json:"ng_word"`
+}
+
+type NGWord struct {
+	ID           int64  `json:"id"`
+	UserID       int64  `json:"user_id"`
+	LivestreamID int64  `json:"livestream_id"`
+	Word         string `json:"word"`
+	CreatedAt    int64  `json:"created_at"`
 }
 
 func (c *Client) GetLivecomments(ctx context.Context, livestreamID int, opts ...ClientOption) ([]Livecomment, error) {
@@ -123,7 +128,40 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int, op
 }
 
 // FIXME: 実装
-// func (c *Client) GetNgwords(ctx context.Context)
+func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]*NGWord, error) {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	urlPath := fmt.Sprintf("/api/livestream/%d/ngwords", livestreamID)
+	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var ngwords []*NGWord
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&ngwords); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+	}
+
+	return ngwords, nil
+}
 
 func (c *Client) PostLivecomment(ctx context.Context, livestreamID int, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
 	var (

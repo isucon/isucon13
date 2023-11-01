@@ -14,8 +14,6 @@ import (
 type Tag struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
-	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt int `json:"created_at"`
 }
 
 type TagsResponse struct {

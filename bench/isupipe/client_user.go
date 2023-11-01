@@ -24,10 +24,7 @@ type User struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
-	CreatedAt   int    `json:"created_at"`
-	UpdatedAt   int    `json:"updated_at"`
-
-	Theme Theme `json:"theme"`
+	Theme       Theme  `json:"theme"`
 }
 
 type (
@@ -50,13 +47,20 @@ type Theme struct {
 	DarkMode bool `json:"dark_mode"`
 }
 
+type PostIconRequest struct {
+	Image []byte `json:"image"`
+}
+
+type PostIconResponse struct {
+	ID int64 `json:"id"`
+}
+
 func (c *Client) GetStreamerTheme(ctx context.Context, streamer *User, opts ...ClientOption) (*Theme, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	// FIXME: 配信者のユーザ名を含めてリクエスト
 	endpoint := fmt.Sprintf("/api/user/%s/theme", streamer.Name)
 	req, err := c.agent.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -86,9 +90,72 @@ func (c *Client) GetStreamerTheme(ctx context.Context, streamer *User, opts ...C
 	return theme, nil
 }
 
-func (c *Client) DownloadIcon(ctx context.Context, user *User, opts ...ClientOption) error {
-	// FIXME: impl
+func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOption) error {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	// FIXME: 配信者のユーザ名を含めてリクエスト
+	endpoint := fmt.Sprintf("/api/user/%s/icon", username)
+	req, err := c.assetAgent.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
+	resp, err := sendRequest(ctx, c.assetAgent, req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
 	return nil
+}
+
+func (c *Client) PostIcon(ctx context.Context, r *PostIconRequest, opts ...ClientOption) (*PostIconResponse, error) {
+	var (
+		defaultStatusCode = http.StatusCreated
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	payload, err := json.Marshal(r)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	// FIXME: 配信者のユーザ名を含めてリクエスト
+	endpoint := "/api/icon"
+	req, err := c.agent.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var iconResp *PostIconResponse
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&iconResp); err != nil {
+			return nil, err
+		}
+	}
+
+	return iconResp, nil
 }
 
 func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOption) error {

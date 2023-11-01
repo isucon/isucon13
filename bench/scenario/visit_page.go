@@ -12,7 +12,7 @@ func VisitTop(ctx context.Context, client *isupipe.Client) error {
 	// FIXME: プロフィールアイコン取得
 
 	// FIXME: 10件程度ライブストリーム取得
-	_, err := client.GetLivestreams(ctx)
+	_, err := client.SearchLivestreams(ctx)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client) error {
 
 	// ライブコメント一覧取得
 	// FIXME: 自分のライブストリーム一覧を取ってくる必要がある
-	_, err := client.GetLivestreams(ctx)
+	_, err := client.SearchLivestreams(ctx)
 	if err != nil {
 		return err
 	}

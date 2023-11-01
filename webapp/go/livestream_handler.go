@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,9 +14,6 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
-
-// 同時配信可能予約枠数
-const NumReservationSlot = 2
 
 type ReserveLivestreamRequest struct {
 	Tags        []int64 `json:"tags"`
@@ -33,6 +29,7 @@ type ReserveLivestreamRequest struct {
 type LivestreamViewerModel struct {
 	UserID       int64 `db:"user_id"`
 	LivestreamID int64 `db:"livestream_id"`
+	CreatedAt    int64 `db:"created_at"`
 }
 
 type LivestreamModel struct {
@@ -44,8 +41,6 @@ type LivestreamModel struct {
 	ThumbnailUrl string `db:"thumbnail_url"`
 	StartAt      int64  `db:"start_at"`
 	EndAt        int64  `db:"end_at"`
-	CreatedAt    int64  `db:"created_at"`
-	UpdatedAt    int64  `db:"updated_at"`
 }
 
 type Livestream struct {
@@ -58,8 +53,6 @@ type Livestream struct {
 	Tags         []Tag  `json:"tags"`
 	StartAt      int64  `json:"start_at"`
 	EndAt        int64  `json:"end_at"`
-	CreatedAt    int64  `json:"created_at"`
-	UpdatedAt    int64  `json:"updated_at"`
 }
 
 type LivestreamTagModel struct {
@@ -126,7 +119,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		if err := tx.GetContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
-		if founds >= NumReservationSlot {
+		if founds >= numReservationSlot {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ユーザ%dが予約できません", user))
 		}
 	}
@@ -148,7 +141,6 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 	}
 
-	now := time.Now().Unix()
 	var (
 		startAt         = time.Unix(req.StartAt, 0)
 		endAt           = time.Unix(req.EndAt, 0)
@@ -161,8 +153,6 @@ func reserveLivestreamHandler(c echo.Context) error {
 			ThumbnailUrl: "https://picsum.photos/200/300",
 			StartAt:      startAt.Unix(),
 			EndAt:        endAt.Unix(),
-			CreatedAt:    now,
-			UpdatedAt:    now,
 		}
 	)
 
@@ -172,7 +162,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 
 	c.Logger().Info("insert livestream")
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at, created_at, updated_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at, :created_at, :updated_at)", livestreamModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)", livestreamModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -207,7 +197,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, livestream)
 }
 
-func getLivestreamsHandler(c echo.Context) error {
+func searchLivestreamsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	keyTagName := c.QueryParam("tag")
 
@@ -217,13 +207,9 @@ func getLivestreamsHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	// 複数件取得
 	var livestreamModels []*LivestreamModel
-	if keyTagName == "" {
-		if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams"); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-	} else {
+	if c.QueryParam("tag") != "" {
+		// タグによる取得
 		var tagIDList []int
 		if err := tx.SelectContext(ctx, &tagIDList, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -246,6 +232,20 @@ func getLivestreamsHandler(c echo.Context) error {
 
 			livestreamModels = append(livestreamModels, &ls)
 		}
+	} else {
+		// 検索条件なし
+		query := `SELECT * FROM livestreams`
+		if c.QueryParam("limit") != "" {
+			limit, err := strconv.Atoi(c.QueryParam("limit"))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			query += fmt.Sprintf(" LIMIT %d", limit)
+		}
+
+		if err := tx.SelectContext(ctx, &livestreamModels, query); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
 
 	livestreams := make([]Livestream, len(livestreamModels))
@@ -258,6 +258,33 @@ func getLivestreamsHandler(c echo.Context) error {
 	}
 
 	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, livestreams)
+}
+
+func getUserLivestreamsHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer tx.Rollback()
+
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	userID, ok := sess.Values[defaultUserIDKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
+	}
+
+	var livestreams []*LivestreamModel
+	if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", userID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -296,9 +323,10 @@ func enterLivestreamHandler(c echo.Context) error {
 	viewer := LivestreamViewerModel{
 		UserID:       int64(userID),
 		LivestreamID: int64(livestreamID),
+		CreatedAt:    time.Now().Unix(),
 	}
 
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers_history (user_id, livestream_id) VALUES(:user_id, :livestream_id)", viewer); err != nil {
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(:user_id, :livestream_id, :created_at)", viewer); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -460,16 +488,14 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 
 	tags := make([]Tag, len(livestreamTagModels))
 	for i := range livestreamTagModels {
-		log.Printf("tag id = %d\n", livestreamTagModels[i].TagID)
 		tagModel := TagModel{}
 		if err := tx.GetContext(ctx, &tagModel, "SELECT * FROM tags WHERE id = ?", livestreamTagModels[i].TagID); err != nil {
 			return Livestream{}, err
 		}
 
 		tags[i] = Tag{
-			ID:        tagModel.ID,
-			Name:      tagModel.Name,
-			CreatedAt: tagModel.CreatedAt,
+			ID:   tagModel.ID,
+			Name: tagModel.Name,
 		}
 	}
 
@@ -483,8 +509,6 @@ func fillLivestreamResponse(ctx context.Context, tx *sqlx.Tx, livestreamModel Li
 		ThumbnailUrl: livestreamModel.ThumbnailUrl,
 		StartAt:      livestreamModel.StartAt,
 		EndAt:        livestreamModel.EndAt,
-		CreatedAt:    livestreamModel.CreatedAt,
-		UpdatedAt:    livestreamModel.UpdatedAt,
 	}
 	return livestream, nil
 }

@@ -132,7 +132,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if err := client.GetLivestreamsByTag(ctx, "椅子" /* tag name */); err != nil {
+	if err := client.SearchLivestreamsByTag(ctx, "椅子" /* tag name */); err != nil {
 		return err
 	}
 

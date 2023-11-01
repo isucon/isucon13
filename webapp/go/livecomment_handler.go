@@ -26,7 +26,6 @@ type LivecommentModel struct {
 	Comment      string `db:"comment"`
 	Tip          int64  `db:"tip"`
 	CreatedAt    int64  `db:"created_at"`
-	UpdatedAt    int64  `db:"updated_at"`
 }
 
 type Livecomment struct {
@@ -36,7 +35,6 @@ type Livecomment struct {
 	Comment    string     `json:"comment"`
 	Tip        int64      `json:"tip"`
 	CreatedAt  int64      `json:"created_at"`
-	UpdatedAt  int64      `json:"updated_at"`
 }
 
 type LivecommentReport struct {
@@ -44,7 +42,6 @@ type LivecommentReport struct {
 	Reporter    User        `json:"reporter"`
 	Livecomment Livecomment `json:"livecomment"`
 	CreatedAt   int64       `json:"created_at"`
-	UpdatedAt   int64       `json:"updated_at"`
 }
 
 type LivecommentReportModel struct {
@@ -53,7 +50,6 @@ type LivecommentReportModel struct {
 	LivestreamID  int64 `db:"livestream_id"`
 	LivecommentID int64 `db:"livecomment_id"`
 	CreatedAt     int64 `db:"created_at"`
-	UpdatedAt     int64 `db:"updated_at"`
 }
 
 type ModerateRequest struct {
@@ -65,6 +61,7 @@ type NGWord struct {
 	UserID       int64  `json:"user_id" db:"user_id"`
 	LivestreamID int64  `json:"livestream_id" db:"livestream_id"`
 	Word         string `json:"word" db:"word"`
+	CreatedAt    int64  `json:"created_at" db:"created_at"`
 }
 
 func getLivecommentsHandler(c echo.Context) error {
@@ -247,10 +244,9 @@ func postLivecommentHandler(c echo.Context) error {
 		Comment:      req.Comment,
 		Tip:          req.Tip,
 		CreatedAt:    now,
-		UpdatedAt:    now,
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at, updated_at) VALUES (:user_id, :livestream_id, :comment, :tip, :created_at, :updated_at)", livecommentModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at) VALUES (:user_id, :livestream_id, :comment, :tip, :created_at)", livecommentModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -320,9 +316,8 @@ func reportLivecommentHandler(c echo.Context) error {
 		LivestreamID:  int64(livestreamID),
 		LivecommentID: int64(livecommentID),
 		CreatedAt:     now,
-		UpdatedAt:     now,
 	}
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at, updated_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at, :updated_at)", &reportModel)
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at)", &reportModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -386,10 +381,11 @@ func moderateNGWordHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "A streamer can't moderate livestreams that other streamers own")
 	}
 
-	rs, err := tx.NamedExecContext(ctx, "INSERT INTO ng_words(user_id, livestream_id, word) VALUES (:user_id, :livestream_id, :word)", &NGWord{
+	rs, err := tx.NamedExecContext(ctx, "INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (:user_id, :livestream_id, :word, :created_at)", &NGWord{
 		UserID:       int64(userID),
 		LivestreamID: int64(livestreamID),
 		Word:         req.NGWord,
+		CreatedAt:    time.Now().Unix(),
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -435,7 +431,6 @@ func fillLivecommentResponse(ctx context.Context, tx *sqlx.Tx, livecommentModel 
 		Comment:    livecommentModel.Comment,
 		Tip:        livecommentModel.Tip,
 		CreatedAt:  livecommentModel.CreatedAt,
-		UpdatedAt:  livecommentModel.UpdatedAt,
 	}
 
 	return livecomment, nil
@@ -465,7 +460,6 @@ func fillLivecommentReportResponse(ctx context.Context, tx *sqlx.Tx, reportModel
 		Reporter:    reporter,
 		Livecomment: livecomment,
 		CreatedAt:   reportModel.CreatedAt,
-		UpdatedAt:   reportModel.UpdatedAt,
 	}
 	return report, nil
 }
