@@ -525,8 +525,6 @@ components:
           type: string
         thumbnail_url:
           type: string
-        viewers_count:
-          type: integer
         start_at:
           type: integer
         end_at:
@@ -551,8 +549,6 @@ components:
         comment:
           type: string
         tip:
-          type: integer
-        report_count:
           type: integer
         created_at:
           type: integer

@@ -25,20 +25,18 @@ type LivecommentModel struct {
 	LivestreamID int64  `db:"livestream_id"`
 	Comment      string `db:"comment"`
 	Tip          int64  `db:"tip"`
-	ReportCount  int64  `db:"report_count"`
 	CreatedAt    int64  `db:"created_at"`
 	UpdatedAt    int64  `db:"updated_at"`
 }
 
 type Livecomment struct {
-	ID          int64      `json:"id"`
-	User        User       `json:"user"`
-	Livestream  Livestream `json:"livestream"`
-	Comment     string     `json:"comment"`
-	Tip         int64      `json:"tip"`
-	ReportCount int64      `json:"report_count"`
-	CreatedAt   int64      `json:"created_at"`
-	UpdatedAt   int64      `json:"updated_at"`
+	ID         int64      `json:"id"`
+	User       User       `json:"user"`
+	Livestream Livestream `json:"livestream"`
+	Comment    string     `json:"comment"`
+	Tip        int64      `json:"tip"`
+	CreatedAt  int64      `json:"created_at"`
+	UpdatedAt  int64      `json:"updated_at"`
 }
 
 type LivecommentReport struct {
@@ -334,10 +332,6 @@ func reportLivecommentHandler(c echo.Context) error {
 	}
 	reportModel.ID = reportID
 
-	if _, err := tx.ExecContext(ctx, "UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?", livecommentID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	report, err := fillLivecommentReportResponse(ctx, tx, reportModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -435,14 +429,13 @@ func fillLivecommentResponse(ctx context.Context, tx *sqlx.Tx, livecommentModel 
 	}
 
 	livecomment := Livecomment{
-		ID:          livecommentModel.ID,
-		User:        commentOwner,
-		Livestream:  livestream,
-		Comment:     livecommentModel.Comment,
-		Tip:         livecommentModel.Tip,
-		ReportCount: livecommentModel.ReportCount,
-		CreatedAt:   livecommentModel.CreatedAt,
-		UpdatedAt:   livecommentModel.UpdatedAt,
+		ID:         livecommentModel.ID,
+		User:       commentOwner,
+		Livestream: livestream,
+		Comment:    livecommentModel.Comment,
+		Tip:        livecommentModel.Tip,
+		CreatedAt:  livecommentModel.CreatedAt,
+		UpdatedAt:  livecommentModel.UpdatedAt,
 	}
 
 	return livecomment, nil

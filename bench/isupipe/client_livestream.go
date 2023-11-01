@@ -20,7 +20,6 @@ type Livestream struct {
 	Description  string `json:"description"`
 	PlaylistUrl  string `json:"playlist_url"`
 	ThumbnailUrl string `json:"thumbnail_url"`
-	ViewersCount int    `json:"viewers_count"`
 	StartAt      int    `json:"start_at"`
 	EndAt        int    `json:"end_at"`
 	CreatedAt    int    `json:"created_at"`
