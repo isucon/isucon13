@@ -83,11 +83,13 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
 		// FIXME: webapp側でタグの採番がおかしく、エラーが出るので一時的に無効化
-		Tags:        tags,
-		Title:       reservation.Title,
-		Description: reservation.Description,
-		StartAt:     reservation.StartAt,
-		EndAt:       reservation.EndAt,
+		Tags:         tags,
+		Title:        reservation.Title,
+		Description:  reservation.Description,
+		PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
+		ThumbnailUrl: "https://picsum.photos/200/300",
+		StartAt:      reservation.StartAt,
+		EndAt:        reservation.EndAt,
 	})
 	if err != nil {
 		scheduler.ReservationSched.AbortReservation(reservation)

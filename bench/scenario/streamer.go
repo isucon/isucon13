@@ -47,11 +47,13 @@ func BasicStreamerColdReserveScenario(
 	}
 
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:        tags,
-		Title:       reservation.Title,
-		Description: reservation.Description,
-		StartAt:     reservation.StartAt,
-		EndAt:       reservation.EndAt,
+		Tags:         tags,
+		Title:        reservation.Title,
+		Description:  reservation.Description,
+		PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
+		ThumbnailUrl: "https://picsum.photos/200/300",
+		StartAt:      reservation.StartAt,
+		EndAt:        reservation.EndAt,
 	})
 	if err != nil {
 		scheduler.ReservationSched.AbortReservation(reservation)

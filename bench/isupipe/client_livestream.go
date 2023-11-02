@@ -27,11 +27,13 @@ type Livestream struct {
 
 type (
 	ReserveLivestreamRequest struct {
-		Tags        []int  `json:"tags"`
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		StartAt     int64  `json:"start_at"`
-		EndAt       int64  `json:"end_at"`
+		Tags         []int  `json:"tags"`
+		Title        string `json:"title"`
+		Description  string `json:"description"`
+		PlaylistUrl  string `json:"playlist_url"`
+		ThumbnailUrl string `json:"thumbnail_url"`
+		StartAt      int64  `json:"start_at"`
+		EndAt        int64  `json:"end_at"`
 	}
 )
 

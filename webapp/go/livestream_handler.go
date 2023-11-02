@@ -22,6 +22,8 @@ type ReserveLivestreamRequest struct {
 	// NOTE: コラボ配信の際に便利な自動スケジュールチェック機能
 	// DBに記録しないが、コラボレーターがスケジュール的に問題ないか調べて、エラーを返す
 	Collaborators []int64 `json:"collaborators"`
+	PlaylistUrl   string  `db:"playlist_url"`
+	ThumbnailUrl  string  `db:"thumbnail_url"`
 	StartAt       int64   `json:"start_at"`
 	EndAt         int64   `json:"end_at"`
 }
