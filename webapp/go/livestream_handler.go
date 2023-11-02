@@ -22,27 +22,27 @@ type ReserveLivestreamRequest struct {
 	// NOTE: コラボ配信の際に便利な自動スケジュールチェック機能
 	// DBに記録しないが、コラボレーターがスケジュール的に問題ないか調べて、エラーを返す
 	Collaborators []int64 `json:"collaborators"`
-	PlaylistUrl   string  `db:"playlist_url"`
-	ThumbnailUrl  string  `db:"thumbnail_url"`
+	PlaylistUrl   string  `json:"playlist_url"`
+	ThumbnailUrl  string  `json:"thumbnail_url"`
 	StartAt       int64   `json:"start_at"`
 	EndAt         int64   `json:"end_at"`
 }
 
 type LivestreamViewerModel struct {
-	UserID       int64 `db:"user_id"`
-	LivestreamID int64 `db:"livestream_id"`
-	CreatedAt    int64 `db:"created_at"`
+	UserID       int64 `db:"user_id" json:"user_id"`
+	LivestreamID int64 `db:"livestream_id" json:"livestream_id"`
+	CreatedAt    int64 `db:"created_at" json:"created_at"`
 }
 
 type LivestreamModel struct {
-	ID           int64  `db:"id"`
-	UserID       int64  `db:"user_id"`
-	Title        string `db:"title"`
-	Description  string `db:"description"`
-	PlaylistUrl  string `db:"playlist_url"`
-	ThumbnailUrl string `db:"thumbnail_url"`
-	StartAt      int64  `db:"start_at"`
-	EndAt        int64  `db:"end_at"`
+	ID           int64  `db:"id" json:"id"`
+	UserID       int64  `db:"user_id" json:"user_id"`
+	Title        string `db:"title" json:"title"`
+	Description  string `db:"description" json:"description"`
+	PlaylistUrl  string `db:"playlist_url" json:"playlist_url"`
+	ThumbnailUrl string `db:"thumbnail_url" json:"thumbnail_url"`
+	StartAt      int64  `db:"start_at" json:"start_at"`
+	EndAt        int64  `db:"end_at" json:"end_at"`
 }
 
 type Livestream struct {
@@ -58,16 +58,16 @@ type Livestream struct {
 }
 
 type LivestreamTagModel struct {
-	ID           int64 `db:"id"`
-	LivestreamID int64 `db:"livestream_id"`
-	TagID        int64 `db:"tag_id"`
+	ID           int64 `db:"id" json:"id"`
+	LivestreamID int64 `db:"livestream_id" json:"livestream_id"`
+	TagID        int64 `db:"tag_id" json:"tag_id"`
 }
 
 type ReservationSlotModel struct {
-	ID      int64 `db:"id"`
-	Slot    int64 `db:"slot"`
-	StartAt int64 `db:"start_at"`
-	EndAt   int64 `db:"end_at"`
+	ID      int64 `db:"id" json:"id"`
+	Slot    int64 `db:"slot" json:"slot"`
+	StartAt int64 `db:"start_at" json:"start_at"`
+	EndAt   int64 `db:"end_at" json:"end_at"`
 }
 
 func reserveLivestreamHandler(c echo.Context) error {

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
 
@@ -34,11 +35,12 @@ func (r LivestreamRanking) Less(i, j int) bool {
 }
 
 type UserStatistics struct {
-	Rank              int64 `json:"rank"`
-	ViewersCount      int64 `json:"viewers_count"`
-	TotalReactions    int64 `json:"total_reactions"`
-	TotalLivecomments int64 `json:"total_livecomments"`
-	TotalTip          int64 `json:"total_tip"`
+	Rank              int64  `json:"rank"`
+	ViewersCount      int64  `json:"viewers_count"`
+	TotalReactions    int64  `json:"total_reactions"`
+	TotalLivecomments int64  `json:"total_livecomments"`
+	TotalTip          int64  `json:"total_tip"`
+	FavoriteEmoji     string `json:"favorite_emoji"`
 }
 
 type UserRankingEntry struct {
@@ -69,6 +71,14 @@ func getUserStatisticsHandler(c echo.Context) error {
 	username := c.Param("username")
 	// ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
 	// また、現在の合計視聴者数もだす
+	sess, err := session.Get(defaultSessionIDKey, c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+	userID, ok := sess.Values[defaultUserIDKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
+	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
@@ -173,12 +183,29 @@ func getUserStatisticsHandler(c echo.Context) error {
 		}
 	}
 
+	// お気に入り絵文字
+	var favoriteEmoji string
+	query = `
+	SELECT r.emoji_name
+	FROM users u
+	INNER JOIN livestreams l ON l.user_id = u.id
+	INNER JOIN reactions r ON r.livestream_id = l.id
+	WHERE u.id = ?
+	GROUP BY emoji_name
+	ORDER BY COUNT(*)
+	LIMIT 1
+	`
+	if err := tx.GetContext(ctx, &favoriteEmoji, query, userID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	stats := UserStatistics{
 		Rank:              rank,
 		ViewersCount:      viewersCount,
 		TotalReactions:    totalReactions,
 		TotalLivecomments: totalLivecomments,
 		TotalTip:          totalTip,
+		FavoriteEmoji:     favoriteEmoji,
 	}
 	return c.JSON(http.StatusOK, stats)
 }
