@@ -6,7 +6,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
-	"github.com/isucon/isucon13/bench/vendor/go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 func BasicViewerScenario(
