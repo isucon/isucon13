@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -51,8 +52,17 @@ func getReactionsHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
+	query := "SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC"
+	if c.QueryParam("limit") != "" {
+		limit, err := strconv.Atoi(c.QueryParam("limit"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
 	reactionModels := []ReactionModel{}
-	if err := tx.SelectContext(ctx, &reactionModels, "SELECT * FROM reactions WHERE livestream_id = ?", livestreamID); err != nil {
+	if err := tx.SelectContext(ctx, &reactionModels, query, livestreamID); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
