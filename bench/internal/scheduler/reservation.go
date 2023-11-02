@@ -49,6 +49,7 @@ func mustNewReservation(id int, title string, description string, startAtStr str
 	}
 
 	reservation := &Reservation{
+		id:           id,
 		Title:        title,
 		Description:  description,
 		StartAt:      startAt.Unix(),
