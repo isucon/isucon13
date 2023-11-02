@@ -13,12 +13,12 @@ import {
 } from 'react-icons/bs';
 import { MdManageHistory } from 'react-icons/md';
 import { Link } from 'react-router-dom';
-import { useLiveStreams } from '~/api/hooks';
+import { useLiveStreamsSearch } from '~/api/hooks';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
-  const liveSterams = useLiveStreams({
-    tag: 'ライブ配信', // TODO Remove
+  const liveSterams = useLiveStreamsSearch({
+    limit: 100,
   });
 
   return (

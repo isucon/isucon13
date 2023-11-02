@@ -159,12 +159,6 @@ paths:
           name: SESSIONID
           description: セッションID
   /livestream:
-    parameters:
-      - in: query
-        name: tag
-        schema:
-          type: string
-        description: 検索に使用するタグの名前
     get:
       summary: Your GET endpoint
       tags: []
@@ -174,6 +168,28 @@ paths:
         "500":
           description: Internal Server Error
       operationId: get-livestream
+      description: 自分が関連する配信の一覧取得
+  /livestream/search:
+    parameters:
+      - in: query
+        name: tag
+        schema:
+          type: string
+        description: 検索に使用するタグの名前
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: 取得件数の最大数
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        "200":
+          $ref: "#/components/responses/GetLivestreams"
+        "500":
+          description: Internal Server Error
+      operationId: get-livestream-search
       description: ライブストリームの情報取得エンドポイント
   "/livestream/{livestreamid}":
     parameters:

@@ -36,11 +36,15 @@ export interface Parameter$get$users$statistics {
 }
 export type Response$get$users$statistics$Status$200 =
   Responses.GetUserStatistics.Content;
-export interface Parameter$get$livestream {
+export type Response$get$livestream$Status$200 =
+  Responses.GetLivestreams.Content;
+export interface Parameter$get$livestream$search {
   /** 検索に使用するタグの名前 */
   tag?: string;
+  /** 取得件数の最大数 */
+  limit?: number;
 }
-export type Response$get$livestream$Status$200 =
+export type Response$get$livestream$search$Status$200 =
   Responses.GetLivestreams.Content;
 export interface Parameter$get$livestream$_livestreamid {
   livestreamid: string;
@@ -147,8 +151,10 @@ export interface Params$get$users$statistics {
 }
 export type ResponseContentType$get$livestream =
   keyof Response$get$livestream$Status$200;
-export interface Params$get$livestream {
-  parameter: Parameter$get$livestream;
+export type ResponseContentType$get$livestream$search =
+  keyof Response$get$livestream$search$Status$200;
+export interface Params$get$livestream$search {
+  parameter: Parameter$get$livestream$search;
 }
 export type ResponseContentType$get$livestream$_livestreamid =
   keyof Response$get$livestream$_livestreamid$Status$200;
@@ -246,6 +252,7 @@ export type SuccessResponses =
   | Response$get$theme$Status$200
   | Response$get$users$statistics$Status$200
   | Response$get$livestream$Status$200
+  | Response$get$livestream$search$Status$200
   | Response$get$livestream$_livestreamid$Status$200
   | Response$post$livestream$livestreamid$moderate$Status$201
   | Response$get$livestream$_livestreamid$livecomment$Status$200
@@ -266,6 +273,7 @@ export namespace ErrorResponse {
   export type get$theme = void;
   export type get$users$statistics = void;
   export type get$livestream = void;
+  export type get$livestream$search = void;
   export type get$livestream$_livestreamid = void;
   export type post$livestream$livestreamid$moderate = void;
   export type get$livestream$_livestreamid$livecomment = void;
@@ -455,18 +463,39 @@ export class Client<RequestOption> {
   }
   /**
    * Your GET endpoint
-   * ライブストリームの情報取得エンドポイント
+   * 自分が関連する配信の一覧取得
    */
   public async get$livestream(
-    params: Params$get$livestream,
     option?: RequestOption,
   ): Promise<Response$get$livestream$Status$200['application/json']> {
     const url = this.baseUrl + `/livestream`;
     const headers = {
       Accept: 'application/json',
     };
+    return this.apiClient.request(
+      {
+        httpMethod: 'GET',
+        url,
+        headers,
+      },
+      option,
+    );
+  }
+  /**
+   * Your GET endpoint
+   * ライブストリームの情報取得エンドポイント
+   */
+  public async get$livestream$search(
+    params: Params$get$livestream$search,
+    option?: RequestOption,
+  ): Promise<Response$get$livestream$search$Status$200['application/json']> {
+    const url = this.baseUrl + `/livestream/search`;
+    const headers = {
+      Accept: 'application/json',
+    };
     const queryParameters: QueryParameters = {
       tag: { value: params.parameter.tag, explode: false },
+      limit: { value: params.parameter.limit, explode: false },
     };
     return this.apiClient.request(
       {
