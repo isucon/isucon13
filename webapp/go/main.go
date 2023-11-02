@@ -31,7 +31,7 @@ var (
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
 	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
-	numReservationSlot       = 2
+	numReservationSlot       = 5
 )
 
 func init() {

@@ -27,17 +27,18 @@ func ConvertFromIntInterface(i []interval.IntInterface) ([]*Reservation, error) 
 
 type Reservation struct {
 	// NOTE: id は、webappで割り振られるIDではなく、ReservationSchedulerが管理する上で利用するもの
-	id          int
-	Title       string
-	Description string
-	Tags        []int
-	StartAt     int64
-	EndAt       int64
+	id           int
+	Title        string
+	Description  string
+	StartAt      int64
+	EndAt        int64
+	PlaylistUrl  string
+	ThumbnailUrl string
 }
 
 // FIXME: id, UserNameなど古い引数を廃止
 // 初期データ生成スクリプト側修正後実施
-func mustNewReservation(id int, UserName string, title string, description string, startAtStr string, endAtStr string) *Reservation {
+func mustNewReservation(id int, title string, description string, startAtStr string, endAtStr string, playlistUrl, thumbnailUrl string) *Reservation {
 	startAt, err := time.Parse("2006-01-02 15:04:05", startAtStr)
 	if err != nil {
 		log.Fatalln(err)
@@ -47,19 +48,14 @@ func mustNewReservation(id int, UserName string, title string, description strin
 		log.Fatalln(err)
 	}
 
-	// FIXME: タグの採番がおかしくてwebappでエラーが出る
-	// tagCount := rand.Intn(10)
 	reservation := &Reservation{
-		id:          id,
-		Title:       title,
-		Description: description,
-		StartAt:     startAt.Unix(),
-		EndAt:       endAt.Unix(),
+		Title:        title,
+		Description:  description,
+		StartAt:      startAt.Unix(),
+		EndAt:        endAt.Unix(),
+		PlaylistUrl:  playlistUrl,
+		ThumbnailUrl: thumbnailUrl,
 	}
-	// for i := 0; i < tagCount; i++ {
-	// 	tagIdx := rand.Intn(len(tagPool))
-	// 	reservation.Tags = append(reservation.Tags, tagIdx)
-	// }
 
 	return reservation
 }

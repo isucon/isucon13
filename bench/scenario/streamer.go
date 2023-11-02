@@ -50,8 +50,8 @@ func BasicStreamerColdReserveScenario(
 		Tags:         tags,
 		Title:        reservation.Title,
 		Description:  reservation.Description,
-		PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
-		ThumbnailUrl: "https://picsum.photos/200/300",
+		PlaylistUrl:  reservation.PlaylistUrl,
+		ThumbnailUrl: reservation.ThumbnailUrl,
 		StartAt:      reservation.StartAt,
 		EndAt:        reservation.EndAt,
 	})
