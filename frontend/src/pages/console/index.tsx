@@ -8,11 +8,13 @@ import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLiveSelfStreams } from '~/api/hooks';
 import { Schemas } from '~/api/types';
 import { NewLiveDialog } from '~/components/console/newlive';
 
 export default function StreamerConsolePage(): React.ReactElement {
   const [open, setOpen] = React.useState<boolean>(false);
+  const liveStreams = useLiveSelfStreams();
 
   return (
     <>
@@ -31,15 +33,13 @@ export default function StreamerConsolePage(): React.ReactElement {
             flexGrow={1}
             sx={{ padding: 2 }}
           >
-            {Array(10)
-              .fill(0)
-              .map((_, index) => (
-                <Grid key={index} xs={1}>
-                  <LiveItem
-                    liveSteram={{ id: index, title: 'title', user_id: 123 }}
-                  />
-                </Grid>
-              ))}
+            {/* {Array(10)
+              .fill(0) */
+            liveStreams.data?.map((stream) => (
+              <Grid key={stream.id} xs={1}>
+                <LiveItem liveSteram={stream} />
+              </Grid>
+            ))}
           </Grid>
         </Container>
       </Stack>

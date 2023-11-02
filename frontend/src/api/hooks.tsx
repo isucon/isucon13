@@ -26,7 +26,7 @@ export function useUserMe(config?: SWRConfiguration) {
   );
 }
 
-export function useLiveStreams(config?: SWRConfiguration) {
+export function useLiveSelfStreams(config?: SWRConfiguration) {
   return useSWR(`/livestream`, () => apiClient.get$livestream({}), config);
 }
 
