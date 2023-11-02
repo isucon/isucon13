@@ -21,6 +21,16 @@ func TestLivestreamSearch(t *testing.T) {
 	assert.NoError(t, err)
 
 	user := scheduler.UserScheduler.GetRandomStreamer()
+	_, err = client.Register(ctx, &RegisterRequest{
+		Name:        user.Name,
+		DisplayName: user.DisplayName,
+		Description: user.Description,
+		Password:    user.RawPassword,
+		Theme: Theme{
+			DarkMode: user.DarkMode,
+		},
+	})
+
 	err = client.Login(ctx, &LoginRequest{
 		UserName: user.Name,
 		Password: user.RawPassword,
