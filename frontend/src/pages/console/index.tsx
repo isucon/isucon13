@@ -23,7 +23,7 @@ export default function StreamerConsolePage(): React.ReactElement {
         <Container>
           <Typography level="h3">配信一覧</Typography>
           <Stack sx={{ display: 'block', my: 3 }}>
-            <Button onClick={() => setOpen(true)}>予約配信を作成</Button>
+            <Button onClick={() => setOpen(true)}>予約配信を作成</Button> (TODO)
           </Stack>
 
           <Grid

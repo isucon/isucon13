@@ -66,6 +66,12 @@ export namespace Schemas {
     created_at?: number;
     updated_at?: number;
   }
+  export interface LivestreamNgWord {
+    id: number;
+    livestream_id: number;
+    word: string;
+    created_at: number;
+  }
 }
 export namespace Responses {
   /** Example response */

@@ -206,6 +206,25 @@ paths:
           $ref: "#/components/responses/GetLivestream"
       operationId: "get-livestream-_livestreamid"
       description: ライブストリーム視聴画面の情報取得
+  "/livestream/{livestreamid}/ngwords":
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
+    get:
+      summary: ""
+      operationId: get-livecomment-livecommentid-ngwords
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LivestreamNgWord"
   "/livestream/{livestreamid}/moderate":
     parameters:
       - schema:
@@ -630,6 +649,23 @@ components:
         created_at:
           type: integer
         updated_at:
+          type: integer
+    LivestreamNgWord:
+      title: LivestreamNgWord
+      type: object
+      required:
+        - id
+        - livestream_id
+        - word
+        - created_at
+      properties:
+        id:
+          type: integer
+        livestream_id:
+          type: integer
+        word:
+          type: string
+        created_at:
           type: integer
   requestBodies:
     PostLivestreamModerate:

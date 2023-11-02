@@ -51,6 +51,12 @@ export interface Parameter$get$livestream$_livestreamid {
 }
 export type Response$get$livestream$_livestreamid$Status$200 =
   Responses.GetLivestream.Content;
+export interface Parameter$get$livecomment$livecommentid$ngwords {
+  livestreamid: string;
+}
+export interface Response$get$livecomment$livecommentid$ngwords$Status$200 {
+  'application/json': Schemas.LivestreamNgWord[];
+}
 export interface Parameter$post$livestream$livestreamid$moderate {
   livestreamid: string;
 }
@@ -161,6 +167,11 @@ export type ResponseContentType$get$livestream$_livestreamid =
 export interface Params$get$livestream$_livestreamid {
   parameter: Parameter$get$livestream$_livestreamid;
 }
+export type ResponseContentType$get$livecomment$livecommentid$ngwords =
+  keyof Response$get$livecomment$livecommentid$ngwords$Status$200;
+export interface Params$get$livecomment$livecommentid$ngwords {
+  parameter: Parameter$get$livecomment$livecommentid$ngwords;
+}
 export type RequestContentType$post$livestream$livestreamid$moderate =
   keyof RequestBody$post$livestream$livestreamid$moderate;
 export type ResponseContentType$post$livestream$livestreamid$moderate =
@@ -254,6 +265,7 @@ export type SuccessResponses =
   | Response$get$livestream$Status$200
   | Response$get$livestream$search$Status$200
   | Response$get$livestream$_livestreamid$Status$200
+  | Response$get$livecomment$livecommentid$ngwords$Status$200
   | Response$post$livestream$livestreamid$moderate$Status$201
   | Response$get$livestream$_livestreamid$livecomment$Status$200
   | Response$post$livestream$livestreamid$livecomment$Status$201
@@ -275,6 +287,7 @@ export namespace ErrorResponse {
   export type get$livestream = void;
   export type get$livestream$search = void;
   export type get$livestream$_livestreamid = void;
+  export type get$livecomment$livecommentid$ngwords = void;
   export type post$livestream$livestreamid$moderate = void;
   export type get$livestream$_livestreamid$livecomment = void;
   export type post$livestream$livestreamid$livecomment = void;
@@ -518,6 +531,26 @@ export class Client<RequestOption> {
     Response$get$livestream$_livestreamid$Status$200['application/json']
   > {
     const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}`;
+    const headers = {
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'GET',
+        url,
+        headers,
+      },
+      option,
+    );
+  }
+  public async get$livecomment$livecommentid$ngwords(
+    params: Params$get$livecomment$livecommentid$ngwords,
+    option?: RequestOption,
+  ): Promise<
+    Response$get$livecomment$livecommentid$ngwords$Status$200['application/json']
+  > {
+    const url =
+      this.baseUrl + `/livestream/${params.parameter.livestreamid}/ngwords`;
     const headers = {
       Accept: 'application/json',
     };

@@ -89,6 +89,22 @@ export function useLiveStreamReaction(
   );
 }
 
+export function useLiveStreamNgWords(
+  id: string | null,
+  config?: SWRConfiguration,
+) {
+  return useSWR(
+    id && `/livestream/${id}/ngwords`,
+    () =>
+      apiClient.get$livecomment$livecommentid$ngwords({
+        parameter: {
+          livestreamid: id ?? '',
+        },
+      }),
+    config,
+  );
+}
+
 export function useTags(config?: SWRConfiguration) {
   return useSWR('/tags', () => apiClient.get$tag(), config);
 }

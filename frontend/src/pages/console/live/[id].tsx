@@ -5,15 +5,55 @@ import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
-import ListItemButton from '@mui/joy/ListItemButton';
 import Sheet from '@mui/joy/Sheet';
 import Stack from '@mui/joy/Stack';
 import React from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { apiClient } from '~/api/client';
+import { useLiveStream, useLiveStreamNgWords } from '~/api/hooks';
+import { NewNgWordDialog } from '~/components/console/ngword';
+import { useGlobalToastQueue } from '~/components/toast/toast';
 import LiveComment from '~/components/video/comment';
 
 export default function WatchPage(): React.ReactElement {
+  const { id } = useParams();
+  const liveStream = useLiveStream(id ?? null);
+  const idNum = id ? parseInt(id) : null;
+  const ngWords = useLiveStreamNgWords(id ?? null);
+
+  const toast = useGlobalToastQueue();
+  const [openNgWordDialog, setOpenNgWordDialog] =
+    React.useState<boolean>(false);
+  const onNgWordSubmit = React.useCallback(
+    async (word: string) => {
+      if (!id) {
+        return;
+      }
+      await apiClient.post$livestream$livestreamid$moderate({
+        parameter: {
+          livestreamid: id,
+        },
+        requestBody: {
+          ng_word: word,
+        },
+      });
+      await ngWords.mutate();
+      toast.add(
+        {
+          type: 'success',
+          title: 'NGワードを追加しました',
+          message: `「${word}」をNGワードに追加しました。`,
+        },
+        {
+          timeout: 3000,
+        },
+      );
+      setOpenNgWordDialog(false);
+    },
+    [id],
+  );
+
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
       <Stack direction="row" gap={2}>
@@ -56,8 +96,18 @@ export default function WatchPage(): React.ReactElement {
         </Stack>
 
         <Stack sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
-          <LiveComment type="random" livestream_id={1} />
+          <LiveComment
+            type="real"
+            livestream_id={idNum ?? 0}
+            is_loading={idNum === null || liveStream.isLoading}
+          />
         </Stack>
+
+        <NewNgWordDialog
+          isOpen={openNgWordDialog}
+          onClose={() => setOpenNgWordDialog(false)}
+          onSubmit={onNgWordSubmit}
+        />
         <Stack direction="column" sx={{ flexBasis: '300px', flexGrow: 1 }}>
           <Stack direction="row" sx={{ mb: 1, alignItems: 'center' }}>
             <Typography level="title-lg">NG Word</Typography>
@@ -65,21 +115,16 @@ export default function WatchPage(): React.ReactElement {
               variant="plain"
               startDecorator={<AiOutlinePlus size="1rem" />}
               sx={{ ml: 'auto' }}
+              onClick={() => setOpenNgWordDialog(true)}
             >
               追加
             </Button>
           </Stack>
           <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
             <List>
-              <ListItem>
-                <ListItemButton>item</ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton>item</ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton>item</ListItemButton>
-              </ListItem>
+              {ngWords.data?.map((word) => (
+                <ListItem key={word.id}>{word.word}</ListItem>
+              ))}
             </List>
           </Sheet>
         </Stack>
