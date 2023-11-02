@@ -11,7 +11,7 @@ paths:
     parameters: []
     get:
       summary: ""
-      operationid: get-tag
+      operationId: get-tag
       responses:
         "200":
           $ref: "#/components/responses/GetTag"
@@ -73,6 +73,17 @@ paths:
       description: ユーザ登録
       requestBody:
         $ref: "#/components/requestBodies/PostUser"
+  /user/me:
+    get:
+      summary:
+      operationId: get-user-me
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
   "/users/{username}":
     parameters:
       - schema:
@@ -177,7 +188,7 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/GetLivestream"
-      operationId: "get-livestream-:livestreamid"
+      operationId: "get-livestream-_livestreamid"
       description: ライブストリーム視聴画面の情報取得
   "/livestream/{livestreamid}/moderate":
     parameters:
@@ -218,7 +229,7 @@ paths:
     get:
       summary: Your GET endpoint
       tags: []
-      operationId: "get-livestream-:livestreamid-livecomment"
+      operationId: "get-livestream-_livestreamid-livecomment"
       description: 当該ライブストリームのライブコメント取得
       responses:
         "200":
@@ -303,7 +314,7 @@ paths:
     get:
       summary: Your GET endpoint
       tags: []
-      operationId: "get-livestream-:livestreamid-reaction"
+      operationId: "get-livestream-_livestreamid-reaction"
       description: 当該ライブストリームのリアクション取得
       responses:
         "200":
@@ -358,7 +369,9 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/GetLivestreamStatistics"
-      operationId: "get-livestream-:livestreamid-statistics"
+        "404":
+          description: Not Found
+      operationId: "get-livestream-_livestreamid-statistics"
       description: ライブストリームの統計情報取得
   /livestream/reservation:
     post:
@@ -707,12 +720,16 @@ components:
                 end_at: 0
   responses:
     GetTag:
+      description: Example response
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: "#/components/schemas/Tag"
+            type: object
+            properties:
+              tags:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
     GetUser:
       description: Example response
       content:
@@ -744,7 +761,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/LivestreamView"
+            $ref: "#/components/schemas/Livestream"
     GetLivestreamStatistics:
       description: Example response
       content:
