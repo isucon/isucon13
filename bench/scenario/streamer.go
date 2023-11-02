@@ -5,6 +5,7 @@ import (
 
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 func BasicPopularStreamerScenario(
@@ -21,8 +22,11 @@ func BasicStreamerColdReserveScenario(
 	popularLivestreamPool *isupipe.LivestreamPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
+	lgr := zap.S()
+
 	client, err := streamerPool.Get(ctx)
 	if err != nil {
+		lgr.Info("failed to get client from streamer pool")
 		return err
 	}
 	defer streamerPool.Put(ctx, client) // 使い終わったらお片付け

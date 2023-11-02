@@ -6,6 +6,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/isucon/isucon13/bench/vendor/go.uber.org/zap"
 )
 
 func BasicViewerScenario(
@@ -13,27 +14,34 @@ func BasicViewerScenario(
 	viewerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
+	lgr := zap.S()
+
 	client, err := viewerPool.Get(ctx)
 	if err != nil {
+		lgr.Info("failed to get client from viewer pool", zap.Error(err))
 		return err
 	}
 	defer viewerPool.Put(ctx, client)
 
 	if err := VisitTop(ctx, client); err != nil {
+		lgr.Info("failed to visit top", zap.Error(err))
 		return err
 	}
 
 	livestream, err := livestreamPool.Get(ctx)
 	if err != nil {
+		lgr.Info("failed to get livestream from pool(as viewer)", zap.Error(err))
 		return err
 	}
 	defer livestreamPool.Put(ctx, livestream)
 
 	if err := VisitLivestream(ctx, client, livestream); err != nil {
+		lgr.Info("failed to visit livestream", zap.Error(err))
 		return err
 	}
 
 	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
+		lgr.Info("failed to enter livestream", zap.Error(err))
 		return err
 	}
 
@@ -56,6 +64,7 @@ func BasicViewerScenario(
 	}
 
 	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
+		lgr.Info("failed to enter livestream", zap.Error(err))
 		return err
 	}
 
