@@ -267,6 +267,10 @@ func getUserLivestreamsHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, livestreams)
 }
 
