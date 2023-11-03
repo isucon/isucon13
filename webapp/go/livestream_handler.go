@@ -125,16 +125,14 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 
 	var (
-		startAt         = time.Unix(req.StartAt, 0)
-		endAt           = time.Unix(req.EndAt, 0)
 		livestreamModel = &LivestreamModel{
 			UserID:       int64(userID),
 			Title:        req.Title,
 			Description:  req.Description,
 			PlaylistUrl:  req.PlaylistUrl,
 			ThumbnailUrl: req.ThumbnailUrl,
-			StartAt:      startAt.Unix(),
-			EndAt:        endAt.Unix(),
+			StartAt:      req.StartAt,
+			EndAt:        req.EndAt,
 		}
 	)
 
