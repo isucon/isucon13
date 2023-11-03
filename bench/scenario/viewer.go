@@ -13,6 +13,7 @@ func BasicViewerScenario(
 	viewerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
+
 	client, err := viewerPool.Get(ctx)
 	if err != nil {
 		return err
@@ -37,12 +38,12 @@ func BasicViewerScenario(
 		return err
 	}
 
-	for i := 0; i < config.AdvertiseCost*10; i++ {
+	for i := 0; i < int(config.AdvertiseCost*10); i++ {
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
 		if _, err := client.PostLivecomment(ctx, livestream.ID, &isupipe.PostLivecommentRequest{
 			Comment: livecomment.Comment,
-			Tip:     tip,
+			Tip:     int64(tip),
 		}); err != nil {
 			return err
 		}
@@ -55,7 +56,7 @@ func BasicViewerScenario(
 		}
 	}
 
-	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
+	if err := client.ExitLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 

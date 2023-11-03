@@ -30,7 +30,7 @@ func initProfit(ctx context.Context) {
 	profit.Set(TipProfitLevel5, 5)
 }
 
-func AddTipProfit(tip int) error {
+func AddTipProfit(tip int64) error {
 	tag := tipToProfitLevel(tip)
 	if tag == TipProfitLevel0 {
 		return nil
@@ -41,7 +41,8 @@ func AddTipProfit(tip int) error {
 	return nil
 }
 
-func tipToProfitLevel(tip int) score.ScoreTag {
+// FIXME: チップ額がフロントエンドから見て違和感ないように
+func tipToProfitLevel(tip int64) score.ScoreTag {
 	switch tip {
 	case 0:
 		return TipProfitLevel0

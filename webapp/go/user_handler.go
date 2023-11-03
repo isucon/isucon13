@@ -141,7 +141,7 @@ func postIconHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	var req PostIconRequest
+	var req *PostIconRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
@@ -152,6 +152,10 @@ func postIconHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
+	if _, err := tx.ExecContext(ctx, "DELETE FROM icons WHERE user_id = ?", userID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	rs, err := tx.ExecContext(ctx, "INSERT INTO icons (user_id, image) VALUES (?, ?)", userID, req.Image)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -159,6 +163,10 @@ func postIconHandler(c echo.Context) error {
 
 	iconID, err := rs.LastInsertId()
 	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -219,7 +227,7 @@ func registerHandler(c echo.Context) error {
 
 	req := PostUserRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if req.Name == "pipe" {
@@ -233,7 +241,7 @@ func registerHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	defer tx.Rollback()
 
@@ -246,12 +254,12 @@ func registerHandler(c echo.Context) error {
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	userID, err := result.LastInsertId()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	userModel.ID = userID
@@ -261,7 +269,7 @@ func registerHandler(c echo.Context) error {
 		DarkMode: req.Theme.DarkMode,
 	}
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "30", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
@@ -270,11 +278,11 @@ func registerHandler(c echo.Context) error {
 
 	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user response")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusCreated, user)
@@ -378,40 +386,6 @@ func getUserHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, user)
-}
-
-func getUsersHandler(c echo.Context) (err error) {
-	ctx := c.Request().Context()
-
-	if err := verifyUserSession(c); err != nil {
-		return err
-	}
-
-	tx, err := dbConn.BeginTxx(ctx, nil)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	defer tx.Rollback()
-
-	var userModels []*UserModel
-	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name FROM users"); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	users := make([]User, len(userModels))
-	for i := range userModels {
-		user, err := fillUserResponse(ctx, tx, *userModels[i])
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		users[i] = user
-	}
-
-	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, users)
 }
 
 func verifyUserSession(c echo.Context) error {

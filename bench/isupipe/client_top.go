@@ -12,7 +12,7 @@ import (
 )
 
 type Tag struct {
-	ID   int    `json:"id"`
+	ID   int64  `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -55,7 +55,7 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 	return tags, nil
 }
 
-func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int, error) {
+func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int64, error) {
 	resp, err := c.GetTags(ctx)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int, error) {
 		resp.Tags[i], resp.Tags[j] = resp.Tags[j], resp.Tags[i]
 	})
 
-	var tags []int
+	var tags []int64
 	for i := 0; i < n; i++ {
 		tags = append(tags, resp.Tags[i].ID)
 	}

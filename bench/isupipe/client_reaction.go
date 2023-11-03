@@ -17,14 +17,14 @@ type PostReactionRequest struct {
 }
 
 type Reaction struct {
-	ID         int        `json:"id"`
+	ID         int64      `json:"id"`
 	EmojiName  string     `json:"emoji_name"`
 	User       User       `json:"user"`
 	Livestream Livestream `json:"livestream"`
-	CreatedAt  int        `json:"created_at"`
+	CreatedAt  int64      `json:"created_at"`
 }
 
-func (c *Client) GetReactions(ctx context.Context, livestreamID int, opts ...ClientOption) ([]Reaction, error) {
+func (c *Client) GetReactions(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]Reaction, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -60,7 +60,7 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int, opts ...Cli
 	return reactions, nil
 }
 
-func (c *Client) PostReaction(ctx context.Context, livestreamID int, r *PostReactionRequest, opts ...ClientOption) (*Reaction, error) {
+func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostReactionRequest, opts ...ClientOption) (*Reaction, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)

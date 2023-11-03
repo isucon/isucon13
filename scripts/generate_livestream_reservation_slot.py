@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 # 予約枠生成
 
-NUM_SLOTS = 2
+NUM_SLOTS = 5
 SQL_FORMAT="INSERT INTO reservation_slots (slot, start_at, end_at) VALUES ({slot}, {start_at}, {end_at});"
 
 # delta = timedelta(hours=1)

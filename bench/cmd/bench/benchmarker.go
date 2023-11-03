@@ -85,6 +85,7 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 		}
 	}
 
+	// FIXME: Rangeをctxで中断できるように
 	scheduler.UserScheduler.RangePopularStreamer(loginFn(b.popularStreamerClientPool))
 	scheduler.UserScheduler.RangeStreamer(loginFn(b.streamerClientPool))
 	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
