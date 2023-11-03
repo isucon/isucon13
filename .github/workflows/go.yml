@@ -43,6 +43,21 @@ jobs:
           make up/go
 
       # bench
+      - name: "[bench] Get deps"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go get -v -t -d ./...
+
+      - name: "[bench] Test"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go clean -testcache
+          go test -p=1 -v ./...
+
       - name: "run bench"
         working-directory: ./bench
         run: |
