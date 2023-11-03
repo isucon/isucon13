@@ -1,7 +1,7 @@
 name: Go CI
 on:
   push:
-    branches:
+    branches: [main]
     paths:
       - bench/**/*
       - webapp/go/**/*
