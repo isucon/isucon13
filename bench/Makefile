@@ -8,7 +8,7 @@ LINUX_TARGET_ARM64_ENV=GOOS=linux GOARCH=arm64
 
 RM=rm -f
 
-.PHONY: all build linux_amd64 test clean
+.PHONY: all build bench linux_amd64 test clean
 
 all: build
 
@@ -22,6 +22,9 @@ linux_amd64:
 
 test: clean
 	$(TEST) $(TEST_FLAGS) ./...
+
+bench: linux_amd64
+	./bin/bench_linux_amd64 run --dns-port=1053
 
 clean:
 	$(RM) ./bin/bench_darwin_amd64
