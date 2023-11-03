@@ -13,7 +13,7 @@ import (
 )
 
 type Livecomment struct {
-	ID         int        `json:"id"`
+	ID         int64      `json:"id"`
 	User       User       `json:"user"`
 	Livestream Livestream `json:"livestream"`
 	Comment    string     `json:"comment"`
@@ -22,24 +22,24 @@ type Livecomment struct {
 }
 
 type LivecommentReport struct {
-	ID          int         `json:"id"`
+	ID          int64       `json:"id"`
 	Reporter    User        `json:"reporter"`
 	Livecomment Livecomment `json:"livecomment"`
-	CreatedAt   int         `json:"created_at"`
+	CreatedAt   int64       `json:"created_at"`
 }
 
 type (
 	PostLivecommentRequest struct {
 		Comment string `json:"comment"`
-		Tip     int    `json:"tip"`
+		Tip     int64  `json:"tip"`
 	}
 	PostLivecommentResponse struct {
-		ID         int        `json:"id"`
+		ID         int64      `json:"id"`
 		User       User       `json:"user"`
 		Livestream Livestream `json:"livestream"`
 		Comment    string     `json:"comment"`
-		Tip        int        `json:"tip"`
-		CreatedAt  int        `json:"created_at"`
+		Tip        int64      `json:"tip"`
+		CreatedAt  int64      `json:"created_at"`
 	}
 )
 
@@ -55,7 +55,7 @@ type NGWord struct {
 	CreatedAt    int64  `json:"created_at"`
 }
 
-func (c *Client) GetLivecomments(ctx context.Context, livestreamID int, opts ...ClientOption) ([]Livecomment, error) {
+func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]Livecomment, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -91,7 +91,7 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int, opts ...
 	return livecomments, nil
 }
 
-func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int, opts ...ClientOption) ([]LivecommentReport, error) {
+func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]LivecommentReport, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -135,7 +135,7 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...Cli
 	)
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/ngwords", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
+	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
@@ -163,7 +163,7 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...Cli
 	return ngwords, nil
 }
 
-func (c *Client) PostLivecomment(ctx context.Context, livestreamID int, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -208,7 +208,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int, r *PostL
 	return livecommentResponse, nil
 }
 
-func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommentID int, opts ...ClientOption) error {
+func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommentID int64, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -238,7 +238,7 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommen
 	return nil
 }
 
-func (c *Client) Moderate(ctx context.Context, livestreamID int, ngWord string, opts ...ClientOption) error {
+func (c *Client) Moderate(ctx context.Context, livestreamID int64, ngWord string, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)

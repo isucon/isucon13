@@ -1,11 +1,12 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"sort"
 	"strconv"
 
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
 
@@ -71,14 +72,6 @@ func getUserStatisticsHandler(c echo.Context) error {
 	username := c.Param("username")
 	// ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
 	// また、現在の合計視聴者数もだす
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
-	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
@@ -102,7 +95,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		INNER JOIN livestreams l ON l.user_id = u.id
 		INNER JOIN reactions r ON r.livestream_id = l.id
 		WHERE u.id = ?`
-		if err := tx.GetContext(ctx, &reactions, query, user.ID); err != nil {
+		if err := tx.GetContext(ctx, &reactions, query, user.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
@@ -112,7 +105,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		INNER JOIN livestreams l ON l.user_id = u.id	
 		INNER JOIN livecomments l2 ON l2.livestream_id = l.id
 		WHERE u.id = ?`
-		if err := tx.GetContext(ctx, &tips, query, user.ID); err != nil {
+		if err := tx.GetContext(ctx, &tips, query, user.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
@@ -125,7 +118,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 	}
 	sort.Sort(ranking)
 
-	var rank int64
+	var rank int64 = 1
 	for i := len(ranking) - 1; i >= 0; i-- {
 		entry := ranking[i]
 		if entry.UserName == username {
@@ -141,7 +134,7 @@ func getUserStatisticsHandler(c echo.Context) error {
     INNER JOIN reactions r ON r.livestream_id = l.id
     WHERE u.name = ?
 	`
-	if err := tx.GetContext(ctx, &totalReactions, query, username); err != nil {
+	if err := tx.GetContext(ctx, &totalReactions, query, username); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -150,13 +143,13 @@ func getUserStatisticsHandler(c echo.Context) error {
 	var totalTip int64
 	for _, user := range users {
 		var livestreams []*LivestreamModel
-		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil {
+		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		for _, livestream := range livestreams {
 			var livecomments []*LivecommentModel
-			if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestream.ID); err != nil {
+			if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestream.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
@@ -171,12 +164,12 @@ func getUserStatisticsHandler(c echo.Context) error {
 	var viewersCount int64
 	for _, user := range users {
 		var livestreams []*LivestreamModel
-		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil {
+		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		for _, livestream := range livestreams {
 			var cnt int64
-			if err := tx.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?", livestream.ID); err != nil {
+			if err := tx.GetContext(ctx, &cnt, "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?", livestream.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			viewersCount += cnt
@@ -190,12 +183,12 @@ func getUserStatisticsHandler(c echo.Context) error {
 	FROM users u
 	INNER JOIN livestreams l ON l.user_id = u.id
 	INNER JOIN reactions r ON r.livestream_id = l.id
-	WHERE u.id = ?
+	WHERE u.name = ?
 	GROUP BY emoji_name
 	ORDER BY COUNT(*)
 	LIMIT 1
 	`
-	if err := tx.GetContext(ctx, &favoriteEmoji, query, userID); err != nil {
+	if err := tx.GetContext(ctx, &favoriteEmoji, query, username); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -230,7 +223,7 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	var livestreams []*LivestreamModel
-	if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil {
+	if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams"); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -238,12 +231,12 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	var ranking LivestreamRanking
 	for _, livestream := range livestreams {
 		var reactions int64
-		if err := tx.GetContext(ctx, &reactions, "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?", livestreamID); err != nil {
+		if err := tx.GetContext(ctx, &reactions, "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?", livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		var totalTips int64
-		if err := tx.GetContext(ctx, &totalTips, "SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?", livestreamID); err != nil {
+		if err := tx.GetContext(ctx, &totalTips, "SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?", livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
@@ -266,31 +259,31 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	}
 
 	var livestream LivestreamModel
-	if err := tx.GetContext(ctx, &livestream, "SELECT * FROM livestreams WHERE id = ?", livestreamID); err != nil {
+	if err := tx.GetContext(ctx, &livestream, "SELECT * FROM livestreams WHERE id = ?", livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// 視聴者数算出
 	var viewersCount int64
-	if err := tx.GetContext(ctx, &viewersCount, `SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil {
+	if err := tx.GetContext(ctx, &viewersCount, `SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// 最大チップ額
 	var maxTip int64
-	if err := tx.GetContext(ctx, &maxTip, `SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil {
+	if err := tx.GetContext(ctx, &maxTip, `SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// リアクション数
 	var totalReactions int64
-	if err := tx.GetContext(ctx, &totalReactions, "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = ?", livestreamID); err != nil {
+	if err := tx.GetContext(ctx, &totalReactions, "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = ?", livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// スパム報告数
 	var totalReports int64
-	if err := tx.GetContext(ctx, &totalReports, `SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil {
+	if err := tx.GetContext(ctx, &totalReports, `SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

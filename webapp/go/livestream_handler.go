@@ -339,7 +339,7 @@ func enterLivestreamHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func leaveLivestreamHandler(c echo.Context) error {
+func exitLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		// echo.NewHTTPErrorが返っているのでそのまま出力

@@ -141,7 +141,7 @@ func postIconHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	var req PostIconRequest
+	var req *PostIconRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
@@ -163,6 +163,10 @@ func postIconHandler(c echo.Context) error {
 
 	iconID, err := rs.LastInsertId()
 	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

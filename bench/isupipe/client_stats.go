@@ -62,7 +62,7 @@ func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ..
 	return stats, nil
 }
 
-func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int, opts ...ClientOption) (*LivestreamStatistics, error) {
+func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int64, opts ...ClientOption) (*LivestreamStatistics, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)

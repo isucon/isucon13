@@ -20,7 +20,7 @@ import (
 )
 
 type User struct {
-	ID          int    `json:"id"`
+	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
@@ -90,7 +90,7 @@ func (c *Client) GetStreamerTheme(ctx context.Context, streamer *User, opts ...C
 	return theme, nil
 }
 
-func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOption) error {
+func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOption) ([]byte, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -100,11 +100,11 @@ func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOpt
 	endpoint := fmt.Sprintf("/api/user/%s/icon", username)
 	req, err := c.assetAgent.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 	resp, err := sendRequest(ctx, c.assetAgent, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -112,10 +112,18 @@ func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOpt
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	return nil
+	var imageBytes []byte
+	if resp.StatusCode == defaultStatusCode {
+		imageBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+	}
+
+	return imageBytes, nil
 }
 
 func (c *Client) PostIcon(ctx context.Context, r *PostIconRequest, opts ...ClientOption) (*PostIconResponse, error) {
