@@ -242,6 +242,9 @@ func searchLivestreamsHandler(c echo.Context) error {
 
 func getUserLivestreamsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
