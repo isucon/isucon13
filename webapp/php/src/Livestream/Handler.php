@@ -6,10 +6,11 @@ namespace IsuPipe\Livestream;
 
 use App\Application\Settings\SettingsInterface as Settings;
 use ErrorException;
+use IsuPipe\AbstractHandler;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class Handler
+class Handler extends AbstractHandler
 {
     private readonly int $numReservationSlot;
 

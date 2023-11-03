@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace IsuPipe\User;
 
 use App\Application\Settings\SettingsInterface as Settings;
+use IsuPipe\AbstractHandler;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class Handler
+class Handler extends AbstractHandler
 {
     const DEFAULT_SESSION_EXPIRES_KEY = 'EXPIRES';
     const DEFAULT_USER_ID_KEY = 'USERID';

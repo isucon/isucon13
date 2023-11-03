@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace IsuPipe\Livecomment;
 
+use IsuPipe\AbstractHandler;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class Handler
+class Handler extends AbstractHandler
 {
     public function getLivecommentsHandler(Request $request, Response $response): Response
     {
