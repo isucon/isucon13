@@ -141,20 +141,16 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 	}
 
-	var (
-		startAt         = time.Unix(req.StartAt, 0)
-		endAt           = time.Unix(req.EndAt, 0)
-		livestreamModel = &LivestreamModel{
-			UserID:      int64(userID),
-			Title:       req.Title,
-			Description: req.Description,
-			// FIXME: プレイリスト、サムネイルは配信環境より配信されるので、それらのURLをPOSTできるようにする
-			PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
-			ThumbnailUrl: "https://picsum.photos/200/300",
-			StartAt:      startAt.Unix(),
-			EndAt:        endAt.Unix(),
-		}
-	)
+	livestreamModel := &LivestreamModel{
+		UserID:      int64(userID),
+		Title:       req.Title,
+		Description: req.Description,
+		// FIXME: プレイリスト、サムネイルは配信環境より配信されるので、それらのURLをPOSTできるようにする
+		PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
+		ThumbnailUrl: "https://picsum.photos/200/300",
+		StartAt:      req.StartAt,
+		EndAt:        req.EndAt,
+	}
 
 	c.Logger().Info("insert reservation slot")
 	if _, err := tx.ExecContext(ctx, "UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?", req.StartAt, req.EndAt); err != nil {
