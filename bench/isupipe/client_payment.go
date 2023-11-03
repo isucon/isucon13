@@ -8,7 +8,7 @@ import (
 )
 
 type PaymentResult struct {
-	TotalTip int `json:"total_tip"`
+	TotalTip int64 `json:"total_tip"`
 }
 
 func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {

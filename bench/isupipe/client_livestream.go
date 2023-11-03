@@ -13,31 +13,33 @@ import (
 )
 
 type Livestream struct {
-	ID           int    `json:"id"`
+	ID           int64  `json:"id"`
 	Owner        User   `json:"owner"`
 	Tags         []Tag  `json:"tags"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	PlaylistUrl  string `json:"playlist_url"`
 	ThumbnailUrl string `json:"thumbnail_url"`
-	StartAt      int    `json:"start_at"`
-	EndAt        int    `json:"end_at"`
-	CreatedAt    int    `json:"created_at"`
+	StartAt      int64  `json:"start_at"`
+	EndAt        int64  `json:"end_at"`
+	CreatedAt    int64  `json:"created_at"`
 }
 
 type (
 	ReserveLivestreamRequest struct {
-		Tags        []int  `json:"tags"`
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		StartAt     int64  `json:"start_at"`
-		EndAt       int64  `json:"end_at"`
+		Tags         []int64 `json:"tags"`
+		Title        string  `json:"title"`
+		Description  string  `json:"description"`
+		PlaylistUrl  string  `json:"playlist_url"`
+		ThumbnailUrl string  `json:"thumbnail_url"`
+		StartAt      int64   `json:"start_at"`
+		EndAt        int64   `json:"end_at"`
 	}
 )
 
 func (c *Client) GetLivestream(
 	ctx context.Context,
-	livestreamID int,
+	livestreamID int64,
 	opts ...ClientOption,
 ) error {
 	var (
@@ -214,7 +216,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return livestream, nil
 }
 
-func (c *Client) EnterLivestream(ctx context.Context, livestreamID int, opts ...ClientOption) error {
+func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -244,13 +246,13 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int, opts ...
 	return nil
 }
 
-func (c *Client) LeaveLivestream(ctx context.Context, livestreamID int, opts ...ClientOption) error {
+func (c *Client) ExitLivestream(ctx context.Context, livestreamID int64, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamID)
+	urlPath := fmt.Sprintf("/api/livestream/%d/exit", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)

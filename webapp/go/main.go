@@ -31,7 +31,7 @@ var (
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
 	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
-	numReservationSlot       = 2
+	numReservationSlot       = 5
 )
 
 func init() {
@@ -171,21 +171,18 @@ func main() {
 	// ライブコメント報告
 	e.POST("/api/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)
-	e.POST("/api/livestream/:livestream_id/moderate", moderateNGWordHandler)
+	e.POST("/api/livestream/:livestream_id/moderate", moderateHandler)
 
 	// livestream_viewersにINSERTするため必要
 	// ユーザ視聴開始 (viewer)
 	e.POST("/api/livestream/:livestream_id/enter", enterLivestreamHandler)
 	// ユーザ視聴終了 (viewer)
-	e.DELETE("/api/livestream/:livestream_id/enter", leaveLivestreamHandler)
+	e.DELETE("/api/livestream/:livestream_id/exit", exitLivestreamHandler)
 
 	// user
-	// FIXME: /user -> /register
 	e.POST("/api/register", registerHandler)
 	e.POST("/api/login", loginHandler)
-	e.GET("/api/user", getUsersHandler)
 	e.GET("/api/user/me", getMeHandler)
-	// FIXME: ユーザ一覧を返すAPI
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
 	e.GET("/api/user/:username", getUserHandler)
 	e.GET("/api/user/:username/statistics", getUserStatisticsHandler)

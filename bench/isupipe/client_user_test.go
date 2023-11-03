@@ -1,7 +1,11 @@
 package isupipe
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"image"
+	_ "image/jpeg"
 	"testing"
 	"time"
 
@@ -51,12 +55,19 @@ func TestClientUser_Login(t *testing.T) {
 	assert.Equal(t, streamer.DarkMode, theme.DarkMode)
 
 	// アイコンアップロード・取得
-	image := scheduler.IconSched.GetRandomIcon()
-	_, err = client.PostIcon(ctx, &PostIconRequest{
-		Image: image.Image,
+	img := scheduler.IconSched.GetRandomIcon()
+	postIconResp, err := client.PostIcon(ctx, &PostIconRequest{
+		Image: img.Image,
 	})
 	assert.NoError(t, err)
+	assert.NotZero(t, postIconResp.ID)
+	beforeHash := sha256.Sum256(img.Image[:])
 
-	err = client.GetIcon(ctx, user.Name)
+	imageBytes, err := client.GetIcon(ctx, user.Name)
 	assert.NoError(t, err)
+	afterHash := sha256.Sum256(imageBytes[:])
+	assert.True(t, bytes.Equal(beforeHash[:], afterHash[:]))
+	_, imageFormat, err := image.Decode(bytes.NewBuffer(imageBytes))
+	assert.NoError(t, err)
+	assert.Equal(t, "jpeg", imageFormat)
 }

@@ -49,10 +49,6 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetUsers(ctx); err != nil {
-		return err
-	}
-
 	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
 		return err
 	}
@@ -70,9 +66,9 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		tagStartIdx = rand.Intn(len(tagResponse.Tags))
 		tagEndIdx   = min(tagStartIdx+tagCount, len(tagResponse.Tags))
 	)
-	var tags []int
+	var tags []int64
 	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
-		tags = append(tags, tag.ID)
+		tags = append(tags, int64(tag.ID))
 	}
 
 	// FIXME: 枠数を超えて予約した場合にエラーになるか
@@ -83,11 +79,13 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
 		// FIXME: webapp側でタグの採番がおかしく、エラーが出るので一時的に無効化
-		Tags:        tags,
-		Title:       reservation.Title,
-		Description: reservation.Description,
-		StartAt:     reservation.StartAt,
-		EndAt:       reservation.EndAt,
+		Tags:         tags,
+		Title:        reservation.Title,
+		Description:  reservation.Description,
+		PlaylistUrl:  reservation.PlaylistUrl,
+		ThumbnailUrl: reservation.ThumbnailUrl,
+		StartAt:      reservation.StartAt,
+		EndAt:        reservation.EndAt,
 	})
 	if err != nil {
 		scheduler.ReservationSched.AbortReservation(reservation)
@@ -144,7 +142,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if err := client.LeaveLivestream(ctx, livestream.ID); err != nil {
+	if err := client.ExitLivestream(ctx, livestream.ID); err != nil {
 		return err
 	}
 
