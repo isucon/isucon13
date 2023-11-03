@@ -213,12 +213,12 @@ func postLivecommentHandler(c echo.Context) error {
 	// NGワードにヒットする過去の投稿も全削除する
 	for _, ngword := range ngwords {
 		// ライブコメント一覧取得
-		var livecomments []*Livecomment
-		if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments"); err != nil {
+		var livecommentModels []*LivecommentModel
+		if err := tx.SelectContext(ctx, &livecommentModels, "SELECT * FROM livecomments"); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
-		for _, livecomment := range livecomments {
+		for _, livecommentModel := range livecommentModels {
 			query := `
 			DELETE FROM livecomments
 			WHERE
@@ -229,7 +229,7 @@ func postLivecommentHandler(c echo.Context) error {
 			(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
 			ON texts.text LIKE patterns.pattern) >= 1;
 			`
-			if _, err := tx.ExecContext(ctx, query, livecomment.Comment, ngword.Word); err != nil {
+			if _, err := tx.ExecContext(ctx, query, livecommentModel.Comment, ngword.Word); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 		}
