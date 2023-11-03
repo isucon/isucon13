@@ -3,8 +3,10 @@ on:
   push:
     paths:
       - bench/**/*
-      - webapp/**/*
-      - development/**/*
+      - webapp/go/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-go.yml
+      - development/Makefile
       - .github/workflows/bench-test.yml
 jobs:
   test:
@@ -28,9 +30,8 @@ jobs:
     - name: Setup containers(mysql,pdns,webapp)
       working-directory: ./development
       run: |
-        sudo docker compose -f docker-compose-go.yml -f docker-compose-common.yml down --volumes
-        sudo docker compose -f docker-compose-go.yml -f docker-compose-common.yml up -d --build
-        sudo docker compose -f docker-compose-go.yml -f docker-compose-common.yml ps
+        make down/go
+        make up/go
 
     # bench
     - name: "[bench] Get deps"
@@ -48,11 +49,4 @@ jobs:
         go clean -testcache
         go test -p=1 -v ./...
 
-    - name: "[bench] Benchmark"
-      working-directory: ./bench
-      env:
-        TZ: Asia/Tokyo
-      run: |
-        make build
-        ./bin/bench_linux_amd64 run --dns-port=1053
 

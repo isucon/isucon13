@@ -222,7 +222,7 @@ func postLivecommentHandler(c echo.Context) error {
 
 	now := time.Now().Unix()
 	livecommentModel := LivecommentModel{
-		UserID:       int64(userID),
+		UserID:       userID,
 		LivestreamID: int64(livestreamID),
 		Comment:      req.Comment,
 		Tip:          req.Tip,

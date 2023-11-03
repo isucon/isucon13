@@ -1,0 +1,49 @@
+name: Go CI
+on:
+  push:
+    branches:
+    paths:
+      - bench/**/*
+      - webapp/go/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-go.yml
+      - development/Makefile
+      - .github/workflows/go.yml
+  pull_request:
+    paths:
+      - bench/**/*
+      - webapp/go/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-go.yml
+      - development/Makefile
+      - .github/workflows/go.yml
+jobs:
+  test:
+    strategy:
+      matrix:
+        go:
+          - 1.21.1
+    name: Build
+    runs-on: [isucon13-ci]
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      # containers
+      - name: "setup containers"
+        working-directory: ./development
+        run: |
+          make down/go
+          make up/go
+
+      # bench
+      - name: "run bench"
+        working-directory: ./bench
+        run: |
+          make bench
