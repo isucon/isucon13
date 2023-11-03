@@ -126,7 +126,7 @@ func initializeHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
+	c.Request().Header.Add("Content-Type", "application/json;charset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
 		AdvertiseLevel: 10,
 		Language:       "golang",
