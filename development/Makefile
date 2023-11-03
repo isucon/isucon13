@@ -1,6 +1,7 @@
-
 up/%:
-	docker compose -f docker-compose-common.yml -f docker-compose-$*.yml up $(OPT)
+	sudo docker compose -f docker-compose-common.yml -f docker-compose-$*.yml up -d --build
 
 down/%:
-	docker compose -f docker-compose-common.yml -f docker-compose-$*.yml down --volumes
+	sudo docker compose -f docker-compose-common.yml -f docker-compose-$*.yml down --volumes
+
+
