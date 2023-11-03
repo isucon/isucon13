@@ -144,3 +144,13 @@ https://github.com/isucon/isucon12-qualify/blob/main/.github_/workflows/go.yml#L
     * ホスト上で `mysql -uisucon -pisucon isupipe` を実行してMySQLシェルを開き、登録データの調査
     * ホスト上で `mysql -uisucon -pisucon isudns` を実行してMySQLシェルを開き、サブドメインの調査
 4. 原因が分かり次第1に戻る
+
+
+## 参考
+
+2023/11/4時点でまだ整備中です :bow:
+
+移植の際に参考にしていただければと考えておりますので、随時共有させていただいたタイミングで確認いただけると助かります。
+
+* [アプリケーション仕様](https://github.com/isucon/isucon13/blob/main/docs/specification.md)
+* [用語集](https://github.com/isucon/isucon13/blob/main/docs/terminology.md)
