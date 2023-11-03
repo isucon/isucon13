@@ -262,9 +262,17 @@ func getUserLivestreamsHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
 	}
 
-	var livestreams []*LivestreamModel
-	if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", userID); err != nil {
+	var livestreamModels []*LivestreamModel
+	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	livestreams := make([]Livestream, len(livestreamModels))
+	for i := range livestreamModels {
+		livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		livestreams[i] = livestream
 	}
 
 	if err := tx.Commit(); err != nil {
