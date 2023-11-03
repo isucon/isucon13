@@ -195,41 +195,6 @@ func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOpt
 	return nil
 }
 
-func (c *Client) GetUsers(ctx context.Context, opts ...ClientOption) ([]*User, error) {
-	var (
-		defaultStatusCode = http.StatusOK
-		o                 = newClientOptions(defaultStatusCode, opts...)
-	)
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/api/user", nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := sendRequest(ctx, c.agent, req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-	}()
-
-	if resp.StatusCode != o.wantStatusCode {
-		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
-	}
-
-	var users []*User
-	if resp.StatusCode == defaultStatusCode {
-		if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
-			return users, bencherror.NewHttpResponseError(err, req)
-		}
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetUsers)
-	return users, nil
-}
-
 func (c *Client) GetMe(ctx context.Context, opts ...ClientOption) (*User, error) {
 	var (
 		defaultStatusCode = http.StatusOK

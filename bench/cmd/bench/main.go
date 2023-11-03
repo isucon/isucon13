@@ -10,12 +10,7 @@ import (
 )
 
 func init() {
-	loc, err := time.LoadLocation("Asia/Tokyo")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	time.Local = loc
-
+	time.Local = time.UTC
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 

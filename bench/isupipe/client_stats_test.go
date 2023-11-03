@@ -58,8 +58,8 @@ func TestGetUserStats(t *testing.T) {
 		Description:  "get-user-stats-stream1",
 		PlaylistUrl:  "https://example.com",
 		ThumbnailUrl: "https://example.com",
-		StartAt:      time.Now().Add(10 * time.Hour).Unix(),
-		EndAt:        time.Now().Add(13 * time.Hour).Unix(),
+		StartAt:      time.Date(2024, 11, 10, 0, 0, 0, 0, time.UTC).Unix(),
+		EndAt:        time.Date(2024, 11, 10, 4, 0, 0, 0, time.UTC).Unix(),
 	})
 	assert.NoError(t, err)
 	livestream2, err := streamer1Client.ReserveLivestream(ctx, &ReserveLivestreamRequest{
@@ -67,8 +67,8 @@ func TestGetUserStats(t *testing.T) {
 		Description:  "get-user-stats-stream2",
 		PlaylistUrl:  "https://example.com",
 		ThumbnailUrl: "https://example.com",
-		StartAt:      time.Now().Add(13 * time.Hour).Unix(),
-		EndAt:        time.Now().Add(14 * time.Hour).Unix(),
+		StartAt:      time.Date(2024, 11, 24, 0, 0, 0, 0, time.UTC).Unix(),
+		EndAt:        time.Date(2024, 11, 24, 9, 0, 0, 0, time.UTC).Unix(),
 	})
 	assert.NoError(t, err)
 

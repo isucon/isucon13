@@ -388,40 +388,6 @@ func getUserHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-func getUsersHandler(c echo.Context) (err error) {
-	ctx := c.Request().Context()
-
-	if err := verifyUserSession(c); err != nil {
-		return err
-	}
-
-	tx, err := dbConn.BeginTxx(ctx, nil)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	defer tx.Rollback()
-
-	var userModels []*UserModel
-	if err := tx.SelectContext(ctx, &userModels, "SELECT id, name FROM users"); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	users := make([]User, len(userModels))
-	for i := range userModels {
-		user, err := fillUserResponse(ctx, tx, *userModels[i])
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		users[i] = user
-	}
-
-	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, users)
-}
-
 func verifyUserSession(c echo.Context) error {
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {

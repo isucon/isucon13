@@ -20,7 +20,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	client, err := NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
 		// FIXME: moderateが遅い
-		agent.WithTimeout(20*time.Second),
+		agent.WithTimeout(1*time.Minute),
 	)
 	assert.NoError(t, err)
 
@@ -46,8 +46,8 @@ func TestGetNgWordsBug(t *testing.T) {
 		Description:  "ngword-test",
 		PlaylistUrl:  "https://example.com",
 		ThumbnailUrl: "https://example.com",
-		StartAt:      time.Now().Unix(),
-		EndAt:        time.Now().Add(1 * time.Hour).Unix(),
+		StartAt:      time.Date(2024, 4, 20, 0, 0, 0, 0, time.UTC).Unix(),
+		EndAt:        time.Date(2024, 4, 20, 5, 0, 0, 0, time.UTC).Unix(),
 	})
 	assert.NoError(t, err)
 

@@ -49,10 +49,6 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetUsers(ctx); err != nil {
-		return err
-	}
-
 	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
 		return err
 	}

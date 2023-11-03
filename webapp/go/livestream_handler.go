@@ -16,16 +16,13 @@ import (
 )
 
 type ReserveLivestreamRequest struct {
-	Tags        []int64 `json:"tags"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	// NOTE: コラボ配信の際に便利な自動スケジュールチェック機能
-	// DBに記録しないが、コラボレーターがスケジュール的に問題ないか調べて、エラーを返す
-	Collaborators []int64 `json:"collaborators"`
-	PlaylistUrl   string  `json:"playlist_url"`
-	ThumbnailUrl  string  `json:"thumbnail_url"`
-	StartAt       int64   `json:"start_at"`
-	EndAt         int64   `json:"end_at"`
+	Tags         []int64 `json:"tags"`
+	Title        string  `json:"title"`
+	Description  string  `json:"description"`
+	PlaylistUrl  string  `json:"playlist_url"`
+	ThumbnailUrl string  `json:"thumbnail_url"`
+	StartAt      int64   `json:"start_at"`
+	EndAt        int64   `json:"end_at"`
 }
 
 type LivestreamViewerModel struct {
@@ -100,30 +97,14 @@ func reserveLivestreamHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	// 2024/04/01からの１年間の期間内であるかチェック
-	c.Logger().Info("check term")
 	var (
 		termStartAt    = time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
 		termEndAt      = time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC)
 		reserveStartAt = time.Unix(req.StartAt, 0)
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
-	if !(reserveEndAt.Equal(termEndAt) || reserveEndAt.Before(termEndAt)) && (reserveStartAt.Equal(termStartAt) || reserveStartAt.After(termStartAt)) {
+	if (reserveStartAt.Equal(termEndAt) || reserveStartAt.After(termEndAt)) || (reserveEndAt.Equal(termStartAt) || reserveEndAt.Before(termStartAt)) {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad reservation time range")
-	}
-
-	c.Logger().Info("check collaborators")
-	// 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる (ある人は同時に複数の配信に物理的に出れない)
-	var users []int64
-	users = append(users, int64(userID))
-	users = append(users, req.Collaborators...)
-	for _, user := range users {
-		var founds int
-		if err := tx.GetContext(ctx, &founds, "SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at AND ? <= end_at", user, reserveStartAt, reserveEndAt); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
-		}
-		if founds >= numReservationSlot {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ユーザ%dが予約できません", user))
-		}
 	}
 
 	// 予約枠をみて、予約が可能か調べる
@@ -147,36 +128,31 @@ func reserveLivestreamHandler(c echo.Context) error {
 		startAt         = time.Unix(req.StartAt, 0)
 		endAt           = time.Unix(req.EndAt, 0)
 		livestreamModel = &LivestreamModel{
-			UserID:      int64(userID),
-			Title:       req.Title,
-			Description: req.Description,
-			// FIXME: プレイリスト、サムネイルは配信環境より配信されるので、それらのURLをPOSTできるようにする
-			PlaylistUrl:  "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
-			ThumbnailUrl: "https://picsum.photos/200/300",
+			UserID:       int64(userID),
+			Title:        req.Title,
+			Description:  req.Description,
+			PlaylistUrl:  req.PlaylistUrl,
+			ThumbnailUrl: req.ThumbnailUrl,
 			StartAt:      startAt.Unix(),
 			EndAt:        endAt.Unix(),
 		}
 	)
 
-	c.Logger().Info("insert reservation slot")
 	if _, err := tx.ExecContext(ctx, "UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?", req.StartAt, req.EndAt); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	c.Logger().Info("insert livestream")
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)", livestreamModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	c.Logger().Info("get inserted id")
 	livestreamID, err := rs.LastInsertId()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	livestreamModel.ID = livestreamID
 
-	c.Logger().Info("insert tags")
 	// タグ追加
 	for _, tagID := range req.Tags {
 		if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)", &LivestreamTagModel{
