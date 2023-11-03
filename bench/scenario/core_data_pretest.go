@@ -21,6 +21,8 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	// FIXME: いくつかの処理後、統計情報がピタリ一致することをチェック
 	//        (処理数、処理データにランダム性をもたせる)
 
+	// FIXME: ライブコメント投稿のスパム処理にて、正しいNGワードと件数のエラー文が返ってくるように検証
+
 	user, err := client.Register(ctx, &isupipe.RegisterRequest{
 		Name:        "test",
 		DisplayName: "test",
