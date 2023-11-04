@@ -17,7 +17,7 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {

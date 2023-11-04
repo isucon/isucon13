@@ -76,7 +76,7 @@ func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostRe
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {

@@ -192,7 +192,7 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
@@ -227,7 +227,7 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, opts .
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {

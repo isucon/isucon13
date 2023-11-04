@@ -244,7 +244,7 @@ func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...Clien
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
@@ -288,7 +288,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
