@@ -96,7 +96,7 @@ func getLivecommentsHandler(c echo.Context) error {
 	livecommentModels := []LivecommentModel{}
 	err = tx.SelectContext(ctx, &livecommentModels, query, livestreamID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return c.JSON(http.StatusOK, []*Livecomment{})
 	}
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
