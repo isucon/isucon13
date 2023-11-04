@@ -57,6 +57,7 @@ func TestLivestream(t *testing.T) {
 		ThumbnailUrl: "https://example.com",
 		StartAt:      time.Date(2024, 3, 31, 23, 59, 59, 0, time.UTC).Unix(),
 		EndAt:        time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Tags:         []int64{},
 	}, WithStatusCode(http.StatusBadRequest))
 	assert.NoError(t, err)
 	_, err = client.ReserveLivestream(ctx, &ReserveLivestreamRequest{
@@ -66,6 +67,7 @@ func TestLivestream(t *testing.T) {
 		ThumbnailUrl: "https://example.com",
 		StartAt:      time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC).Unix(),
 		EndAt:        time.Date(2025, 4, 1, 1, 0, 0, 0, time.UTC).Unix(),
+		Tags:         []int64{},
 	}, WithStatusCode(http.StatusBadRequest))
 	assert.NoError(t, err)
 
@@ -105,6 +107,7 @@ func TestLivestream(t *testing.T) {
 				ThumbnailUrl: "https://example.com",
 				StartAt:      startAt,
 				EndAt:        endAt,
+				Tags:         []int64{},
 			}, WithStatusCode(http.StatusBadRequest))
 		} else {
 			_, err = loopClient.ReserveLivestream(ctx, &ReserveLivestreamRequest{
@@ -114,6 +117,7 @@ func TestLivestream(t *testing.T) {
 				ThumbnailUrl: "https://example.com",
 				StartAt:      startAt,
 				EndAt:        endAt,
+				Tags:         []int64{},
 			})
 		}
 		assert.NoError(t, err)
