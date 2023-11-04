@@ -53,7 +53,7 @@ func getTagHandler(c echo.Context) error {
 }
 
 // 配信者のテーマ取得API
-// GET /theme
+// GET /api/user/:username/theme
 func getStreamerThemeHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 

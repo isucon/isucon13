@@ -220,7 +220,7 @@ func getMeHandler(c echo.Context) error {
 }
 
 // ユーザ登録API
-// POST /user
+// POST /api/register
 func registerHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	defer c.Request().Body.Close()
@@ -289,7 +289,7 @@ func registerHandler(c echo.Context) error {
 }
 
 // ユーザログインAPI
-// POST /login
+// POST /api/login
 func loginHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	defer c.Request().Body.Close()
@@ -355,7 +355,7 @@ func loginHandler(c echo.Context) error {
 }
 
 // ユーザ詳細API
-// GET /user/:username
+// GET /api/user/:username
 func getUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
