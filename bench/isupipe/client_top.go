@@ -64,7 +64,7 @@ func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int64, error) {
 		resp.Tags[i], resp.Tags[j] = resp.Tags[j], resp.Tags[i]
 	})
 
-	var tags []int64
+	tags := []int64{}
 	for i := 0; i < n; i++ {
 		tags = append(tags, resp.Tags[i].ID)
 	}

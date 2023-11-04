@@ -68,7 +68,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		tagStartIdx = rand.Intn(len(tagResponse.Tags))
 		tagEndIdx   = min(tagStartIdx+tagCount, len(tagResponse.Tags))
 	)
-	var tags []int64
+	tags := []int64{}
 	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
 		tags = append(tags, int64(tag.ID))
 	}
