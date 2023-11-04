@@ -48,6 +48,7 @@ func TestGetNgWordsBug(t *testing.T) {
 		ThumbnailUrl: "https://example.com",
 		StartAt:      time.Date(2024, 4, 20, 0, 0, 0, 0, time.UTC).Unix(),
 		EndAt:        time.Date(2024, 4, 20, 5, 0, 0, 0, time.UTC).Unix(),
+		Tags:         []int64{},
 	})
 	assert.NoError(t, err)
 
