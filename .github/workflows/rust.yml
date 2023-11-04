@@ -1,0 +1,70 @@
+name: Rust CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - bench/**/*
+      - webapp/rust/**/*
+      - webapp/sql/**/*
+      - webapp/pdns/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-rust.yml
+      - development/Makefile
+      - .github/workflows/rust.yml
+  pull_request:
+    paths:
+      - bench/**/*
+      - webapp/rust/**/*
+      - webapp/sql/**/*
+      - webapp/pdns/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-rust.yml
+      - development/Makefile
+      - .github/workflows/rust.yml
+jobs:
+  test:
+    runs-on: [isucon13-ci-02]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable yarn
+
+      - name: Setup containers
+        working-directory: ./development
+        run: |
+          make down/rust
+          make up/rust
+
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: make
+
+      - name: "[bench] Get deps"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go get -v -t -d ./...
+
+      - name: "[bench] Test"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go clean -testcache
+          go test -p=1 -v ./...
+
+      - name: "run bench"
+        working-directory: ./bench
+        run: |
+          make bench
+
+      - name: Show webapp logs
+        if: ${{ always() }}
+        working-directory: ./development
+        run: sudo docker compose -f docker-compose-common.yml -f docker-compose-rust.yml logs webapp

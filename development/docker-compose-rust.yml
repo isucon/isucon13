@@ -1,0 +1,26 @@
+version: '3.0'
+
+services:
+  webapp:
+    cpus: 2
+    mem_limit: 4g
+    build:
+      context: ../webapp/rust
+    init: true
+    working_dir: /home/isucon/webapp/rust
+    container_name: webapp
+    volumes:
+      - ../webapp/sql:/home/isucon/webapp/sql
+      - ../webapp/pdns:/home/isucon/webapp/pdns
+      - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf:ro
+      - ../webapp/img:/home/isucon/webapp/img
+    environment:
+      ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
+      ISUCON13_POWERDNS_HOST: powerdns
+      ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS: 127.0.0.1
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
