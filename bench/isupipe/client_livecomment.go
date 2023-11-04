@@ -179,7 +179,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, r *Pos
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
@@ -219,7 +219,7 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommen
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
@@ -256,7 +256,7 @@ func (c *Client) Moderate(ctx context.Context, livestreamID int64, ngWord string
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
-	req.Header.Add("Content-Type", "application/json;chatset=utf-8")
+	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
