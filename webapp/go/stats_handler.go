@@ -45,7 +45,6 @@ type UserStatistics struct {
 }
 
 type UserRankingEntry struct {
-	UserID   int64
 	UserName string
 	Score    int64
 }
@@ -111,7 +110,6 @@ func getUserStatisticsHandler(c echo.Context) error {
 
 		score := reactions + tips
 		ranking = append(ranking, UserRankingEntry{
-			UserID:   user.ID,
 			UserName: user.Name,
 			Score:    score,
 		})
