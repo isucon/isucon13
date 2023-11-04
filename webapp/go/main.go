@@ -46,11 +46,6 @@ type InitializeResponse struct {
 	Language       string `json:"language"`
 }
 
-func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
-	conf := mysql.NewConfig()
-	return conf, nil
-}
-
 func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 	const (
 		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
