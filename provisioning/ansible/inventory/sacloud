@@ -1,0 +1,15 @@
+[benchmarker]
+isucon13_testbed_bench0 ansible_host=163.43.188.183 ansible_user=ubuntu
+isucon13_testbed_bench1 ansible_host=163.43.188.184 ansible_user=ubuntu
+isucon13_testbed_bench2 ansible_host=163.43.188.185 ansible_user=ubuntu
+
+[application]
+isucon13_testbed_app0 ansible_host=163.43.188.164 ansible_user=ubuntu
+isucon13_testbed_app1 ansible_host=163.43.188.165 ansible_user=ubuntu
+isucon13_testbed_app2 ansible_host=163.43.188.166 ansible_user=ubuntu
+isucon13_testbed_app3 ansible_host=163.43.188.167 ansible_user=ubuntu
+isucon13_testbed_app4 ansible_host=163.43.188.168 ansible_user=ubuntu
+isucon13_testbed_app5 ansible_host=163.43.188.169 ansible_user=ubuntu
+isucon13_testbed_app6 ansible_host=163.43.188.170 ansible_user=ubuntu
+isucon13_testbed_app7 ansible_host=163.43.188.171 ansible_user=ubuntu
+isucon13_testbed_app8 ansible_host=163.43.188.172 ansible_user=ubuntu

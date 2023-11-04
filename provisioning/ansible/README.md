@@ -16,6 +16,10 @@ $ cd provisioning/ansible
 $ ansible-playbook -i inventory/localhost application.yml
 $ ansible-playbook -i inventory/localhost benchmark.yml
 
+# sacloud試し環境へのリモート実行
+$ ansible-playbook -i inventory/sacloud application.yml
+$ ansible-playbook -i inventory/sacloud benchmark.yml
+
 # リモートの場合
 $ ansible-playbook -i inventory/hosts.yaml application.yml
 $ ansible-playbook -i inventory/hosts.yaml benchmark.yml
