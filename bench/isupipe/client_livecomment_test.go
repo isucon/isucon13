@@ -20,7 +20,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	client, err := NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
 		// FIXME: moderateが遅い
-		agent.WithTimeout(1*time.Minute),
+		agent.WithTimeout(2*time.Minute),
 	)
 	assert.NoError(t, err)
 
