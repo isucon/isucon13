@@ -15,7 +15,8 @@ import (
 )
 
 type benchmarker struct {
-	sem *semaphore.Weighted
+	sem       *semaphore.Weighted
+	attackSem *semaphore.Weighted
 
 	popularStreamerClientPool *isupipe.ClientPool
 	streamerClientPool        *isupipe.ClientPool
@@ -42,6 +43,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 
 	return &benchmarker{
 		sem:                       semaphore.NewWeighted(weight),
+		attackSem:                 semaphore.NewWeighted(weight),
 		popularStreamerClientPool: popularStreamerClientPool,
 		streamerClientPool:        streamerClientPool,
 		viewerClientPool:          viewerClientPool,
@@ -91,6 +93,16 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
 }
 
+func (b *benchmarker) loadAttack(ctx context.Context) error {
+	defer b.attackSem.Release(1)
+
+	if err := scenario.DnsWaterTortureAttackScenario(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (b *benchmarker) load(ctx context.Context) error {
 	defer b.sem.Release(1)
 
@@ -112,12 +124,15 @@ func (b *benchmarker) run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		default:
+			if err := bencherror.CheckViolation(); err != nil && errors.Is(err, bencherror.ErrViolation) {
+				return err
+			}
 			if ok := b.sem.TryAcquire(1); ok {
 				go b.load(ctx)
 			}
-		}
-		if err := bencherror.CheckViolation(); err != nil && errors.Is(err, bencherror.ErrViolation) {
-			return err
+			if ok := b.attackSem.TryAcquire(1); ok {
+				go b.loadAttack(ctx)
+			}
 		}
 	}
 }

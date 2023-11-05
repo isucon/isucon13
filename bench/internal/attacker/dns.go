@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -17,12 +16,10 @@ const (
 )
 
 type DnsWaterTortureAttacker struct {
-	resolver     *net.Resolver
-	targetDomain string
-	concurrency  int
+	resolver *net.Resolver
 }
 
-func NewDnsWaterTortureAttacker(nameserver string, targetDomain string, concurrency int) *DnsWaterTortureAttacker {
+func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
 	return &DnsWaterTortureAttacker{
 		resolver: &net.Resolver{
 			PreferGo: true,
@@ -32,7 +29,6 @@ func NewDnsWaterTortureAttacker(nameserver string, targetDomain string, concurre
 				return dialer.DialContext(ctx, "udp", addr)
 			},
 		},
-		targetDomain: targetDomain,
 	}
 }
 
@@ -48,29 +44,14 @@ func (a *DnsWaterTortureAttacker) makePayload(length int) string {
 	return string(buf)
 }
 
-func (a *DnsWaterTortureAttacker) attack(ctx context.Context) error {
+func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 		default:
-			payload := a.makePayload(50)
+			length := 10 + rand.Intn(40)
+			payload := a.makePayload(length)
 			a.resolver.LookupHost(ctx, payload)
 		}
 	}
-}
-
-func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) error {
-	var wg sync.WaitGroup
-	for i := 0; i < a.concurrency; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			a.attack(ctx)
-		}()
-	}
-
-	<-ctx.Done()
-	wg.Wait()
-
-	return nil
 }
