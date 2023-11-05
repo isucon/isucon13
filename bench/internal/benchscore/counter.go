@@ -41,6 +41,6 @@ func GetByTag(tag score.ScoreTag) int64 {
 
 func DoneCounter() {
 	doneCounterOnce.Do(func() {
-		counter.Done()
+		counter.Close()
 	})
 }

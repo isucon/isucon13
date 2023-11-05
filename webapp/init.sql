@@ -1,15 +1,15 @@
-DELETE FROM themes;
-DELETE FROM icons;
-DELETE FROM reservation_slots;
-DELETE FROM livestream_tags;
-DELETE FROM livestream_viewers_history;
-DELETE FROM livecomment_reports;
-DELETE FROM ng_words;
-DELETE FROM reactions;
-DELETE FROM tags;
-DELETE FROM livecomments;
-DELETE FROM livestreams;
-DELETE FROM users;
+TRUNCATE FROM themes;
+TRUNCATE FROM icons;
+TRUNCATE FROM reservation_slots;
+TRUNCATE FROM livestream_tags;
+TRUNCATE FROM livestream_viewers_history;
+TRUNCATE FROM livecomment_reports;
+TRUNCATE FROM ng_words;
+TRUNCATE FROM reactions;
+TRUNCATE FROM tags;
+TRUNCATE FROM livecomments;
+TRUNCATE FROM livestreams;
+TRUNCATE FROM users;
 
 ALTER TABLE `themes` auto_increment = 1;
 ALTER TABLE `icons` auto_increment = 1;

@@ -52,6 +52,6 @@ func GetTotalProfit() int64 {
 
 func DoneProfit() {
 	doneProfitOnce.Do(func() {
-		profit.Done()
+		profit.Close()
 	})
 }

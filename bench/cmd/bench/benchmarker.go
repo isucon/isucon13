@@ -15,8 +15,9 @@ import (
 )
 
 type benchmarker struct {
-	sem       *semaphore.Weighted
-	attackSem *semaphore.Weighted
+	streamerSem *semaphore.Weighted
+	viewerSem   *semaphore.Weighted
+	attackSem   *semaphore.Weighted
 
 	popularStreamerClientPool *isupipe.ClientPool
 	streamerClientPool        *isupipe.ClientPool
@@ -42,7 +43,8 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 	livestreamPool := isupipe.NewLivestreamPool(ctx)
 
 	return &benchmarker{
-		sem:                       semaphore.NewWeighted(weight),
+		streamerSem:               semaphore.NewWeighted(weight),
+		viewerSem:                 semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
 		attackSem:                 semaphore.NewWeighted(weight),
 		popularStreamerClientPool: popularStreamerClientPool,
 		streamerClientPool:        streamerClientPool,
@@ -103,14 +105,18 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 	return nil
 }
 
-// FIXME: loadは、役割ごとに分けたほうがいい
-// 視聴者、配信者・・・
-func (b *benchmarker) load(ctx context.Context) error {
-	defer b.sem.Release(1)
+func (b *benchmarker) loadStreamer(ctx context.Context) error {
+	defer b.streamerSem.Release(1)
 
 	if err := scenario.BasicStreamerColdReserveScenario(ctx, b.streamerClientPool, b.popularLivestreamPool, b.livestreamPool); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (b *benchmarker) loadViewer(ctx context.Context) error {
+	defer b.viewerSem.Release(1)
 
 	if err := scenario.BasicViewerScenario(ctx, b.viewerClientPool, b.livestreamPool); err != nil {
 		return err
@@ -120,17 +126,23 @@ func (b *benchmarker) load(ctx context.Context) error {
 }
 
 func (b *benchmarker) run(ctx context.Context) error {
+	lgr := zap.S()
+
 	b.runClientProviders(ctx)
 	for {
 		select {
 		case <-ctx.Done():
+			lgr.Info("ベンチマーク走行の停止中です")
 			return nil
 		default:
 			if err := bencherror.CheckViolation(); err != nil && errors.Is(err, bencherror.ErrViolation) {
 				return err
 			}
-			if ok := b.sem.TryAcquire(1); ok {
-				go b.load(ctx)
+			if ok := b.streamerSem.TryAcquire(1); ok {
+				go b.loadStreamer(ctx)
+			}
+			if ok := b.viewerSem.TryAcquire(1); ok {
+				go b.loadViewer(ctx)
 			}
 			if ok := b.attackSem.TryAcquire(1); ok {
 				go b.loadAttack(ctx)

@@ -152,6 +152,7 @@ var run = cli.Command{
 		benchscore.DoneCounter()
 		benchscore.DoneProfit()
 		bencherror.Done()
+		lgr.Info("ベンチマーク走行終了")
 
 		lgr.Info("===== 最終チェック =====")
 		finalcheckClient, err := isupipe.NewClient(
@@ -165,7 +166,7 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 
-		lgr.Info("===== ベンチ走行中エラー =====")
+		lgr.Info("===== ベンチ走行中エラー (重複排除済み) =====")
 		var systemErrors []string
 		for _, msgs := range bencherror.GetFinalErrorMessages() {
 			for _, msg := range msgs {

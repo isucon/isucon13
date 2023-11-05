@@ -75,7 +75,7 @@ func GetFinalErrorMessages() map[string][]string {
 
 func Done() {
 	doneOnce.Do(func() {
-		benchErrors.Done()
+		benchErrors.Close()
 	})
 }
 

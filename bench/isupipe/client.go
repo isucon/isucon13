@@ -12,6 +12,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 )
 
@@ -53,7 +54,14 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 						},
 					},
 				}
-				return dialer.DialContext(ctx, network, address)
+
+				conn, err := dialer.DialContext(ctx, network, address)
+				if err != nil {
+					return nil, err
+				}
+
+				benchscore.IncResolves()
+				return conn, nil
 			},
 		}),
 		agent.WithNoCache(),
