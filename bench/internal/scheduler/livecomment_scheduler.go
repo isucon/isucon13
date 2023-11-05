@@ -59,6 +59,11 @@ type NgWord struct {
 	Word string
 }
 
+type Tip struct {
+	Level int
+	Tip   int
+}
+
 // どの配信に対して色々投げたらいいか、いい感じにしてくれる君
 
 // Positiveの方は、長いコメント、短いコメントみたいな感じで取れると良い
@@ -107,17 +112,41 @@ func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
 	return negativeCommentPool[idx]
 }
 
+func (s *livecommentScheduler) generateTip(level int) int {
+	switch level {
+	case 0:
+		return 0
+	case 1:
+		return GenerateIntBetween(1, 1000)
+	case 2:
+		return GenerateIntBetween(1000, 2000)
+	case 3:
+		return GenerateIntBetween(2000, 5000)
+	case 4:
+		return GenerateIntBetween(5000, 10000)
+	case 5:
+		return GenerateIntBetween(10000, 100000)
+	default:
+		return 0
+	}
+}
+
 // 通常配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForStream() int {
-	return GenerateIntBetween(1, 4)
+func (s *livecommentScheduler) GetTipsForStream() *Tip {
+	level := GenerateIntBetween(1, 3)
+	tip := s.generateTip(level)
+	return &Tip{
+		Level: level,
+		Tip:   tip,
+	}
 }
 
 // 人気配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForPopularStream() int {
-	n := rand.Intn(2)
-	if n == 1 {
-		return 5
-	} else {
-		return s.GetTipsForStream()
+func (s *livecommentScheduler) GetTipsForPopularStream() *Tip {
+	level := GenerateIntBetween(3, 6)
+	tip := s.generateTip(level)
+	return &Tip{
+		Level: level,
+		Tip:   tip,
 	}
 }

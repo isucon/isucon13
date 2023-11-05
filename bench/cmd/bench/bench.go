@@ -44,8 +44,8 @@ func benchmark(ctx context.Context) error {
 	lgr := zap.S()
 
 	// pretest, benchmarkにはこれら初期化が必要
-	benchscore.InitScore(ctx)
-	// bencherror.InitPenalty(ctx)
+	benchscore.InitCounter(ctx)
+	benchscore.InitProfit(ctx)
 	bencherror.InitErrors(ctx)
 
 	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
@@ -139,8 +139,8 @@ var run = cli.Command{
 		}
 
 		// pretest, benchmarkにはこれら初期化が必要
-		benchscore.InitScore(ctx)
-		// bencherror.InitPenalty(ctx)
+		benchscore.InitCounter(ctx)
+		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, pretestClient); err != nil {
 			return cli.NewExitError(err, 1)
@@ -149,17 +149,21 @@ var run = cli.Command{
 		lgr.Info("ベンチマーク走行を開始します")
 		_ = benchmark(ctx)
 
-		// lgr.Info("===== Final check =====")
-		// paymentClient, err := isupipe.NewClient(
-		// 	agent.WithBaseURL(config.TargetBaseURL),
-		// )
-		// if err != nil {
-		// 	return cli.NewExitError(err, 1)
-		// }
+		benchscore.DoneCounter()
+		benchscore.DoneProfit()
+		bencherror.Done()
 
-		// if err := scenario.FinalcheckScenario(ctx, paymentClient); err != nil {
-		// 	return cli.NewExitError(err, 1)
-		// }
+		lgr.Info("===== 最終チェック =====")
+		finalcheckClient, err := isupipe.NewClient(
+			agent.WithBaseURL(config.TargetBaseURL),
+		)
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		if err := scenario.FinalcheckScenario(ctx, finalcheckClient); err != nil {
+			return cli.NewExitError(err, 1)
+		}
 
 		lgr.Info("===== ベンチ走行中エラー =====")
 		var systemErrors []string
@@ -176,18 +180,21 @@ var run = cli.Command{
 		lgr.Info("===== ベンチ走行結果 =====")
 		var msgs []string
 
-		score := benchscore.GetFinalScore()
-		msgs = append(msgs, fmt.Sprintf("スコア: %d", score))
+		var (
+			tooManySlows = benchscore.GetByTag(benchscore.TooSlow)
+			tooManySpams = benchscore.GetByTag(benchscore.TooManySpam)
+		)
+		msgs = append(msgs, fmt.Sprintf("遅延による離脱: %d", tooManySlows))
+		msgs = append(msgs, fmt.Sprintf("スパムによる離脱: %d", tooManySpams))
+		lgr.Infof("遅延離脱=%d, スパム離脱=%d", tooManySlows, tooManySpams)
 
-		profit := benchscore.GetFinalProfit()
+		numResolves := benchscore.GetByTag(benchscore.DNSResolve)
+		msgs = append(msgs, fmt.Sprintf("名前解決成功数: %d", numResolves))
+		lgr.Infof("名前解決成功数: %d", numResolves)
+
+		profit := benchscore.GetTotalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
 		lgr.Infof("売上: %d", profit)
-
-		penalties := bencherror.GetFinalPenalties()
-		for code, penalty := range penalties {
-			message := fmt.Sprintf("ペナルティ[%s]: %d", code, penalty)
-			msgs = append(msgs, message)
-		}
 
 		return nil
 	},

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -96,10 +97,8 @@ func TestGetUserStats(t *testing.T) {
 	assert.Equal(t, "helicopter", stats3.FavoriteEmoji)
 
 	// 配信にライブコメントを投稿してみる
-	_, err = client.PostLivecomment(ctx, livestream1.ID, &PostLivecommentRequest{
-		Comment: "isu~",
-		Tip:     100,
-	})
+	tip := scheduler.LivecommentScheduler.GetTipsForStream()
+	_, err = client.PostLivecomment(ctx, livestream1.ID, "isu~", tip)
 	assert.NoError(t, err)
 
 	stats4, err := client.GetUserStatistics(ctx, streamer1.Name)
@@ -165,10 +164,8 @@ func TestGetLivestreamStats(t *testing.T) {
 		Password: "test",
 	})
 	assert.NoError(t, err)
-	livecomment, err := commenterClient.PostLivecomment(ctx, 1, &PostLivecommentRequest{
-		Comment: "isuisu",
-		Tip:     5,
-	})
+	tip := scheduler.LivecommentScheduler.GetTipsForStream()
+	livecomment, err := commenterClient.PostLivecomment(ctx, 1, "isuisu", tip)
 	assert.NoError(t, err)
 	stats4, err := client.GetLivestreamStatistics(ctx, 1)
 	assert.NoError(t, err)

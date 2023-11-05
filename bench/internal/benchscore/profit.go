@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	TipProfitLevel0 score.ScoreTag = "tip-level0" // 投げ銭が含まれないライブコメント
 	TipProfitLevel1 score.ScoreTag = "tip-level1"
 	TipProfitLevel2 score.ScoreTag = "tip-level2"
 	TipProfitLevel3 score.ScoreTag = "tip-level3"
@@ -17,11 +16,11 @@ const (
 )
 
 var (
-	profit    *score.Score
-	closeOnce sync.Once
+	profit         *score.Score
+	doneProfitOnce sync.Once
 )
 
-func initProfit(ctx context.Context) {
+func InitProfit(ctx context.Context) {
 	profit = score.NewScore(ctx)
 	profit.Set(TipProfitLevel1, 1)
 	profit.Set(TipProfitLevel2, 2)
@@ -30,46 +29,29 @@ func initProfit(ctx context.Context) {
 	profit.Set(TipProfitLevel5, 5)
 }
 
-func AddTipProfit(tip int64) error {
-	tag := tipToProfitLevel(tip)
-	if tag == TipProfitLevel0 {
-		return nil
-	}
-
-	profit.Add(tag)
-
-	return nil
-}
-
-// FIXME: チップ額がフロントエンドから見て違和感ないように
-func tipToProfitLevel(tip int64) score.ScoreTag {
-	switch tip {
-	case 0:
-		return TipProfitLevel0
+func AddTipLevel(level int64) {
+	switch level {
 	case 1:
-		return TipProfitLevel1
+		profit.Add(TipProfitLevel1)
 	case 2:
-		return TipProfitLevel2
+		profit.Add(TipProfitLevel2)
 	case 3:
-		return TipProfitLevel3
+		profit.Add(TipProfitLevel3)
 	case 4:
-		return TipProfitLevel4
+		profit.Add(TipProfitLevel4)
 	case 5:
-		return TipProfitLevel5
-	default:
-		return TipProfitLevel0
+		profit.Add(TipProfitLevel5)
 	}
 }
 
 // GetFinalProfit は、最終売上を返します
 // FIXME: finalcheck後にprofitをスコアに加算しないと駄目
-func GetFinalProfit() int64 {
-	doneOnce.Do(func() {
-		profit.Done()
-	})
+func GetTotalProfit() int64 {
 	return profit.Sum()
 }
 
-func GetCurrentProfit() int64 {
-	return profit.Sum()
+func DoneProfit() {
+	doneProfitOnce.Do(func() {
+		profit.Done()
+	})
 }

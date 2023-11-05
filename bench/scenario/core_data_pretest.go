@@ -106,10 +106,8 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	livecomment, err := client.PostLivecomment(ctx, livestream.ID, &isupipe.PostLivecommentRequest{
-		Comment: "test",
-		Tip:     3,
-	})
+	tip := scheduler.LivecommentScheduler.GetTipsForStream()
+	livecomment, err := client.PostLivecomment(ctx, livestream.ID, "test", tip)
 	if err != nil {
 		return err
 	}

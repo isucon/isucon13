@@ -10,6 +10,7 @@ import (
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
 type Livecomment struct {
@@ -87,7 +88,6 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts .
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetLivecomments)
 	return livecomments, nil
 }
 
@@ -123,7 +123,6 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, 
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetLivecommentReports)
 	return reports, nil
 }
 
@@ -163,10 +162,14 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...Cli
 	return ngwords, nil
 }
 
-func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, r *PostLivecommentRequest, opts ...ClientOption) (*PostLivecommentResponse, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, comment string, tip *scheduler.Tip, opts ...ClientOption) (*PostLivecommentResponse, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
+		r                 = &PostLivecommentRequest{
+			Comment: comment,
+			Tip:     int64(tip.Tip),
+		}
 	)
 
 	payload, err := json.Marshal(r)
@@ -200,10 +203,8 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, r *Pos
 			return nil, bencherror.NewHttpResponseError(err, req)
 		}
 
-		benchscore.AddTipProfit(livecommentResponse.Tip)
+		benchscore.AddTipLevel(int64(tip.Level))
 	}
-
-	benchscore.AddScore(benchscore.SuccessPostLivecomment)
 
 	return livecommentResponse, nil
 }
@@ -234,7 +235,6 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommen
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessReportLivecomment)
 	return nil
 }
 

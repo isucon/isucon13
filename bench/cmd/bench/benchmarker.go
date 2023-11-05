@@ -103,6 +103,8 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 	return nil
 }
 
+// FIXME: loadは、役割ごとに分けたほうがいい
+// 視聴者、配信者・・・
 func (b *benchmarker) load(ctx context.Context) error {
 	defer b.sem.Release(1)
 

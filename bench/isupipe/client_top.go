@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 type Tag struct {
@@ -51,7 +50,6 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetTags)
 	return tags, nil
 }
 

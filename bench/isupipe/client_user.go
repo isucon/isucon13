@@ -14,7 +14,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
@@ -86,7 +85,6 @@ func (c *Client) GetStreamerTheme(ctx context.Context, streamer *User, opts ...C
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetUserTheme)
 	return theme, nil
 }
 
@@ -192,7 +190,6 @@ func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOpt
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetUser)
 	return nil
 }
 
@@ -268,7 +265,6 @@ func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...Clien
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessRegister)
 	return user, nil
 }
 
@@ -347,6 +343,5 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 		return bencherror.NewInternalError(err)
 	}
 
-	benchscore.AddScore(benchscore.SuccessLogin)
 	return nil
 }
