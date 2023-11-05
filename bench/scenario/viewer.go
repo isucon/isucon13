@@ -41,7 +41,7 @@ func BasicViewerScenario(
 	for i := 0; i < int(config.AdvertiseCost*10); i++ {
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
-		if _, err := client.PostLivecomment(ctx, livestream.ID, livecomment.Comment, tip); err != nil {
+		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livecomment.Comment, tip); err != nil {
 			return err
 		}
 

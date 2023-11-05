@@ -98,12 +98,12 @@ func TestGetUserStats(t *testing.T) {
 
 	// 配信にライブコメントを投稿してみる
 	tip := scheduler.LivecommentScheduler.GetTipsForStream()
-	_, err = client.PostLivecomment(ctx, livestream1.ID, "isu~", tip)
+	_, tipAmount, err := client.PostLivecomment(ctx, livestream1.ID, "isu~", tip)
 	assert.NoError(t, err)
 
 	stats4, err := client.GetUserStatistics(ctx, streamer1.Name)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(100), stats4.TotalTip-stats.TotalTip)
+	assert.Equal(t, int64(tipAmount), stats4.TotalTip-stats.TotalTip)
 	assert.Equal(t, int64(1), stats4.TotalLivecomments-stats.TotalLivecomments)
 }
 
@@ -164,12 +164,12 @@ func TestGetLivestreamStats(t *testing.T) {
 		Password: "test",
 	})
 	assert.NoError(t, err)
-	tip := scheduler.LivecommentScheduler.GetTipsForStream()
-	livecomment, err := commenterClient.PostLivecomment(ctx, 1, "isuisu", tip)
+	tip := scheduler.LivecommentScheduler.GetTipsForPopularStream()
+	livecomment, tipAmount, err := commenterClient.PostLivecomment(ctx, 1, "isuisu", tip)
 	assert.NoError(t, err)
 	stats4, err := client.GetLivestreamStatistics(ctx, 1)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(5), stats4.MaxTip)
+	assert.Equal(t, int64(tipAmount), stats4.MaxTip)
 
 	// スパム報告
 	err = client.ReportLivecomment(ctx, 1, livecomment.ID)

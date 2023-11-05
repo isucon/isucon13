@@ -107,7 +107,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 	}
 
 	tip := scheduler.LivecommentScheduler.GetTipsForStream()
-	livecomment, err := client.PostLivecomment(ctx, livestream.ID, "test", tip)
+	livecomment, _, err := client.PostLivecomment(ctx, livestream.ID, "test", tip)
 	if err != nil {
 		return err
 	}

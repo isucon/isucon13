@@ -162,7 +162,7 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...Cli
 	return ngwords, nil
 }
 
-func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, comment string, tip *scheduler.Tip, opts ...ClientOption) (*PostLivecommentResponse, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, comment string, tip *scheduler.Tip, opts ...ClientOption) (*PostLivecommentResponse, int, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -174,19 +174,19 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, commen
 
 	payload, err := json.Marshal(r)
 	if err != nil {
-		return nil, bencherror.NewInternalError(err)
+		return nil, 0, bencherror.NewInternalError(err)
 	}
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
-		return nil, bencherror.NewInternalError(err)
+		return nil, 0, bencherror.NewInternalError(err)
 	}
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -194,19 +194,19 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, commen
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, 0, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
 	var livecommentResponse *PostLivecommentResponse
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livecommentResponse); err != nil {
-			return nil, bencherror.NewHttpResponseError(err, req)
+			return nil, 0, bencherror.NewHttpResponseError(err, req)
 		}
 
 		benchscore.AddTipLevel(int64(tip.Level))
 	}
 
-	return livecommentResponse, nil
+	return livecommentResponse, tip.Tip, nil
 }
 
 func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommentID int64, opts ...ClientOption) error {
