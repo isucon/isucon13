@@ -13,6 +13,25 @@ import (
 
 // スパム処理テスト
 
+func TestModerate(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := NewClient(
+		agent.WithBaseURL(config.TargetBaseURL),
+		agent.WithTimeout(1*time.Minute),
+	)
+	assert.NoError(t, err)
+
+	err = client.Login(ctx, &LoginRequest{
+		UserName: "test001",
+		Password: "test",
+	})
+	assert.NoError(t, err)
+
+	err = client.Moderate(ctx, 1, "test")
+	assert.NoError(t, err)
+}
+
 // ref. https://github.com/isucon/isucon13/pull/141/files#r1380262831
 func TestGetNgWordsBug(t *testing.T) {
 	ctx := context.Background()
@@ -20,7 +39,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	client, err := NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
 		// FIXME: moderateが遅い
-		agent.WithTimeout(2*time.Minute),
+		agent.WithTimeout(1*time.Minute),
 	)
 	assert.NoError(t, err)
 
@@ -50,9 +69,6 @@ func TestGetNgWordsBug(t *testing.T) {
 		EndAt:        time.Date(2024, 4, 20, 5, 0, 0, 0, time.UTC).Unix(),
 		Tags:         []int64{},
 	})
-	assert.NoError(t, err)
-
-	err = client.Moderate(ctx, livestream.ID, "test")
 	assert.NoError(t, err)
 
 	ngWords, err := client.GetNgwords(ctx, livestream.ID)
