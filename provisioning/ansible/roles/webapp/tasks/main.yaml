@@ -4,12 +4,19 @@
   ansible.builtin.copy:
     src: webapp.tar.gz
     dest: /home/isucon/webapp.tar.gz
+- name: Remove webapp.tar.gz
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp
+    state: directory
 - name: Extract webapp.tar.gz into /home/isucon
   become: true
   become_user: isucon
   ansible.builtin.unarchive:
+    remote_src: true
     src: /home/isucon/webapp.tar.gz
-    dest: /home/isucon/webapp
+    dest: /home/isucon/
 - name: Remove webapp.tar.gz
   become: true
   ansible.builtin.file:
