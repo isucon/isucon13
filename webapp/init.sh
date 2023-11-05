@@ -8,6 +8,7 @@ ISUCON_DB_PORT=${ISUCON13_MYSQL_DIALCONFIG_PORT:-3306}
 ISUCON_DB_USER=${ISUCON13_MYSQL_DIALCONFIG_USER:-isucon}
 ISUCON_DB_PASSWORD=${ISUCON13_MYSQL_DIALCONFIG_PASSWORD:-isucon}
 ISUCON_DB_NAME=${ISUCON13_MYSQL_DIALCONFIG_DATABASE:-isupipe}
+ISUCON_SUBDOMAIN_ADDRESS=${ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS:-127.0.0.1}
 
 # MySQLを初期化
 mysql -u"$ISUCON_DB_USER" \
@@ -52,3 +53,8 @@ mysql -u"$ISUCON_DB_USER" \
 		--port "$ISUCON_DB_PORT" \
 		"$ISUCON_DB_NAME" < initial_livecomments.sql
 
+pdnsutil delete-zone u.isucon.dev
+pdnsutil create-zone u.isucon.dev
+pdnsutil add-record u.isucon.dev "." A 30 $ISUCON_SUBDOMAIN_ADDRESS
+pdnsutil add-record u.isucon.dev "pipe" A 30 $ISUCON_SUBDOMAIN_ADDRESS
+pdnsutil add-record u.isucon.dev "test001" A 30 $ISUCON_SUBDOMAIN_ADDRESS

@@ -111,20 +111,15 @@
     enabled: true
     state: restarted
 
-- name: create zone
+- name: initialize zone
   become: true
   shell: |
+    pdnsutil delete-zone u.isucon.dev
     pdnsutil create-zone u.isucon.dev
 
-- name: create A record for u.isucon.dev
+- name: create A records for u.isucon.dev
   become: true
   shell: |
-    mysql -uisucon -pisucon isudns -e "INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'u.isucon.dev', 'A', '{{ ansible_default_ipv4.address }}', 3600, NULL);"
-- name: create A record for pipe.u.isucon.dev
-  become: true
-  shell: |
-    mysql -uisucon -pisucon isudns -e "INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'pipe.u.isucon.dev', 'A', '{{ ansible_default_ipv4.address }}', 3600, NULL);"
-- name: create A record for test001.u.isucon.dev
-  become: true
-  shell: |
-    mysql -uisucon -pisucon isudns -e "INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'test001.u.isucon.dev', 'A', '{{ ansible_default_ipv4.address }}', 3600, NULL);"
+    pdnsutil add-record u.isucon.dev "." A 30 {{ ansible_default_ipv4.address }}
+    pdnsutil add-record u.isucon.dev "pipe" A 30 {{ ansible_default_ipv4.address }}
+    pdnsutil add-record u.isucon.dev "test001" A 30 {{ ansible_default_ipv4.address }}
