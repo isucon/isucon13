@@ -18,9 +18,15 @@ services:
       - ../webapp/initial_reservation_slots.sql:/home/isucon/webapp/go/initial_reservation_slots.sql
       - ../webapp/initial_reactions.sql:/home/isucon/webapp/go/initial_reactions.sql
       - ../webapp/initial_livecomments.sql:/home/isucon/webapp/go/initial_livecomments.sql
+<<<<<<< HEAD
       - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro
       - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf:ro
       - ../webapp/img:/home/isucon/webapp/img
+=======
+      - ../webapp/initial_ngwords.sql:/home/isucon/webapp/go/initial_ngwords.sql
+      - ../webapp/powerdns/pdnsutil:/usr/local/bin/pdnsutil
+      - ../webapp/NoImage.jpg:/home/isucon/webapp/go/NoImage.jpg
+>>>>>>> 5870f78 (ngwordsのデータ追加)
     environment:
       ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
       ISUCON13_POWERDNS_HOST: powerdns

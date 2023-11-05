@@ -55,6 +55,10 @@ type NegativeComment struct {
 	NgWord  string
 }
 
+type NgWord struct {
+	Word string
+}
+
 // どの配信に対して色々投げたらいいか、いい感じにしてくれる君
 
 // Positiveの方は、長いコメント、短いコメントみたいな感じで取れると良い
@@ -67,26 +71,26 @@ type NegativeComment struct {
 //
 
 // ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
-//
-
-type StreamerStatistics struct {
-	NumLivecomments   int
-	TotalTips         int
-	TotalReportsCount int
-}
-
 type livecommentScheduler struct {
-	// 配信者ごと、ライブコメント数、投げ銭売上合計、スパム数の統計を取る
-	// 構造体は全部Livecommentなので、Commit, Abortを用意すればいいか
-	// ライブコメント、投げ銭は投稿時でどちらも扱えるけど、スパムはスパムメッセージなのかスパム報告なのか難しいな
-	streamerStats map[int]*StreamerStatistics
+	ngLivecomments map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {
+	ngLivecomments := make(map[string]struct{})
+	for _, comment := range negativeCommentPool {
+		ngLivecomments[comment.Comment] = struct{}{}
+	}
 	return &livecommentScheduler{}
 }
 
-// FIXME:
+// ライブコメント一覧に何件スパムが含まれるか調べるために使う
+func (s *livecommentScheduler) IsNgLivecomment(comment string) bool {
+	if _, ok := s.ngLivecomments[comment]; ok {
+		return true
+	} else {
+		return false
+	}
+}
 
 func (s *livecommentScheduler) GetShortPositiveComment() *PositiveComment {
 	idx := rand.Intn(len(positiveCommentPool))
