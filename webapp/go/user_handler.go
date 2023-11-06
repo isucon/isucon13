@@ -30,7 +30,7 @@ const (
 var fallbackImage []byte
 
 func init() {
-	b, err := os.ReadFile("./NoImage.jpg")
+	b, err := os.ReadFile("../img/NoImage.jpg")
 	if err != nil {
 		log.Fatalln(err)
 	}
