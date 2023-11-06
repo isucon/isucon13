@@ -74,6 +74,13 @@
     state: absent
     path: /etc/powerdns/pdns.d/mysql.conf
 
+- name: Copy pdns.d/gmysql-host.conf
+  become: true
+  copy:
+    src: pdns.d/gmysql-host.conf
+    dest: /etc/powerdns/pdns.d/gmysql-host.conf
+    mode: 0644
+
 - name: Copy pdns.conf
   become: true
   copy:
