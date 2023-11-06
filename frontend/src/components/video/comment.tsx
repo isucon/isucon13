@@ -255,17 +255,21 @@ export default function LiveComment(
     [],
   );
 
+  /* ********** REPORT ********** */
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [reportComment, setReportComment] =
     React.useState<Schemas.Livecomment | null>(null);
 
   const [isReportloading, setIsReportLoading] = React.useState(false);
-  const onReportClick = React.useCallback((id: number) => {
-    const reportComment = liveComments.find((c) => c.id === id);
-    if (reportComment) {
-      setReportComment(reportComment);
-    }
-  }, []);
+  const onReportClick = React.useCallback(
+    (id: number) => {
+      const reportComment = liveComments.find((c) => c.id === id);
+      if (reportComment) {
+        setReportComment(reportComment);
+      }
+    },
+    [liveComments],
+  );
   const toast = useGlobalToastQueue();
   const onReportSubmit = React.useCallback(async () => {
     if (reportComment) {
