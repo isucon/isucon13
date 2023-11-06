@@ -85,6 +85,9 @@ func mustNewLivecommentScheduler() *livecommentScheduler {
 	for _, comment := range negativeCommentPool {
 		ngLivecomments[comment.Comment] = struct{}{}
 	}
+	rand.Shuffle(len(dummyNgWords), func(i, j int) {
+		dummyNgWords[i], dummyNgWords[j] = dummyNgWords[j], dummyNgWords[i]
+	})
 	return &livecommentScheduler{}
 }
 
@@ -149,4 +152,9 @@ func (s *livecommentScheduler) GetTipsForPopularStream() *Tip {
 		Level: level,
 		Tip:   tip,
 	}
+}
+
+func (s *livecommentScheduler) GetDummyNgWord() *NgWord {
+	idx := rand.Intn(len(dummyNgWords))
+	return dummyNgWords[idx]
 }

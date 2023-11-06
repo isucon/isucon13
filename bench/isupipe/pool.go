@@ -68,3 +68,33 @@ func (p *LivestreamPool) Get(ctx context.Context) (*Livestream, error) {
 func (p *LivestreamPool) Put(ctx context.Context, livestream *Livestream) {
 	p.pool.Publish(ctx, livestream)
 }
+
+type LivecommentPool struct {
+	pool *pubsub.PubSub
+}
+
+func NewLivecommentPool(ctx context.Context) *LivecommentPool {
+	pool := pubsub.NewPubSub(100000)
+	pool.Run(ctx)
+	return &LivecommentPool{
+		pool: pool,
+	}
+}
+
+func (p *LivecommentPool) Get(ctx context.Context) (*Livecomment, error) {
+	v, err := p.pool.Subscribe(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	livecomment, ok := v.(*Livecomment)
+	if !ok {
+		return nil, fmt.Errorf("got invalid livestream from pool")
+	}
+
+	return livecomment, nil
+}
+
+func (p *LivecommentPool) Put(ctx context.Context, livecomment *Livecomment) {
+	p.pool.Publish(ctx, livecomment)
+}

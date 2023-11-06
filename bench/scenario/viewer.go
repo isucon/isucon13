@@ -59,3 +59,66 @@ func BasicViewerScenario(
 
 	return nil
 }
+
+func ViewerSpamScenario(
+	ctx context.Context,
+	clientPool *isupipe.ClientPool,
+	livestreamPool *isupipe.LivestreamPool,
+	livecommentPool *isupipe.LivecommentPool,
+) error {
+	// ここがmoderate数を左右する
+	// pubsubに供給できるように、スパムをたくさん投げる
+	viewer, err := clientPool.Get(ctx)
+	if err != nil {
+		return err
+	}
+	defer clientPool.Put(ctx, viewer)
+
+	livestream, err := livestreamPool.Get(ctx)
+	if err != nil {
+		return err
+	}
+	defer livestreamPool.Put(ctx, livestream)
+
+	for i := 0; i < 10; i++ {
+		comment := scheduler.LivecommentScheduler.GetNegativeComment()
+		resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{})
+		if err != nil {
+			continue
+		}
+		livecommentPool.Put(ctx, &isupipe.Livecomment{
+			ID:         resp.ID,
+			User:       resp.User,
+			Livestream: resp.Livestream,
+			Comment:    resp.Comment,
+			Tip:        int(resp.Tip),
+			CreatedAt:  int(resp.CreatedAt),
+		})
+	}
+
+	return nil
+}
+
+func BasicViewerReportScenario(
+	ctx context.Context,
+	clientPool *isupipe.ClientPool,
+	livecommentPool *isupipe.LivecommentPool,
+) error {
+	viewer, err := clientPool.Get(ctx)
+	if err != nil {
+		return err
+	}
+	defer clientPool.Put(ctx, viewer)
+
+	spam, err := livecommentPool.Get(ctx)
+	if err != nil {
+		return err
+	}
+	defer livecommentPool.Put(ctx, spam)
+
+	if err := viewer.ReportLivecomment(ctx, spam.Livestream.ID, spam.ID); err != nil {
+		return err
+	}
+
+	return nil
+}

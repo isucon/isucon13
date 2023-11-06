@@ -7,9 +7,9 @@ import (
 	"github.com/isucon/isucon13/bench/internal/attacker"
 )
 
-func DnsWaterTortureAttackScenario(ctx context.Context) error {
+func DnsWaterTortureAttackScenario(ctx context.Context, parallelism int) error {
 	var attackGrp sync.WaitGroup
-	for i := 0; i < 5; i++ {
+	for i := 0; i < parallelism; i++ {
 		attackGrp.Add(1)
 		go func() {
 			defer attackGrp.Done()
@@ -17,7 +17,7 @@ func DnsWaterTortureAttackScenario(ctx context.Context) error {
 			atk.Attack(ctx)
 		}()
 	}
-
 	attackGrp.Wait()
+
 	return nil
 }
