@@ -70,10 +70,9 @@
 
 - name: Copy pdns.d/mysql.conf
   become: true
-  copy:
-    src: mysql.conf
-    dest: /etc/powerdns/pdns.d/mysql.conf
-    mode: 0644
+  file:
+    state: absent
+    path: /etc/powerdns/pdns.d/mysql.conf
 
 - name: Copy pdns.conf
   become: true
