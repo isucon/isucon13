@@ -266,6 +266,12 @@ paths:
       tags: []
       operationId: "get-livestream-_livestreamid-livecomment"
       description: 当該ライブストリームのライブコメント取得
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: 取得件数の最大数
       responses:
         "200":
           description: OK
@@ -351,6 +357,12 @@ paths:
       tags: []
       operationId: "get-livestream-_livestreamid-reaction"
       description: 当該ライブストリームのリアクション取得
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: 取得件数の最大数
       responses:
         "200":
           description: OK

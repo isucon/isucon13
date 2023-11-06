@@ -69,6 +69,8 @@ export interface Response$post$livestream$livestreamid$moderate$Status$201 {
 }
 export interface Parameter$get$livestream$_livestreamid$livecomment {
   livestreamid: string;
+  /** 取得件数の最大数 */
+  limit?: number;
 }
 export interface Response$get$livestream$_livestreamid$livecomment$Status$200 {
   'application/json': Schemas.Livecomment[];
@@ -91,6 +93,8 @@ export interface Parameter$delete$livestream$livestreamid$enter {
 }
 export interface Parameter$get$livestream$_livestreamid$reaction {
   livestreamid: string;
+  /** 取得件数の最大数 */
+  limit?: number;
 }
 export interface Response$get$livestream$_livestreamid$reaction$Status$200 {
   'application/json': Schemas.Reaction[];
@@ -601,11 +605,15 @@ export class Client<RequestOption> {
     const headers = {
       Accept: 'application/json',
     };
+    const queryParameters: QueryParameters = {
+      limit: { value: params.parameter.limit, explode: false },
+    };
     return this.apiClient.request(
       {
         httpMethod: 'GET',
         url,
         headers,
+        queryParameters: queryParameters,
       },
       option,
     );
@@ -682,11 +690,15 @@ export class Client<RequestOption> {
     const headers = {
       Accept: 'application/json',
     };
+    const queryParameters: QueryParameters = {
+      limit: { value: params.parameter.limit, explode: false },
+    };
     return this.apiClient.request(
       {
         httpMethod: 'GET',
         url,
         headers,
+        queryParameters: queryParameters,
       },
       option,
     );

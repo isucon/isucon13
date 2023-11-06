@@ -67,6 +67,7 @@ export function useLiveStreamComment(
       apiClient.get$livestream$_livestreamid$livecomment({
         parameter: {
           livestreamid: id ?? '',
+          limit: 100,
         },
       }),
     config,
@@ -83,6 +84,7 @@ export function useLiveStreamReaction(
       apiClient.get$livestream$_livestreamid$reaction({
         parameter: {
           livestreamid: id ?? '',
+          limit: 100,
         },
       }),
     config,
