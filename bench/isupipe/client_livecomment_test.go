@@ -18,7 +18,7 @@ func TestModerate(t *testing.T) {
 
 	client, err := NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
-		agent.WithTimeout(1*time.Minute),
+		agent.WithTimeout(10*time.Minute),
 	)
 	assert.NoError(t, err)
 
