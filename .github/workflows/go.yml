@@ -37,6 +37,12 @@ jobs:
           go-version: ${{ matrix.go }}
         id: go
 
+      # to avoid error: Deleting the contents of '/home/ubuntu/actions-runner/_work/isucon13/isucon13'
+      #                 Error: File was unable to be removed Error: EACCES: permission denied, rmdir
+      - name: chown workdir
+        run:
+          sudo chown -R $USER:$USER /home/github/actions-runner/_work/isucon13
+
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
 
