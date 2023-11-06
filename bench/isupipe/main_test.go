@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/agent"
-	"github.com/isucon/isucon13/bench/internal/config"
 )
 
 func TestMain(m *testing.M) {
 	client, err := NewClient(
-		agent.WithBaseURL(config.TargetBaseURL),
-		agent.WithTimeout(10*time.Minute),
+		agent.WithTimeout(1 * time.Minute),
 	)
 	if err != nil {
 		log.Fatalln(err)
@@ -23,6 +21,7 @@ func TestMain(m *testing.M) {
 	if _, err := client.Initialize(context.Background()); err != nil {
 		log.Fatalln(err)
 	}
+	log.Println("main initialize done")
 
 	m.Run()
 }

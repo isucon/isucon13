@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -19,6 +20,7 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 	}
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
+	log.Println("request initialize")
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {
 		return nil, err
@@ -27,11 +29,13 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}()
+	log.Println("response initialize")
 
 	var initializeResp *InitializeResponse
 	if json.NewDecoder(resp.Body).Decode(&initializeResp); err != nil {
 		return nil, err
 	}
+	log.Println("decode initialize")
 
 	return initializeResp, nil
 }
