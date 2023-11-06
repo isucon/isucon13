@@ -109,6 +109,22 @@ export function useTags(config?: SWRConfiguration) {
   return useSWR('/tags', () => apiClient.get$tag(), config);
 }
 
+export interface UseMediaResponse {
+  id: number;
+  name: string;
+  playlist_url: string;
+  thumbnail_url: string;
+}
+
+export function useMedia(id: string | number, config?: SWRConfiguration) {
+  const url = `https://media.xiii.isucon.dev/api/${id}/live/`;
+  return useSWR(
+    url,
+    () => fetch(url).then((res) => res.json() as Promise<UseMediaResponse>),
+    config,
+  );
+}
+
 function encodeParam(params: Object): string {
   const p = Object.entries(params);
   p.sort(([key1], [key2]) => key1.localeCompare(key2));

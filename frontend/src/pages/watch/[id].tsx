@@ -1,26 +1,29 @@
-import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
+import Box from '@mui/joy/Box';
 import Card from '@mui/joy/Card';
 import Divider from '@mui/joy/Divider';
 import Skeleton from '@mui/joy/Skeleton';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useLiveStream } from '~/api/hooks';
+import { useLiveStream, useMedia } from '~/api/hooks';
 import LiveComment from '~/components/video/comment';
+import { Video } from '~/components/video/video';
 
 export default function WatchPage(): React.ReactElement {
   const { id } = useParams();
   const liveStream = useLiveStream(id ?? null);
   const idNum = id ? parseInt(id) : null;
+  const media = useMedia(id ?? '');
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
       <Stack direction="row" gap={2}>
-        <AspectRatio ratio={16 / 9} sx={{ flexBasis: '600px', flexGrow: 3 }}>
-          <video />
-        </AspectRatio>
+        <Box sx={{ flexBasis: '600px', flexGrow: 3 }}>
+          <Video playlist={media.data?.playlist_url} />
+        </Box>
         <Stack sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
           <LiveComment
             type="real"
