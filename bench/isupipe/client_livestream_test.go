@@ -20,7 +20,11 @@ func TestLivestream(t *testing.T) {
 
 	client, err := NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
+		agent.WithTimeout(1*time.Minute),
 	)
+	assert.NoError(t, err)
+
+	_, err = client.Initialize(ctx)
 	assert.NoError(t, err)
 
 	user := scheduler.UserScheduler.GetRandomStreamer()

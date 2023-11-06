@@ -21,6 +21,8 @@ func TestModerate(t *testing.T) {
 		agent.WithTimeout(1*time.Minute),
 	)
 	assert.NoError(t, err)
+	_, err = client.Initialize(ctx)
+	assert.NoError(t, err)
 
 	err = client.Login(ctx, &LoginRequest{
 		UserName: "test001",
@@ -41,6 +43,9 @@ func TestGetNgWordsBug(t *testing.T) {
 		// FIXME: moderateが遅い
 		agent.WithTimeout(1*time.Minute),
 	)
+	assert.NoError(t, err)
+
+	_, err = client.Initialize(ctx)
 	assert.NoError(t, err)
 
 	user := scheduler.UserScheduler.GetRandomStreamer()
