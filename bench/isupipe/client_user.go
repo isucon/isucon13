@@ -7,14 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
@@ -304,6 +302,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	c.isPopular = scheduler.UserScheduler.IsPopularStreamer(c.username)
 
 	// cookieを流用して各種ページアクセス用agentを初期化
+	dnsResolver := resolver.NewDNSResolver()
 	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
 	c.themeAgent, err = agent.NewAgent(
 		agent.WithBaseURL(fmt.Sprintf("http://%s:%d", domain, config.TargetPort)),
@@ -313,21 +312,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 				InsecureSkipVerify: true,
 			},
 			// Custom DNS Resolver
-			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				dialTimeout := 10000 * time.Millisecond
-				dialer := net.Dialer{
-					Timeout: dialTimeout,
-					Resolver: &net.Resolver{
-						PreferGo: true,
-						Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-							dialer := net.Dialer{Timeout: dialTimeout}
-							nameserver := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
-							return dialer.DialContext(ctx, "udp", nameserver)
-						},
-					},
-				}
-				return dialer.DialContext(ctx, network, address)
-			},
+			DialContext: dnsResolver.DialContext,
 		}),
 		agent.WithNoCache(),
 	)
@@ -337,6 +322,13 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	c.assetAgent, err = agent.NewAgent(
 		agent.WithBaseURL(config.TargetBaseURL),
 		withClient(c.agent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			// Custom DNS Resolver
+			DialContext: dnsResolver.DialContext,
+		}),
 		// NOTE: 画像はキャッシュできるようにする
 	)
 	if err != nil {
