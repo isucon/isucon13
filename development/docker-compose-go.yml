@@ -20,7 +20,7 @@ services:
       - ../webapp/initial_livecomments.sql:/home/isucon/webapp/go/initial_livecomments.sql
       - ../webapp/NoImage.jpg:/home/isucon/webapp/go/NoImage.jpg
       - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf
-      - ../provisioning/ansible/roles/powerdns/files/docker.conf:/etc/powerdns/pdns.d/docker.conf
+      - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf
     environment:
       ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
       ISUCON13_POWERDNS_HOST: powerdns
