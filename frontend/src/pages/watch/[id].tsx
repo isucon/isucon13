@@ -8,7 +8,12 @@ import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useLiveStream, useMedia } from '~/api/hooks';
+import {
+  useLiveStream,
+  useLiveStreamMeasure,
+  useLiveStreamStatistics,
+  useMedia,
+} from '~/api/hooks';
 import LiveComment from '~/components/video/comment';
 import { Video } from '~/components/video/video';
 
@@ -17,6 +22,8 @@ export default function WatchPage(): React.ReactElement {
   const liveStream = useLiveStream(id ?? null);
   const idNum = id ? parseInt(id) : null;
   const media = useMedia(id ?? '');
+  const statistics = useLiveStreamStatistics(id ?? null);
+  useLiveStreamMeasure(id ?? null);
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
@@ -66,7 +73,7 @@ export default function WatchPage(): React.ReactElement {
                 <Skeleton variant="text" level="title-sm" width={100} />
               ) : (
                 <Typography level="title-sm">
-                  {liveStream.data?.viewers_count}人が視聴中
+                  {statistics.data?.viewers_count}人が視聴中
                 </Typography>
               )}
               <Typography level="title-sm">

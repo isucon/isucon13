@@ -44,15 +44,11 @@ export namespace Schemas {
     updated_at?: number;
   }
   export interface LivestreamStatistics {
-    most_tip_ranking?: {
-      tip_rank?: number;
-      total_tip?: number;
-    }[];
-    most_posted_reaction_ranking?: {
-      reaction_rank?: number;
-      total_reaction?: number;
-      emoji_name?: string;
-    }[];
+    rank: number;
+    viewers_count: number;
+    total_reactions: number;
+    total_reports: number;
+    max_tip: number;
   }
   export interface UserStatistics {
     tip_rank_by_livestream?: {

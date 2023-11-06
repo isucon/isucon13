@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
+import React from 'react';
 import useSWR, { type SWRConfiguration } from 'swr';
 import { Parameter$get$livestream$search } from './apiClient';
 import { HTTPError, apiClient } from './client';
@@ -105,6 +106,43 @@ export function useLiveStreamNgWords(
       }),
     config,
   );
+}
+
+export function useLiveStreamStatistics(
+  id: string | null,
+  config?: SWRConfiguration,
+) {
+  return useSWR(
+    id && `/livestream/${id}/statistics`,
+    () =>
+      apiClient.get$livestream$_livestreamid$statistics({
+        parameter: {
+          livestreamid: id ?? '',
+        },
+      }),
+    config,
+  );
+}
+
+export function useLiveStreamMeasure(id: string | null) {
+  React.useEffect(() => {
+    if (!id) {
+      return;
+    }
+    apiClient.post$livestream$livestreamid$enter({
+      parameter: {
+        livestreamid: id,
+      },
+    });
+
+    return () => {
+      apiClient.delete$livestream$livestreamid$exit({
+        parameter: {
+          livestreamid: id,
+        },
+      });
+    };
+  }, [id]);
 }
 
 export function useTags(config?: SWRConfiguration) {

@@ -88,7 +88,7 @@ export interface Response$post$livestream$livestreamid$livecomment$Status$201 {
 export interface Parameter$post$livestream$livestreamid$enter {
   livestreamid: string;
 }
-export interface Parameter$delete$livestream$livestreamid$enter {
+export interface Parameter$delete$livestream$livestreamid$exit {
   livestreamid: string;
 }
 export interface Parameter$get$livestream$_livestreamid$reaction {
@@ -200,8 +200,8 @@ export interface Params$post$livestream$livestreamid$livecomment {
 export interface Params$post$livestream$livestreamid$enter {
   parameter: Parameter$post$livestream$livestreamid$enter;
 }
-export interface Params$delete$livestream$livestreamid$enter {
-  parameter: Parameter$delete$livestream$livestreamid$enter;
+export interface Params$delete$livestream$livestreamid$exit {
+  parameter: Parameter$delete$livestream$livestreamid$exit;
 }
 export type ResponseContentType$get$livestream$_livestreamid$reaction =
   keyof Response$get$livestream$_livestreamid$reaction$Status$200;
@@ -296,7 +296,7 @@ export namespace ErrorResponse {
   export type get$livestream$_livestreamid$livecomment = void;
   export type post$livestream$livestreamid$livecomment = void;
   export type post$livestream$livestreamid$enter = void;
-  export type delete$livestream$livestreamid$enter = void;
+  export type delete$livestream$livestreamid$exit = void;
   export type get$livestream$_livestreamid$reaction = void;
   export type post$livestream$livestreamid$reaction = void;
   export type get$livestream$_livestreamid$statistics = void;
@@ -659,12 +659,12 @@ export class Client<RequestOption> {
     );
   }
   /** 配信の視聴終了 */
-  public async delete$livestream$livestreamid$enter(
-    params: Params$delete$livestream$livestreamid$enter,
+  public async delete$livestream$livestreamid$exit(
+    params: Params$delete$livestream$livestreamid$exit,
     option?: RequestOption,
   ): Promise<void> {
     const url =
-      this.baseUrl + `/livestream/${params.parameter.livestreamid}/enter`;
+      this.baseUrl + `/livestream/${params.parameter.livestreamid}/exit`;
     const headers = {};
     return this.apiClient.request(
       {

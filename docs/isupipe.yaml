@@ -332,9 +332,16 @@ paths:
         "500":
           description: Internal Server Error
       description: 配信の視聴開始
+  "/livestream/{livestreamid}/exit":
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
     delete:
       summary: ""
-      operationId: delete-livestream-livestreamid-enter
+      operationId: delete-livestream-livestreamid-exit
       responses:
         "200":
           description: OK
@@ -617,27 +624,23 @@ components:
     LivestreamStatistics:
       title: LivestreamrStatistics
       type: object
+      required:
+        - rank
+        - viewers_count
+        - total_reactions
+        - total_reports
+        - max_tip
       properties:
-        most_tip_ranking:
-          type: array
-          items:
-            type: object
-            properties:
-              tip_rank:
-                type: integer
-              total_tip:
-                type: integer
-        most_posted_reaction_ranking:
-          type: array
-          items:
-            type: object
-            properties:
-              reaction_rank:
-                type: integer
-              total_reaction:
-                type: integer
-              emoji_name:
-                type: string
+        rank:
+          type: integer
+        viewers_count:
+          type: integer
+        total_reactions:
+          type: integer
+        total_reports:
+          type: integer
+        max_tip:
+          type: integer
     UserStatistics:
       title: LivesteamStatistics
       type: object
