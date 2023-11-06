@@ -24,9 +24,6 @@ func TestLivestream(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	_, err = client.Initialize(ctx)
-	assert.NoError(t, err)
-
 	user := scheduler.UserScheduler.GetRandomStreamer()
 	_, err = client.Register(ctx, &RegisterRequest{
 		Name:        user.Name,

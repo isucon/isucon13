@@ -15,12 +15,12 @@ const (
 )
 
 var (
-	counter         score.Score
+	counter         *score.Score
 	doneCounterOnce sync.Once
 )
 
 func InitCounter(ctx context.Context) {
-	counter = *score.NewScore(ctx)
+	counter = score.NewScore(ctx)
 	counter.Set(DNSResolve, 1)
 	counter.Set(TooSlow, 1)
 	counter.Set(TooManySpam, 1)

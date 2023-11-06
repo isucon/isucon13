@@ -61,6 +61,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 				}
 
 				benchscore.IncResolves()
+
 				return conn, nil
 			},
 		}),
