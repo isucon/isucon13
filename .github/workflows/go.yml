@@ -17,6 +17,7 @@ on:
       - development/docker-compose-go.yml
       - development/Makefile
       - .github/workflows/go.yml
+  workflow_dispatch:
 jobs:
   test:
     strategy:
