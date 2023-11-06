@@ -29,6 +29,12 @@ if [[ $2 != "u.isucon.dev" ]]; then
 fi
 
 USERNAME=$3
+if [[ $USERNAME == "." ]]; then
+    USERNAME=""
+else
+    USERNAME="${USERNAME}."
+fi
+
 TYPE=$4
 if [[ $TYPE != "A" ]]; then
     echo "record type must be 'A', but got $TYPE"
@@ -46,5 +52,5 @@ if [[ ! $CONTENT =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
 fi
 
 curl -X PATCH -H 'X-API-Key: isudns' \
-     --data '{"rrsets": [{"name": "'$USERNAME.u.isucon.dev.'", "type": "'$TYPE'", "ttl": '$TTL', "changetype":"REPLACE", "records": [{"content": "'$CONTENT'", "disabled": false}]}]}' \
+     --data '{"rrsets": [{"name": "'${USERNAME}u.isucon.dev.'", "type": "'$TYPE'", "ttl": '$TTL', "changetype":"REPLACE", "records": [{"content": "'$CONTENT'", "disabled": false}]}]}' \
      http://${pdns_address}:${pdns_port}/api/v1/servers/localhost/zones/u.isucon.dev.
