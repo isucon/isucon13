@@ -5,6 +5,8 @@ on:
     paths:
       - bench/**/*
       - webapp/go/**/*
+      - webapp/*.sh
+      - webapp/*.sql
       - development/docker-compose-common.yml
       - development/docker-compose-go.yml
       - development/Makefile
@@ -13,6 +15,8 @@ on:
     paths:
       - bench/**/*
       - webapp/go/**/*
+      - webapp/*.sh
+      - webapp/*.sql
       - development/docker-compose-common.yml
       - development/docker-compose-go.yml
       - development/Makefile
