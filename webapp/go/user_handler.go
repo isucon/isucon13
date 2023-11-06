@@ -5,9 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"time"
 
@@ -27,15 +25,7 @@ const (
 	bcryptDefaultCost        = bcrypt.MinCost
 )
 
-var fallbackImage []byte
-
-func init() {
-	b, err := os.ReadFile("./NoImage.jpg")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fallbackImage = b
-}
+var fallbackImage = "../img/NoImage.jpg"
 
 type UserModel struct {
 	ID             int64  `db:"id"`
@@ -115,7 +105,7 @@ func getIconHandler(c echo.Context) error {
 	var image []byte
 	if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", user.ID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return c.Blob(http.StatusOK, "image/jpeg", fallbackImage)
+			return c.File(fallbackImage)
 		} else {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
