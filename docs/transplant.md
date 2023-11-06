@@ -15,10 +15,9 @@
         * 競技環境では、競技サーバのIPアドレスが指定されることになります
     * webappは、ユーザ登録時に `<username>.u.isucon.dev` のドメイン登録処理を行います
         * これには `pdnsutil` というPowerDNSのCLIを用います
-        * しかし、PowerDNSの管理API(8081/tcp)を利用するには、APIキーが必要となります
-            * webappの環境変数 `ISUCON13_POWERDNS_APIKEY` はこれに該当します
-        * docker-composeでは、webappコンテナにpowerdnsパッケージをインストールすることが難しいため、ダミーのシェルスクリプト `pdnsutil` だけボリュームマウントしています
-            * 引数のバリデーション、curlによる管理APIへのドメイン登録処理が走ります
+        * docker-composeでは、webappコンテナにpowerdnsパッケージをインストールしています
+            * debianの場合、 `pdns-server` および `pdns-backend-mysql` パッケージが必要です
+            * pdnutilに必要な設定は `docker-compose-go.yml` を確認してください
 
 これらミドルウェア群は、CI上以下のdocker-composeによって起動されるようになっています
 

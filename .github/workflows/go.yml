@@ -5,6 +5,8 @@ on:
     paths:
       - bench/**/*
       - webapp/go/**/*
+      - webapp/*.sh
+      - webapp/*.sql
       - development/docker-compose-common.yml
       - development/docker-compose-go.yml
       - development/Makefile
@@ -13,6 +15,8 @@ on:
     paths:
       - bench/**/*
       - webapp/go/**/*
+      - webapp/*.sh
+      - webapp/*.sql
       - development/docker-compose-common.yml
       - development/docker-compose-go.yml
       - development/Makefile
@@ -32,6 +36,13 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
         id: go
+
+      # to avoid error: Deleting the contents of '/home/ubuntu/actions-runner/_work/isucon13/isucon13'
+      #                 Error: File was unable to be removed Error: EACCES: permission denied, rmdir
+      # https://github.com/actions/checkout/issues/211
+      - name: chown workdir
+        run:
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
