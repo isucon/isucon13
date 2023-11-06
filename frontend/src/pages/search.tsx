@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLiveStreamsSearch } from '~/api/hooks';

@@ -1,4 +1,4 @@
-import { Box } from '@mui/joy';
+import Box from '@mui/joy/Box';
 import React from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';

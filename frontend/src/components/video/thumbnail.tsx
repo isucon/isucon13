@@ -1,7 +1,7 @@
-import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import { ja } from 'date-fns/locale';
 import React from 'react';

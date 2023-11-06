@@ -1,4 +1,3 @@
-import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
@@ -7,6 +6,7 @@ import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import Sheet from '@mui/joy/Sheet';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { Link, useParams } from 'react-router-dom';

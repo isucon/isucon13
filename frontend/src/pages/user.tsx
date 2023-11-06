@@ -1,8 +1,8 @@
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 

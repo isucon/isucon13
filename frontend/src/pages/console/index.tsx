@@ -1,11 +1,11 @@
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveSelfStreams } from '~/api/hooks';

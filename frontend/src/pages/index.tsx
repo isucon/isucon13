@@ -1,8 +1,8 @@
-import { Typography } from '@mui/joy';
 import Button from '@mui/joy/Button';
 import Divider from '@mui/joy/Divider';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { BiSolidVideoRecording } from 'react-icons/bi';
 import {

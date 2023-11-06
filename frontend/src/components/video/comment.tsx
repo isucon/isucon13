@@ -1,7 +1,6 @@
 import { Emoji } from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
 import ButtonGroup from '@mui/joy/ButtonGroup';
@@ -20,6 +19,7 @@ import Skeleton from '@mui/joy/Skeleton';
 import Slider from '@mui/joy/Slider';
 import Stack from '@mui/joy/Stack';
 import Textarea from '@mui/joy/Textarea';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AiFillHeart, AiOutlineClose } from 'react-icons/ai';
