@@ -3,13 +3,15 @@ from datetime import datetime, timedelta
 # 予約枠生成
 
 NUM_SLOTS = 5
-SQL_FORMAT="INSERT INTO reservation_slots (slot, start_at, end_at) VALUES ({slot}, {start_at}, {end_at});"
+SQL_FORMAT="({slot}, {start_at}, {end_at}),"
 
 # delta = timedelta(hours=1)
 base_time = datetime(2024, 4, 1, 1)
 total_hours = (24*365)-1
 
 with open('/tmp/reservation_slot.sql', 'w') as f:
+    f.write('INSERT INTO reservation_slots (slot, start_at, end_at)\n')
+    f.write('VALUES\n')
     for delta_hour in range(total_hours):
         start_delta = timedelta(hours=delta_hour)
         start_at = base_time + start_delta

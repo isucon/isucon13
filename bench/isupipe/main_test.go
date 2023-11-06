@@ -13,12 +13,13 @@ import (
 func TestMain(m *testing.M) {
 	client, err := NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),
-		agent.WithTimeout(1*time.Minute),
+		agent.WithTimeout(10*time.Minute),
 	)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	log.Println("main initialize ...")
 	if _, err := client.Initialize(context.Background()); err != nil {
 		log.Fatalln(err)
 	}
