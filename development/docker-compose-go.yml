@@ -18,7 +18,7 @@ services:
       - ../webapp/initial_reservation_slots.sql:/home/isucon/webapp/go/initial_reservation_slots.sql
       - ../webapp/initial_reactions.sql:/home/isucon/webapp/go/initial_reactions.sql
       - ../webapp/initial_livecomments.sql:/home/isucon/webapp/go/initial_livecomments.sql
-      - ../webapp/powerdns/pdnsutil:/usr/local/bin/pdnsutil
+      - ../webapp/powerdns/pdns.conf:/etc/powerdns/pdns.conf
       - ../webapp/NoImage.jpg:/home/isucon/webapp/go/NoImage.jpg
     environment:
       ISUCON13_MYSQL_DIALCONFIG_ADDRESS: mysql
