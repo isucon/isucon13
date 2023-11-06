@@ -22,6 +22,17 @@
   ansible.builtin.file:
     path: /home/isucon/webapp.tar.gz
     state: absent
+- name: initilize database
+  become: true
+  shell: |
+    mysql -uroot -e "
+      DROP DATABASE IF EXISTS isupipe;
+      CREATE DATABASE IF NOT EXISTS isupipe;
+    "
+- name: initialize tables
+  become: true
+  shell: |
+    cat /home/isucon/webapp/sql/initdb.d/10_schema.sql | mysql -uisucon -pisucon
 - name: Tasks for isupipe-go
   include_tasks: go.yaml
 - name: Put systemd service
