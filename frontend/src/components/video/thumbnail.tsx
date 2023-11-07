@@ -34,7 +34,7 @@ export function VideoThumbnail({
         <img src={media.data?.thumbnail_url} loading="lazy" />
       </AspectRatio>
       <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
-        <Avatar />
+        <Avatar src={`/api/user/${liveSteram.owner?.name ?? ''}/icon`} />
         <div>
           <Typography level="title-sm">{liveSteram.title}</Typography>
           <Typography level="body-sm" component="div">

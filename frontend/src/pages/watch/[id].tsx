@@ -60,7 +60,7 @@ export default function WatchPage(): React.ReactElement {
       <Stack direction="row" gap={2}>
         <Stack sx={{ flexBasis: '600px', flexGrow: 3 }}>
           <Typography level="h3">{liveStream.data?.title}</Typography>
-          <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
+          <Stack direction="row" columnGap={2} flexWrap="wrap">
             <Link to="/user">
               <Avatar />
             </Link>
