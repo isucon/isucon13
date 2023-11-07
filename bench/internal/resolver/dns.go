@@ -35,6 +35,10 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 		return nil, err
 	}
 
+	if in.Rcode != dns.RcodeSuccess {
+		return nil, fmt.Errorf("failed to resolve with rcode=%d", in.Rcode)
+	}
+
 	for _, ans := range in.Answer {
 		if record, ok := ans.(*dns.A); ok {
 			benchscore.IncResolves()

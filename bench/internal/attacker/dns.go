@@ -3,11 +3,8 @@ package attacker
 import (
 	"context"
 	"math/rand"
-	"net"
-	"strconv"
-	"time"
 
-	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 )
 
 const (
@@ -16,19 +13,13 @@ const (
 )
 
 type DnsWaterTortureAttacker struct {
-	resolver *net.Resolver
+	resolver *resolver.DNSResolver
 }
 
 func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
+	dnsResolver := resolver.NewDNSResolver()
 	return &DnsWaterTortureAttacker{
-		resolver: &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				addr := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
-				dialer := net.Dialer{Timeout: time.Nanosecond}
-				return dialer.DialContext(ctx, "udp", addr)
-			},
-		},
+		resolver: dnsResolver,
 	}
 }
 
@@ -47,5 +38,5 @@ func (a *DnsWaterTortureAttacker) makePayload(length int) string {
 func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
 	length := 10 + rand.Intn(40)
 	payload := a.makePayload(length)
-	a.resolver.LookupHost(ctx, payload)
+	a.resolver.Lookup(ctx, "udp", payload)
 }
