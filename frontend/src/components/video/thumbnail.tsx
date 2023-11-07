@@ -7,6 +7,7 @@ import { ja } from 'date-fns/locale';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveStreamStatistics, useMedia } from '~/api/hooks';
+import { iconUrl } from '~/api/icon';
 import { Schemas } from '~/api/types';
 
 export interface VideoThumbnailProps {
@@ -34,7 +35,7 @@ export function VideoThumbnail({
         <img src={media.data?.thumbnail_url} loading="lazy" />
       </AspectRatio>
       <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
-        <Avatar src={`/api/user/${liveSteram.owner?.name ?? ''}/icon`} />
+        <Avatar src={iconUrl(liveSteram.owner?.name)} />
         <div>
           <Typography level="title-sm">{liveSteram.title}</Typography>
           <Typography level="body-sm" component="div">

@@ -5,20 +5,18 @@ import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import React from 'react';
-import {
-  BsFillHouseDoorFill,
-  BsCollectionPlay,
-  BsFillPersonFill,
-} from 'react-icons/bs';
+import { BsFillHouseDoorFill, BsFillPersonFill } from 'react-icons/bs';
 import { MdManageHistory } from 'react-icons/md';
 import { Link } from 'react-router-dom';
-import { useLiveStreamsSearch } from '~/api/hooks';
+import { useLiveStreamsSearch, useUserMe } from '~/api/hooks';
+import { iconUrl } from '~/api/icon';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
   const liveSterams = useLiveStreamsSearch({
     limit: 100,
   });
+  const userMe = useUserMe();
 
   return (
     <div>
@@ -35,7 +33,10 @@ export default function IndexPage(): React.ReactElement {
           <SidebarButton startDecorator={<BsFillHouseDoorFill size="20px" />}>
             ホーム
           </SidebarButton>
-          <SidebarButton startDecorator={<BsFillPersonFill size="20px" />}>
+          <SidebarButton
+            startDecorator={<BsFillPersonFill size="20px" />}
+            {...{ to: `/user/${userMe.data?.name}` }}
+          >
             プロフィール
           </SidebarButton>
           <SidebarButton
@@ -59,7 +60,7 @@ export default function IndexPage(): React.ReactElement {
               key={live.id ?? i}
               startDecorator={
                 <Avatar
-                  src={`/api/user/${live.owner?.name ?? ''}/icon`}
+                  src={iconUrl(live.owner?.name)}
                   sx={{ width: '25px', height: '25px' }}
                 />
               }

@@ -124,6 +124,19 @@ export function useLiveStreamStatistics(
   );
 }
 
+export function useUser(username: string | null, config?: SWRConfiguration) {
+  return useSWR(
+    username && `/user/${username}`,
+    () =>
+      apiClient.get$user$username({
+        parameter: {
+          username: username ?? '',
+        },
+      }),
+    config,
+  );
+}
+
 export function useUserStatistics(
   username: string | null,
   config?: SWRConfiguration,
