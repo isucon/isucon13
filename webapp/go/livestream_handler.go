@@ -187,7 +187,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags")
 		}
 
-		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE id IN (?)", tagIDList)
+		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE tag_id IN (?)", tagIDList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to construct IN query")
 		}
