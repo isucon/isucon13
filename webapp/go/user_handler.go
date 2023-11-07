@@ -239,7 +239,7 @@ func registerHandler(c echo.Context) error {
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user'")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user")
 	}
 
 	userID, err := result.LastInsertId()

@@ -193,7 +193,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 		}
 		var keyTaggedLivestreams []*LivestreamTagModel
 		if err := tx.SelectContext(ctx, &keyTaggedLivestreams, query, params...); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get keyTaggedLivestreams'")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get keyTaggedLivestreams")
 		}
 
 		for _, keyTaggedLivestream := range keyTaggedLivestreams {
