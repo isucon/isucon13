@@ -33,7 +33,7 @@ type Client struct {
 
 // FIXME: テスト用に、ネームサーバのアドレスや接続先アドレスなどをオプションで渡せるように
 func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
-	dnsResolver := resolver.NewNativeDNSResolver()
+	dnsResolver := resolver.NewDNSResolver()
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
