@@ -302,7 +302,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	c.isPopular = scheduler.UserScheduler.IsPopularStreamer(c.username)
 
 	// cookieを流用して各種ページアクセス用agentを初期化
-	dnsResolver := resolver.NewDNSResolver()
+	dnsResolver := resolver.NewNativeDNSResolver()
 	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
 	c.themeAgent, err = agent.NewAgent(
 		agent.WithBaseURL(fmt.Sprintf("http://%s:%d", domain, config.TargetPort)),
