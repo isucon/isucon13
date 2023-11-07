@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	"github.com/urfave/cli"
@@ -108,6 +110,7 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
+		lgr.Infof("nameserver: %s", net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)))
 
 		lgr.Info("===== Prepare benchmarker =====")
 		// FIXME: アセット読み込み
