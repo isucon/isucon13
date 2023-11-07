@@ -19,11 +19,9 @@ func TestMain(m *testing.M) {
 		log.Fatalln(err)
 	}
 
-	log.Println("main initialize ...")
 	if _, err := client.Initialize(context.Background()); err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("main initialize done")
 
 	ctx := context.Background()
 	benchscore.InitCounter(ctx)
