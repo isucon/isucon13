@@ -123,4 +123,12 @@ func TestLivestream(t *testing.T) {
 		}
 		assert.NoError(t, err)
 	}
+
+	livestreams, err = client.GetMyLivestreams(ctx)
+	assert.NoError(t, err)
+	assert.Len(t, livestreams, config.NumSlots)
+
+	livestreams, err = client.GetUserLivestreams(ctx, user.Name)
+	assert.NoError(t, err)
+	assert.Len(t, livestreams, config.NumSlots)
 }

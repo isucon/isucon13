@@ -144,6 +144,7 @@ func main() {
 	// list livestream
 	e.GET("/api/livestream/search", searchLivestreamsHandler)
 	e.GET("/api/livestream", getMyLivestreamsHandler)
+	e.GET("/api/user/:username/livestream", getUserLivestreamsHandler)
 	// get livestream
 	e.GET("/api/livestream/:livestream_id", getLivestreamHandler)
 	// get polling livecomment timeline

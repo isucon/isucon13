@@ -273,6 +273,45 @@ func getMyLivestreamsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, livestreams)
 }
 
+func getUserLivestreamsHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	if err := verifyUserSession(c); err != nil {
+		return err
+	}
+
+	username := c.Param("username")
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var user UserModel
+	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", username); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "failed to get user")
+	}
+
+	var livestreamModels []*LivestreamModel
+	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestreams")
+	}
+	livestreams := make([]Livestream, len(livestreamModels))
+	for i := range livestreamModels {
+		livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModels[i])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill livestream")
+		}
+		livestreams[i] = livestream
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
+	}
+
+	return c.JSON(http.StatusOK, livestreams)
+}
+
 // viewerテーブルの廃止
 func enterLivestreamHandler(c echo.Context) error {
 	ctx := c.Request().Context()
