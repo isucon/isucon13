@@ -68,12 +68,7 @@ mysql -u"$ISUCON_DB_USER" \
 pdnsutil delete-zone u.isucon.dev
 pdnsutil create-zone u.isucon.dev
 pdnsutil add-record u.isucon.dev . A 30 $ISUCON_SUBDOMAIN_ADDRESS
+pdnsutil add-record u.isucon.dev . NS 3600 ns1.u.isucon.dev
 pdnsutil add-record u.isucon.dev pipe A 30 $ISUCON_SUBDOMAIN_ADDRESS
 pdnsutil add-record u.isucon.dev test001 A 30 $ISUCON_SUBDOMAIN_ADDRESS
-
-mysql -u"$ISUCON_PDNS_DB_USER" \
-		-p"$ISUCON_PDNS_DB_PASSWORD" \
-		--host "$ISUCON_PDNS_DB_HOST" \
-		--port "$ISUCON_PDNS_DB_PORT" \
-		"$ISUCON_PDNS_DB_NAME" < initial_pdns_records.sql
 
