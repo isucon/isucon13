@@ -18,23 +18,23 @@ export interface Response$post$user$Status$201 {
 export interface Response$get$user$me$Status$200 {
   'application/json': Schemas.User;
 }
-export interface Parameter$get$users$username {
+export interface Parameter$get$user$username {
   username: string;
   /** セッションID */
   SESSIONID?: string;
 }
-export type Response$get$users$username$Status$200 = Responses.GetUser.Content;
+export type Response$get$user$username$Status$200 = Responses.GetUser.Content;
 export interface Parameter$get$theme {
   /** セッションID */
   SESSIONID?: string;
 }
 export type Response$get$theme$Status$200 = Responses.GetUserTheme.Content;
-export interface Parameter$get$users$statistics {
+export interface Parameter$get$user$statistics {
   username: string;
   /** セッションID */
   SESSIONID?: string;
 }
-export type Response$get$users$statistics$Status$200 =
+export type Response$get$user$statistics$Status$200 =
   Responses.GetUserStatistics.Content;
 export type Response$get$livestream$Status$200 =
   Responses.GetLivestreams.Content;
@@ -145,19 +145,19 @@ export interface Params$post$user {
 }
 export type ResponseContentType$get$user$me =
   keyof Response$get$user$me$Status$200;
-export type ResponseContentType$get$users$username =
-  keyof Response$get$users$username$Status$200;
-export interface Params$get$users$username {
-  parameter: Parameter$get$users$username;
+export type ResponseContentType$get$user$username =
+  keyof Response$get$user$username$Status$200;
+export interface Params$get$user$username {
+  parameter: Parameter$get$user$username;
 }
 export type ResponseContentType$get$theme = keyof Response$get$theme$Status$200;
 export interface Params$get$theme {
   parameter: Parameter$get$theme;
 }
-export type ResponseContentType$get$users$statistics =
-  keyof Response$get$users$statistics$Status$200;
-export interface Params$get$users$statistics {
-  parameter: Parameter$get$users$statistics;
+export type ResponseContentType$get$user$statistics =
+  keyof Response$get$user$statistics$Status$200;
+export interface Params$get$user$statistics {
+  parameter: Parameter$get$user$statistics;
 }
 export type ResponseContentType$get$livestream =
   keyof Response$get$livestream$Status$200;
@@ -263,9 +263,9 @@ export type SuccessResponses =
   | Response$get$users$Status$200
   | Response$post$user$Status$201
   | Response$get$user$me$Status$200
-  | Response$get$users$username$Status$200
+  | Response$get$user$username$Status$200
   | Response$get$theme$Status$200
-  | Response$get$users$statistics$Status$200
+  | Response$get$user$statistics$Status$200
   | Response$get$livestream$Status$200
   | Response$get$livestream$search$Status$200
   | Response$get$livestream$_livestreamid$Status$200
@@ -285,9 +285,9 @@ export namespace ErrorResponse {
   export type get$users = void;
   export type post$user = void;
   export type get$user$me = void;
-  export type get$users$username = void;
+  export type get$user$username = void;
   export type get$theme = void;
-  export type get$users$statistics = void;
+  export type get$user$statistics = void;
   export type get$livestream = void;
   export type get$livestream$search = void;
   export type get$livestream$_livestreamid = void;
@@ -425,11 +425,11 @@ export class Client<RequestOption> {
     );
   }
   /** ユーザプロフィール取得 */
-  public async get$users$username(
-    params: Params$get$users$username,
+  public async get$user$username(
+    params: Params$get$user$username,
     option?: RequestOption,
-  ): Promise<Response$get$users$username$Status$200['application/json']> {
-    const url = this.baseUrl + `/users/${params.parameter.username}`;
+  ): Promise<Response$get$user$username$Status$200['application/json']> {
+    const url = this.baseUrl + `/user/${params.parameter.username}`;
     const headers = {
       Accept: 'application/json',
     };
@@ -461,11 +461,11 @@ export class Client<RequestOption> {
     );
   }
   /** ユーザの配信に関する統計情報取得 */
-  public async get$users$statistics(
-    params: Params$get$users$statistics,
+  public async get$user$statistics(
+    params: Params$get$user$statistics,
     option?: RequestOption,
-  ): Promise<Response$get$users$statistics$Status$200['application/json']> {
-    const url = this.baseUrl + `/users/${params.parameter.username}/statistics`;
+  ): Promise<Response$get$user$statistics$Status$200['application/json']> {
+    const url = this.baseUrl + `/user/${params.parameter.username}/statistics`;
     const headers = {
       Accept: 'application/json',
     };

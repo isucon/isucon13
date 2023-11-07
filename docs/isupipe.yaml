@@ -84,7 +84,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-  "/users/{username}":
+  "/user/{username}":
     parameters:
       - schema:
           type: string
@@ -93,7 +93,7 @@ paths:
         required: true
     get:
       summary: ""
-      operationId: get-users-username
+      operationId: get-user-username
       responses:
         "200":
           $ref: "#/components/responses/GetUser"
@@ -132,7 +132,7 @@ paths:
           in: cookie
           name: SESSIONID
           description: セッションID
-  "/users/{username}/statistics":
+  "/user/{username}/statistics":
     parameters:
       - schema:
           type: string
@@ -141,7 +141,7 @@ paths:
         required: true
     get:
       summary: ""
-      operationId: get-users-statistics
+      operationId: get-user-statistics
       responses:
         "200":
           $ref: "#/components/responses/GetUserStatistics"
@@ -644,11 +644,26 @@ components:
     UserStatistics:
       title: LivesteamStatistics
       type: object
+      required:
+        - rank
+        - viewers_count
+        - total_reactions
+        - total_livecomments
+        - total_tip
+        - favorite_emoji
       properties:
-        tip_rank_by_livestream:
-          type: object # map
-          additionalProperties:
-            type: string
+        rank:
+          type: integer
+        viewers_count:
+          type: integer
+        total_reactions:
+          type: integer
+        total_livecomments:
+          type: integer
+        total_tip:
+          type: integer
+        favorite_emoji:
+          type: string
     LivecommentReport:
       title: LivecommentReport
       x-stoplight:

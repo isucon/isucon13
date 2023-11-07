@@ -6,6 +6,8 @@ import Divider from '@mui/joy/Divider';
 import Skeleton from '@mui/joy/Skeleton';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
+import { formatDistanceToNow } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -13,6 +15,7 @@ import {
   useLiveStreamMeasure,
   useLiveStreamStatistics,
   useMedia,
+  useUserStatistics,
 } from '~/api/hooks';
 import LiveComment from '~/components/video/comment';
 import { Video } from '~/components/video/video';
@@ -23,7 +26,21 @@ export default function WatchPage(): React.ReactElement {
   const idNum = id ? parseInt(id) : null;
   const media = useMedia(id ?? '');
   const statistics = useLiveStreamStatistics(id ?? null);
+  const userStatistics = useUserStatistics(
+    liveStream.data?.owner?.name ?? null,
+  );
   useLiveStreamMeasure(id ?? null);
+
+  const date = React.useMemo(
+    () =>
+      liveStream.data?.start_at
+        ? formatDistanceToNow(liveStream.data.start_at * 1000, {
+            addSuffix: true,
+            locale: ja,
+          })
+        : 'unkown',
+    [liveStream.data?.start_at],
+  );
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
@@ -51,34 +68,52 @@ export default function WatchPage(): React.ReactElement {
               {liveStream.data === undefined ? (
                 <Skeleton variant="text" level="title-sm" width={100} />
               ) : (
-                <Link to="/user" style={{ textDecoration: 'none' }}>
+                <Link
+                  to={`/user/${liveStream.data?.owner?.name}`}
+                  style={{ textDecoration: 'none' }}
+                >
                   <Typography level="title-sm">
                     {liveStream.data?.owner?.display_name}
                   </Typography>
                 </Link>
               )}
               <Typography level="body-sm">
-                <span>チャンネル登録者数****人</span>
+                <span>ランキング {userStatistics.data?.rank}位</span>
               </Typography>
             </div>
-            {/* <div>
-              <Button variant="outlined" color="neutral" sx={{ marginLeft: 3 }}>
-                チャンネル登録
-              </Button>
-            </div> */}
           </Stack>
           <Card variant="plain" sx={{ my: 2 }}>
-            <Stack direction="row" spacing={2}>
-              {liveStream.data === undefined ? (
-                <Skeleton variant="text" level="title-sm" width={100} />
+            <Stack
+              direction="row"
+              sx={{ maxWidth: '400px', flexWrap: 'wrap' }}
+              columnGap={2}
+            >
+              {statistics.data === undefined ? (
+                <>
+                  <Skeleton variant="text" level="title-sm" width={100} />
+                  <Skeleton variant="text" level="title-sm" width={100} />
+                  <Skeleton variant="text" level="title-sm" width={100} />
+                </>
               ) : (
-                <Typography level="title-sm">
-                  {statistics.data?.viewers_count}人が視聴中
-                </Typography>
+                <>
+                  <Typography level="title-sm">
+                    ランキング {statistics.data?.rank}位
+                  </Typography>
+                  <Typography level="title-sm">
+                    {statistics.data?.viewers_count}人が視聴中
+                  </Typography>
+                  <Typography level="title-sm">
+                    最大チップ額 {statistics.data?.max_tip}ISU
+                  </Typography>
+                  <Typography level="title-sm">
+                    {statistics.data?.total_reactions}リアクション
+                  </Typography>
+                  <Typography level="title-sm">
+                    {statistics.data?.total_reports}通報
+                  </Typography>
+                </>
               )}
-              <Typography level="title-sm">
-                ****時間前にライブ配信開始
-              </Typography>
+              <Typography level="title-sm">{date}にライブ配信開始</Typography>
             </Stack>
             <Typography level="body-md" sx={{ whiteSpace: 'pre-wrap' }}>
               {liveStream.data?.description}

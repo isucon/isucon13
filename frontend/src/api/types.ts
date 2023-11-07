@@ -51,9 +51,12 @@ export namespace Schemas {
     max_tip: number;
   }
   export interface UserStatistics {
-    tip_rank_by_livestream?: {
-      [key: string]: string;
-    };
+    rank: number;
+    viewers_count: number;
+    total_reactions: number;
+    total_livecomments: number;
+    total_tip: number;
+    favorite_emoji: string;
   }
   export interface LivecommentReport {
     id?: number;

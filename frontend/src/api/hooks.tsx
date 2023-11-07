@@ -124,6 +124,22 @@ export function useLiveStreamStatistics(
   );
 }
 
+export function useUserStatistics(
+  username: string | null,
+  config?: SWRConfiguration,
+) {
+  return useSWR(
+    username && `/user/${username}/statistics`,
+    () =>
+      apiClient.get$user$statistics({
+        parameter: {
+          username: username ?? '',
+        },
+      }),
+    config,
+  );
+}
+
 export function useLiveStreamMeasure(id: string | null) {
   React.useEffect(() => {
     if (!id) {
