@@ -85,9 +85,10 @@ func TestLivestream(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
+		loopClientName := fmt.Sprintf("user%d", i)
 		_, err = loopClient.Register(ctx, &RegisterRequest{
-			Name:        fmt.Sprintf("user%d", i),
-			DisplayName: fmt.Sprintf("user%d", i),
+			Name:        loopClientName,
+			DisplayName: loopClientName,
 			Description: "livestream-test-loop",
 			Password:    "test",
 			Theme: Theme{
@@ -102,25 +103,38 @@ func TestLivestream(t *testing.T) {
 
 		if i > config.NumSlots {
 			_, err = loopClient.ReserveLivestream(ctx, &ReserveLivestreamRequest{
-				Title:        "livestream-test1",
-				Description:  "livestream-test1",
+				Title:        fmt.Sprintf("livestream-test%d", i),
+				Description:  fmt.Sprintf("livestream-test%d", i),
 				PlaylistUrl:  "https://example.com",
 				ThumbnailUrl: "https://example.com",
 				StartAt:      startAt,
 				EndAt:        endAt,
 				Tags:         []int64{},
 			}, WithStatusCode(http.StatusBadRequest))
+			assert.NoError(t, err)
 		} else {
-			_, err = loopClient.ReserveLivestream(ctx, &ReserveLivestreamRequest{
-				Title:        "livestream-test1",
-				Description:  "livestream-test1",
+			livestream, err := loopClient.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+				Title:        fmt.Sprintf("livestream-test%d", i),
+				Description:  fmt.Sprintf("livestream-test%d", i),
 				PlaylistUrl:  "https://example.com",
 				ThumbnailUrl: "https://example.com",
 				StartAt:      startAt,
 				EndAt:        endAt,
 				Tags:         []int64{},
 			})
+			assert.NoError(t, err)
+			assert.NotZero(t, livestream.ID)
+
+			err = loopClient.GetLivestream(ctx, livestream.ID)
+			assert.NoError(t, err)
+
+			myLivestreams, err := loopClient.GetMyLivestreams(ctx)
+			assert.NoError(t, err)
+			assert.Len(t, myLivestreams, 1)
+
+			userLivestreams, err := loopClient.GetUserLivestreams(ctx, loopClientName)
+			assert.NoError(t, err)
+			assert.Len(t, userLivestreams, 1)
 		}
-		assert.NoError(t, err)
 	}
 }

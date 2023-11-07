@@ -106,13 +106,48 @@ func (c *Client) SearchLivestreams(
 }
 
 // 自分のライブ配信一覧取得
-func (c *Client) GetLivestreams(ctx context.Context, opts ...ClientOption) ([]*Livestream, error) {
+func (c *Client) GetMyLivestreams(ctx context.Context, opts ...ClientOption) ([]*Livestream, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
 	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream", nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var livestreams []*Livestream
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+	}
+
+	return livestreams, nil
+}
+
+// 特定ユーザのライブ配信取得
+func (c *Client) GetUserLivestreams(ctx context.Context, username string, opts ...ClientOption) ([]*Livestream, error) {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	req, err := c.agent.NewRequest(http.MethodGet, fmt.Sprintf("/api/user/%s/livestream", username), nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}

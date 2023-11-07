@@ -96,7 +96,7 @@ func BasicStreamerModerateScenario(
 	}
 
 	// 自分のライブ配信一覧取得
-	livestreams, err := client.GetLivestreams(ctx)
+	livestreams, err := client.GetMyLivestreams(ctx)
 	if err != nil {
 		return err
 	}
