@@ -18,6 +18,7 @@ services:
       - ../webapp/initial_reservation_slots.sql:/home/isucon/webapp/go/initial_reservation_slots.sql
       - ../webapp/initial_reactions.sql:/home/isucon/webapp/go/initial_reactions.sql
       - ../webapp/initial_livecomments.sql:/home/isucon/webapp/go/initial_livecomments.sql
+      - ../webapp/initial_pdns_records.sql:/home/isucon/webapp/go/initial_pdns_records.sql
       - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro
       - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf:ro
       - ../webapp/img:/home/isucon/webapp/img
