@@ -76,23 +76,19 @@ func reserveLivestreamHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	var req *ReserveLivestreamRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -111,12 +107,12 @@ func reserveLivestreamHandler(c echo.Context) error {
 	var slots []*ReservationSlotModel
 	if err := tx.SelectContext(ctx, &slots, "SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ?", req.StartAt, req.EndAt); err != nil {
 		c.Logger().Warnf("予約枠一覧取得でエラー発生: %+v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get reservation_slots")
 	}
 	for _, slot := range slots {
 		var count int
 		if err := tx.GetContext(ctx, &count, "SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?", slot.StartAt, slot.EndAt); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get reservation_slots")
 		}
 		c.Logger().Infof("%d ~ %d予約枠の残数 = %d\n", slot.StartAt, slot.EndAt, slot.Slot)
 		if count < 1 {
@@ -137,17 +133,17 @@ func reserveLivestreamHandler(c echo.Context) error {
 	)
 
 	if _, err := tx.ExecContext(ctx, "UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?", req.StartAt, req.EndAt); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update reservation_slot")
 	}
 
 	rs, err := tx.NamedExecContext(ctx, "INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)", livestreamModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert livestream")
 	}
 
 	livestreamID, err := rs.LastInsertId()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get last inserted livestream id")
 	}
 	livestreamModel.ID = livestreamID
 
@@ -157,17 +153,17 @@ func reserveLivestreamHandler(c echo.Context) error {
 			LivestreamID: livestreamID,
 			TagID:        tagID,
 		}); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert livestream tag")
 		}
 	}
 
 	livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill livestream")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusCreated, livestream)
@@ -179,7 +175,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -188,22 +184,22 @@ func searchLivestreamsHandler(c echo.Context) error {
 		// タグによる取得
 		var tagIDList []int
 		if err := tx.SelectContext(ctx, &tagIDList, "SELECT id FROM tags WHERE name = ?", keyTagName); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags")
 		}
 
 		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE id IN (?)", tagIDList)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to construct IN query")
 		}
 		var keyTaggedLivestreams []*LivestreamTagModel
 		if err := tx.SelectContext(ctx, &keyTaggedLivestreams, query, params...); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get keyTaggedLivestreams'")
 		}
 
 		for _, keyTaggedLivestream := range keyTaggedLivestreams {
 			ls := LivestreamModel{}
 			if err := tx.GetContext(ctx, &ls, "SELECT * FROM livestreams WHERE id = ?", keyTaggedLivestream.LivestreamID); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestreams")
 			}
 
 			livestreamModels = append(livestreamModels, &ls)
@@ -214,13 +210,13 @@ func searchLivestreamsHandler(c echo.Context) error {
 		if c.QueryParam("limit") != "" {
 			limit, err := strconv.Atoi(c.QueryParam("limit"))
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				return echo.NewHTTPError(http.StatusBadRequest, "limit query parameter must be integer")
 			}
 			query += fmt.Sprintf(" LIMIT %d", limit)
 		}
 
 		if err := tx.SelectContext(ctx, &livestreamModels, query); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestreams")
 		}
 	}
 
@@ -228,13 +224,13 @@ func searchLivestreamsHandler(c echo.Context) error {
 	for i := range livestreamModels {
 		livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModels[i])
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill livestream")
 		}
 		livestreams[i] = livestream
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, livestreams)
@@ -248,35 +244,30 @@ func getUserLivestreamsHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	var livestreamModels []*LivestreamModel
 	if err := tx.SelectContext(ctx, &livestreamModels, "SELECT * FROM livestreams WHERE user_id = ?", userID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestreams")
 	}
 	livestreams := make([]Livestream, len(livestreamModels))
 	for i := range livestreamModels {
 		livestream, err := fillLivestreamResponse(ctx, tx, *livestreamModels[i])
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill livestream")
 		}
 		livestreams[i] = livestream
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, livestreams)
@@ -290,24 +281,19 @@ func enterLivestreamHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "livestream_id must be integer")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -318,11 +304,11 @@ func enterLivestreamHandler(c echo.Context) error {
 	}
 
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(:user_id, :livestream_id, :created_at)", viewer); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert livestream_view_history")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -334,33 +320,29 @@ func exitLivestreamHandler(c echo.Context) error {
 		// echo.NewHTTPErrorが返っているのでそのまま出力
 		return err
 	}
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
 
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "livestream_id in path must be integer")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?", userID, livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert livestream_view_history")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -375,31 +357,31 @@ func getLivestreamHandler(c echo.Context) error {
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "livestream_id in path must be integer")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	livestreamModel := LivestreamModel{}
 	err = tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, "not found livestream that has the given id")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestream")
 	}
 
 	livestream, err := fillLivestreamResponse(ctx, tx, livestreamModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill livestream")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, livestream)
@@ -414,28 +396,24 @@ func getLivecommentReportsHandler(c echo.Context) error {
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "livestream_id in path must be integer")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	var livestreamModel LivestreamModel
 	if err := tx.GetContext(ctx, &livestreamModel, "SELECT * FROM livestreams WHERE id = ?", livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestream")
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
+	// error already check
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already check
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	if livestreamModel.UserID != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "can't get other streamer's livecomment reports")
@@ -443,20 +421,20 @@ func getLivecommentReportsHandler(c echo.Context) error {
 
 	var reportModels []*LivecommentReportModel
 	if err := tx.SelectContext(ctx, &reportModels, "SELECT * FROM livecomment_reports WHERE livestream_id = ?", livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livecomment reports")
 	}
 
 	reports := make([]LivecommentReport, len(reportModels))
 	for i := range reportModels {
 		report, err := fillLivecommentReportResponse(ctx, tx, *reportModels[i])
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill livecomment report")
 		}
 		reports[i] = report
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, reports)

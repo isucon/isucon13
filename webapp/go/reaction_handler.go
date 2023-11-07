@@ -43,12 +43,12 @@ func getReactionsHandler(c echo.Context) error {
 
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "livestream_id in path must be integer")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -56,28 +56,28 @@ func getReactionsHandler(c echo.Context) error {
 	if c.QueryParam("limit") != "" {
 		limit, err := strconv.Atoi(c.QueryParam("limit"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, "limit query parameter must be integer")
 		}
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
 
 	reactionModels := []ReactionModel{}
 	if err := tx.SelectContext(ctx, &reactionModels, query, livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, "failed to get reactions")
 	}
 
 	reactions := make([]Reaction, len(reactionModels))
 	for i := range reactionModels {
 		reaction, err := fillReactionResponse(ctx, tx, reactionModels[i])
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill reaction")
 		}
 
 		reactions[i] = reaction
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, reactions)
@@ -87,7 +87,7 @@ func postReactionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	livestreamID, err := strconv.Atoi(c.Param("livestream_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "livestream_id in path must be integer")
 	}
 
 	if err := verifyUserSession(c); err != nil {
@@ -95,24 +95,19 @@ func postReactionHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find user-id from session")
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	var req *PostReactionRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -125,22 +120,22 @@ func postReactionHandler(c echo.Context) error {
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (:user_id, :livestream_id, :emoji_name, :created_at)", reactionModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert reaction")
 	}
 
 	reactionID, err := result.LastInsertId()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get last inserted reaction id")
 	}
 	reactionModel.ID = reactionID
 
 	reaction, err := fillReactionResponse(ctx, tx, reactionModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill reaction")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusCreated, reaction)
