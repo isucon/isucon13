@@ -143,7 +143,7 @@ func main() {
 	e.POST("/api/livestream/reservation", reserveLivestreamHandler)
 	// list livestream
 	e.GET("/api/livestream/search", searchLivestreamsHandler)
-	e.GET("/api/livestream", getUserLivestreamsHandler)
+	e.GET("/api/livestream", getMyLivestreamsHandler)
 	// get livestream
 	e.GET("/api/livestream/:livestream_id", getLivestreamHandler)
 	// get polling livecomment timeline

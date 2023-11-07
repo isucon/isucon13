@@ -106,7 +106,7 @@ func (c *Client) SearchLivestreams(
 }
 
 // 自分のライブ配信一覧取得
-func (c *Client) GetLivestreams(ctx context.Context, opts ...ClientOption) ([]*Livestream, error) {
+func (c *Client) GetMyLivestreams(ctx context.Context, opts ...ClientOption) ([]*Livestream, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)

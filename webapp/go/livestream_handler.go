@@ -236,7 +236,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, livestreams)
 }
 
-func getUserLivestreamsHandler(c echo.Context) error {
+func getMyLivestreamsHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
 		return err
