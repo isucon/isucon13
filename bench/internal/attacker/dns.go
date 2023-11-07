@@ -2,6 +2,7 @@ package attacker
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/miekg/dns"
 )
 
 const (
@@ -17,21 +19,14 @@ const (
 )
 
 type DnsWaterTortureAttacker struct {
-	resolver     *net.Resolver
+	resolver     *dns.Client
 	targetDomain string
 	concurrency  int
 }
 
 func NewDnsWaterTortureAttacker(nameserver string, targetDomain string, concurrency int) *DnsWaterTortureAttacker {
 	return &DnsWaterTortureAttacker{
-		resolver: &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				addr := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
-				dialer := net.Dialer{Timeout: time.Nanosecond}
-				return dialer.DialContext(ctx, "udp", addr)
-			},
-		},
+		resolver:     &dns.Client{Net: "udp", DialTimeout: time.Nanosecond},
 		targetDomain: targetDomain,
 	}
 }
@@ -54,7 +49,26 @@ func (a *DnsWaterTortureAttacker) attack(ctx context.Context) error {
 		case <-ctx.Done():
 		default:
 			payload := a.makePayload(50)
-			a.resolver.LookupHost(ctx, payload)
+			m := &dns.Msg{}
+			m = m.SetQuestion(payload, dns.StringToType["A"])
+			addr := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
+			r, _, err := a.resolver.ExchangeContext(ctx, m, addr)
+
+			if err != nil {
+				return err
+			}
+
+			if r.Truncated {
+				tcpClient := &dns.Client{Net: "udp", DialTimeout: time.Nanosecond}
+				r, _, err = tcpClient.ExchangeContext(ctx, m, addr)
+				if err != nil {
+					return err
+				}
+			}
+
+			if r.Rcode != dns.RcodeSuccess {
+				return fmt.Errorf("failed to resolve '%s'. rcode:%s", payload, dns.RcodeToString[r.Rcode])
+			}
 		}
 	}
 }
