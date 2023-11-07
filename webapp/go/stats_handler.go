@@ -155,7 +155,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 		for _, livestream := range livestreams {
 			var livecomments []*LivecommentModel
 			if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestream.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livecommencts")
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livecomments")
 			}
 
 			for _, livecomment := range livecomments {

@@ -258,7 +258,7 @@ func reportLivecommentHandler(c echo.Context) error {
 
 	livecommentID, err := strconv.Atoi(c.Param("livecomment_id"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "livecomment_id in path must be integer'")
+		return echo.NewHTTPError(http.StatusBadRequest, "livecomment_id in path must be integer")
 	}
 
 	// error already checked
