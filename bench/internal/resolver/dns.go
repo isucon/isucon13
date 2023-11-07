@@ -3,6 +3,7 @@ package resolver
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"strconv"
 	"time"
@@ -36,6 +37,7 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 	}
 
 	for _, ans := range in.Answer {
+		log.Printf("ans = %+v\n", ans)
 		if record, ok := ans.(*dns.A); ok {
 			benchscore.IncResolves()
 			return record.A, nil
