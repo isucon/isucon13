@@ -30,5 +30,5 @@ func TestMain(m *testing.M) {
 	benchscore.InitProfit(ctx)
 	bencherror.InitErrors(ctx)
 
-	// m.Run()
+	m.Run()
 }

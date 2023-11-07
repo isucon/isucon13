@@ -30,6 +30,6 @@ func TestPretest(t *testing.T) {
 	_, err = client.Initialize(ctx)
 	assert.NoError(t, err)
 
-	// err = Pretest(ctx, client)
-	// assert.NoError(t, err)
+	err = Pretest(ctx, client)
+	assert.NoError(t, err)
 }
