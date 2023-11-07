@@ -53,6 +53,7 @@ func TestModerate(t *testing.T) {
 		EndAt:        endAt,
 		Tags:         []int64{},
 	})
+	assert.NoError(t, err)
 
 	err = client.Moderate(ctx, livestream.ID, "test")
 	assert.NoError(t, err)
