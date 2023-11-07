@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -14,8 +15,9 @@ import (
 
 func TestPretest(t *testing.T) {
 	ctx := context.Background()
-	benchscore.InitScore(ctx)
-	// bencherror.InitPenalty(ctx)
+	benchscore.InitCounter(ctx)
+	benchscore.InitProfit(ctx)
+	bencherror.InitErrors(ctx)
 
 	client, err := isupipe.NewClient(
 		agent.WithBaseURL(config.TargetBaseURL),

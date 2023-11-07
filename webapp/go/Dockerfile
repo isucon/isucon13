@@ -10,6 +10,8 @@ RUN apt-get update && \
     apt-get -y update && \
     apt-get -y install default-mysql-client pdns-server pdns-backend-mysql
 
+RUN rm -f /etc/powerdns/pdns.d/bind.conf
+
 RUN locale-gen en_US.UTF-8
 RUN useradd --uid=1001 --create-home isucon
 USER isucon

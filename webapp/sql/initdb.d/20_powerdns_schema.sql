@@ -73,7 +73,10 @@ CREATE TABLE tsigkeys (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
+-- NOTE: initializeの名前解決に必要
 INSERT INTO domains (id, name, type) VALUES (1, 'u.isucon.dev', 'NATIVE');
--- FIXME: とりあえず動かすために適当なのを入れてるが、ちゃんとした情報に直す
 INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'u.isucon.dev', 'SOA', 'localhost hostmaster.u.isucon.dev 0 10800 3600 604800 3600', 3600, NULL);
 INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'ns1.u.isucon.dev', 'NS', 'ns1.u.isucon.dev', 3600, NULL);
+INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'u.isucon.dev', 'A', '127.0.0.1', 3600, NULL);
+INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'pipe.u.isucon.dev', 'A', '127.0.0.1', 3600, NULL);
+INSERT INTO records (domain_id, name, type, content, ttl, prio) VALUES (1, 'test001.u.isucon.dev', 'A', '127.0.0.1', 3600, NULL);

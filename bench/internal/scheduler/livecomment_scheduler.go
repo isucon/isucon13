@@ -55,6 +55,15 @@ type NegativeComment struct {
 	NgWord  string
 }
 
+type NgWord struct {
+	Word string
+}
+
+type Tip struct {
+	Level int
+	Tip   int
+}
+
 // どの配信に対して色々投げたらいいか、いい感じにしてくれる君
 
 // Positiveの方は、長いコメント、短いコメントみたいな感じで取れると良い
@@ -67,26 +76,29 @@ type NegativeComment struct {
 //
 
 // ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
-//
-
-type StreamerStatistics struct {
-	NumLivecomments   int
-	TotalTips         int
-	TotalReportsCount int
-}
-
 type livecommentScheduler struct {
-	// 配信者ごと、ライブコメント数、投げ銭売上合計、スパム数の統計を取る
-	// 構造体は全部Livecommentなので、Commit, Abortを用意すればいいか
-	// ライブコメント、投げ銭は投稿時でどちらも扱えるけど、スパムはスパムメッセージなのかスパム報告なのか難しいな
-	streamerStats map[int]*StreamerStatistics
+	ngLivecomments map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {
+	ngLivecomments := make(map[string]struct{})
+	for _, comment := range negativeCommentPool {
+		ngLivecomments[comment.Comment] = struct{}{}
+	}
+	rand.Shuffle(len(dummyNgWords), func(i, j int) {
+		dummyNgWords[i], dummyNgWords[j] = dummyNgWords[j], dummyNgWords[i]
+	})
 	return &livecommentScheduler{}
 }
 
-// FIXME:
+// ライブコメント一覧に何件スパムが含まれるか調べるために使う
+func (s *livecommentScheduler) IsNgLivecomment(comment string) bool {
+	if _, ok := s.ngLivecomments[comment]; ok {
+		return true
+	} else {
+		return false
+	}
+}
 
 func (s *livecommentScheduler) GetShortPositiveComment() *PositiveComment {
 	idx := rand.Intn(len(positiveCommentPool))
@@ -103,17 +115,46 @@ func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
 	return negativeCommentPool[idx]
 }
 
+func (s *livecommentScheduler) generateTip(level int) int {
+	switch level {
+	case 0:
+		return 0
+	case 1:
+		return GenerateIntBetween(1, 1000)
+	case 2:
+		return GenerateIntBetween(1000, 2000)
+	case 3:
+		return GenerateIntBetween(2000, 5000)
+	case 4:
+		return GenerateIntBetween(5000, 10000)
+	case 5:
+		return GenerateIntBetween(10000, 100000)
+	default:
+		return 0
+	}
+}
+
 // 通常配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForStream() int {
-	return GenerateIntBetween(1, 4)
+func (s *livecommentScheduler) GetTipsForStream() *Tip {
+	level := GenerateIntBetween(1, 3)
+	tip := s.generateTip(level)
+	return &Tip{
+		Level: level,
+		Tip:   tip,
+	}
 }
 
 // 人気配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForPopularStream() int {
-	n := rand.Intn(2)
-	if n == 1 {
-		return 5
-	} else {
-		return s.GetTipsForStream()
+func (s *livecommentScheduler) GetTipsForPopularStream() *Tip {
+	level := GenerateIntBetween(3, 6)
+	tip := s.generateTip(level)
+	return &Tip{
+		Level: level,
+		Tip:   tip,
 	}
+}
+
+func (s *livecommentScheduler) GetDummyNgWord() *NgWord {
+	idx := rand.Intn(len(dummyNgWords))
+	return dummyNgWords[idx]
 }

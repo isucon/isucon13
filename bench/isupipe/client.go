@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 )
 
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
@@ -33,6 +33,7 @@ type Client struct {
 
 // FIXME: テスト用に、ネームサーバのアドレスや接続先アドレスなどをオプションで渡せるように
 func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
+	dnsResolver := resolver.NewDNSResolver()
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
@@ -40,21 +41,7 @@ func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
 				InsecureSkipVerify: true,
 			},
 			// Custom DNS Resolver
-			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				dialTimeout := 10000 * time.Millisecond
-				dialer := net.Dialer{
-					Timeout: dialTimeout,
-					Resolver: &net.Resolver{
-						PreferGo: true,
-						Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-							dialer := net.Dialer{Timeout: dialTimeout}
-							nameserver := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
-							return dialer.DialContext(ctx, "udp", nameserver)
-						},
-					},
-				}
-				return dialer.DialContext(ctx, network, address)
-			},
+			DialContext: dnsResolver.DialContext,
 		}),
 		agent.WithNoCache(),
 		agent.WithTimeout(10 * time.Second),

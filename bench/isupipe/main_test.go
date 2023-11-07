@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/agent"
-	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 func TestMain(m *testing.M) {
 	client, err := NewClient(
-		agent.WithBaseURL(config.TargetBaseURL),
-		agent.WithTimeout(1*time.Minute),
+		agent.WithTimeout(1 * time.Minute),
 	)
 	if err != nil {
 		log.Fatalln(err)
@@ -22,6 +22,11 @@ func TestMain(m *testing.M) {
 	if _, err := client.Initialize(context.Background()); err != nil {
 		log.Fatalln(err)
 	}
+
+	ctx := context.Background()
+	benchscore.InitCounter(ctx)
+	benchscore.InitProfit(ctx)
+	bencherror.InitErrors(ctx)
 
 	m.Run()
 }

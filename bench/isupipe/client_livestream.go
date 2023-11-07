@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 type Livestream struct {
@@ -66,7 +65,6 @@ func (c *Client) GetLivestream(
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetLivestream)
 	return nil
 }
 
@@ -173,7 +171,6 @@ func (c *Client) SearchLivestreamsByTag(
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetLivestreamByTag)
 	return nil
 }
 
@@ -212,7 +209,6 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 		return nil, bencherror.NewHttpResponseError(err, req)
 	}
 
-	benchscore.AddScore(benchscore.SuccessReserveLivestream)
 	return livestream, nil
 }
 
@@ -242,7 +238,6 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, opts .
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessEnterLivestream)
 	return nil
 }
 
@@ -271,6 +266,5 @@ func (c *Client) ExitLivestream(ctx context.Context, livestreamID int64, opts ..
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	benchscore.AddScore(benchscore.SuccessLeaveLivestream)
 	return nil
 }

@@ -73,12 +73,10 @@ func GetFinalErrorMessages() map[string][]string {
 	return m
 }
 
-func GetFinalPenalties() map[string]int64 {
+func Done() {
 	doneOnce.Do(func() {
-		benchErrors.Done()
+		benchErrors.Close()
 	})
-
-	return benchErrors.Count()
 }
 
 func CheckViolation() error {

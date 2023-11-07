@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
 type PostReactionRequest struct {
@@ -56,7 +55,6 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int64, opts ...C
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessGetReactions)
 	return reactions, nil
 }
 
@@ -98,6 +96,5 @@ func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostRe
 		}
 	}
 
-	benchscore.AddScore(benchscore.SuccessPostReaction)
 	return reaction, nil
 }
