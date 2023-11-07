@@ -111,7 +111,7 @@ func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 func initializeHandler(c echo.Context) error {
 	if out, err := exec.Command("./init.sh").CombinedOutput(); err != nil {
 		c.Logger().Warnf("init.sh failed with err=%s", string(out))
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize")
 	}
 
 	c.Request().Header.Add("Content-Type", "application/json;charset=utf-8")

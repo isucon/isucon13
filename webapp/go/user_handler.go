@@ -93,13 +93,16 @@ func getIconHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	var user UserModel
 	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", username); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "not found user that has the given username")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
 
 	var image []byte
@@ -107,7 +110,7 @@ func getIconHandler(c echo.Context) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.File(fallbackImage)
 		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user icon")
 		}
 	}
 
@@ -122,14 +125,10 @@ func postIconHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	var req *PostIconRequest
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
@@ -138,26 +137,26 @@ func postIconHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, "DELETE FROM icons WHERE user_id = ?", userID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete old user icon")
 	}
 
 	rs, err := tx.ExecContext(ctx, "INSERT INTO icons (user_id, image) VALUES (?, ?)", userID, req.Image)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert new user icon")
 	}
 
 	iconID, err := rs.LastInsertId()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get last inserted icon id")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusCreated, &PostIconResponse{
@@ -173,37 +172,33 @@ func getMeHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIDKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userID, ok := sess.Values[defaultUserIDKey].(int64)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	userModel := UserModel{}
 	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, "not found user that has the userid in session")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
 
 	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, user)
@@ -217,7 +212,7 @@ func registerHandler(c echo.Context) error {
 
 	req := PostUserRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
 	if req.Name == "pipe" {
@@ -226,12 +221,12 @@ func registerHandler(c echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptDefaultCost)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate hashed password")
 	}
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -244,12 +239,12 @@ func registerHandler(c echo.Context) error {
 
 	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user'")
 	}
 
 	userID, err := result.LastInsertId()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get last inserted user id")
 	}
 
 	userModel.ID = userID
@@ -259,7 +254,7 @@ func registerHandler(c echo.Context) error {
 		DarkMode: req.Theme.DarkMode,
 	}
 	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user theme")
 	}
 
 	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "30", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
@@ -268,11 +263,11 @@ func registerHandler(c echo.Context) error {
 
 	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusCreated, user)
@@ -291,7 +286,7 @@ func loginHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -302,11 +297,11 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(userModel.HashedPassword), []byte(req.Password))
@@ -314,7 +309,7 @@ func loginHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to compare hash and password")
 	}
 
 	sessionEndAt := time.Now().Add(1 * time.Hour)
@@ -323,7 +318,7 @@ func loginHandler(c echo.Context) error {
 
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to get session")
 	}
 
 	sess.Options = &sessions.Options{
@@ -338,7 +333,7 @@ func loginHandler(c echo.Context) error {
 	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save session")
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -357,22 +352,25 @@ func getUserHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
 	userModel := UserModel{}
 	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", username); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "not found user that has the given username")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
 
 	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
 	}
 
 	return c.JSON(http.StatusOK, user)
@@ -381,13 +379,17 @@ func getUserHandler(c echo.Context) error {
 func verifyUserSession(c echo.Context) error {
 	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to get session")
 	}
 
 	sessionExpires, ok := sess.Values[defaultSessionExpiresKey]
 	if !ok {
-		// FIXME: エラーメッセージを検討する
-		return echo.NewHTTPError(http.StatusForbidden, "")
+		return echo.NewHTTPError(http.StatusForbidden, "failed to get EXPIRES value from session")
+	}
+
+	_, ok = sess.Values[defaultUserIDKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to get USERID value from session")
 	}
 
 	now := time.Now()
