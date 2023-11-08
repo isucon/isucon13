@@ -78,7 +78,7 @@ func isTooManySpam(livecomments []*Livecomment) bool {
 	}
 
 	// ライブコメント全体のうち、スパムが占める割合で多すぎるか判断
-	return (spamCount/total)*100 >= config.TooManySpamThresholdPercentage
+	return uint64(float64(spamCount)/float64(total))*100 >= config.TooManySpamThresholdPercentage
 }
 
 func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]*Livecomment, error) {

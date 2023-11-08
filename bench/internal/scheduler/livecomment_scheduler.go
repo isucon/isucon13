@@ -90,7 +90,9 @@ func mustNewLivecommentScheduler() *livecommentScheduler {
 	rand.Shuffle(len(dummyNgWords), func(i, j int) {
 		dummyNgWords[i], dummyNgWords[j] = dummyNgWords[j], dummyNgWords[i]
 	})
-	return &livecommentScheduler{}
+	return &livecommentScheduler{
+		ngLivecomments: ngLivecomments,
+	}
 }
 
 // ライブコメント一覧に何件スパムが含まれるか調べるために使う

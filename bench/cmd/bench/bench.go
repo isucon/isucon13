@@ -76,7 +76,7 @@ func benchmark(ctx context.Context) error {
 
 	benchmarker := newBenchmarker(benchCtx)
 	if err := benchmarker.run(benchCtx); err != nil {
-		lgr.Warnf("ベンチマーク走行エラー", zap.Error(err))
+		lgr.Warnf("ベンチマーク走行エラー: %s", err.Error())
 		return err
 	}
 
@@ -155,8 +155,9 @@ var run = cli.Command{
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
-		if initializeResp.AdvertiseLevel < 1 {
-			return cli.NewExitError("不正な広告レベル", 1)
+		// FIXME: 値の見直し
+		if initializeResp.AdvertiseLevel < 1 || initializeResp.AdvertiseLevel > 100 {
+			return cli.NewExitError(fmt.Errorf("不正な広告レベル"), 1)
 		}
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
 		config.Language = initializeResp.Language
@@ -182,7 +183,10 @@ var run = cli.Command{
 		}
 
 		lgr.Info("ベンチマーク走行を開始します")
+		benchStartAt := time.Now()
 		_ = benchmark(ctx)
+		benchElapsedSec := time.Now().Sub(benchStartAt)
+		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
 
 		benchscore.DoneCounter()
 		benchscore.DoneProfit()

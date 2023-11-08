@@ -29,8 +29,12 @@ func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *is
 		return err
 	}
 
-	// FIXME: 統計情報取得
 	_, err := client.GetLivestreamStatistics(ctx, livestream.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.GetLivecomments(ctx, livestream.ID)
 	if err != nil {
 		return err
 	}

@@ -57,8 +57,8 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 		popularStreamerSem:        semaphore.NewWeighted(weight),
 		moderatorSem:              semaphore.NewWeighted(weight),
 		viewerSem:                 semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
-		spammerSem:                semaphore.NewWeighted(weight),
-		attackSem:                 semaphore.NewWeighted(weight),
+		spammerSem:                semaphore.NewWeighted(weight * 20), // 視聴者の２倍はスパム投稿者が潜んでいる
+		attackSem:                 semaphore.NewWeighted(weight * 10), // 視聴者と同程度、攻撃を仕掛ける輩がいる
 		popularStreamerClientPool: popularStreamerClientPool,
 		streamerClientPool:        streamerClientPool,
 		viewerClientPool:          viewerClientPool,
@@ -205,6 +205,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 			return nil
 		case err := <-violateCh:
 			lgr.Warn("仕様違反が検出されたため、ベンチマーク走行を中断します")
+			lgr.Warnf("仕様違反エラー: %s", err.Error())
 			return err
 		default:
 			if ok := b.streamerSem.TryAcquire(1); ok {

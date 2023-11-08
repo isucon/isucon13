@@ -76,21 +76,19 @@ func ViewerSpamScenario(
 	}
 	defer livestreamPool.Put(ctx, livestream)
 
-	for i := 0; i < 10; i++ {
-		comment := scheduler.LivecommentScheduler.GetNegativeComment()
-		resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{})
-		if err != nil {
-			continue
-		}
-		livecommentPool.Put(ctx, &isupipe.Livecomment{
-			ID:         resp.ID,
-			User:       resp.User,
-			Livestream: resp.Livestream,
-			Comment:    resp.Comment,
-			Tip:        int(resp.Tip),
-			CreatedAt:  int(resp.CreatedAt),
-		})
+	comment := scheduler.LivecommentScheduler.GetNegativeComment()
+	resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{})
+	if err != nil {
+		return err
 	}
+	livecommentPool.Put(ctx, &isupipe.Livecomment{
+		ID:         resp.ID,
+		User:       resp.User,
+		Livestream: resp.Livestream,
+		Comment:    resp.Comment,
+		Tip:        int(resp.Tip),
+		CreatedAt:  int(resp.CreatedAt),
+	})
 
 	return nil
 }

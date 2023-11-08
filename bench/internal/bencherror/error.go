@@ -87,7 +87,7 @@ func CheckViolation() error {
 		systemErrorCount = 0
 	}
 	if systemErrorCount > 0 {
-		return ErrSystem
+		return fmt.Errorf("%d件のシステムエラー: %w", systemErrorCount, ErrSystem)
 	}
 
 	violationCount, ok := counts[string(BenchmarkViolationError)]
@@ -95,7 +95,7 @@ func CheckViolation() error {
 		violationCount = 0
 	}
 	if violationCount > 0 {
-		return ErrViolation
+		return fmt.Errorf("%d件の仕様違反エラー: %w", violationCount, ErrViolation)
 	}
 
 	return nil
