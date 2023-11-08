@@ -27,6 +27,7 @@ import { HiCurrencyYen } from 'react-icons/hi2';
 import { useGlobalToastQueue } from '../toast/toast';
 import { apiClient } from '~/api/client';
 import { useLiveStreamComment, useLiveStreamReaction } from '~/api/hooks';
+import { iconUrl } from '~/api/icon';
 import { Schemas } from '~/api/types';
 import {
   RandomReactions,
@@ -541,10 +542,15 @@ const Comment = React.memo(function Comment({
       text={comment.comment ?? ''}
       amount={comment.tip ?? 0}
       onClick={() => comment.id && onReport?.(comment.id)}
+      username={comment.user?.name}
     />
   ) : (
     <CommentWrapper onClick={() => comment.id && onReport?.(comment.id)}>
-      <Avatar size="sm" sx={{ position: 'absolute' }} />
+      <Avatar
+        size="sm"
+        sx={{ position: 'absolute' }}
+        src={iconUrl(comment.user?.name)}
+      />
       <Typography component="div" sx={{ ml: '40px', pt: '2px' }}>
         <Typography level="title-sm" component="span">
           {comment.user?.display_name ?? ''}
@@ -572,6 +578,7 @@ const CommentWrapper = styled.div`
 interface TipCommentProps {
   amount: number;
   text: string;
+  username?: string;
   isEditable?: boolean;
   onChange?(text: string): void;
   onClick?(): void;
@@ -590,7 +597,7 @@ function TipComment(props: TipCommentProps): React.ReactElement {
       onClick={props.onClick}
     >
       <Stack direction="row" spacing={1} alignItems="center">
-        <Avatar size="sm" />
+        <Avatar size="sm" src={iconUrl(props.username)} />
         <Typography
           level="title-sm"
           sx={{
