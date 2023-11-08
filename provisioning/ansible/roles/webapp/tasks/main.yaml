@@ -4,12 +4,19 @@
   ansible.builtin.copy:
     src: webapp.tar.gz
     dest: /home/isucon/webapp.tar.gz
-- name: Remove webapp.tar.gz
+
+- name: Mkdir webapp
   become: true
   become_user: isucon
   ansible.builtin.file:
     path: /home/isucon/webapp
     state: directory
+
+- name: Get stats of webapp/sql
+  ansible.builtin.stat:
+    path: /home/isucon/webapp/sql
+  register: st
+
 - name: Extract webapp.tar.gz into /home/isucon
   become: true
   become_user: isucon
@@ -17,11 +24,15 @@
     remote_src: true
     src: /home/isucon/webapp.tar.gz
     dest: /home/isucon/
-- name: Remove webapp.tar.gz
-  become: true
-  ansible.builtin.file:
-    path: /home/isucon/webapp.tar.gz
-    state: absent
+  when: not st.stat.exists
+
+# TODO: 一旦削除しない
+#- name: Remove webapp.tar.gz
+#  become: true
+#   ansible.builtin.file:
+#     path: /home/isucon/webapp.tar.gz
+#     state: absent
+
 - name: initilize database
   become: true
   shell: |
@@ -33,13 +44,16 @@
   become: true
   shell: |
     cat /home/isucon/webapp/sql/initdb.d/10_schema.sql | mysql -uisucon -pisucon
+
 - name: Tasks for isupipe-go
   include_tasks: go.yaml
+
 - name: Put systemd service
   become: true
   ansible.builtin.copy:
     src: isupipe-go.service
     dest: /etc/systemd/system/
+
 - name: Put systemd service env file
   become: true
   ansible.builtin.template:

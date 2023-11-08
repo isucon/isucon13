@@ -103,12 +103,12 @@
     state: link
     force: true
 
-- name: Stop systemd-resolved
+- name: Restart systemd-resolved
   become: true
   service:
     name: systemd-resolved
-    enabled: false
-    state: stopped
+    enabled: true
+    state: restarted
 
 - name: Start pdns
   become: true
