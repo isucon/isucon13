@@ -1,0 +1,3 @@
+package bencherror
+
+// FIXME: impl

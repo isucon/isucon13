@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -77,7 +78,8 @@ type Tip struct {
 
 // ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
 type livecommentScheduler struct {
-	ngLivecomments map[string]struct{}
+	ngLivecommentsMu sync.Mutex
+	ngLivecomments   map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {

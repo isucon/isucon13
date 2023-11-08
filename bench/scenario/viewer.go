@@ -34,10 +34,6 @@ func BasicViewerScenario(
 		return err
 	}
 
-	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
-		return err
-	}
-
 	for i := 0; i < int(config.AdvertiseCost*10); i++ {
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
@@ -53,7 +49,7 @@ func BasicViewerScenario(
 		}
 	}
 
-	if err := client.ExitLivestream(ctx, livestream.ID); err != nil {
+	if err := GoAwayFromLivestream(ctx, client, livestream); err != nil {
 		return err
 	}
 

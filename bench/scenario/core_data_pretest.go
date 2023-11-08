@@ -112,7 +112,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if _, err := client.GetLivecomments(ctx, livestream.ID /* livestream id*/); err != nil {
+	if _, err := client.GetLivecomments(ctx, livestream.ID, isupipe.WithNoSpamCheck()); err != nil {
 		return err
 	}
 

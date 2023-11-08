@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -26,7 +27,7 @@ type BenchResult struct {
 	Pass          bool     `json:"pass"`
 	Score         int64    `json:"score"`
 	Messages      []string `json:"messages"`
-	AvailableDays int      `json:"available_days"`
+	AdvertiseCost int      `json:"advertise_cost"`
 	Language      string   `json:"language"`
 }
 
@@ -41,6 +42,25 @@ func uniqueMsgs(msgs []string) (uniqMsgs []string) {
 		uniqMsgs = append(uniqMsgs, msg)
 	}
 	return
+}
+
+func dumpFailedResult(msgs []string) {
+	lgr := zap.S()
+
+	b, err := json.Marshal(&BenchResult{
+		Pass:          false,
+		Score:         0,
+		Messages:      msgs,
+		AdvertiseCost: int(config.AdvertiseCost),
+		Language:      config.Language,
+	})
+	if err != nil {
+		lgr.Warnf("失格判定結果書き出しに失敗. 運営に連絡してください: messages=%+v, err=%+v", msgs, err)
+		fmt.Println(fmt.Sprintf(`{"pass": false, "score": 0, "messages": ["%s"]}`, string(b)))
+		return
+	}
+
+	fmt.Println(string(b))
 }
 
 func benchmark(ctx context.Context) error {
@@ -123,8 +143,13 @@ var run = cli.Command{
 			agent.WithTimeout(1*time.Minute),
 		)
 		if err != nil {
+			dumpFailedResult([]string{})
 			return cli.NewExitError(err, 1)
 		}
+
+		// FIXME: initialize以後のdumpFailedResult、ポータル報告への書き出しを実装
+		// Actionsの結果にも乗ってしまうが、サイズ的に問題ないか
+		// ベンチの出力変動が落ち着いてから実装する
 
 		initializeResp, err := initClient.Initialize(ctx)
 		if err != nil {
@@ -134,6 +159,7 @@ var run = cli.Command{
 			return cli.NewExitError("不正な広告レベル", 1)
 		}
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
+		config.Language = initializeResp.Language
 
 		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
 		pretestDNSResolver := resolver.NewDNSResolver()
@@ -141,6 +167,7 @@ var run = cli.Command{
 		pretestClient, err := isupipe.NewClient(
 			pretestDNSResolver,
 			agent.WithBaseURL(config.TargetBaseURL),
+			agent.WithTimeout(10*time.Second),
 		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
@@ -168,6 +195,7 @@ var run = cli.Command{
 		finalcheckClient, err := isupipe.NewClient(
 			finalcheckDNSResolver,
 			agent.WithBaseURL(config.TargetBaseURL),
+			agent.WithTimeout(10*time.Second),
 		)
 		if err != nil {
 			return cli.NewExitError(err, 1)

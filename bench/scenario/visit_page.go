@@ -25,6 +25,10 @@ func VisitTop(ctx context.Context, client *isupipe.Client) error {
 // ライブ配信画面訪問
 func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
+	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
+		return err
+	}
+
 	// FIXME: 統計情報取得
 	_, err := client.GetLivestreamStatistics(ctx, livestream.ID)
 	if err != nil {
@@ -32,6 +36,15 @@ func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *is
 	}
 
 	// FIXME: 処理中定期的にGET /livestream/:livestreamid/livecomment を叩く
+
+	return nil
+}
+
+func GoAwayFromLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
+
+	if err := client.ExitLivestream(ctx, livestream.ID); err != nil {
+		return err
+	}
 
 	return nil
 }

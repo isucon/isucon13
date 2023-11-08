@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
+	"sync/atomic"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
@@ -56,7 +59,29 @@ type NGWord struct {
 	CreatedAt    int64  `json:"created_at"`
 }
 
-func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]Livecomment, error) {
+func isTooManySpam(livecomments []*Livecomment) bool {
+	total := uint64(len(livecomments))
+	if total == 0 {
+		return false
+	}
+
+	var spamCount uint64
+	var wg sync.WaitGroup
+	for _, livecomment := range livecomments {
+		wg.Add(1)
+		go func(livecomment *Livecomment) {
+			defer wg.Done()
+			if scheduler.LivecommentScheduler.IsNgLivecomment(livecomment.Comment) {
+				atomic.AddUint64(&spamCount, 1)
+			}
+		}(livecomment)
+	}
+
+	// ライブコメント全体のうち、スパムが占める割合で多すぎるか判断
+	return (spamCount/total)*100 >= config.TooManySpamThresholdPercentage
+}
+
+func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]*Livecomment, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -81,10 +106,14 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts .
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	livecomments := []Livecomment{}
+	livecomments := []*Livecomment{}
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livecomments); err != nil {
 			return livecomments, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if o.spamCheck && isTooManySpam(livecomments) {
+			return nil, bencherror.NewTooManySpamError(c.username, req)
 		}
 	}
 
@@ -126,7 +155,6 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, 
 	return reports, nil
 }
 
-// FIXME: 実装
 func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]*NGWord, error) {
 	var (
 		defaultStatusCode = http.StatusOK

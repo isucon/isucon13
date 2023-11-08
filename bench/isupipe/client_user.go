@@ -303,17 +303,18 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 
 	// cookieを流用して各種ページアクセス用agentを初期化
 	dnsResolver := resolver.NewDNSResolver()
-	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
+	domain := fmt.Sprintf("%s.%s", r.UserName, config.BaseDomain)
 	c.themeAgent, err = agent.NewAgent(
-		agent.WithBaseURL(fmt.Sprintf("http://%s:%d", domain, config.TargetPort)),
+		agent.WithBaseURL(fmt.Sprintf("%s://%s:%d", config.HTTPScheme, domain, config.TargetPort)),
 		withClient(c.agent.HttpClient),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
 			// Custom DNS Resolver
 			DialContext: dnsResolver.DialContext,
 		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
 		agent.WithNoCache(),
 	)
 	if err != nil {
@@ -329,6 +330,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 			// Custom DNS Resolver
 			DialContext: dnsResolver.DialContext,
 		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
 		// NOTE: 画像はキャッシュできるようにする
 	)
 	if err != nil {

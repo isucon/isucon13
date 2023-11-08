@@ -100,3 +100,21 @@ func CheckViolation() error {
 
 	return nil
 }
+
+func RunViolationChecker(ctx context.Context) chan error {
+	violate := make(chan error, 1)
+	go func() {
+		defer close(violate)
+		for {
+			select {
+			case <-ctx.Done():
+			default:
+				if err := CheckViolation(); err != nil {
+					violate <- err
+					return
+				}
+			}
+		}
+	}()
+	return violate
+}

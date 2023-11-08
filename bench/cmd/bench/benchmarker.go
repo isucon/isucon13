@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
+	"sync"
 	"time"
 
 	"github.com/isucon/isucandar/agent"
@@ -40,8 +40,6 @@ type benchmarker struct {
 func newBenchmarker(ctx context.Context) *benchmarker {
 	lgr := zap.S()
 
-	// FIXME: 広告費用から重さを計算する
-	// いったん固定値で設定しておく
 	var weight int64 = int64(config.AdvertiseCost)
 	lgr.Infof("負荷レベル: %d", weight)
 
@@ -192,33 +190,64 @@ func (b *benchmarker) loadSpammer(ctx context.Context) error {
 func (b *benchmarker) run(ctx context.Context) error {
 	lgr := zap.S()
 
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	childCtx, cancelChildCtx := context.WithCancel(ctx)
+	defer cancelChildCtx()
+
 	b.runClientProviders(ctx)
+	violateCh := bencherror.RunViolationChecker(ctx)
 	for {
 		select {
 		case <-ctx.Done():
-			lgr.Info("ベンチマーク走行の停止中です")
+			lgr.Info("ベンチマーク走行を停止します")
 			return nil
+		case err := <-violateCh:
+			lgr.Warn("仕様違反が検出されたため、ベンチマーク走行を中断します")
+			return err
 		default:
-			if err := bencherror.CheckViolation(); err != nil && errors.Is(err, bencherror.ErrViolation) {
-				return err
-			}
 			if ok := b.streamerSem.TryAcquire(1); ok {
-				go b.loadStreamer(ctx)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadStreamer(childCtx)
+				}()
 			}
 			if ok := b.popularStreamerSem.TryAcquire(1); ok {
-				go b.loadPopularStreamer(ctx)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadPopularStreamer(childCtx)
+				}()
 			}
 			if ok := b.moderatorSem.TryAcquire(1); ok {
-				go b.loadModerator(ctx)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadModerator(childCtx)
+				}()
 			}
 			if ok := b.viewerSem.TryAcquire(1); ok {
-				go b.loadViewer(ctx)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadViewer(childCtx)
+				}()
 			}
 			if ok := b.spammerSem.TryAcquire(1); ok {
-				go b.loadSpammer(ctx)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadSpammer(childCtx)
+				}()
 			}
 			if ok := b.attackSem.TryAcquire(1); ok {
-				go b.loadAttack(ctx)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadAttack(childCtx)
+				}()
 			}
 		}
 	}

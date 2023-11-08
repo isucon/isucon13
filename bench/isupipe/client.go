@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -37,13 +36,13 @@ func NewClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOptio
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
 			// Custom DNS Resolver
 			DialContext: dnsResolver.DialContext,
 		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
 		agent.WithNoCache(),
-		agent.WithTimeout(10 * time.Second),
 	}
 	for _, customOpt := range customOpts {
 		opts = append(opts, customOpt)
@@ -68,10 +67,6 @@ func (c *Client) LoginUserName() (string, error) {
 
 func (c *Client) IsPopular() bool {
 	return c.isPopular
-}
-
-func (c *Client) IsTooSlow(startTime, endTime time.Time) bool {
-	return endTime.Sub(startTime) >= config.RequestTooSlowThreshold
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数
