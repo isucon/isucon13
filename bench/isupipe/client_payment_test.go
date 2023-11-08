@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -17,6 +18,7 @@ func TestPayment(t *testing.T) {
 	client, err := NewClient(
 		resolver.NewDNSResolver(),
 		agent.WithBaseURL(config.TargetBaseURL),
+		agent.WithTimeout(3*time.Second),
 	)
 	assert.NoError(t, err)
 

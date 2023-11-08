@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ import (
 func TestGetUserStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(resolver.NewDNSResolver())
+	client, err := NewClient(resolver.NewDNSResolver(), agent.WithTimeout(3*time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{

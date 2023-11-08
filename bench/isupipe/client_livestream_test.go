@@ -85,6 +85,7 @@ func TestLivestream(t *testing.T) {
 		loopClient, err := NewClient(
 			resolver.NewDNSResolver(),
 			agent.WithBaseURL(config.TargetBaseURL),
+			agent.WithTimeout(3*time.Second),
 		)
 		assert.NoError(t, err)
 
