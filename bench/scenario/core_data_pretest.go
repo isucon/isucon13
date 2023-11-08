@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"time"
 
+	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -146,7 +148,7 @@ func Pretest(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	if err := assertBadLogin(ctx, client, user); err != nil {
+	if err := assertBadLogin(ctx, user); err != nil {
 		return err
 	}
 	if err := assertPipeUserRegistration(ctx, client); err != nil {
@@ -198,23 +200,31 @@ func assertUserUniqueConstraint(ctx context.Context, client *isupipe.Client) err
 	return nil
 }
 
-func assertBadLogin(ctx context.Context, client *isupipe.Client, user *isupipe.User) error {
+func assertBadLogin(ctx context.Context, user *isupipe.User) error {
 	// 存在しないユーザでログインされた場合はエラー
+	client1, err := isupipe.NewClient(agent.WithTimeout(3 * time.Second))
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
 	unknownUserReq := isupipe.LoginRequest{
 		UserName: "unknownUser4328904823",
 		Password: "unknownUser",
 	}
 
-	if err := client.Login(ctx, &unknownUserReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
+	if err := client1.Login(ctx, &unknownUserReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
 		return bencherror.NewViolationError(err, "データベースに存在しないユーザからのログインは無効です")
 	}
 
 	// パスワードが間違っている場合はエラー
+	client2, err := isupipe.NewClient(agent.WithTimeout(3 * time.Second))
+	if err != nil {
+		return bencherror.NewInternalError(err)
+	}
 	wrongPasswordReq := isupipe.LoginRequest{
 		UserName: user.Name,
 		Password: "wrongPassword",
 	}
-	if err := client.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
+	if err := client2.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
 		return bencherror.NewViolationError(err, "パスワードが間違っているログインは無効です")
 	}
 

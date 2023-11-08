@@ -112,7 +112,7 @@ func TestGetUserStats(t *testing.T) {
 func TestGetLivestreamStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(resolver.NewDNSResolver())
+	client, err := NewClient(resolver.NewDNSResolver(), agent.WithTimeout(3*time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
