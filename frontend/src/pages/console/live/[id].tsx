@@ -15,6 +15,7 @@ import { apiClient } from '~/api/client';
 import {
   useLiveStream,
   useLiveStreamNgWords,
+  useLiveStreamReports,
   useLiveStreamStatistics,
   useMedia,
   useUserStatistics,
@@ -30,6 +31,9 @@ export default function WatchPage(): React.ReactElement {
   const idNum = id ? parseInt(id) : null;
   const media = useMedia(id ?? '');
   const ngWords = useLiveStreamNgWords(id ?? null);
+  const reports = useLiveStreamReports(id ?? null, {
+    refreshInterval: 3000,
+  });
   const statistics = useLiveStreamStatistics(id ?? null);
   const userStatistics = useUserStatistics(
     liveStream.data?.owner?.name ?? null,
@@ -130,10 +134,9 @@ export default function WatchPage(): React.ReactElement {
 
               <Typography level="title-sm">2時間前にライブ配信開始</Typography>
             </Stack>
-            <Typography
-              level="body-md"
-              sx={{ whiteSpace: 'pre-wrap' }}
-            >{`説明文\n2行目\n三行目`}</Typography>
+            <Typography level="body-md" sx={{ whiteSpace: 'pre-wrap' }}>
+              {liveStream.data?.description}
+            </Typography>
           </Card>
         </Stack>
 
@@ -166,6 +169,19 @@ export default function WatchPage(): React.ReactElement {
             <List>
               {ngWords.data?.map((word) => (
                 <ListItem key={word.id}>{word.word}</ListItem>
+              ))}
+            </List>
+          </Sheet>
+
+          <Stack direction="row" sx={{ mt: 3, mb: 1, alignItems: 'center' }}>
+            <Typography level="title-lg">通報されたコメント</Typography>
+          </Stack>
+          <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
+            <List>
+              {reports.data?.map((report) => (
+                <ListItem key={report.id}>
+                  {report.livecomment?.comment}
+                </ListItem>
               ))}
             </List>
           </Sheet>

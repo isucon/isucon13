@@ -108,6 +108,22 @@ export function useLiveStreamNgWords(
   );
 }
 
+export function useLiveStreamReports(
+  id: string | null,
+  config?: SWRConfiguration,
+) {
+  return useSWR(
+    id && `/livestream/${id}/report`,
+    () =>
+      apiClient.get$livecomment$livecommentid$reports({
+        parameter: {
+          livestreamid: id ?? '',
+        },
+      }),
+    config,
+  );
+}
+
 export function useLiveStreamStatistics(
   id: string | null,
   config?: SWRConfiguration,
