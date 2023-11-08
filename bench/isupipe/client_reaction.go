@@ -30,12 +30,12 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int64, opts ...C
 	)
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +70,13 @@ func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostRe
 	}
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
+	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return nil, err
 	}

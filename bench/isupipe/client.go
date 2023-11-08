@@ -16,24 +16,53 @@ import (
 
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
 
+// Client は、ISUPipeに対するHTTPクライアントです
+// NOTE: スレッドセーフではありません
+// NOTE: ログインは一度しかできません (何回もログインする場合はClientを個別に作り直す必要がある)
 type Client struct {
-	agent     *agent.Agent
+	agent        *agent.Agent
+	agentOptions []agent.AgentOption
+
 	username  string
 	isPopular bool
 
 	// ユーザカスタムテーマ適用ページアクセス用agent
 	// ライブ配信画面など
-	themeAgent *agent.Agent
+	themeAgent   *agent.Agent
+	themeOptions []agent.AgentOption
 
 	// 画像ダウンロード用agent
 	// キャッシュ可能
-	assetAgent *agent.Agent
+	assetAgent   *agent.Agent
+	assetOptions []agent.AgentOption
 }
 
-// FIXME: テスト用に、ネームサーバのアドレスや接続先アドレスなどをオプションで渡せるように
+// NewClient は、HTTPクライアント群を初期化します
+// NOTE: キャッシュ無効化オプションなどを指定すると、意図しない挙動をする可能性があります
+// タイムアウトやURLなどの振る舞いでないパラメータを指定するのにcustomOptsを用いてください
 func NewClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.InsecureSkipVerify,
+			},
+			DialContext: dnsResolver.DialContext,
+		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
+		agent.WithNoCache(),
+	}
+	for _, customOpt := range customOpts {
+		opts = append(opts, customOpt)
+	}
+
+	baseAgent, err := agent.NewAgent(opts...)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	themeOpts := []agent.AgentOption{
+		withClient(baseAgent.HttpClient),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: config.InsecureSkipVerify,
@@ -45,15 +74,29 @@ func NewClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOptio
 		agent.WithNoCache(),
 	}
 	for _, customOpt := range customOpts {
-		opts = append(opts, customOpt)
+		themeOpts = append(themeOpts, customOpt)
 	}
-	agent, err := agent.NewAgent(opts...)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
+
+	assetOpts := []agent.AgentOption{
+		agent.WithBaseURL(config.TargetBaseURL),
+		withClient(baseAgent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.InsecureSkipVerify,
+			},
+			DialContext: dnsResolver.DialContext,
+		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
+		// NOTE: 画像はキャッシュできるようにする
+	}
+	for _, customOpt := range customOpts {
+		assetOpts = append(assetOpts, customOpt)
 	}
 
 	return &Client{
-		agent: agent,
+		agent:        baseAgent,
+		themeOptions: themeOpts,
+		assetOptions: assetOpts,
 	}, nil
 }
 
