@@ -185,6 +185,8 @@ func main() {
 	// 課金情報
 	e.GET("/api/payment", GetPaymentResult)
 
+	e.HTTPErrorHandler = errorResponseHandler
+
 	// DB接続
 	conn, err := connectDB(e.Logger)
 	if err != nil {
@@ -206,5 +208,23 @@ func main() {
 	if err := e.Start(listenAddr); err != nil {
 		e.Logger.Errorf("failed to start HTTP server: %v", err)
 		os.Exit(1)
+	}
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+func errorResponseHandler(err error, c echo.Context) {
+	c.Logger().Errorf("error at %s: %+v", c.Path(), err)
+	if he, ok := err.(*echo.HTTPError); ok {
+		if e := c.JSON(he.Code, &ErrorResponse{Error: err.Error()}); err != nil {
+			c.Logger().Errorf("%+v", e)
+		}
+		return
+	}
+
+	if e := c.JSON(http.StatusInternalServerError, &ErrorResponse{Error: err.Error()}); err != nil {
+		c.Logger().Errorf("%+v", e)
 	}
 }
