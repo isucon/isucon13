@@ -23,8 +23,8 @@ linux_amd64:
 test: clean
 	$(TEST) $(TEST_FLAGS) ./...
 
-bench: linux_amd64
-	./bin/bench_linux_amd64 run --dns-port=1053
+bench: build
+	./bin/bench_$(shell go env GOOS)_$(shell go env GOARCH) run --dns-port=1053
 
 clean:
 	$(RM) ./bin/bench_darwin_amd64
