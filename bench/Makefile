@@ -3,6 +3,7 @@ TEST=go test
 TEST_FLAGS=-v
 
 DARWIN_TARGET_ENV=GOOS=darwin GOARCH=amd64
+DARWIN_TARGET_ARM64_ENV=GOOS=darwin GOARCH=arm64
 LINUX_TARGET_ENV=GOOS=linux GOARCH=amd64
 LINUX_TARGET_ARM64_ENV=GOOS=linux GOARCH=arm64
 
@@ -14,6 +15,7 @@ all: build
 
 build: clean
 	$(DARWIN_TARGET_ENV) $(BUILD) -o ./bin/bench_darwin_amd64 ./cmd/bench
+	$(DARWIN_TARGET_ARM64_ENV) $(BUILD) -o ./bin/bench_darwin_arm64 ./cmd/bench
 	$(LINUX_TARGET_ENV) $(BUILD) -o ./bin/bench_linux_amd64 ./cmd/bench
 	$(LINUX_TARGET_ARM64_ENV) $(BUILD) -o ./bin/bench_linux_arm64 ./cmd/bench
 

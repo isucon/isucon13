@@ -1,3 +1,4 @@
 bench_darwin_amd64
+bench_darwin_arm64
 bench_linux_amd64
 bench_linux_arm64
