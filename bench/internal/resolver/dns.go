@@ -42,21 +42,24 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 	client := new(dns.Client)
 	in, _, err := client.ExchangeContext(ctx, msg, r.Nameserver)
 	if err != nil {
+		benchscore.IncDNSFailed()
 		return nil, err
 	}
 
+	// プロトコル上成功をカウントする
+	benchscore.IncResolves()
+
 	if in.Rcode != dns.RcodeSuccess {
-		return nil, fmt.Errorf("failed to resolve with rcode=%d", in.Rcode)
+		return nil, fmt.Errorf("failed to resolve %s with rcode=%d", addr, in.Rcode)
 	}
 
 	for _, ans := range in.Answer {
 		if record, ok := ans.(*dns.A); ok {
-			benchscore.IncResolves()
 			return record.A, nil
 		}
 	}
 
-	return nil, fmt.Errorf("failed to resolve %s", addr)
+	return nil, fmt.Errorf("failed to resolve %s: not A record in response", addr)
 }
 
 func (r *DNSResolver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {

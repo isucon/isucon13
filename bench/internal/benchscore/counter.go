@@ -9,6 +9,7 @@ import (
 
 const (
 	DNSResolve score.ScoreTag = "dns-resolve"
+	DNSFailed  score.ScoreTag = "dns-failed"
 
 	TooSlow     score.ScoreTag = "too-slow-left"
 	TooManySpam score.ScoreTag = "too-many-spam"
@@ -22,6 +23,7 @@ var (
 func InitCounter(ctx context.Context) {
 	counter = score.NewScore(ctx)
 	counter.Set(DNSResolve, 1)
+	counter.Set(DNSFailed, 1)
 	counter.Set(TooSlow, 1)
 	counter.Set(TooManySpam, 1)
 }
@@ -33,6 +35,15 @@ func IncResolves() {
 func NumResolves() int64 {
 	table := counter.Breakdown()
 	return table[DNSResolve]
+}
+
+func IncDNSFailed() {
+	counter.Add(DNSFailed)
+}
+
+func NumDNSFailed() int64 {
+	table := counter.Breakdown()
+	return table[DNSFailed]
 }
 
 func GetByTag(tag score.ScoreTag) int64 {
