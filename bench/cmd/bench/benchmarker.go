@@ -8,6 +8,7 @@ import (
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
@@ -75,6 +76,7 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 		return func(u *scheduler.User) {
 			go func() {
 				client, err := isupipe.NewClient(
+					resolver.NewDNSResolver(),
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
 				if err != nil {

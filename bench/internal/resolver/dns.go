@@ -16,14 +16,16 @@ import (
 var atomicId = uint64(1)
 
 type DNSResolver struct {
-	Nameserver string
-	Timeout    time.Duration
+	Nameserver      string
+	Timeout         time.Duration
+	ResolveAttempts uint
 }
 
 func NewDNSResolver() *DNSResolver {
 	return &DNSResolver{
-		Nameserver: net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)),
-		Timeout:    10000 * time.Millisecond,
+		Nameserver:      net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)),
+		Timeout:         2 * time.Second,
+		ResolveAttempts: 1,
 	}
 }
 
@@ -40,7 +42,17 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 	msg.RecursionDesired = false
 
 	client := new(dns.Client)
-	in, _, err := client.ExchangeContext(ctx, msg, r.Nameserver)
+
+	var in *dns.Msg
+	var err error
+
+	for i := uint(0); i < r.ResolveAttempts; i++ {
+		in, _, err = client.ExchangeContext(ctx, msg, r.Nameserver)
+		if err != nil {
+			continue
+		}
+		break
+	}
 	if err != nil {
 		benchscore.IncDNSFailed()
 		return nil, err
