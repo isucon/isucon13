@@ -193,8 +193,11 @@ var run = cli.Command{
 		lgr.Infof("遅延離脱=%d, スパム離脱=%d", tooManySlows, tooManySpams)
 
 		numResolves := benchscore.GetByTag(benchscore.DNSResolve)
-		msgs = append(msgs, fmt.Sprintf("名前解決成功数: %d", numResolves))
+		numDNSFailed := benchscore.GetByTag(benchscore.DNSFailed)
+		msgs = append(msgs, fmt.Sprintf("名前解決成功数 %d", numResolves))
+		msgs = append(msgs, fmt.Sprintf("名前解決失敗数 %d", numDNSFailed))
 		lgr.Infof("名前解決成功数: %d", numResolves)
+		lgr.Infof("名前解決失敗数: %d", numDNSFailed)
 
 		profit := benchscore.GetTotalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
