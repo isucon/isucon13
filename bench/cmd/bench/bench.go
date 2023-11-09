@@ -15,6 +15,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/logger"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
 )
@@ -117,6 +118,7 @@ var run = cli.Command{
 
 		lgr.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(
+			resolver.NewDNSResolver(),
 			agent.WithBaseURL(config.TargetBaseURL),
 			agent.WithTimeout(1*time.Minute),
 		)
@@ -134,7 +136,10 @@ var run = cli.Command{
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
 
 		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
+		pretestDNSResolver := resolver.NewDNSResolver()
+		pretestDNSResolver.ResolveAttempts = 10
 		pretestClient, err := isupipe.NewClient(
+			pretestDNSResolver,
 			agent.WithBaseURL(config.TargetBaseURL),
 		)
 		if err != nil {
@@ -158,7 +163,10 @@ var run = cli.Command{
 		lgr.Info("ベンチマーク走行終了")
 
 		lgr.Info("===== 最終チェック =====")
+		finalcheckDNSResolver := resolver.NewDNSResolver()
+		finalcheckDNSResolver.ResolveAttempts = 10
 		finalcheckClient, err := isupipe.NewClient(
+			finalcheckDNSResolver,
 			agent.WithBaseURL(config.TargetBaseURL),
 		)
 		if err != nil {

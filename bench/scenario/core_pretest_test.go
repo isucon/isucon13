@@ -9,6 +9,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +21,7 @@ func TestPretest(t *testing.T) {
 	bencherror.InitErrors(ctx)
 
 	client, err := isupipe.NewClient(
+		resolver.NewDNSResolver(),
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(1*time.Minute),
 	)
