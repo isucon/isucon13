@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:node": "tsx watch src/node.ts"
+    "start:node": "tsx watch src/node.ts",
+    "format": "prettier -w src"
   },
   "keywords": [],
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.3",
     "@types/node": "^20.9.0",
+    "prettier": "^3.0.3",
     "tsx": "^4.0.0",
     "typescript": "^5.2.2"
   },
