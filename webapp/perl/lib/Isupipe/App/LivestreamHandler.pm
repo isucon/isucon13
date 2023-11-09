@@ -20,6 +20,10 @@ use Isupipe::App::Util qw(
     DEFAULT_USER_ID_KEY
 );
 
+use Isupipe::App::FillResponse qw(
+    fill_livestream_response
+);
+
 use constant NUM_RESERVATION_SLOT => $ENV{ISUCON13_NUM_RESERVATION_SLOT} // 2;
 
 use constant TERM_START_AT => 1711929600; # 2024/04/01 UTC
@@ -54,7 +58,6 @@ sub reserve_livestream_handler($app, $c) {
 
     my $txn = $app->dbh->txn_scope;
     try {
-
         # 2024/04/01からの１年間の期間内であるかチェック
         infof('check term');
         if (!($params->{end_at} == TERM_END_AT || $params->{end_at} < TERM_END_AT) && (TERM_START_AT == $params->{start_at} || $params->{start_at} > TERM_START_AT)) {
@@ -137,8 +140,7 @@ sub reserve_livestream_handler($app, $c) {
             );
         }
 
-        # TODO
-        # $livestream = fill_livestream_response($app, $livestream);
+        $livestream = fill_livestream_response($app, $livestream);
 
         $txn->commit;
 
@@ -314,3 +316,5 @@ sub search_livestreams_by_tag_handler($app, $c) {
 
     return $c->render_json($livestreams);
 }
+
+

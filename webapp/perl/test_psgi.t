@@ -105,10 +105,6 @@ subtest 'POST /api/livestream/reservation' => sub {
         my $res = $cb->($req);
         is ($res->code, HTTP_CREATED) or diag $res->content;
 
-        my $a = decode_json($res->content);
-        use Data::Dumper;
-        note Dumper $a;
-
         is decode_json($res->content), hash {
             field id => 2;
             etc;
