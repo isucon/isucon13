@@ -34,11 +34,12 @@
     owner: isucon
     group: isucon
 
-- name: Remove authorized_keys
-  become: true
-  file:
-    state: absent
-    path: /home/isucon/.ssh/authorized_keys
+# TODO 一旦コメントアウト
+#- name: Remove authorized_keys
+#  become: true
+#  file:
+#    state: absent
+#    path: /home/isucon/.ssh/authorized_keys
 
 - name: Add isucon to sudoers
   become: true
