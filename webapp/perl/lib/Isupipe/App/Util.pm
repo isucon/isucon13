@@ -20,8 +20,7 @@ use Crypt::Eksblowfish::Bcrypt ();
 use Crypt::OpenSSL::Random ();
 use Type::Params qw(compile);
 use Data::Lock qw(dlock);
-use Encode ();
-use Log::Minimal ();
+use Scalar::Util qw(refaddr);
 
 use Isupipe::Assert qw(ASSERT);
 
@@ -60,14 +59,18 @@ sub check_password {
     die "crypt_error";
 }
 
-sub check_params($params, $type) {
-    state $check = compile($type);
-    my $flag = $check->($params);
+{
+    my $compiled_checks = {};
 
-    # 開発環境では、存在しないキーにアクセスした時にエラーになるようにしておく
-    if (ASSERT && $flag) {
-        dlock($params);
+    sub check_params($params, $type) {
+        my $check = $compiled_checks->{refaddr($type)} //= compile($type);
+        my $flag = $check->($params);
+
+        # 開発環境では、存在しないキーにアクセスした時にエラーになるようにしておく
+        if (ASSERT && $flag) {
+            dlock($params);
+        }
+
+        return $flag
     }
-
-    return $flag
 }

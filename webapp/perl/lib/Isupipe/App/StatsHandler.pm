@@ -3,17 +3,16 @@ use v5.38;
 use utf8;
 
 # FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
+use HTTP::Status qw(:constants);
+use Types::Standard -types;
 
+use Isupipe::Log;
 use Isupipe::Entity::LivestreamStatistics;
 use Isupipe::Entity::UserStatistics;
-use Isupipe::Entity::TipRank;
-use Isupipe::Entity::ReactionRank;
-
 use Isupipe::Entity::LivestreamViewer;
-
-use Isupipe::App::UserHandler qw(
+use Isupipe::App::Util qw(
     verify_user_session
-    DEFAULT_USER_ID_KEY
+    check_params
 );
 
 sub get_user_statistics_handler($app, $c) {
@@ -61,7 +60,7 @@ sub get_livestream_statistics_handler($app, $c) {
 
     $query = <<~QUERY;
         SELECT COUNT(*) AS total_reaction, emoji_name, RANK() OVER(ORDER BY COUNT(*) DESC) AS reaction_rank
-        FROM reactions GROUP BY livestream_id, emoji_name 
+        FROM reactions GROUP BY livestream_id, emoji_name
         HAVING livestream_id = ? ORDER BY total_reaction DESC LIMIT 3
     QUERY
 
@@ -101,7 +100,7 @@ sub query_total_top_rank_perl_viewed_livestream($app, $c, $user_id, $viewed_live
         my $stat = $total_tip_rank_per_livestreams->{$livestream_id};
 
         my $query = <<~QUERY;
-            SELECT SUM(tip) AS total_tip, RANK() OVER(ORDER BY SUM(tip) DESC) AS tip_rank 
+            SELECT SUM(tip) AS total_tip, RANK() OVER(ORDER BY SUM(tip) DESC) AS tip_rank
             FROM livecomments GROUP BY livestream_id
             HAVING livestream_id = ? AND total_tip = ?
         QUERY

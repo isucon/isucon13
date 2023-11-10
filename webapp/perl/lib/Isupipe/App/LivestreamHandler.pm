@@ -11,9 +11,7 @@ use Isupipe::Entity::LivestreamViewer;
 use Isupipe::Entity::Livestream;
 use Isupipe::Entity::LivestreamTag;
 use Isupipe::Entity::LivecommentReport;
-
 use Isupipe::Entity::ReservationSlot;
-
 use Isupipe::App::Util qw(
     check_params
     verify_user_session

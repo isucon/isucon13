@@ -4,15 +4,15 @@ use utf8;
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
-use Log::Minimal;
 
+use Isupipe::Log;
 use Isupipe::Entity::Livecomment;
 use Isupipe::Entity::LivecommentReport;
 use Isupipe::Entity::NGWord;
-
-use Isupipe::App::UserHandler qw(
+use Isupipe::App::Util qw(
     verify_user_session
     DEFAULT_USER_ID_KEY
+    check_params
 );
 
 use constant PostLivecommentRequest => Dict[
@@ -57,13 +57,12 @@ sub post_livetcomment_handleer($app, $c) {
         $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
     }
 
-    my $req = $c->req->body_parameters;
-    if (PostLivecommentRequest->check($req)) {
-        # FIXME: GO実装だと、500になってる
+    my $params = $c->req->json_parameters;
+    unless (check_params($params, PostLivecommentRequest)) {
         $c->halt_text(HTTP_BAD_REQUEST, "bad request");
     }
 
-    if ($req->{tip} < 0 || 20000 < $req->{tip}) {
+    if ($params->{tip} < 0 || 20000 < $params->{tip}) {
         # FIXME コメントと式が食い違ってる 1 <= tips < 20000 が正しい？
         $c->halt_text(HTTP_BAD_REQUEST, "the tips in a live comment be 1 <= tips <= 20000");
     }
@@ -79,8 +78,8 @@ sub post_livetcomment_handleer($app, $c) {
     WHERE t.text LIKE CONCAT('%', w.word, '%');
     QUERY
 
-    my $hit_spam = $dbh->select_one($query, $req->{comment});
-    infof("[hitSpam=%d] comment=%s", $hit_spam, $req->{comment});
+    my $hit_spam = $dbh->select_one($query, $params->{comment});
+    infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment});
     if ($hit_spam >= 1) {
         $c->halt_text(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
     }
@@ -88,8 +87,8 @@ sub post_livetcomment_handleer($app, $c) {
     my $livecomment = Isupipe::Entity::Livecomment->new(
         user_id => $user_id,
         livestream_id => $livestream_id,
-        comment => $req->{comment},
-        tip => $req->{tip},
+        comment => $params->{comment},
+        tip => $params->{tip},
     );
 
     $dbh->query(
@@ -182,9 +181,8 @@ sub moderate_ng_word_handler($app, $c) {
         $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
     }
 
-    my $req = $c->req->body_parameters;
-    if (ModerateRequest->check($req)) {
-        # FIXME: GO実装だと、500になってる
+    my $params = $c->req->json_parameters;
+    unless (check_params($params, ModerateRequest)) {
         $c->halt_text(HTTP_BAD_REQUEST, "bad request");
     }
 
@@ -206,7 +204,7 @@ sub moderate_ng_word_handler($app, $c) {
         {
             user_id => $user_id,
             livestream_id => $livestream_id,
-            word => $req->{ng_word},
+            word => $params->{ng_word},
         },
     );
 

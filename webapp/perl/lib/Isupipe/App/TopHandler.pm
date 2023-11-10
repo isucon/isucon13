@@ -3,12 +3,15 @@ use v5.38;
 use utf8;
 
 use HTTP::Status qw(:constants);
+use Types::Standard -types;
 
+use Isupipe::Log;
 use Isupipe::Entity::Tag;
 use Isupipe::Entity::User;
 use Isupipe::Entity::Theme;
-
-use Isupipe::App::Util qw(verify_user_session);
+use Isupipe::App::Util qw(
+    verify_user_session
+);
 
 sub get_tag_handler($app, $c) {
     my $tags = $app->dbh->select_all_as(

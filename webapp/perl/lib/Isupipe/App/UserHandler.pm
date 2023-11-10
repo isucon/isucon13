@@ -1,20 +1,20 @@
 package Isupipe::App::UserHandler;
 use v5.38;
 use utf8;
+use experimental qw(try);
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
-use Log::Minimal qw(infof);
 
+use Isupipe::Log;
 use Isupipe::Entity::User;
 use Isupipe::Entity::Theme;
-
 use Isupipe::App::Util qw(
     verify_user_session
     DEFAULT_USER_ID_KEY
-
     encrypt_password
     check_password
+    check_params
 );
 
 use constant ThemeRequest => Dict[
@@ -41,17 +41,17 @@ use constant LoginRequest => Dict[
 # ユーザ登録API
 # POST /user
 sub user_register_handler($app, $c) {
-    my $req = $c->req->body_parameters;
-    unless (PostUserRequest->check($req)) {
+    my $params = $c->req->json_parameters;
+    unless (check_params($params, PostUserRequest)) {
         $c->halt(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
     }
 
-    my $hashed_password = encrypt_password($req->{password});
+    my $hashed_password = encrypt_password($params->{password});
 
     my $user = Isupipe::Entity::User->new(
-        name         => $req->{name},
-        display_name => $req->{display_name},
-        description  => $req->{description},
+        name         => $params->{name},
+        display_name => $params->{display_name},
+        description  => $params->{description},
         password     => $hashed_password,
     );
 
@@ -69,7 +69,7 @@ sub user_register_handler($app, $c) {
 
         my $theme = Isupipe::Entity::Theme->new(
             user_id   => $user_id,
-            dark_mode => $req->{theme}{dark_mode},
+            dark_mode => $params->{theme}{dark_mode},
         );
 
         $dbh->query(
@@ -89,8 +89,8 @@ sub user_register_handler($app, $c) {
 # ユーザログインAPI
 # POST /api/login
 sub login_handler($app, $c) {
-    my $params = $c->req->body_parameters->as_hashref;
-    unless (LoginRequest->check($params)) {
+    my $params = $c->req->json_parameters;
+    unless (check_params($params, LoginRequest)) {
         $c->halt_text(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
     }
 

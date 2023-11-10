@@ -4,15 +4,17 @@ use utf8;
 
 use Kossy;
 use HTTP::Status qw(:constants);
-use Cpanel::JSON::XS::Type;
-use Log::Minimal;
 use DBIx::Sunny;
 
 $Kossy::JSON_SERIALIZER = Cpanel::JSON::XS->new()->ascii(0)->convert_blessed;
 
+use Isupipe::App::LivecommentHandler;
+use Isupipe::App::LivestreamHandler;
+use Isupipe::App::PaymentHandler;
+use Isupipe::App::ReactionHandler;
+use Isupipe::App::StatsHandler;
 use Isupipe::App::TopHandler;
 use Isupipe::App::UserHandler;
-use Isupipe::App::LivestreamHandler;
 
 sub connect_db() {
     my $host     = $ENV{ISUCON13_MYSQL_DIALCONFIG_ADDRESS}    || '127.0.0.1';
@@ -46,14 +48,6 @@ sub initialize_handler($self, $c) {
     });
 }
 
-
-filter 'allow_json_request_filter' => sub ($cb) {
-    return sub ($app, $c) {
-        $c->env->{'kossy.request.parse_json_body'} = 1;
-        $cb->($app, $c);
-    };
-};
-
 # 初期化
 post '/api/initialize', \&initialize_handler;
 
@@ -63,7 +57,7 @@ get '/api/user/:username/theme', Isupipe::App::TopHandler->can('get_streamer_the
 
 # livestream
 # reserve livestream
-post '/api/livestream/reservation', ['allow_json_request_filter'], Isupipe::App::LivestreamHandler->can('reserve_livestream_handler');
+post '/api/livestream/reservation', Isupipe::App::LivestreamHandler->can('reserve_livestream_handler');
 
 get '/search_livestream',  Isupipe::App::TopHandler->can('search_livestreams_by_tag_handler');
 # post '/livestream/reservation',  \&reserve_livestream_handler;
@@ -94,7 +88,7 @@ get '/search_livestream',  Isupipe::App::TopHandler->can('search_livestreams_by_
 #
 # # user
 #post '/user',  \&user_register_handler;
-post '/api/login',  ['allow_json_request_filter'], Isupipe::App::UserHandler->can('login_handler');
+post '/api/login', Isupipe::App::UserHandler->can('login_handler');
 # get '/user',  \&get_users_handler;
 #
 # # FIXME: ユーザ一覧を返すAPI

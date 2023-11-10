@@ -11,7 +11,6 @@ requires 'Log::Minimal', '0.19';
 requires 'Type::Tiny', '2.004000';
 requires 'Crypt::Eksblowfish::Bcrypt', '0.009';
 requires 'Crypt::OpenSSL::Random', '0.15';
-requires 'Data::UUID', '1.226';
 requires 'Data::Lock', '1.03';
 
 # あとで消す

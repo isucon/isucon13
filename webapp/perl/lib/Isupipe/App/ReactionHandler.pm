@@ -5,11 +5,12 @@ use utf8;
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
 
+use Isupipe::Log;
 use Isupipe::Entity::Reaction;
-
-use Isupipe::App::UserHandler qw(
+use Isupipe::App::Util qw(
     verify_user_session
     DEFAULT_USER_ID_KEY
+    check_params
 );
 
 use constant PostReactionRequest => Dict[
@@ -49,9 +50,8 @@ sub post_reaction_handler($app, $c) {
         $c->halt_text(HTTP_UNAUTHORIZED, 'failed to find user-id from session');
     }
 
-    my $req = $c->req->body_parameters;
-    unless (PostReactionRequest->check($req)) {
-        # FIXME: GO言語の参考実装では、500を返している
+    my $params = $c->req->json_parameters;
+    unless (check_params($params, PostReactionRequest)) {
         $c->halt_text(HTTP_BAD_REQUEST, 'invalid request');
     }
 
@@ -61,7 +61,7 @@ sub post_reaction_handler($app, $c) {
     my $reaction = Isupipe::Entity::Reaction->new(
         user_id       => $user_id,
         livestream_id => $livestream_id,
-        emoji_name    => $req->{emoji_name},
+        emoji_name    => $params->{emoji_name},
     );
 
     $dbh->query(
