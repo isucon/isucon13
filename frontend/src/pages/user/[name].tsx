@@ -1,26 +1,58 @@
 import styled from '@emotion/styled';
 import AspectRatio from '@mui/joy/AspectRatio';
+import Box from '@mui/joy/Box';
+import Button from '@mui/joy/Button';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useUser, useUserStatistics } from '~/api/hooks';
+import { apiClient } from '~/api/client';
+import { useUser, useUserMe, useUserStatistics } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
+import { ChangeIconDialog } from '~/components/account/iconmodal';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function UserPage(): React.ReactElement {
   const { name: username } = useParams();
   const user = useUser(username ?? null);
+  const me = useUserMe();
   const userStatistics = useUserStatistics(username ?? null);
+  const isSelf = me.data !== undefined && me.data?.name === username;
+  const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false);
+  const onIconSubmit = React.useCallback(async (iconBase64: string) => {
+    await apiClient.post$icon({
+      requestBody: {
+        image: iconBase64,
+      },
+    });
+    location.reload();
+  }, []);
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={3}>
       <Container>
+        <ChangeIconDialog
+          isOpen={isModalOpen}
+          onSubmit={onIconSubmit}
+          onClose={() => setIsModalOpen(false)}
+        />
         <Stack direction="row" gap={2} alignItems="center">
-          <AspectRatio ratio={1} sx={{ borderRadius: '50%', width: '100px' }}>
-            <img src={iconUrl(user.data?.name)} loading="lazy" />
-          </AspectRatio>
+          <Box>
+            <AspectRatio ratio={1} sx={{ borderRadius: '50%', width: '100px' }}>
+              <img src={iconUrl(user.data?.name)} loading="lazy" />
+            </AspectRatio>
+            {isSelf && (
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                sx={{ width: '100%', mt: 1 }}
+                size="sm"
+                variant="soft"
+              >
+                画像変更
+              </Button>
+            )}
+          </Box>
           <Stack spacing={1}>
             <Typography level="h3">{user.data?.name}</Typography>
             <Stack direction="row" spacing={2}>

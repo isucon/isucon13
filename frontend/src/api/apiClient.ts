@@ -132,6 +132,10 @@ export interface Parameter$post$livecomment$livecommentid$report {
 export interface Response$post$livecomment$livecommentid$report$Status$201 {
   'application/json': Schemas.LivecommentReport;
 }
+export type RequestBody$post$icon = RequestBodies.PostIcon.Content;
+export interface Response$post$icon$Status$201 {
+  'application/json': Schemas.Icon;
+}
 export type ResponseContentType$get$tag = keyof Response$get$tag$Status$200;
 export type RequestContentType$post$login = keyof RequestBody$post$login;
 export interface Params$post$login {
@@ -238,6 +242,11 @@ export type ResponseContentType$post$livecomment$livecommentid$report =
 export interface Params$post$livecomment$livecommentid$report {
   parameter: Parameter$post$livecomment$livecommentid$report;
 }
+export type RequestContentType$post$icon = keyof RequestBody$post$icon;
+export type ResponseContentType$post$icon = keyof Response$post$icon$Status$201;
+export interface Params$post$icon {
+  requestBody: RequestBody$post$icon['application/json'];
+}
 export type HttpMethod =
   | 'GET'
   | 'PUT'
@@ -278,7 +287,8 @@ export type SuccessResponses =
   | Response$get$livestream$_livestreamid$statistics$Status$200
   | Response$post$livestream$reservation$Status$201
   | Response$get$livecomment$livecommentid$reports$Status$200
-  | Response$post$livecomment$livecommentid$report$Status$201;
+  | Response$post$livecomment$livecommentid$report$Status$201
+  | Response$post$icon$Status$201;
 export namespace ErrorResponse {
   export type get$tag = void;
   export type post$login = void;
@@ -303,6 +313,7 @@ export namespace ErrorResponse {
   export type post$livestream$reservation = void;
   export type get$livecomment$livecommentid$reports = void;
   export type post$livecomment$livecommentid$report = void;
+  export type post$icon = void;
 }
 export interface Encoding {
   readonly contentType?: string;
@@ -808,6 +819,25 @@ export class Client<RequestOption> {
         httpMethod: 'POST',
         url,
         headers,
+      },
+      option,
+    );
+  }
+  public async post$icon(
+    params: Params$post$icon,
+    option?: RequestOption,
+  ): Promise<Response$post$icon$Status$201['application/json']> {
+    const url = this.baseUrl + `/icon`;
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'POST',
+        url,
+        headers,
+        requestBody: params.requestBody,
       },
       option,
     );

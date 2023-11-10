@@ -71,6 +71,9 @@ export namespace Schemas {
     word: string;
     created_at: number;
   }
+  export interface Icon {
+    id: number;
+  }
 }
 export namespace Responses {
   /** Example response */
@@ -177,6 +180,13 @@ export namespace RequestBodies {
         collaborators?: number[];
         start_at?: number;
         end_at?: number;
+      };
+    }
+  }
+  export namespace PostIcon {
+    export interface Content {
+      'application/json': {
+        image?: string;
       };
     }
   }

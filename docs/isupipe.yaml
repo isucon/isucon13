@@ -507,6 +507,19 @@ paths:
                     livecomment_id: 153
                     created_at: 12345
                     updated_at: 12345
+  "/icon":
+    post:
+      summary: ""
+      operationId: post-icon
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Icon"
+      requestBody:
+        $ref: "#/components/requestBodies/PostIcon"
 components:
   schemas:
     Theme:
@@ -697,6 +710,14 @@ components:
           type: string
         created_at:
           type: integer
+    Icon:
+      title: Icon
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
   requestBodies:
     PostLivestreamModerate:
       content:
@@ -800,6 +821,14 @@ components:
                 description: "配信のマナー: ★みんな仲良くしましょう★"
                 start_at: 0
                 end_at: 0
+    PostIcon:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              image:
+                type: string
   responses:
     GetTag:
       description: Example response
