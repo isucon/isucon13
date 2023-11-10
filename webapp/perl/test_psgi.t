@@ -112,6 +112,55 @@ subtest 'POST /api/livestream/reservation' => sub {
     };
 };
 
+subtest 'GET /api/livestream/search' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/search?tag=DIY";
+
+        my $res = $cb->($req);
+        is $res->code, HTTP_OK;
+        diag $res->content;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field title => D;
+                etc;
+            };
+            etc;
+        };
+    };
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/search";
+
+        my $res = $cb->($req);
+        is $res->code, HTTP_OK;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field title => D;
+                etc;
+            };
+            etc;
+        };
+    };
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/search?limit=1";
+
+        my $res = $cb->($req);
+        is $res->code, HTTP_OK;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field title => D;
+                etc;
+            };
+            etc;
+        };
+    };
+};
+
 subtest 'POST /api/login' => sub {
     test_psgi $app, sub ($cb) {
 

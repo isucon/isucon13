@@ -155,6 +155,55 @@ sub reserve_livestream_handler($app, $c) {
     }
 }
 
+sub search_livestreams_handler($app, $c) {
+    my $key_tag_name = $c->req->query_parameters->{tag};
+
+    my $livestreams = [];
+    if ($key_tag_name) {
+        # タグによる取得
+        my $tags = $app->dbh->select_all_as(
+            'Isupipe::Entity::Tag',
+            'SELECT id FROM tags WHERE name = ?',
+            $key_tag_name
+        );
+
+        my $livestream_tags = $app->dbh->select_all_as(
+            'Isupipe::Entity::LivestreamTag',
+            'SELECT * FROM livestream_tags WHERE tag_id IN (?)',
+            [map { $_->id } $tags->@*]
+        );
+
+        for my $livestream_tag ($livestream_tags->@*) {
+            my $livestream = $app->dbh->select_row_as(
+                'Isupipe::Entity::Livestream',
+                'SELECT * FROM livestreams WHERE id = ?',
+                $livestream_tag->livestream_id,
+            );
+            push $livestreams->@*, $livestream;
+        }
+    }
+    else {
+        # 検索条件なし
+        my $query = 'SELECT * FROM livestreams';
+        if ($c->req->query_parameters->{limit}) {
+            $query .= ' LIMIT ?';
+        }
+
+        $livestreams = $app->dbh->select_all_as(
+            'Isupipe::Entity::Livestream',
+            $query,
+            $c->req->query_parameters->{limit} // (),
+        );
+    }
+
+    my $response = [
+        map { fill_livestream_response($app, $_) } $livestreams->@*
+    ];
+
+    return $c->render_json($response);
+}
+
+
 sub get_livestreams_handler($app, $c) {
     my $key_tag_name = $c->req->query_parameters->{'tag'};
 
@@ -292,27 +341,6 @@ sub get_livecomment_report_handler($app, $c) {
     );
 
     return $c->render_json($reports);
-}
-
-sub search_livestreams_by_tag_handler($app, $c) {
-    my $key_tag_name = $c->req->query_parameters->{tag};
-
-    my $key_tag = $app->dbh->select_row_as(
-        'Isupipe::Entity::Tag',
-        'SELECT id FROM tags WHERE name = ?',
-        $key_tag_name
-    );
-    unless ($key_tag) {
-        $c->halt(HTTP_NOT_FOUND, 'tag not found'); # TODO: 参考実装のGOにない実装
-    }
-
-    my $livestreams = $app->dbh->select_all_as(
-        'Isupipe::Entity::Livestream',
-        'SELECT id FROM livestream_tags WHERE tag_id = ?',
-        $key_tag->id
-    );
-
-    return $c->render_json($livestreams);
 }
 
 

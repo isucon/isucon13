@@ -59,7 +59,7 @@ get '/api/user/:username/theme', Isupipe::App::TopHandler->can('get_streamer_the
 # reserve livestream
 post '/api/livestream/reservation', Isupipe::App::LivestreamHandler->can('reserve_livestream_handler');
 
-get '/search_livestream',  Isupipe::App::TopHandler->can('search_livestreams_by_tag_handler');
+get '/api/livestream/search', Isupipe::App::LivestreamHandler->can('search_livestreams_handler');
 # post '/livestream/reservation',  \&reserve_livestream_handler;
 # # list livestream
 # get '/livestream',  \&get_livestreams_handler;
