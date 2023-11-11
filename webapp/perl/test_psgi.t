@@ -119,7 +119,6 @@ subtest 'GET /api/livestream/search' => sub {
 
         my $res = $cb->($req);
         is $res->code, HTTP_OK;
-        diag $res->content;
 
         is decode_json($res->content), array {
             all_items hash {
@@ -160,6 +159,26 @@ subtest 'GET /api/livestream/search' => sub {
         };
     };
 };
+
+subtest 'GET /api/livestream' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is $res->code, HTTP_OK;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field title => D;
+                etc;
+            };
+            etc;
+        };
+    };
+};
+
 
 subtest 'POST /api/login' => sub {
     test_psgi $app, sub ($cb) {
