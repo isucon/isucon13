@@ -36,7 +36,7 @@ sub dbh($self) {
 }
 
 sub initialize_handler($self, $c) {
-    my $e = system($self->root_dir . "/../init.sh");
+    my $e = system($self->root_dir . "/../sql/init.sh");
     if ($e) {
         warnf("init.sh failed with err=%s", $e);
         $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);

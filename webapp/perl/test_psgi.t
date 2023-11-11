@@ -35,7 +35,7 @@ sub login_default($cb, $req) {
     my $login_req = POST "/api/login";
     with_json_request($login_req, {
         name     => 'test001',
-        password => 'test001',
+        password => 'test',
     });
     my $login_res = $cb->($login_req);
     my $cookie = $login_res->header('Set-Cookie');
@@ -167,7 +167,7 @@ subtest 'POST /api/login' => sub {
         my $req = POST "/api/login";
         with_json_request($req, {
             name     => 'test001',
-            password => 'test001',
+            password => 'test',
         });
 
         my $res = $cb->($req);
