@@ -5,6 +5,7 @@ import { sessionMiddleware, CookieStore } from 'hono-sessions'
 import { ApplicationDeps, Deps, HonoEnvironment } from './types'
 import { userHandler } from './handlers/user-handler'
 import { topHandler } from './handlers/top-handler'
+import { livestreamHandler } from './handlers/livestream-handler'
 
 export const createApp = async (deps: Deps) => {
   const connection = await createConnection({
@@ -65,6 +66,7 @@ export const createApp = async (deps: Deps) => {
 
   app.route('/', userHandler(applicationDeps))
   app.route('/', topHandler(applicationDeps))
+  app.route('/', livestreamHandler(applicationDeps))
 
   return app
 }

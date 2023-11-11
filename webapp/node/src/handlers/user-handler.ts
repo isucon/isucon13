@@ -7,6 +7,7 @@ import {
   defaultSessionExpiresKey,
 } from '../contants'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
+import { makeUserResponse } from '../utils/make-user-response'
 
 export const userHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -65,16 +66,18 @@ export const userHandler = (deps: ApplicationDeps) => {
       return c.text(String(error), 500)
     }
 
-    const theme = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
-        userId,
-      ])
-      .then(([[theme]]) => ({ ok: true, data: theme }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!theme.ok) {
+    const response = await makeUserResponse(deps, {
+      id: userId,
+      name: body.name,
+      display_name: body.display_name,
+      description: body.description,
+    })
+
+    if (!response.ok) {
       await deps.connection.rollback()
-      return c.text('failed to fetch theme', 500)
+      return c.text(response.error, 500)
     }
+
     try {
       await deps.connection.commit()
     } catch {
@@ -82,19 +85,7 @@ export const userHandler = (deps: ApplicationDeps) => {
       return c.text('failed to commit', 500)
     }
 
-    return c.json(
-      {
-        id: userId,
-        name: body.name,
-        display_name: body.display_name,
-        description: body.description,
-        theme: {
-          id: theme.data.id,
-          dark_mode: !!theme.data.dark_mode,
-        },
-      },
-      201,
-    )
+    return c.json(response.data, 201)
   })
 
   handler.post('/api/login', async (c) => {
@@ -157,15 +148,16 @@ export const userHandler = (deps: ApplicationDeps) => {
       return c.text('not found user that has the userid in session', 404)
     }
 
-    const theme = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
-        userId,
-      ])
-      .then(([[theme]]) => ({ ok: true, data: theme }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!theme.ok) {
+    const response = await makeUserResponse(deps, {
+      id: user.data.id,
+      name: user.data.name,
+      display_name: user.data.display_name,
+      description: user.data.description,
+    })
+
+    if (!response.ok) {
       await deps.connection.rollback()
-      return c.text('failed to fetch theme', 500)
+      return c.text(response.error, 500)
     }
 
     try {
@@ -175,19 +167,7 @@ export const userHandler = (deps: ApplicationDeps) => {
       return c.text('failed to commit', 500)
     }
 
-    return c.json(
-      {
-        id: userId,
-        name: user.data.name,
-        display_name: user.data.display_name,
-        description: user.data.description,
-        theme: {
-          id: theme.data.id,
-          dark_mode: !!theme.data.dark_mode,
-        },
-      },
-      200,
-    )
+    return c.json(response.data, 200)
   })
 
   handler.get('/api/user/:username', verifyUserSessionMiddleware, async (c) => {
@@ -208,15 +188,16 @@ export const userHandler = (deps: ApplicationDeps) => {
       return c.text('not found user that has the given username', 404)
     }
 
-    const theme = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
-        user.data.id,
-      ])
-      .then(([[theme]]) => ({ ok: true, data: theme }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!theme.ok) {
+    const response = await makeUserResponse(deps, {
+      id: user.data.id,
+      name: user.data.name,
+      display_name: user.data.display_name,
+      description: user.data.description,
+    })
+
+    if (!response.ok) {
       await deps.connection.rollback()
-      return c.text('failed to fetch theme', 500)
+      return c.text(response.error, 500)
     }
 
     try {
@@ -226,19 +207,7 @@ export const userHandler = (deps: ApplicationDeps) => {
       return c.text('failed to commit', 500)
     }
 
-    return c.json(
-      {
-        id: user.data.id,
-        name: user.data.name,
-        display_name: user.data.display_name,
-        description: user.data.description,
-        theme: {
-          id: theme.data.id,
-          dark_mode: !!theme.data.dark_mode,
-        },
-      },
-      200,
-    )
+    return c.json(response.data, 200)
   })
 
   return handler
