@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -91,6 +92,12 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts .
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
+	}
+
+	if o.limitParam != nil {
+		query := req.URL.Query()
+		query.Add("limit", strconv.Itoa(o.limitParam.Limit))
+		req.URL.RawQuery = query.Encode()
 	}
 
 	resp, err := sendRequest(ctx, c.themeAgent, req)

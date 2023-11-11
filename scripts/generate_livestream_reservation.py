@@ -113,7 +113,7 @@ livestream_texts = [
 ]
 
 ## 同一枠長の採用数制限
-SAME_PATTERN_LIMIT = 500
+SAME_PATTERN_LIMIT = 40
 # 時間枠のパターン(hourの粒度)
 patterns = list(n for n in range(1, 25))
 
@@ -162,6 +162,7 @@ def dump(base_time, schedules, gopath):
                 playlist_url=random.choice(playlists),
                 thumbnail_url=random.choice(thumbnails),
             ))
+            print(end_at - start_at)
 
             cursor_time = end_at
             schedule_idx += 1

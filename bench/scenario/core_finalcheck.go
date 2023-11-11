@@ -15,6 +15,8 @@ func FinalcheckScenario(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
+	// FIXME: 統計情報の検証
+
 	// 金額チェック
 	// total := scheduler.GetTotal()
 	// if result.Total

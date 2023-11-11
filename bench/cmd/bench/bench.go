@@ -178,7 +178,7 @@ var run = cli.Command{
 		benchscore.InitCounter(ctx)
 		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx, pretestClient); err != nil {
+		if err := scenario.Pretest(ctx); err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
