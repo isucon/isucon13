@@ -95,6 +95,7 @@ export const userHandler = (deps: ApplicationDeps) => {
     }>()
 
     await deps.connection.beginTransaction()
+
     const user = await deps.connection
       .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [
         body.username,
@@ -105,12 +106,18 @@ export const userHandler = (deps: ApplicationDeps) => {
       await deps.connection.rollback()
       return c.text('invalid username or password', 401)
     }
+    if (!user.data) {
+      await deps.connection.rollback()
+      return c.text('invalid username or password', 401)
+    }
+
     try {
       await deps.connection.commit()
     } catch {
       await deps.connection.rollback()
       return c.text('failed to commit', 500)
     }
+
     const isPasswordMatch = await deps.comparePassword(
       body.password,
       user.data.password,
