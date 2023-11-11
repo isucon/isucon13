@@ -437,7 +437,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return err
 	}
 
-	spamComment := scheduler.LivecommentScheduler.GetNegativeComment()
+	spamComment, _ := scheduler.LivecommentScheduler.GetNegativeComment()
 	notip := &scheduler.Tip{}
 	_, _, err = spammerClient.PostLivecomment(ctx, livestream.ID, spamComment.Comment, notip)
 	if err != nil {

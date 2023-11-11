@@ -3,6 +3,7 @@ package scheduler
 import (
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -101,6 +102,9 @@ type Tip struct {
 // ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
 type livecommentScheduler struct {
 	ngLivecomments map[string]struct{}
+
+	moderatedMu sync.RWMutex
+	moderated   map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {
@@ -113,6 +117,7 @@ func mustNewLivecommentScheduler() *livecommentScheduler {
 	})
 	return &livecommentScheduler{
 		ngLivecomments: ngLivecomments,
+		moderated:      make(map[string]struct{}),
 	}
 }
 
@@ -135,9 +140,21 @@ func (s *livecommentScheduler) GetLongPositiveComment() *PositiveComment {
 	return positiveCommentPool[idx]
 }
 
-func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
+func (s *livecommentScheduler) GetNegativeComment() (*NegativeComment, bool) {
+	s.moderatedMu.RLock()
+	defer s.moderatedMu.RUnlock()
+
 	idx := rand.Intn(len(negativeCommentPool))
-	return negativeCommentPool[idx]
+	comment := negativeCommentPool[idx]
+	_, isModerated := s.moderated[comment.Comment]
+	return comment, isModerated
+}
+
+func (s *livecommentScheduler) Moderate(comment string) {
+	s.moderatedMu.Lock()
+	defer s.moderatedMu.Unlock()
+
+	s.moderated[comment] = struct{}{}
 }
 
 func (s *livecommentScheduler) generateTip(level int) int {
