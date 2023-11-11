@@ -259,5 +259,39 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
     },
   )
 
+  handler.post(
+    '/api/livestream/:livestream_id/enter',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+      const livestreamID = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamID)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      try {
+        await deps.connection.query(
+          'INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(?, ?, ?)',
+          [userId, livestreamID, Date.now()],
+        )
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to insert livestream_view_history', 500)
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      // eslint-disable-next-line unicorn/no-null
+      return c.body(null, 200)
+    },
+  )
+
   return handler
 }
