@@ -425,5 +425,50 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
     },
   )
 
+  handler.get('/api/livestream', verifyUserSessionMiddleware, async (c) => {
+    const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+
+    await deps.connection.beginTransaction()
+
+    const livestreams = await deps.connection
+      .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE user_id = ?', [
+        userId,
+      ])
+      .then(([results]) => ({ ok: true, data: results }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!livestreams.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to get livestreams', 500)
+    }
+
+    const livestreamResponses: LivestreamResponse[] = []
+    for (const livestream of livestreams.data) {
+      const livestreamResponse = await makeLivestreamResponse(deps, {
+        id: livestream.id,
+        user_id: livestream.user_id,
+        title: livestream.title,
+        description: livestream.description,
+        playlist_url: livestream.playlist_url,
+        thumbnail_url: livestream.thumbnail_url,
+        start_at: livestream.start_at,
+        end_at: livestream.end_at,
+      })
+      if (!livestreamResponse.ok) {
+        await deps.connection.rollback()
+        return c.text(livestreamResponse.error, 500)
+      }
+      livestreamResponses.push(livestreamResponse.data)
+    }
+
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+
+    return c.json(livestreamResponses, 200)
+  })
+
   return handler
 }
