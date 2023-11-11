@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,6 @@ func TestIsNgLivecomment(t *testing.T) {
 		{name: "basic2", comment: "この視覚選択性、信頼できる？", want: true},
 	}
 
-	log.Println(LivecommentScheduler.ngLivecomments)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := LivecommentScheduler.IsNgLivecomment(tt.comment)

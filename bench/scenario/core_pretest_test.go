@@ -14,12 +14,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPretest(t *testing.T, dnsResolver *resolver.DNSResolver) {
+func TestPretest(t *testing.T) {
 	ctx := context.Background()
 	benchscore.InitCounter(ctx)
 	benchscore.InitProfit(ctx)
 	bencherror.InitErrors(ctx)
 
+	dnsResolver := resolver.NewDNSResolver()
+	dnsResolver.ResolveAttempts = 10
 	client, err := isupipe.NewCustomResolverClient(
 		dnsResolver,
 		agent.WithBaseURL(config.TargetBaseURL),
