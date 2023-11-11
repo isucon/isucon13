@@ -319,5 +319,44 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
     },
   )
 
+  handler.get(
+    '/api/livestream/:livestream_id/ngwords',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      const ngwords = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ? ORDER BY created_at DESC',
+          [userId, livestreamId],
+        )
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!ngwords.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get ngwords', 500)
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      return c.json(
+        ngwords.data.map((ngword) => ({
+          ng_word: ngword.word,
+        })),
+      )
+    },
+  )
+
   return handler
 }
