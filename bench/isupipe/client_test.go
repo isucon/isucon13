@@ -11,7 +11,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func TestClient_Timeout(t *testing.T) {
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	client, err := NewClient(resolver.NewDNSResolver(), agent.WithBaseURL(ts.URL), agent.WithTimeout(1*time.Microsecond))
+	client, err := NewClient(agent.WithBaseURL(ts.URL), agent.WithTimeout(1*time.Microsecond))
 	assert.NoError(t, err)
 
 	// NOTE: 呼び出すエンドポイントは何でも良い

@@ -6,15 +6,19 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
 // 初期データpretest
 
-func normalInitialPaymentPretest(ctx context.Context) error {
+func normalInitialPaymentPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	// 初期状態で0円であるか
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -31,8 +35,11 @@ func normalInitialPaymentPretest(ctx context.Context) error {
 	return nil
 }
 
-func normalInitialLivecommentPretest(ctx context.Context) error {
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+func normalInitialLivecommentPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -62,8 +69,11 @@ func normalInitialLivecommentPretest(ctx context.Context) error {
 	return nil
 }
 
-func normalInitialReactionPretest(ctx context.Context) error {
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+func normalInitialReactionPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -93,9 +103,10 @@ func normalInitialReactionPretest(ctx context.Context) error {
 	return nil
 }
 
-func normalInitialTagPretest(ctx context.Context) error {
+func normalInitialTagPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	// 初期データが期待する件数あるか
-	client, err := isupipe.NewClient(
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
 	if err != nil {

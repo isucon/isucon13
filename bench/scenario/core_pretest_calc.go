@@ -7,16 +7,19 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
 // 計算処理のpretest
 
-func normalPaymentCalcPretest(ctx context.Context) error {
+func normalPaymentCalcPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	// チップ投稿により正しく計算されるか
-
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -42,8 +45,11 @@ func normalPaymentCalcPretest(ctx context.Context) error {
 }
 
 // ユーザ統計の計算処理がきちんとできているか
-func normalUserStatsCalcPretest(ctx context.Context) error {
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -76,7 +82,10 @@ func normalUserStatsCalcPretest(ctx context.Context) error {
 	// LivestreamStatsのイテレーション数 * 配信数(2)とかにして、LivestreamStatsのユーザより上に位置するようにする
 	count := 5 + rand.Intn(10)
 	for i := 0; i < count; i++ {
-		viewerClient, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+		viewerClient, err := isupipe.NewCustomResolverClient(
+			dnsResolver,
+			agent.WithTimeout(config.PretestTimeout),
+		)
 		if err != nil {
 			return err
 		}
@@ -114,14 +123,16 @@ func normalUserStatsCalcPretest(ctx context.Context) error {
 	return nil
 }
 
-func normalLivestreamStatsCalcPretest(ctx context.Context) error {
+func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	// ライブストリーム統計の計算処理がきちんとできているか
 
 	// FIXME: 処理前、統計情報がすべて0になっていることをチェック
 	// FIXME: いくつかの処理後、統計情報がピタリ一致することをチェック
 	//        (処理数、処理データにランダム性をもたせる)
-
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -172,7 +183,10 @@ func normalLivestreamStatsCalcPretest(ctx context.Context) error {
 
 	count := 5 + rand.Intn(10)
 	for i := 0; i < count; i++ {
-		viewer, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+		viewer, err := isupipe.NewCustomResolverClient(
+			dnsResolver,
+			agent.WithTimeout(config.PretestTimeout),
+		)
 		if err != nil {
 			return err
 		}

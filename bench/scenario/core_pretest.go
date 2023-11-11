@@ -2,18 +2,21 @@ package scenario
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"golang.org/x/sync/errgroup"
 )
 
 const testUserRawPassword = "s3cr3t"
 
-func setupTestUser(ctx context.Context) (*isupipe.User, error) {
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isupipe.User, error) {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -30,11 +33,11 @@ func setupTestUser(ctx context.Context) (*isupipe.User, error) {
 }
 
 // 初期データチェック -> 基本的なエンドポイントの機能テスト -> 前後比較テスト
-func Pretest(ctx context.Context) error {
+func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	// 初期データチェック
 	initialGrp, initialCtx := errgroup.WithContext(ctx)
 	initialGrp.Go(func() error {
-		return normalInitialPaymentPretest(initialCtx)
+		return normalInitialPaymentPretest(initialCtx, dnsResolver)
 	})
 	// initialGrp.Go(func() error {
 	// 	return normalInitialLivecommentPretest(initialCtx)
@@ -43,59 +46,59 @@ func Pretest(ctx context.Context) error {
 	// 	return normalInitialReactionPretest(initialCtx)
 	// })
 	initialGrp.Go(func() error {
-		return normalInitialTagPretest(ctx)
+		return normalInitialTagPretest(ctx, dnsResolver)
 	})
 	if err := initialGrp.Wait(); err != nil {
 		return err
 	}
 
 	// 独立動作可能なテスト
-	testUser, err := setupTestUser(ctx)
+	testUser, err := setupTestUser(ctx, dnsResolver)
 	if err != nil {
 		return err
 	}
-	if err := NormalLivestreamPretest(ctx, testUser); err != nil {
+	if err := NormalLivestreamPretest(ctx, testUser, dnsResolver); err != nil {
 		return err
 	}
 
 	logicGrp, childCtx := errgroup.WithContext(ctx)
 	// 正常系
 	logicGrp.Go(func() error {
-		return NormalUserPretest(childCtx)
+		return NormalUserPretest(childCtx, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return NormalIconPretest(childCtx)
+		return NormalIconPretest(childCtx, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return NormalReactionPretest(childCtx, testUser)
+		return NormalReactionPretest(childCtx, testUser, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		if err := NormalPostLivecommentPretest(childCtx, testUser); err != nil {
+		if err := NormalPostLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
 			return err
 		}
-		if err := NormalModerateLivecommentPretest(childCtx, testUser); err != nil {
+		if err := NormalModerateLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
 			return err
 		}
 		return nil
 	})
 	// 異常系
 	logicGrp.Go(func() error {
-		return assertBadLogin(childCtx)
+		return assertBadLogin(childCtx, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return assertPipeUserRegistration(childCtx)
+		return assertPipeUserRegistration(childCtx, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return assertUserUniqueConstraint(childCtx)
+		return assertUserUniqueConstraint(childCtx, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return assertReserveOverflowPretest(childCtx)
+		return assertReserveOverflowPretest(childCtx, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return assertReserveOutOfTerm(childCtx, testUser)
+		return assertReserveOutOfTerm(childCtx, testUser, dnsResolver)
 	})
 	logicGrp.Go(func() error {
-		return assertMultipleEnterLivestream(childCtx)
+		return assertMultipleEnterLivestream(childCtx, dnsResolver)
 	})
 	if err := logicGrp.Wait(); err != nil {
 		return err

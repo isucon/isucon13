@@ -11,6 +11,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
@@ -20,8 +21,9 @@ var fallbackImage []byte
 
 // 基本機能のロジックpretest
 
-func NormalUserPretest(ctx context.Context) error {
-	client, err := isupipe.NewClient(
+func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
 	if err != nil {
@@ -63,12 +65,15 @@ func NormalUserPretest(ctx context.Context) error {
 	return nil
 }
 
-func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User) error {
+func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 機能的なテスト
 	// 予約したライブ配信が一覧に見えるか、取得できるか、検索によって見つけられるか
 	// enter/exitできるか (other)
 
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -133,8 +138,11 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User) error 
 	return nil
 }
 
-func NormalIconPretest(ctx context.Context) error {
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -175,8 +183,11 @@ func NormalIconPretest(ctx context.Context) error {
 	return nil
 }
 
-func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User) error {
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -223,11 +234,14 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User) e
 	return nil
 }
 
-func NormalReactionPretest(ctx context.Context, testUser *isupipe.User) error {
+func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 投稿したリアクションがGETできるか
 	// limitをつけられるか
 	// 初期データが期待する件数あるか
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -263,14 +277,17 @@ func NormalReactionPretest(ctx context.Context, testUser *isupipe.User) error {
 	return nil
 }
 
-func NormalReportLivecommentPretest(ctx context.Context) error {
+func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	// ライブコメントを1件取得(limit=1)
 	// ライブコメントを報告できるか (other)
 	// 報告したものが確認できるか (owner)
 
 	// 初期で報告が0件
 
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -312,7 +329,10 @@ func NormalReportLivecommentPretest(ctx context.Context) error {
 	})
 	livecomment := livecomments[0]
 
-	reporterClient, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	reporterClient, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -350,11 +370,14 @@ func NormalReportLivecommentPretest(ctx context.Context) error {
 	return nil
 }
 
-func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.User) error {
+func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// moderateしたngwordが、GET ngwordsに含まれるか
 	// 投稿済みのスパムライブコメントが、moderateによって粛清されているか
 	// ライブコメントを投稿してきちんとエラーを返せているか
-	client, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}
@@ -387,7 +410,10 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 
 	// スパム投稿
-	spammerClient, err := isupipe.NewClient(agent.WithTimeout(config.PretestTimeout))
+	spammerClient, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
 	if err != nil {
 		return err
 	}

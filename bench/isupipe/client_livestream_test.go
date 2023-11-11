@@ -9,7 +9,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
-	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +19,6 @@ func TestLivestream(t *testing.T) {
 	ctx := context.Background()
 
 	client, err := NewClient(
-		resolver.NewDNSResolver(),
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(1*time.Minute),
 	)
@@ -83,7 +81,6 @@ func TestLivestream(t *testing.T) {
 	)
 	for i := 1; i <= config.NumSlots*2; i++ {
 		loopClient, err := NewClient(
-			resolver.NewDNSResolver(),
 			agent.WithBaseURL(config.TargetBaseURL),
 			agent.WithTimeout(3*time.Second),
 		)

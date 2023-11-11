@@ -138,7 +138,6 @@ var run = cli.Command{
 
 		lgr.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(
-			resolver.NewDNSResolver(),
 			agent.WithBaseURL(config.TargetBaseURL),
 			agent.WithTimeout(1*time.Minute),
 		)
@@ -165,11 +164,6 @@ var run = cli.Command{
 		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
 		pretestDNSResolver := resolver.NewDNSResolver()
 		pretestDNSResolver.ResolveAttempts = 10
-		pretestClient, err := isupipe.NewClient(
-			pretestDNSResolver,
-			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(10*time.Second),
-		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
@@ -178,7 +172,7 @@ var run = cli.Command{
 		benchscore.InitCounter(ctx)
 		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx); err != nil {
+		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
@@ -196,16 +190,7 @@ var run = cli.Command{
 		lgr.Info("===== 最終チェック =====")
 		finalcheckDNSResolver := resolver.NewDNSResolver()
 		finalcheckDNSResolver.ResolveAttempts = 10
-		finalcheckClient, err := isupipe.NewClient(
-			finalcheckDNSResolver,
-			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(10*time.Second),
-		)
-		if err != nil {
-			return cli.NewExitError(err, 1)
-		}
-
-		if err := scenario.FinalcheckScenario(ctx, finalcheckClient); err != nil {
+		if err := scenario.FinalcheckScenario(ctx, finalcheckDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
 		}
 

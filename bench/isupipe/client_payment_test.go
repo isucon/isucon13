@@ -7,7 +7,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
-	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +15,6 @@ func TestPayment(t *testing.T) {
 	ctx := context.Background()
 
 	client, err := NewClient(
-		resolver.NewDNSResolver(),
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(3*time.Second),
 	)

@@ -37,10 +37,14 @@ type Client struct {
 	assetOptions []agent.AgentOption
 }
 
+func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
+	return NewCustomResolverClient(resolver.NewDNSResolver(), customOpts...)
+}
+
 // NewClient は、HTTPクライアント群を初期化します
 // NOTE: キャッシュ無効化オプションなどを指定すると、意図しない挙動をする可能性があります
 // タイムアウトやURLなどの振る舞いでないパラメータを指定するのにcustomOptsを用いてください
-func NewClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
+func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
