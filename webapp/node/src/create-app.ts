@@ -6,6 +6,7 @@ import { ApplicationDeps, Deps, HonoEnvironment } from './types'
 import { userHandler } from './handlers/user-handler'
 import { topHandler } from './handlers/top-handler'
 import { livestreamHandler } from './handlers/livestream-handler'
+import { livecommentHandler } from './handlers/livecomment-handler'
 
 export const createApp = async (deps: Deps) => {
   const connection = await createConnection({
@@ -67,6 +68,7 @@ export const createApp = async (deps: Deps) => {
   app.route('/', userHandler(applicationDeps))
   app.route('/', topHandler(applicationDeps))
   app.route('/', livestreamHandler(applicationDeps))
+  app.route('/', livecommentHandler(applicationDeps))
 
   return app
 }
