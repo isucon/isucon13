@@ -1,7 +1,7 @@
-import { serve } from '@hono/node-server'
-import { createApp, Deps } from './create-app'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
+import { serve } from '@hono/node-server'
+import { Deps, createApp } from './create-app'
 
 const execAsync = promisify(exec)
 

@@ -11,9 +11,9 @@ export const createApp = (deps: Deps) => {
     try {
       await deps.exec('../sql/init.sh')
       return c.json({ advertise_level: 10, advertise_name: 'node' })
-    } catch (err) {
+    } catch (error) {
       console.log('init.sh failed with')
-      console.log(err)
+      console.log(error)
       return c.text('failed to initialize', 500)
     }
   })
