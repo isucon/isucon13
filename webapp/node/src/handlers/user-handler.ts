@@ -256,5 +256,49 @@ export const userHandler = (deps: ApplicationDeps) => {
     return c.json({ id: result.data }, 201)
   })
 
+  handler.get(
+    '/api/user/:username/icon',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const username = c.req.param('username')
+
+      await deps.connection.beginTransaction()
+
+      const user = await deps.connection
+        .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [
+          username,
+        ])
+        .then(([[user]]) => ({ ok: true, data: user }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!user.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get user', 500)
+      }
+      if (!user.data) {
+        await deps.connection.rollback()
+        return c.text('not found user that has the given username', 404)
+      }
+
+      const icon = await deps.connection
+        .query<RowDataPacket[]>('SELECT image FROM icons WHERE user_id = ?', [
+          user.data.id,
+        ])
+        .then(([[icon]]) => ({ ok: true, data: icon }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!icon.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get icon', 500)
+      }
+      if (!icon.data) {
+        await deps.connection.rollback()
+        return c.text('not found icon', 404)
+      }
+
+      return c.body(icon.data.image, 200, {
+        'Content-Type': 'image/jpeg',
+      })
+    },
+  )
+
   return handler
 }
