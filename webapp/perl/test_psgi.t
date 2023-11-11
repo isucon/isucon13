@@ -179,6 +179,24 @@ subtest 'GET /api/livestream' => sub {
     };
 };
 
+subtest 'GET /api/user/:username/livestream' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/user/test001/livestream";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is $res->code, HTTP_OK;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field title => D;
+                etc;
+            };
+            etc;
+        };
+    };
+};
 
 subtest 'POST /api/login' => sub {
     test_psgi $app, sub ($cb) {

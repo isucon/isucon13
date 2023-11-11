@@ -61,6 +61,8 @@ post '/api/livestream/reservation', Isupipe::App::LivestreamHandler->can('reserv
 # list livestream
 get '/api/livestream/search', Isupipe::App::LivestreamHandler->can('search_livestreams_handler');
 get '/api/livestream', Isupipe::App::LivestreamHandler->can('get_my_livestreams_handler');
+get '/api/user/:username/livestream', Isupipe::App::LivestreamHandler->can('get_user_livestreams_handler');
+
 # post '/livestream/reservation',  \&reserve_livestream_handler;
 # # list livestream
 # # get livestream

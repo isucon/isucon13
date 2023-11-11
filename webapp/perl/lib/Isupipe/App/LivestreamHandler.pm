@@ -224,48 +224,35 @@ sub get_my_livestreams_handler($app, $c) {
     return $c->render_json($response);
 }
 
+sub get_user_livestreams_handler($app, $c) {
+    verify_user_session($app, $c);
 
-#sub get_livestreams_handler($app, $c) {
-#
-#    my $key_tag_name = $c->req->query_parameters->{'tag'};
-#
-#    my $dbh = $app->dbh;
-#    my $txn = $dbh->txn_scope;
-#
-#    # 複数件取得
-#    my $live_streams = [];
-#    if ($key_tag_name eq '') {
-#        $live_streams = $dbh->select_all_as(
-#            'Isupipe::Entity::Livestream',
-#            'SELECT * FROM livestreams',
-#        );
-#    }
-#    else {
-#        my $tags = $dbh->select_all(
-#            'SELECT id FROM tags WHERE name = ?',
-#            $key_tag_name,
-#        );
-#        my $tag_id_list = [map { $_->{id} } @$tags];
-#
-#        my $key_tagged_livestreams = $dbh->select_all_as(
-#            'Isupipe::Entity::LivestreamTag',
-#            'SELECT * FROM livestream_tags WHERE tag_id IN (?)',
-#            $tag_id_list,
-#        );
-#
-#        for my $key_tagged_livestream ($key_tagged_livestreams->@*) {
-#            my $livestream = $dbh->select_row_as(
-#                'Isupipe::Entity::Livestream',
-#                'SELECT * FROM livestreams WHERE id = ?',
-#                $key_tagged_livestream->livestream_id,
-#            );
-#            push $live_streams->@*, $livestream;
-#        }
-#    }
-#    $txn->commit;
-#
-#    return $c->render_json($live_streams);
-#}
+    my $username = $c->args->{username};
+
+    my $txn = $app->dbh->txn_scope;
+    my $user = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE name = ?',
+        $username,
+    );
+    unless ($user) {
+        $c->halt_text(HTTP_NOT_FOUND, "failed to get user");
+    }
+
+    my $livestreams = $app->dbh->select_all_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE user_id = ?',
+        $user->id,
+    );
+
+    my $response = [
+        map { fill_livestream_response($app, $_) } $livestreams->@*
+    ];
+
+    $txn->commit;
+
+    return $c->render_json($response);
+}
 
 # FIXME: livestreamのカラムを追加し、視聴者数を増やす
 #
