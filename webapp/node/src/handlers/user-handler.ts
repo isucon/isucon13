@@ -1,9 +1,14 @@
 import { Hono } from 'hono'
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
-import { ApplicationDeps } from '../types'
+import { ApplicationDeps, HonoEnvironment } from '../types'
+
+const defaultSessionIDKey = 'SESSIONID'
+const defaultSessionExpiresKey = 'EXPIRES'
+const defaultUserIDKey = 'USERID'
+const defaultUserNameKey = 'USERNAME'
 
 export const userHandler = (deps: ApplicationDeps) => {
-  const handler = new Hono()
+  const handler = new Hono<HonoEnvironment>()
 
   handler.post('/api/register', async (c) => {
     const body = await c.req.json<{
@@ -26,13 +31,13 @@ export const userHandler = (deps: ApplicationDeps) => {
         'INSERT INTO users (name, display_name, description, password) VALUES(?, ?, ?, ?)',
         [body.name, body.display_name, body.description, hashedPassword],
       )
-      .then(([{ insertId }]) => ({ ok: true, data: { insertId } }) as const)
+      .then(([{ insertId }]) => ({ ok: true, data: insertId }) as const)
       .catch((error) => ({ ok: false, error }) as const)
     if (!result.ok) {
       await deps.connection.rollback()
       return c.text(`failed to insert user\n${result.error}`, 500)
     }
-    const userId = result.data.insertId
+    const userId = result.data
 
     try {
       await deps.connection.execute(
@@ -63,13 +68,12 @@ export const userHandler = (deps: ApplicationDeps) => {
       .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
         userId,
       ])
-      .then(([[theme]]) => ({ ok: true, data: { theme } }) as const)
+      .then(([[theme]]) => ({ ok: true, data: theme }) as const)
       .catch((error) => ({ ok: false, error }) as const)
     if (!theme.ok) {
       await deps.connection.rollback()
       return c.text('failed to fetch theme', 500)
     }
-    console.log(theme.data)
     try {
       await deps.connection.commit()
     } catch {
@@ -84,12 +88,57 @@ export const userHandler = (deps: ApplicationDeps) => {
         display_name: body.display_name,
         description: body.description,
         theme: {
-          id: theme.data.theme.id,
-          dark_mode: !!theme.data.theme.dark_mode,
+          id: theme.data.id,
+          dark_mode: !!theme.data.dark_mode,
         },
       },
       201,
     )
+  })
+
+  handler.post('/api/login', async (c) => {
+    const body = await c.req.json<{
+      username: string
+      password: string
+    }>()
+
+    await deps.connection.beginTransaction()
+    const user = await deps.connection
+      .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [
+        body.username,
+      ])
+      .then(([[user]]) => ({ ok: true, data: user }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!user.ok) {
+      await deps.connection.rollback()
+      return c.text('invalid username or password', 401)
+    }
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+    const isPasswordMatch = await deps.comparePassword(
+      body.password,
+      user.data.password,
+    )
+    if (!isPasswordMatch) {
+      return c.text('invalid username or password', 401)
+    }
+
+    // 1時間でセッションが切れるようにする
+    const sessionEndAt = Date.now() + 1000 * 60 * 60
+    const sessionId = deps.uuid()
+
+    const session = c.get('session')
+    session.set(defaultSessionIDKey, sessionId)
+    session.set(defaultUserIDKey, user.data.id)
+    session.set(defaultUserNameKey, user.data.name)
+    session.set(defaultSessionExpiresKey, sessionEndAt)
+
+    // eslint-disable-next-line unicorn/no-null
+    return c.body(null, 200)
   })
 
   return handler

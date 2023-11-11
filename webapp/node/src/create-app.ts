@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { createConnection } from 'mysql2/promise'
-import { ApplicationDeps, Deps } from './types'
+import { sessionMiddleware, CookieStore } from 'hono-sessions'
+import { ApplicationDeps, Deps, HonoEnvironment } from './types'
 import { userHandler } from './handlers/user-handler'
 
 export const createApp = async (deps: Deps) => {
@@ -21,14 +22,28 @@ export const createApp = async (deps: Deps) => {
   const powerDNSSubdomainAddress =
     process.env['ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS']
 
+  const store = new CookieStore()
+
   const applicationDeps = {
     ...deps,
     connection,
     powerDNSSubdomainAddress,
   } satisfies ApplicationDeps
 
-  const app = new Hono()
+  const app = new Hono<HonoEnvironment>()
   app.use('*', logger())
+  app.use(
+    '*',
+    sessionMiddleware({
+      store,
+      encryptionKey: '24553845-c33d-4a87-b0c3-f7a0e17fd82f',
+      cookieOptions: {
+        path: '/',
+        domain: 'u.isucon.dev',
+        maxAge: 60_000 /* 10 seconds */, // FIXME: 600
+      },
+    }),
+  )
 
   app.post('/api/initialize', async (c) => {
     try {

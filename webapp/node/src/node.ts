@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { serve } from '@hono/node-server'
-import { hash } from 'bcrypt'
+import { hash, compare } from 'bcrypt'
 import { createApp } from './create-app'
 import { Deps } from './types'
 
@@ -21,6 +22,9 @@ const deps = {
       })
     }),
   hashPassword: async (password: string) => hash(password, 4),
+  comparePassword: async (password: string, hash: string) =>
+    compare(password, hash),
+  uuid: () => randomUUID(),
 } satisfies Deps
 
 const main = async () => {
