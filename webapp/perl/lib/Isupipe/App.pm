@@ -62,11 +62,8 @@ post '/api/livestream/reservation', Isupipe::App::LivestreamHandler->can('reserv
 get '/api/livestream/search', Isupipe::App::LivestreamHandler->can('search_livestreams_handler');
 get '/api/livestream', Isupipe::App::LivestreamHandler->can('get_my_livestreams_handler');
 get '/api/user/:username/livestream', Isupipe::App::LivestreamHandler->can('get_user_livestreams_handler');
-
-# post '/livestream/reservation',  \&reserve_livestream_handler;
-# # list livestream
-# # get livestream
-# get '/livestream/:livestream_id',  \&get_livestream_handler;
+# get livestream
+get '/api/livestream/:livestream_id', Isupipe::App::LivestreamHandler->can('get_livestream_handler');
 # # get polling livecomment timeline
 # get '/livestream/:livestream_id/livecomment',  \&get_livecomments_handler;
 # # ライブコメント投稿

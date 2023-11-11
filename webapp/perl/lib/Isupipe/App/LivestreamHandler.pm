@@ -313,17 +313,24 @@ sub leave_livestream_handler($app, $c) {
 sub get_livestream_handler($app, $c) {
     verify_user_session($app, $c);
 
-    my $live_stream_id = $c->args->{livestream_id};
+    my $livestream_id = $c->args->{livestream_id};
+
+    my $txn = $app->dbh->txn_scope;
+
     my $livestream = $app->dbh->select_row_as(
         'Isupipe::Entity::Livestream',
         'SELECT * FROM livestreams WHERE id = ?',
-        $live_stream_id,
+        $livestream_id,
     );
     unless ($livestream) {
         $c->halt_text(HTTP_NOT_FOUND, "livestream not found");
     }
 
-    return $c->render_json($livestream);
+    my $response = fill_livestream_response($app, $livestream);
+
+    $txn->commit;
+
+    return $c->render_json($response);
 }
 
 sub get_livecomment_report_handler($app, $c) {
