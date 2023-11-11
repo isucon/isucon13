@@ -190,5 +190,56 @@ export const userHandler = (deps: ApplicationDeps) => {
     )
   })
 
+  handler.get('/api/user/:username', verifyUserSessionMiddleware, async (c) => {
+    const username = c.req.param('username')
+
+    await deps.connection.beginTransaction()
+
+    const user = await deps.connection
+      .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [username])
+      .then(([[user]]) => ({ ok: true, data: user }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!user.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to get user', 500)
+    }
+    if (!user.data) {
+      await deps.connection.rollback()
+      return c.text('not found user that has the given username', 404)
+    }
+
+    const theme = await deps.connection
+      .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
+        user.data.id,
+      ])
+      .then(([[theme]]) => ({ ok: true, data: theme }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!theme.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to fetch theme', 500)
+    }
+
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+
+    return c.json(
+      {
+        id: user.data.id,
+        name: user.data.name,
+        display_name: user.data.display_name,
+        description: user.data.description,
+        theme: {
+          id: theme.data.id,
+          dark_mode: !!theme.data.dark_mode,
+        },
+      },
+      200,
+    )
+  })
+
   return handler
 }
