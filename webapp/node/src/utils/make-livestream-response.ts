@@ -1,6 +1,18 @@
 import { RowDataPacket } from 'mysql2'
 import { ApplicationDeps } from '../types'
-import { makeUserResponse } from './make-user-response'
+import { UserResponse, makeUserResponse } from './make-user-response'
+
+export interface LivestreamResponse {
+  id: number
+  owner: UserResponse
+  title: string
+  tags: { id: number; name: string }[]
+  description: string
+  playlist_url: string
+  thumbnail_url: string
+  start_at: number
+  end_at: number
+}
 
 export const makeLivestreamResponse = async (
   deps: ApplicationDeps,
@@ -75,6 +87,6 @@ export const makeLivestreamResponse = async (
       thumbnail_url: livestream.thumbnail_url,
       start_at: livestream.start_at,
       end_at: livestream.end_at,
-    },
+    } satisfies LivestreamResponse,
   } as const
 }

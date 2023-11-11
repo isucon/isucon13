@@ -1,6 +1,17 @@
 import { RowDataPacket } from 'mysql2'
 import { ApplicationDeps } from '../types'
 
+export interface UserResponse {
+  id: number
+  name: string
+  display_name: string
+  description: string
+  theme: {
+    id: number
+    dark_mode: boolean
+  }
+}
+
 export const makeUserResponse = async (
   deps: ApplicationDeps,
   user: { id: number; name: string; display_name: string; description: string },
@@ -24,6 +35,6 @@ export const makeUserResponse = async (
         id: theme.data.id,
         dark_mode: !!theme.data.dark_mode,
       },
-    },
+    } satisfies UserResponse,
   } as const
 }

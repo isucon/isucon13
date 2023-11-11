@@ -4,6 +4,10 @@ import { ApplicationDeps, HonoEnvironment } from '../types'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { defaultUserIDKey } from '../contants'
 import { makeLivestreamResponse } from '../utils/make-livestream-response'
+import {
+  LivecommentReportResponse,
+  makeLivecommentReportResponse,
+} from '../utils/make-livecomment-report-response'
 
 export const livestreamHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -136,6 +140,71 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
       }
 
       return c.json(response.data, 201)
+    },
+  )
+
+  handler.get(
+    '/api/livestream/:livestream_id/report',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+      const livestreamID = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamID)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      const livestream = await deps.connection
+        .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE id = ?', [
+          livestreamID,
+        ])
+        .then(([[result]]) => ({ ok: true, data: result }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livestream.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get livestream', 500)
+      }
+      if (livestream.data.user_id !== userId) {
+        return c.text("can't get other streamer's livecomment reports", 403)
+      }
+
+      const livecommentReports = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT * FROM livecomment_reports WHERE livestream_id = ?',
+          [livestreamID],
+        )
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livecommentReports.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get livecomment reports', 500)
+      }
+
+      const reportResponses: LivecommentReportResponse[] = []
+      for (const livecommentReport of livecommentReports.data) {
+        const report = await makeLivecommentReportResponse(deps, {
+          id: livecommentReport.id,
+          user_id: livecommentReport.user_id,
+          livestream_id: livecommentReport.livestream_id,
+          livecomment_id: livecommentReport.livecomment_id,
+          created_at: livecommentReport.created_at,
+        })
+        if (!report.ok) {
+          await deps.connection.rollback()
+          return c.text(report.error, 500)
+        }
+        reportResponses.push(report.data)
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      return c.json(reportResponses, 200)
     },
   )
 
