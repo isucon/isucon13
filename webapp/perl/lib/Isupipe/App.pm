@@ -63,7 +63,7 @@ get '/api/livestream/search', Isupipe::App::LivestreamHandler->can('search_lives
 get '/api/livestream', Isupipe::App::LivestreamHandler->can('get_my_livestreams_handler');
 get '/api/user/:username/livestream', Isupipe::App::LivestreamHandler->can('get_user_livestreams_handler');
 # get livestream
-get '/api/livestream/:livestream_id', Isupipe::App::LivestreamHandler->can('get_livestream_handler');
+get '/api/livestream/{livestream_id:[0-9]+}', Isupipe::App::LivestreamHandler->can('get_livestream_handler');
 # # get polling livecomment timeline
 # get '/livestream/:livestream_id/livecomment',  \&get_livecomments_handler;
 # # ライブコメント投稿
