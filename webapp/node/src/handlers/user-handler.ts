@@ -237,7 +237,7 @@ export const userHandler = (deps: ApplicationDeps) => {
     const result = await deps.connection
       .query<ResultSetHeader>(
         'INSERT INTO icons (user_id, image) VALUES (?, ?)',
-        [userId, body.image],
+        [userId, Buffer.from(body.image, 'base64')],
       )
       .then(([{ insertId }]) => ({ ok: true, data: insertId }) as const)
       .catch((error) => ({ ok: false, error }) as const)
