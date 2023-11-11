@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
 import { ApplicationDeps, HonoEnvironment } from '../types'
-
-const defaultSessionIDKey = 'SESSIONID'
-const defaultSessionExpiresKey = 'EXPIRES'
-const defaultUserIDKey = 'USERID'
-const defaultUserNameKey = 'USERNAME'
+import {
+  defaultUserIDKey,
+  defaultUserNameKey,
+  defaultSessionExpiresKey,
+} from '../contants'
+import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 
 export const userHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -129,16 +130,64 @@ export const userHandler = (deps: ApplicationDeps) => {
 
     // 1時間でセッションが切れるようにする
     const sessionEndAt = Date.now() + 1000 * 60 * 60
-    const sessionId = deps.uuid()
 
     const session = c.get('session')
-    session.set(defaultSessionIDKey, sessionId)
     session.set(defaultUserIDKey, user.data.id)
     session.set(defaultUserNameKey, user.data.name)
     session.set(defaultSessionExpiresKey, sessionEndAt)
 
     // eslint-disable-next-line unicorn/no-null
     return c.body(null, 200)
+  })
+
+  handler.get('/api/user/me', verifyUserSessionMiddleware, async (c) => {
+    const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+
+    await deps.connection.beginTransaction()
+    const user = await deps.connection
+      .query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId])
+      .then(([[user]]) => ({ ok: true, data: user }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!user.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to get user', 500)
+    }
+    if (!user.data) {
+      await deps.connection.rollback()
+      return c.text('not found user that has the userid in session', 404)
+    }
+
+    const theme = await deps.connection
+      .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
+        userId,
+      ])
+      .then(([[theme]]) => ({ ok: true, data: theme }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!theme.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to fetch theme', 500)
+    }
+
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+
+    return c.json(
+      {
+        id: userId,
+        name: user.data.name,
+        display_name: user.data.display_name,
+        description: user.data.description,
+        theme: {
+          id: theme.data.id,
+          dark_mode: !!theme.data.dark_mode,
+        },
+      },
+      200,
+    )
   })
 
   return handler
