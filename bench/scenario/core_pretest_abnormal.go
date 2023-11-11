@@ -191,7 +191,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		ThumbnailUrl: "",
 		StartAt:      startAt.Unix(),
 		EndAt:        endAt.Unix(),
-	}); err == nil {
+	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}
 
@@ -206,7 +206,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		ThumbnailUrl: "",
 		StartAt:      startAt2.Unix(),
 		EndAt:        endAt2.Unix(),
-	}); err == nil {
+	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}
 
