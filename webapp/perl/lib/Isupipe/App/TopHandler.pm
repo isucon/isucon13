@@ -24,10 +24,7 @@ sub get_tag_handler($app, $c) {
 
 # 配信者のテーマ取得API
 sub get_streamer_theme_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $username = $c->args->{username};
 

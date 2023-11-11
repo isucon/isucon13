@@ -122,10 +122,7 @@ sub login_handler($app, $c) {
 # ユーザ詳細API
 # GET /user/:user_id
 sub user_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $user_id = $c->args->{user_id};
 
@@ -144,10 +141,7 @@ sub user_handler($app, $c) {
 # 配信者のテーマ取得API
 # GET /user/:userid/theme
 sub get_user_theme_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $user_id = $c->args->{user_id};
     my $theme = $app->db->select_row_as(

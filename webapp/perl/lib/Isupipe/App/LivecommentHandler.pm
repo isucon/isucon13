@@ -25,10 +25,7 @@ use constant ModerateRequest => Dict[
 ];
 
 sub get_livecomment_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
     my $livecomments = $app->dbh->select_all_as(
@@ -45,10 +42,7 @@ sub get_livecomment_handler($app, $c) {
 }
 
 sub post_livetcomment_handleer($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
 
@@ -109,10 +103,7 @@ sub post_livetcomment_handleer($app, $c) {
 }
 
 sub report_livecomment_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
     my $livecomment_id = $c->args->{livecomment_id};
@@ -170,10 +161,7 @@ sub report_livecomment_handler($app, $c) {
 
 # NGワードを登録
 sub moderate_ng_word_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
     my $user_id = $c->req->session->{DEFAULT_USER_ID_KEY};

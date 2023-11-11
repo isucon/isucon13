@@ -21,6 +21,7 @@ use Crypt::OpenSSL::Random ();
 use Type::Params qw(compile);
 use Data::Lock qw(dlock);
 use Scalar::Util qw(refaddr);
+use Carp qw(croak);
 
 use Isupipe::Assert qw(ASSERT);
 
@@ -33,7 +34,7 @@ sub verify_user_session($app, $c) {
     unless ($session->get(DEFAULT_USER_ID_KEY)) {
         # FIXME: エラーメッセージを検討する
 
-        return Kossy::Exception->new(
+        croak Kossy::Exception->new(
             HTTP_FORBIDDEN,
             response => $c->render_json(
                 { error => 'session not found' }

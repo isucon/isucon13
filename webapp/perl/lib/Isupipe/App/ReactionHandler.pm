@@ -18,10 +18,7 @@ use constant PostReactionRequest => Dict[
 ];
 
 sub get_reaction_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
 
@@ -38,12 +35,9 @@ sub get_reaction_handler($app, $c) {
 }
 
 sub post_reaction_handler($app, $c) {
-    my $livestream_id = $c->args->{livestream_id};
+    verify_user_session($app, $c);
 
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    my $livestream_id = $c->args->{livestream_id};
 
     my $user_id = $c->req->session->get(DEFAULT_USER_ID_KEY);
     unless ($user_id) {

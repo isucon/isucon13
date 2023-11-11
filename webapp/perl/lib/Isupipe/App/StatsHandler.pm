@@ -16,10 +16,7 @@ use Isupipe::App::Util qw(
 );
 
 sub get_user_statistics_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $user_id = $c->args->{user_id};
 
@@ -39,10 +36,7 @@ sub get_user_statistics_handler($app, $c) {
 }
 
 sub get_livestream_statistics_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
 

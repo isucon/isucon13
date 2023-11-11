@@ -39,10 +39,7 @@ use constant ReserveLivestreamRequest => Dict[
 ];
 
 sub reserve_livestream_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
     unless ($user_id) {
@@ -204,55 +201,77 @@ sub search_livestreams_handler($app, $c) {
 }
 
 
-sub get_livestreams_handler($app, $c) {
-    my $key_tag_name = $c->req->query_parameters->{'tag'};
+sub get_my_livestreams_handler($app, $c) {
+    verify_user_session($app, $c);
 
-    my $dbh = $app->dbh;
-    my $txn = $dbh->txn_scope;
+    my $txn = $app->dbh->txn_scope;
 
-    # 複数件取得
-    my $live_streams = [];
-    if ($key_tag_name eq '') {
-        $live_streams = $dbh->select_all_as(
-            'Isupipe::Entity::Livestream',
-            'SELECT * FROM livestreams',
-        );
-    }
-    else {
-        my $tags = $dbh->select_all(
-            'SELECT id FROM tags WHERE name = ?',
-            $key_tag_name,
-        );
-        my $tag_id_list = [map { $_->{id} } @$tags];
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
-        my $key_tagged_livestreams = $dbh->select_all_as(
-            'Isupipe::Entity::LivestreamTag',
-            'SELECT * FROM livestream_tags WHERE tag_id IN (?)',
-            $tag_id_list,
-        );
+    my $livestreams = $app->dbh->select_all_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE user_id = ?',
+        $user_id,
+    );
 
-        for my $key_tagged_livestream ($key_tagged_livestreams->@*) {
-            my $livestream = $dbh->select_row_as(
-                'Isupipe::Entity::Livestream',
-                'SELECT * FROM livestreams WHERE id = ?',
-                $key_tagged_livestream->livestream_id,
-            );
-            push $live_streams->@*, $livestream;
-        }
-    }
+    my $response = [
+        map { fill_livestream_response($app, $_) } $livestreams->@*
+    ];
+
     $txn->commit;
 
-    return $c->render_json($live_streams);
+    return $c->render_json($response);
 }
+
+
+#sub get_livestreams_handler($app, $c) {
+#
+#    my $key_tag_name = $c->req->query_parameters->{'tag'};
+#
+#    my $dbh = $app->dbh;
+#    my $txn = $dbh->txn_scope;
+#
+#    # 複数件取得
+#    my $live_streams = [];
+#    if ($key_tag_name eq '') {
+#        $live_streams = $dbh->select_all_as(
+#            'Isupipe::Entity::Livestream',
+#            'SELECT * FROM livestreams',
+#        );
+#    }
+#    else {
+#        my $tags = $dbh->select_all(
+#            'SELECT id FROM tags WHERE name = ?',
+#            $key_tag_name,
+#        );
+#        my $tag_id_list = [map { $_->{id} } @$tags];
+#
+#        my $key_tagged_livestreams = $dbh->select_all_as(
+#            'Isupipe::Entity::LivestreamTag',
+#            'SELECT * FROM livestream_tags WHERE tag_id IN (?)',
+#            $tag_id_list,
+#        );
+#
+#        for my $key_tagged_livestream ($key_tagged_livestreams->@*) {
+#            my $livestream = $dbh->select_row_as(
+#                'Isupipe::Entity::Livestream',
+#                'SELECT * FROM livestreams WHERE id = ?',
+#                $key_tagged_livestream->livestream_id,
+#            );
+#            push $live_streams->@*, $livestream;
+#        }
+#    }
+#    $txn->commit;
+#
+#    return $c->render_json($live_streams);
+#}
 
 # FIXME: livestreamのカラムを追加し、視聴者数を増やす
 #
 # viewerテーブルの廃止
 sub enter_livestream_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $user_id = $c->req->session->get(DEFAULT_USER_ID_KEY);
     unless ($user_id) {
@@ -286,10 +305,7 @@ sub enter_livestream_handler($app, $c) {
 }
 
 sub leave_livestream_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $live_stream_id = $c->args->{livestream_id};
 
@@ -308,10 +324,7 @@ sub leave_livestream_handler($app, $c) {
 }
 
 sub get_livestream_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $live_stream_id = $c->args->{livestream_id};
     my $livestream = $app->dbh->select_row_as(
@@ -327,10 +340,7 @@ sub get_livestream_handler($app, $c) {
 }
 
 sub get_livecomment_report_handler($app, $c) {
-    my $err = verify_user_session($app, $c);
-    if ($err isa Kossy::Exception) {
-        die $err;
-    }
+    verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
 
