@@ -39,12 +39,12 @@ func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	initialGrp.Go(func() error {
 		return normalInitialPaymentPretest(initialCtx, dnsResolver)
 	})
-	// initialGrp.Go(func() error {
-	// 	return normalInitialLivecommentPretest(initialCtx)
-	// })
-	// initialGrp.Go(func() error {
-	// 	return normalInitialReactionPretest(initialCtx)
-	// })
+	initialGrp.Go(func() error {
+		return normalInitialLivecommentPretest(initialCtx, dnsResolver)
+	})
+	initialGrp.Go(func() error {
+		return normalInitialReactionPretest(initialCtx, dnsResolver)
+	})
 	initialGrp.Go(func() error {
 		return normalInitialTagPretest(ctx, dnsResolver)
 	})

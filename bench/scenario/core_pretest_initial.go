@@ -57,13 +57,13 @@ func normalInitialLivecommentPretest(ctx context.Context, dnsResolver *resolver.
 	}
 	livestream := livestreams[0]
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, isupipe.WithNoSpamCheck())
+	ngwords, err := client.GetNgwords(ctx, livestream.ID)
 	if err != nil {
 		return err
 	}
 
-	if len(livecomments) != config.InitialLivecommentCount {
-		return fmt.Errorf("初期データのリアクション数が不正です")
+	if len(ngwords) != config.InitialNgWords {
+		return fmt.Errorf("初期データのNGワード数が不正です")
 	}
 
 	return nil

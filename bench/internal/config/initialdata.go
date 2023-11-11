@@ -1,4 +1,4 @@
 package config
 
-const InitialReactionCount = 100001
-const InitialLivecommentCount = 100001
+const InitialReactionCount = 49999
+const InitialNgWords = 581
