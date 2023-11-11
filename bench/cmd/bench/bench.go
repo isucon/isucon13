@@ -23,6 +23,8 @@ import (
 
 var assetDir string
 
+var enableSSL bool
+
 type BenchResult struct {
 	Pass          bool     `json:"pass"`
 	Score         int64    `json:"score"`
@@ -61,26 +63,6 @@ func dumpFailedResult(msgs []string) {
 	}
 
 	fmt.Println(string(b))
-}
-
-func benchmark(ctx context.Context) error {
-	lgr := zap.S()
-
-	// pretest, benchmarkにはこれら初期化が必要
-	benchscore.InitCounter(ctx)
-	benchscore.InitProfit(ctx)
-	bencherror.InitErrors(ctx)
-
-	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
-	defer cancelBench()
-
-	benchmarker := newBenchmarker(benchCtx)
-	if err := benchmarker.run(benchCtx); err != nil {
-		lgr.Warnf("ベンチマーク走行エラー: %s", err.Error())
-		return err
-	}
-
-	return nil
 }
 
 var run = cli.Command{
@@ -122,14 +104,27 @@ var run = cli.Command{
 			EnvVar:      "BENCH_LOG_PATH",
 			Value:       "/tmp/isupipe-benchmarker.log",
 		},
+		cli.BoolFlag{
+			Name:        "enable-ssl",
+			Destination: &enableSSL,
+			EnvVar:      "BENCH_ENABLE_SSL",
+		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
-
 		lgr, err := logger.InitZapLogger()
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
+
+		if enableSSL {
+			config.HTTPScheme = "https"
+			config.InsecureSkipVerify = false
+			lgr.Info("SSLが有効になっています")
+		} else {
+			lgr.Info("SSLが無効になっています")
+		}
+
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
 		lgr.Infof("nameserver: %s", net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)))
 
@@ -178,7 +173,21 @@ var run = cli.Command{
 
 		lgr.Info("ベンチマーク走行を開始します")
 		benchStartAt := time.Now()
-		_ = benchmark(ctx)
+
+		// pretest, benchmarkにはこれら初期化が必要
+		benchscore.InitCounter(ctx)
+		benchscore.InitProfit(ctx)
+		bencherror.InitErrors(ctx)
+
+		benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
+		defer cancelBench()
+
+		benchmarker := newBenchmarker(benchCtx)
+		if err := benchmarker.run(benchCtx); err != nil {
+			lgr.Warnf("ベンチマーク走行エラー: %s", err.Error())
+			// FIXME: 失格相当エラーハンドリング
+		}
+
 		benchElapsedSec := time.Now().Sub(benchStartAt)
 		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
 
@@ -208,6 +217,11 @@ var run = cli.Command{
 
 		lgr.Info("===== ベンチ走行結果 =====")
 		var msgs []string
+
+		lgr.Info("シナリオカウンタ")
+		for name, count := range benchmarker.ScenarioCounter() {
+			lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+		}
 
 		var (
 			tooManySlows = benchscore.GetByTag(benchscore.TooSlow)
