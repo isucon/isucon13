@@ -51,7 +51,8 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
-			DialContext: dnsResolver.DialContext,
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
 		agent.WithTimeout(config.DefaultAgentTimeout),
 		agent.WithNoCache(),
@@ -72,7 +73,8 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
 			// Custom DNS Resolver
-			DialContext: dnsResolver.DialContext,
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
 		agent.WithTimeout(config.DefaultAgentTimeout),
 		agent.WithNoCache(),
@@ -88,7 +90,8 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
-			DialContext: dnsResolver.DialContext,
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
 		agent.WithTimeout(config.DefaultAgentTimeout),
 		// NOTE: 画像はキャッシュできるようにする
