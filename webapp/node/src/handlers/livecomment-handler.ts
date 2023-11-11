@@ -3,7 +3,10 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2/promise'
 import { ApplicationDeps, HonoEnvironment } from '../types'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { defaultUserIDKey } from '../contants'
-import { makeLivecommentResponse } from '../utils/make-livecomment-response'
+import {
+  LivecommentResponse,
+  makeLivecommentResponse,
+} from '../utils/make-livecomment-response'
 
 export const livecommentHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -96,6 +99,64 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
       }
 
       return c.json(livecommentResponse.data, 201)
+    },
+  )
+
+  handler.get(
+    '/api/livestream/:livestream_id/livecomment',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      let query =
+        'SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC'
+      const limit = c.req.query('limit')
+      if (limit) {
+        const limitNumber = Number.parseInt(limit, 10)
+        if (Number.isNaN(limitNumber)) {
+          return c.text('limit query must be integer', 400)
+        }
+        query += ` LIMIT ${limitNumber}`
+      }
+      const livecomments = await deps.connection
+        .query<RowDataPacket[]>(query, [livestreamId])
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livecomments.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get livecomments', 500)
+      }
+
+      const livecommnetResponses: LivecommentResponse[] = []
+      for (const livecomment of livecomments.data) {
+        const livecommentResponse = await makeLivecommentResponse(deps, {
+          id: livecomment.id,
+          user_id: livecomment.user_id,
+          livestream_id: livecomment.livestream_id,
+          comment: livecomment.comment,
+          tip: livecomment.tip,
+          created_at: livecomment.created_at,
+        })
+        if (!livecommentResponse.ok) {
+          await deps.connection.rollback()
+          return c.text(livecommentResponse.error, 500)
+        }
+        livecommnetResponses.push(livecommentResponse.data)
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      return c.json(livecommnetResponses)
     },
   )
 
