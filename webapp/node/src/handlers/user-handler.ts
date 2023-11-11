@@ -217,5 +217,44 @@ export const userHandler = (deps: ApplicationDeps) => {
     return c.json(response.data, 200)
   })
 
+  handler.post('/api/icon', verifyUserSessionMiddleware, async (c) => {
+    const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+
+    // base64 encoded image
+    const body = await c.req.json<{ image: string }>()
+
+    await deps.connection.beginTransaction()
+
+    try {
+      await deps.connection.execute('DELETE FROM icons WHERE user_id = ?', [
+        userId,
+      ])
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to delete icon', 500)
+    }
+
+    const result = await deps.connection
+      .query<ResultSetHeader>(
+        'INSERT INTO icons (user_id, image) VALUES (?, ?)',
+        [userId, body.image],
+      )
+      .then(([{ insertId }]) => ({ ok: true, data: insertId }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!result.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to insert icon', 500)
+    }
+
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+
+    return c.json({ id: result.data }, 201)
+  })
+
   return handler
 }
