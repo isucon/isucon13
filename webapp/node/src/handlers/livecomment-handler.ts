@@ -214,5 +214,110 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
     },
   )
 
+  handler.post(
+    '/api/livestream/:livestream_id/moderate',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+
+      const body = await c.req.json<{ ng_word: string }>()
+
+      await deps.connection.beginTransaction()
+
+      // 配信者自身の配信に対するmoderateなのかを検証
+      const livestream = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
+          [livestreamId, userId],
+        )
+        .then(([[result]]) => ({ ok: true, data: result }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livestream.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get livestream', 500)
+      }
+      if (!livestream.data) {
+        await deps.connection.rollback()
+        return c.text(
+          "A streamer can't moderate livestreams that other streamers own",
+          404,
+        )
+      }
+
+      const ngwordResult = await deps.connection
+        .query<ResultSetHeader>(
+          'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (?, ?, ?, ?)',
+          [userId, livestreamId, body.ng_word, Date.now()],
+        )
+        .then(([result]) => ({ ok: true, data: result.insertId }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!ngwordResult.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to insert ngword', 500)
+      }
+
+      const ngwords = await deps.connection
+        .query<RowDataPacket[]>('SELECT * FROM ng_words')
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!ngwords.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get ngwords', 500)
+      }
+
+      // NGワードにヒットする過去の投稿も全削除する
+      for (const ngword of ngwords.data) {
+        // ライブコメント一覧取得
+        const livecomments = await deps.connection
+          .query<RowDataPacket[]>('SELECT * FROM livecomments')
+          .then(([results]) => ({ ok: true, data: results }) as const)
+          .catch((error) => ({ ok: false, error }) as const)
+        if (!livecomments.ok) {
+          await deps.connection.rollback()
+          return c.text('failed to get livecomments', 500)
+        }
+
+        for (const livecomment of livecomments.data) {
+          try {
+            await deps.connection.query(
+              `
+            DELETE FROM livecomments
+            WHERE
+            (SELECT COUNT(*)
+            FROM
+            (SELECT ? AS text) AS texts
+            INNER JOIN
+            (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+            ON texts.text LIKE patterns.pattern) >= 1;
+            `,
+              [livecomment.comment, ngword.word],
+            )
+          } catch {
+            await deps.connection.rollback()
+            return c.text('failed to delete livecomment', 500)
+          }
+        }
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      return c.json(
+        {
+          word_id: ngwordResult.data,
+        },
+        201,
+      )
+    },
+  )
+
   return handler
 }
