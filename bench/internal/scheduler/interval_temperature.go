@@ -40,7 +40,7 @@ func newIntervalTemperture(baseAt int64, maxTemperature int64, length int) (*Int
 		return nil, fmt.Errorf("maxTemperture must be larger than 1")
 	}
 
-	// 1h単位のアトミックなカウンタを初期化
+	// 1h単位のカウンタを初期化
 	tempertures := make([]uint64, length)
 	return &IntervalTemperatures{
 		baseAt:               baseAt,

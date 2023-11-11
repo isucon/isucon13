@@ -7,6 +7,7 @@ import (
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
+// 枠数1のタイミングで、複数クライアントから一斉に書き込み、１個だけ成立しない場合は失格判定
 func BasicPopularStreamerScenario(
 	ctx context.Context,
 	popularStreamerPool *isupipe.ClientPool,
@@ -26,7 +27,7 @@ func BasicStreamerColdReserveScenario(
 	if err != nil {
 		return err
 	}
-	defer streamerPool.Put(ctx, client) // 使い終わったらお片付け
+	streamerPool.Put(ctx, client) // 他のviewerが参入できるようにプールにすぐもどす
 
 	username, err := client.LoginUserName()
 	if err != nil {
