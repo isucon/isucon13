@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -229,6 +230,7 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, commen
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
+		log.Printf("invalid comment = %s, ismoderated = %+v\n", comment, scheduler.LivecommentScheduler.IsModerated(comment))
 		return nil, 0, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 

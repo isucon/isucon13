@@ -38,9 +38,12 @@ NGWORD_FORMAT = "&NgWord{{ Word: \"{word}\" }},"
 
 
 def generate_negatives(n=10):
+    with open('./initial-data/initial_ngwords.txt', 'r') as f:
+        initial_ngwords = list(line.rstrip() for line in f.readlines())
+
     with open("./initial-data/negative_formats.txt", "r") as f:
         lines = f.readlines()
-        formats = list(line.rstrip() for line in lines)
+        formats = list(line.rstrip() for line in lines if all(initial_ngword not in line for initial_ngword in initial_ngwords))
 
     with open('./initial-data/bench_ngwords.txt', 'r') as f:
         ngwords = list(line.rstrip() for line in f.readlines() if len(line) >= 4)
@@ -68,6 +71,11 @@ def generate_initial_negatives(n=10):
                 ngword=ngword
             )
             yield comment 
+
+def iter_initial_ngwords():
+    with open('./initial-data/initial_ngwords.txt', 'r') as f:
+        for line in f.readlines():
+            yield line.rstrip()
 
 def iter_dummy_ngwords():
     with open("./initial-data/bench_dummy_ngwords.txt", "r") as f:
@@ -98,6 +106,7 @@ def main():
         for ngword in iter_dummy_ngwords():
             print(NGWORD_FORMAT.format(word=ngword))
         print('}')
+
 
 
     def command_help(args):

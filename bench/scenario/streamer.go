@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"log"
 
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -110,10 +111,12 @@ func BasicStreamerModerateScenario(
 		for _, report := range reports {
 			livestreamID := report.Livecomment.Livestream.ID
 			ngWord := scheduler.LivecommentScheduler.GetDummyNgWord()
+			log.Printf("moderating %s ...\n", ngWord.Word)
 			if err := client.Moderate(ctx, livestreamID, ngWord.Word); err != nil {
 				continue
 			}
 			scheduler.LivecommentScheduler.Moderate(report.Livecomment.Comment)
+			log.Printf("%s moderated\n", ngWord.Word)
 		}
 	}
 

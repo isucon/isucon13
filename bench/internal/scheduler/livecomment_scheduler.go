@@ -150,6 +150,14 @@ func (s *livecommentScheduler) GetNegativeComment() (*NegativeComment, bool) {
 	return comment, isModerated
 }
 
+func (s *livecommentScheduler) IsModerated(comment string) bool {
+	s.moderatedMu.RLock()
+	defer s.moderatedMu.RUnlock()
+
+	_, isModerated := s.moderated[comment]
+	return isModerated
+}
+
 func (s *livecommentScheduler) Moderate(comment string) {
 	s.moderatedMu.Lock()
 	defer s.moderatedMu.Unlock()
