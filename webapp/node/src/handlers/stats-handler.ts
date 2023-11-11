@@ -223,5 +223,161 @@ export const statsHandler = (deps: ApplicationDeps) => {
       })
     },
   )
+
+  handler.get(
+    '/api/livestream/:livestream_id/statistics',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
+        return c.json('livestream_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      const livestream = await deps.connection
+        .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE id = ?', [
+          livestreamId,
+        ])
+        .then(([[result]]) => ({ ok: true, data: result }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livestream.ok) {
+        await deps.connection.rollback()
+        return c.json('failed to get livestream', 500)
+      }
+      if (!livestream.data) {
+        await deps.connection.rollback()
+        return c.json('cannot get stats of not found livestream', 404)
+      }
+
+      const livestreams = await deps.connection
+        .query<RowDataPacket[]>('SELECT * FROM livestreams')
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livestreams.ok) {
+        await deps.connection.rollback()
+        return c.json('failed to get livestreams', 500)
+      }
+
+      // ランク算出
+      const ranking: { livestreamId: number; title: string; score: number }[] =
+        []
+      for (const livestream of livestreams.data) {
+        const reactionCount = await deps.connection
+          .query<RowDataPacket[]>(
+            'SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?',
+            [livestream.id],
+          )
+          .then(
+            ([[result]]) => ({ ok: true, data: result['COUNT(*)'] }) as const,
+          )
+          .catch((error) => ({ ok: false, error }) as const)
+        if (!reactionCount.ok) {
+          await deps.connection.rollback()
+          return c.json('failed to count reactions', 500)
+        }
+        if (reactionCount.data === undefined) {
+          await deps.connection.rollback()
+          return c.json('failed to count reactions', 500)
+        }
+
+        const totalTip = await deps.connection
+          .query<RowDataPacket[]>(
+            'SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?',
+            [livestream.id],
+          )
+          .then(
+            ([[result]]) =>
+              ({ ok: true, data: result['IFNULL(SUM(l2.tip), 0)'] }) as const,
+          )
+          .catch((error) => ({ ok: false, error }) as const)
+        if (!totalTip.ok) {
+          await deps.connection.rollback()
+          return c.json('failed to count tips', 500)
+        }
+        if (totalTip.data === undefined) {
+          await deps.connection.rollback()
+          return c.json('failed to count tips', 500)
+        }
+
+        ranking.push({
+          livestreamId: livestream.id,
+          title: livestream.title,
+          score: reactionCount.data + totalTip.data,
+        })
+      }
+      ranking.sort((a, b) => b.score - a.score)
+
+      let rank = 1
+      for (const r of ranking) {
+        if (r.livestreamId === livestreamId) break
+        rank++
+      }
+
+      // 視聴者数算出
+      const viewersCount = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .then(([[result]]) => ({ ok: true, data: result['COUNT(*)'] }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!viewersCount.ok) {
+        await deps.connection.rollback()
+        return c.json('failed to count viewers', 500)
+      }
+
+      // 最大チップ額
+      const maxTip = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .then(
+          ([[result]]) =>
+            ({ ok: true, data: result['IFNULL(MAX(tip), 0)'] }) as const,
+        )
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!maxTip.ok) {
+        await deps.connection.rollback()
+        return c.json('failed to get max tip', 500)
+      }
+
+      // リアクション数
+      const totalReactions = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .then(([[result]]) => ({ ok: true, data: result['COUNT(*)'] }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!totalReactions.ok) {
+        await deps.connection.rollback()
+        return c.json('failed to count reactions', 500)
+      }
+
+      // スパム報告数
+      const totalReports = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .then(([[result]]) => ({ ok: true, data: result['COUNT(*)'] }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!totalReports.ok) {
+        await deps.connection.rollback()
+        return c.json('failed to count reports', 500)
+      }
+
+      return c.json({
+        rank,
+        viewers_count: viewersCount.data,
+        total_reactions: totalReactions.data,
+        total_reports: totalReports.data,
+        max_tip: maxTip.data,
+      })
+    },
+  )
+
   return handler
 }
