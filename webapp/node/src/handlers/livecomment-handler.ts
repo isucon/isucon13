@@ -19,10 +19,7 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
       const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
       const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
       if (Number.isNaN(livestreamId)) {
-        return c.json({
-          ok: false,
-          error: 'livestream_id in path must be integer',
-        })
+        return c.text('livestream_id in path must be integer', 400)
       }
 
       const body = await c.req.json<{ comment: string; tip: number }>()

@@ -3,7 +3,10 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2/promise'
 import { ApplicationDeps, HonoEnvironment } from '../types'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { defaultUserIDKey } from '../contants'
-import { makeLivestreamResponse } from '../utils/make-livestream-response'
+import {
+  LivestreamResponse,
+  makeLivestreamResponse,
+} from '../utils/make-livestream-response'
 import {
   LivecommentReportResponse,
   makeLivecommentReportResponse,
@@ -11,6 +14,101 @@ import {
 
 export const livestreamHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
+
+  handler.get('/api/livestream/search', async (c) => {
+    const tagName = c.req.query('tag')
+
+    await deps.connection.beginTransaction()
+
+    const livestreams: RowDataPacket[] = []
+    if (tagName) {
+      // タグによる取得
+      const tagIds = await deps.connection
+        .query<RowDataPacket[]>('SELECT id FROM tags WHERE name = ?', [tagName])
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!tagIds.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get tags', 500)
+      }
+
+      const livestreamTags = await deps.connection
+        .query<RowDataPacket[]>(
+          'SELECT * FROM livestream_tags WHERE tag_id IN (?)',
+          [tagIds.data.map((tag) => tag.id)],
+        )
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livestreamTags.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get keyTaggedLivestreams', 500)
+      }
+
+      for (const livestreamTag of livestreamTags.data) {
+        const livestream = await deps.connection
+          .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE id = ?', [
+            livestreamTag.livestream_id,
+          ])
+          .then(([[result]]) => ({ ok: true, data: result }) as const)
+          .catch((error) => ({ ok: false, error }) as const)
+        if (!livestream.ok) {
+          await deps.connection.rollback()
+          return c.text('failed to get livestream', 500)
+        }
+        livestreams.push(livestream.data)
+      }
+    } else {
+      // 検索条件なし
+      let query = `SELECT * FROM livestreams`
+      const limit = c.req.query('limit')
+      if (limit) {
+        const limitNumber = Number.parseInt(limit, 10)
+        if (Number.isNaN(limitNumber)) {
+          console.log('limitNumber', limitNumber, 'limit', limit)
+          return c.text('limit query parameter must be integer', 400)
+        }
+        query += ` LIMIT ${limitNumber}`
+      }
+
+      const results = await deps.connection
+        .query<RowDataPacket[]>(query)
+        .then(([results]) => ({ ok: true, data: results }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!results.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get livestreams', 500)
+      }
+      livestreams.push(...results.data)
+    }
+
+    const livestreamResponses: LivestreamResponse[] = []
+    for (const livestream of livestreams) {
+      const livestreamResponse = await makeLivestreamResponse(deps, {
+        id: livestream.id,
+        user_id: livestream.user_id,
+        title: livestream.title,
+        description: livestream.description,
+        playlist_url: livestream.playlist_url,
+        thumbnail_url: livestream.thumbnail_url,
+        start_at: livestream.start_at,
+        end_at: livestream.end_at,
+      })
+      if (!livestreamResponse.ok) {
+        await deps.connection.rollback()
+        return c.text(livestreamResponse.error, 500)
+      }
+      livestreamResponses.push(livestreamResponse.data)
+    }
+
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+
+    return c.json(livestreamResponses, 200)
+  })
 
   handler.post(
     '/api/livestream/reservation',
@@ -148,8 +246,8 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
     verifyUserSessionMiddleware,
     async (c) => {
       const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-      const livestreamID = Number.parseInt(c.req.param('livestream_id'), 10)
-      if (Number.isNaN(livestreamID)) {
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
         return c.text('livestream_id in path must be integer', 400)
       }
 
@@ -157,7 +255,7 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
 
       const livestream = await deps.connection
         .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE id = ?', [
-          livestreamID,
+          livestreamId,
         ])
         .then(([[result]]) => ({ ok: true, data: result }) as const)
         .catch((error) => ({ ok: false, error }) as const)
@@ -172,7 +270,7 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
       const livecommentReports = await deps.connection
         .query<RowDataPacket[]>(
           'SELECT * FROM livecomment_reports WHERE livestream_id = ?',
-          [livestreamID],
+          [livestreamId],
         )
         .then(([results]) => ({ ok: true, data: results }) as const)
         .catch((error) => ({ ok: false, error }) as const)
@@ -212,8 +310,8 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
     '/api/livestream/:livestream_id',
     verifyUserSessionMiddleware,
     async (c) => {
-      const livestreamID = Number.parseInt(c.req.param('livestream_id'), 10)
-      if (Number.isNaN(livestreamID)) {
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
         return c.text('livestream_id in path must be integer', 400)
       }
 
@@ -221,7 +319,7 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
 
       const livestream = await deps.connection
         .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE id = ?', [
-          livestreamID,
+          livestreamId,
         ])
         .then(([[result]]) => ({ ok: true, data: result }) as const)
         .catch((error) => ({ ok: false, error }) as const)
@@ -264,8 +362,8 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
     verifyUserSessionMiddleware,
     async (c) => {
       const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-      const livestreamID = Number.parseInt(c.req.param('livestream_id'), 10)
-      if (Number.isNaN(livestreamID)) {
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
         return c.text('livestream_id in path must be integer', 400)
       }
 
@@ -274,7 +372,7 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
       try {
         await deps.connection.query(
           'INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(?, ?, ?)',
-          [userId, livestreamID, Date.now()],
+          [userId, livestreamId, Date.now()],
         )
       } catch {
         await deps.connection.rollback()
