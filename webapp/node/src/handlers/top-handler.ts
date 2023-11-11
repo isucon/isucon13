@@ -57,5 +57,35 @@ export const topHandler = (deps: ApplicationDeps) => {
     },
   )
 
+  handler.get('/api/tag', async (c) => {
+    await deps.connection.beginTransaction()
+
+    const tags = await deps.connection
+      .execute<RowDataPacket[]>('SELECT * FROM tags')
+      .then(([results]) => ({ ok: true, data: results }) as const)
+      .catch((error) => ({ ok: false, error }) as const)
+    if (!tags.ok) {
+      await deps.connection.rollback()
+      return c.text('failed to get tags', 500)
+    }
+
+    try {
+      await deps.connection.commit()
+    } catch {
+      await deps.connection.rollback()
+      return c.text('failed to commit', 500)
+    }
+
+    return c.json(
+      {
+        tags: tags.data.map((tag) => ({
+          id: tag.id,
+          name: tag.name,
+        })),
+      },
+      200,
+    )
+  })
+
   return handler
 }
