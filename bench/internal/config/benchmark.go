@@ -14,3 +14,5 @@ var (
 )
 
 const BaseDomain = "u.isucon.dev"
+
+const ClientIdleConnTimeout = 5 * time.Second
