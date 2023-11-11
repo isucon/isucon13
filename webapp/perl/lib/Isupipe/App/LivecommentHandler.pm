@@ -15,6 +15,10 @@ use Isupipe::App::Util qw(
     check_params
 );
 
+use Isupipe::App::FillResponse qw(
+    fill_livecomment_response
+);
+
 use constant PostLivecommentRequest => Dict[
     comment => Str,
     tip => Int,
@@ -24,21 +28,37 @@ use constant ModerateRequest => Dict[
     ng_word => Str,
 ];
 
-sub get_livecomment_handler($app, $c) {
+sub get_livecomments_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
-    my $livecomments = $app->dbh->select_all_as(
-        'Isupipe::Entity::Livecomment',
-        'SELECT * FROM livecomments WHERE livestream_id = ?',
-        $livestream_id
-    );
 
-    unless (@$livecomments) {
-        $c->halt_text(HTTP_NOT_FOUND, "livestream not found");
+    my $txn = $app->dbh->txn_scope;
+
+    my $query = "SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC";
+    if (my $limit = $c->req->parameters->{limit}) {
+        unless ($limit =~ /^\d+$/) {
+            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be a integer");
+        }
+        $query .= sprintf(" LIMIT %d", $limit);
     }
 
-    return $c->render_json($livecomments);
+    my $livecomments = $app->dbh->select_all_as(
+        'Isupipe::Entity::Livecomment',
+        $query,
+        $livestream_id,
+    );
+    unless ($livecomments->@*) {
+        return $c->render_json([]);
+    }
+
+    my $response = [
+        map { fill_livecomment_response($app, $_) } $livecomments->@*
+    ];
+
+    $txn->commit;
+
+    return $c->render_json($response);
 }
 
 sub post_livetcomment_handleer($app, $c) {

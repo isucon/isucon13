@@ -4,6 +4,7 @@ use experimental qw(class);
 class Isupipe::Entity::Livecomment {
     field $id :param = undef;
     field $user_id :param = undef;
+    field $user :param = undef;
     field $livestream_id :param = undef;
     field $livestream :param = undef;
     field $comment :param = undef;
@@ -16,6 +17,7 @@ class Isupipe::Entity::Livecomment {
     ADJUST {
         assert_field(Int, $id, 'id');
         assert_field(Int, $user_id, 'user_id');
+        assert_field(InstanceOf['Isupipe::Entity::User'], $user, 'user');
         assert_field(Int, $livestream_id, 'livestream_id');
         assert_field(InstanceOf['Isupipe::Entity::Livestream'], $livestream, 'livestream');
         assert_field(Str, $comment, 'comment');
@@ -37,7 +39,7 @@ class Isupipe::Entity::Livecomment {
     method TO_JSON() {
         return {
             id            => $id,
-            user_id       => $user_id,
+            user          => $user,
             livestream    => $livestream,
             comment       => $comment,
             tip           => $tip,

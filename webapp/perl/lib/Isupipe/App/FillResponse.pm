@@ -7,6 +7,8 @@ use Exporter 'import';
 our @EXPORT_OK = qw(
     fill_user_response
     fill_livestream_response
+    fill_livecomment_response
+    fill_livecomment_report_response
 );
 
 use Carp qw(croak);
@@ -15,6 +17,7 @@ use Isupipe::Entity::User;
 use Isupipe::Entity::Tag;
 use Isupipe::Entity::Livestream;
 use Isupipe::Entity::LivestreamTag;
+use Isupipe::Entity::Livecomment;
 
 sub fill_user_response($app, $user) {
     my $theme = $app->dbh->select_row_as(
@@ -78,3 +81,50 @@ sub fill_livestream_response($app, $livestream) {
     );
 }
 
+sub fill_livecomment_response($app, $livecomment) {
+    my $user = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE id = ?',
+        $livecomment->user_id,
+    );
+    my $comment_owner = fill_user_response($app, $user);
+
+    my $livestream = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE id = ?',
+        $livecomment->livestream_id,
+    );
+    $livestream = fill_livestream_response($app, $livestream);
+
+    return Isupipe::Entity::Livecomment->new(
+        id          => $livecomment->id,
+        user        => $comment_owner,
+        livestream  => $livestream,
+        comment     => $livecomment->comment,
+        tip         => $livecomment->tip,
+        created_at  => $livecomment->created_at,
+    );
+}
+
+sub fill_livecomment_report_response($app, $livecomment_report) {
+    my $reporter = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE id = ?',
+        $livecomment_report->user_id,
+    );
+    $reporter = fill_user_response($app, $reporter);
+
+    my $livecomment = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livecomment',
+        'SELECT * FROM livecomments WHERE id = ?',
+        $livecomment_report->livecomment_id,
+    );
+    $livecomment = fill_livecomment_response($app, $livecomment);
+
+    return Isupipe::Entity::LivecommentReport->new(
+        id          => $livecomment_report->id,
+        reporter    => $reporter,
+        livecomment => $livecomment,
+        created_at  => $livecomment_report->created_at,
+    );
+}

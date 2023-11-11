@@ -217,8 +217,27 @@ subtest 'GET /api/livestream/:livestream_id' => sub {
             etc;
         };
     };
-
 };
+
+subtest 'GET /api/livestream/:livestream_id/livecomment' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/1/livecomment?limit=5";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_OK) or diag $res->content;
+
+        is decode_json($res->content), array {
+            item 0 => hash {
+                field id => 1;
+                etc;
+            };
+            etc;
+        };
+    };
+};
+
 
 subtest 'POST /api/login' => sub {
     test_psgi $app, sub ($cb) {
