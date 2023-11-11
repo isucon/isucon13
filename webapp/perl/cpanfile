@@ -15,3 +15,5 @@ requires 'Data::Lock', '1.03';
 
 # あとで消す
 requires 'Test2::V0';
+requires 'DBIx::QueryLog';
+requires 'DBIx::Tracer';
