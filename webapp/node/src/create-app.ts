@@ -4,6 +4,7 @@ import { createConnection } from 'mysql2/promise'
 import { sessionMiddleware, CookieStore } from 'hono-sessions'
 import { ApplicationDeps, Deps, HonoEnvironment } from './types'
 import { userHandler } from './handlers/user-handler'
+import { topHandler } from './handlers/top-handler'
 
 export const createApp = async (deps: Deps) => {
   const connection = await createConnection({
@@ -44,6 +45,12 @@ export const createApp = async (deps: Deps) => {
       },
     }),
   )
+  app.use('*', async (c, next) => {
+    await next()
+    if (c.res.status >= 500) {
+      console.error(c.res.status, await c.res.clone().text())
+    }
+  })
 
   app.post('/api/initialize', async (c) => {
     try {
@@ -57,6 +64,7 @@ export const createApp = async (deps: Deps) => {
   })
 
   app.route('/', userHandler(applicationDeps))
+  app.route('/', topHandler(applicationDeps))
 
   return app
 }
