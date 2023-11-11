@@ -42,20 +42,9 @@ def generate_negatives(n=10):
         lines = f.readlines()
         formats = list(line.rstrip() for line in lines)
 
-    with open('./initial-data/initial_ngwords.txt', 'r') as f:
-        ngwords = list(line.rstrip() for line in f.readlines())
-        for _ in range(n//2):
-            ngword = random.choice(ngwords)
-            fmt = random.choice(formats)
-            comment = NEGATIVE_COMMENT_FORMAT.format(
-                comment=fmt.format(word=ngword),
-                ngword=ngword
-            )
-            yield comment 
-
     with open('./initial-data/bench_ngwords.txt', 'r') as f:
-        ngwords = list(line.rstrip() for line in f.readline())
-        for _ in range(n//2):
+        ngwords = list(line.rstrip() for line in f.readlines() if len(line) >= 4)
+        for _ in range(n):
             ngword = random.choice(ngwords)
             fmt = random.choice(formats)
             comment = NEGATIVE_COMMENT_FORMAT.format(
@@ -63,6 +52,22 @@ def generate_negatives(n=10):
                 ngword=ngword
             )
             yield comment
+
+def generate_initial_negatives(n=10):
+    with open("./initial-data/negative_formats.txt", "r") as f:
+        lines = f.readlines()
+        formats = list(line.rstrip() for line in lines)
+
+    with open('./initial-data/initial_ngwords.txt', 'r') as f:
+        ngwords = list(line.rstrip() for line in f.readlines() if len(line) >= 4)
+        for _ in range(n):
+            ngword = random.choice(ngwords)
+            fmt = random.choice(formats)
+            comment = NEGATIVE_COMMENT_FORMAT.format(
+                comment=fmt.format(word=ngword),
+                ngword=ngword
+            )
+            yield comment 
 
 def iter_dummy_ngwords():
     with open("./initial-data/bench_dummy_ngwords.txt", "r") as f:
@@ -79,14 +84,21 @@ def main():
 
     def command_negative(args):
         print('package scheduler')
+        print('var initialNegativeCommentPool = []*NegativeComment{')
+        for negative in generate_initial_negatives(args.n):
+            print(negative)
+        print('}')
+
         print('var negativeCommentPool = []*NegativeComment{')
         for negative in generate_negatives(args.n):
             print(negative)
         print('}')
+
         print('var dummyNgWords = []*NgWord{')
         for ngword in iter_dummy_ngwords():
             print(NGWORD_FORMAT.format(word=ngword))
         print('}')
+
 
     def command_help(args):
         print(parser.parse_args([args.command, '--help']))
