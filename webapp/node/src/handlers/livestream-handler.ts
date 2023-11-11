@@ -208,5 +208,56 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
     },
   )
 
+  handler.get(
+    '/api/livestream/:livestream_id',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const livestreamID = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamID)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      const livestream = await deps.connection
+        .query<RowDataPacket[]>('SELECT * FROM livestreams WHERE id = ?', [
+          livestreamID,
+        ])
+        .then(([[result]]) => ({ ok: true, data: result }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livestream.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to get livestream', 500)
+      }
+      if (!livestream.data) {
+        return c.text('not found livestream that has the given id', 404)
+      }
+
+      const livestreamResponse = await makeLivestreamResponse(deps, {
+        id: livestream.data.id,
+        user_id: livestream.data.user_id,
+        title: livestream.data.title,
+        description: livestream.data.description,
+        playlist_url: livestream.data.playlist_url,
+        thumbnail_url: livestream.data.thumbnail_url,
+        start_at: livestream.data.start_at,
+        end_at: livestream.data.end_at,
+      })
+      if (!livestreamResponse.ok) {
+        await deps.connection.rollback()
+        return c.text(livestreamResponse.error, 500)
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      return c.json(livestreamResponse.data, 200)
+    },
+  )
+
   return handler
 }
