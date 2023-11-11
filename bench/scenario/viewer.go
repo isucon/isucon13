@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
@@ -78,7 +77,7 @@ func ViewerSpamScenario(
 	defer livestreamPool.Put(ctx, livestream)
 
 	comment := scheduler.LivecommentScheduler.GetNegativeComment()
-	resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{}, isupipe.WithStatusCode(http.StatusBadRequest))
+	resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{})
 	if err != nil {
 		return err
 	}
