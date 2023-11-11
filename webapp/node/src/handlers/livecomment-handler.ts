@@ -7,6 +7,7 @@ import {
   LivecommentResponse,
   makeLivecommentResponse,
 } from '../utils/make-livecomment-response'
+import { makeLivecommentReportResponse } from '../utils/make-livecomment-report-response'
 
 export const livecommentHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -157,6 +158,62 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
       }
 
       return c.json(livecommnetResponses)
+    },
+  )
+
+  handler.post(
+    '/api/livestream/:livestream_id/livecomment/:livecomment_id/report',
+    verifyUserSessionMiddleware,
+    async (c) => {
+      const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
+      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+      if (Number.isNaN(livestreamId)) {
+        return c.text('livestream_id in path must be integer', 400)
+      }
+      const livecommentId = Number.parseInt(c.req.param('livecomment_id'), 10)
+      if (Number.isNaN(livecommentId)) {
+        return c.text('livecomment_id in path must be integer', 400)
+      }
+
+      await deps.connection.beginTransaction()
+
+      const now = Date.now()
+
+      const livecommentReportResult = await deps.connection
+        .query<ResultSetHeader>(
+          'INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at) VALUES (?, ?, ?, ?)',
+          [userId, livestreamId, livecommentId, now],
+        )
+        .then(([result]) => ({ ok: true, data: result.insertId }) as const)
+        .catch((error) => ({ ok: false, error }) as const)
+      if (!livecommentReportResult.ok) {
+        await deps.connection.rollback()
+        return c.text('failed to insert livecomment report', 500)
+      }
+
+      const livecommentReportResponse = await makeLivecommentReportResponse(
+        deps,
+        {
+          id: livecommentReportResult.data,
+          user_id: userId,
+          livestream_id: livestreamId,
+          livecomment_id: livecommentId,
+          created_at: now,
+        },
+      )
+      if (!livecommentReportResponse.ok) {
+        await deps.connection.rollback()
+        return c.text(livecommentReportResponse.error, 500)
+      }
+
+      try {
+        await deps.connection.commit()
+      } catch {
+        await deps.connection.rollback()
+        return c.text('failed to commit', 500)
+      }
+
+      return c.json(livecommentReportResponse.data, 201)
     },
   )
 
