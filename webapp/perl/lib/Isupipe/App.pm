@@ -6,7 +6,7 @@ use Kossy;
 use HTTP::Status qw(:constants);
 use DBIx::Sunny;
 
-$Kossy::JSON_SERIALIZER = Cpanel::JSON::XS->new()->ascii(0)->convert_blessed;
+$Kossy::JSON_SERIALIZER = Cpanel::JSON::XS->new()->ascii(0)->utf8->convert_blessed;
 
 use Isupipe::App::LivecommentHandler;
 use Isupipe::App::LivestreamHandler;

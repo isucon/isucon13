@@ -12,17 +12,18 @@ use HTTP::Cookies;
 use Cpanel::JSON::XS ();
 use Cpanel::JSON::XS::Type;
 use Encode ();
+use Plack::Util ();
 
-my $app = do './app.psgi';
+my $app = Plack::Util::load_psgi('./app.psgi');
 
 sub decode_json {
-    state $json = Cpanel::JSON::XS->new()->ascii(0)->convert_blessed;
+    state $json = Cpanel::JSON::XS->new()->utf8;
     return $json->decode(@_);
 }
 
 sub with_json_request($req, $data) {
     state $json = Cpanel::JSON::XS->new->utf8;
-    my $encocded_json = Encode::encode_utf8($json->encode($data));
+    my $encocded_json = $json->encode($data);
 
     $req->header('Content-Type' => 'application/json; charset=utf-8');
     $req->header('Content-Length' => length $encocded_json);
@@ -38,6 +39,10 @@ sub login_default($cb, $req) {
         password => 'test',
     });
     my $login_res = $cb->($login_req);
+    if ($login_res->code != HTTP_OK) {
+        die 'Failed to login: ' . Encode::encode_utf8($login_res->content);
+    }
+
     my $cookie = $login_res->header('Set-Cookie');
 
     $req->header('Cookie' => $cookie);
@@ -118,7 +123,7 @@ subtest 'GET /api/livestream/search' => sub {
         my $req = GET "/api/livestream/search?tag=DIY";
 
         my $res = $cb->($req);
-        is $res->code, HTTP_OK;
+        is($res->code, HTTP_OK) or do { diag $req->as_string, $res->content };
 
         is decode_json($res->content), array {
             all_items hash {
@@ -133,7 +138,7 @@ subtest 'GET /api/livestream/search' => sub {
         my $req = GET "/api/livestream/search";
 
         my $res = $cb->($req);
-        is $res->code, HTTP_OK;
+        is($res->code, HTTP_OK) or do { diag $req->as_string, $res->content };
 
         is decode_json($res->content), array {
             all_items hash {
@@ -148,7 +153,7 @@ subtest 'GET /api/livestream/search' => sub {
         my $req = GET "/api/livestream/search?limit=1";
 
         my $res = $cb->($req);
-        is $res->code, HTTP_OK;
+        is($res->code, HTTP_OK) or do { diag $req->as_string, $res->content };
 
         is decode_json($res->content), array {
             all_items hash {
@@ -201,14 +206,14 @@ subtest 'GET /api/user/:username/livestream' => sub {
 subtest 'GET /api/livestream/:livestream_id' => sub {
 
     test_psgi $app, sub ($cb) {
-        my $req = GET "/api/livestream/1";
+        my $req = GET "/api/livestream/2";
         login_default($cb, $req);
 
         my $res = $cb->($req);
         is $res->code, HTTP_OK;
 
         is decode_json($res->content), hash {
-            field title => D;
+            field title => '月曜大工';
             etc;
         };
     };
