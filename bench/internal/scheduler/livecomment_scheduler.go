@@ -1,17 +1,41 @@
 package scheduler
 
 import (
+	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
 var (
-	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
+	randomSource  = rand.New(rand.NewSource(time.Now().UnixNano()))
+	tipRandSource = rand.New(rand.NewSource(42066173513625362))
 )
 
 // GenerateIntBetween generates integer satisfies [min, max) constraint
-func GenerateIntBetween(min, max int) int {
-	return randomSource.Intn(max-min) + min
+func generateTipValueBetween(min, max int) int {
+	v := randomSource.Intn(max-min) + min
+
+	// 桁数
+	var numDigit int
+	for target := v; target > 0; {
+		target = target / 10
+		numDigit++
+	}
+
+	if v >= 10 && numDigit >= 2 {
+		var (
+			quotient = int(math.Pow(10, float64(numDigit)-1))
+			surplus  = v % quotient
+		)
+		return v - surplus
+	} else {
+		return v
+	}
+}
+
+func generateTipLevelBetween(minLevel, maxLevel int) int {
+	return tipRandSource.Intn(maxLevel-minLevel) + minLevel
 }
 
 var LivecommentScheduler = mustNewLivecommentScheduler()
@@ -78,6 +102,9 @@ type Tip struct {
 // ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
 type livecommentScheduler struct {
 	ngLivecomments map[string]struct{}
+
+	moderatedMu sync.RWMutex
+	moderated   map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {
@@ -88,7 +115,10 @@ func mustNewLivecommentScheduler() *livecommentScheduler {
 	rand.Shuffle(len(dummyNgWords), func(i, j int) {
 		dummyNgWords[i], dummyNgWords[j] = dummyNgWords[j], dummyNgWords[i]
 	})
-	return &livecommentScheduler{}
+	return &livecommentScheduler{
+		ngLivecomments: ngLivecomments,
+		moderated:      make(map[string]struct{}),
+	}
 }
 
 // ライブコメント一覧に何件スパムが含まれるか調べるために使う
@@ -110,9 +140,29 @@ func (s *livecommentScheduler) GetLongPositiveComment() *PositiveComment {
 	return positiveCommentPool[idx]
 }
 
-func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
+func (s *livecommentScheduler) GetNegativeComment() (*NegativeComment, bool) {
+	s.moderatedMu.RLock()
+	defer s.moderatedMu.RUnlock()
+
 	idx := rand.Intn(len(negativeCommentPool))
-	return negativeCommentPool[idx]
+	comment := negativeCommentPool[idx]
+	_, isModerated := s.moderated[comment.Comment]
+	return comment, isModerated
+}
+
+func (s *livecommentScheduler) IsModerated(comment string) bool {
+	s.moderatedMu.RLock()
+	defer s.moderatedMu.RUnlock()
+
+	_, isModerated := s.moderated[comment]
+	return isModerated
+}
+
+func (s *livecommentScheduler) Moderate(comment string) {
+	s.moderatedMu.Lock()
+	defer s.moderatedMu.Unlock()
+
+	s.moderated[comment] = struct{}{}
 }
 
 func (s *livecommentScheduler) generateTip(level int) int {
@@ -120,15 +170,15 @@ func (s *livecommentScheduler) generateTip(level int) int {
 	case 0:
 		return 0
 	case 1:
-		return GenerateIntBetween(1, 1000)
+		return generateTipValueBetween(10, 1000)
 	case 2:
-		return GenerateIntBetween(1000, 2000)
+		return generateTipValueBetween(1000, 2000)
 	case 3:
-		return GenerateIntBetween(2000, 5000)
+		return generateTipValueBetween(2000, 5000)
 	case 4:
-		return GenerateIntBetween(5000, 10000)
+		return generateTipValueBetween(5000, 10000)
 	case 5:
-		return GenerateIntBetween(10000, 100000)
+		return generateTipValueBetween(10000, 100000)
 	default:
 		return 0
 	}
@@ -136,7 +186,7 @@ func (s *livecommentScheduler) generateTip(level int) int {
 
 // 通常配信に対するチップ取得
 func (s *livecommentScheduler) GetTipsForStream() *Tip {
-	level := GenerateIntBetween(1, 3)
+	level := generateTipLevelBetween(1, 3)
 	tip := s.generateTip(level)
 	return &Tip{
 		Level: level,
@@ -146,7 +196,7 @@ func (s *livecommentScheduler) GetTipsForStream() *Tip {
 
 // 人気配信に対するチップ取得
 func (s *livecommentScheduler) GetTipsForPopularStream() *Tip {
-	level := GenerateIntBetween(3, 6)
+	level := generateTipLevelBetween(3, 6)
 	tip := s.generateTip(level)
 	return &Tip{
 		Level: level,

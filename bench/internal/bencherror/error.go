@@ -84,19 +84,37 @@ func CheckViolation() error {
 
 	systemErrorCount, ok := counts[string(SystemError)]
 	if !ok {
-		return fmt.Errorf("[システム] システムエラーを取得できません")
+		systemErrorCount = 0
 	}
 	if systemErrorCount > 0 {
-		return ErrSystem
+		return fmt.Errorf("%d件のシステムエラー: %w", systemErrorCount, ErrSystem)
 	}
 
 	violationCount, ok := counts[string(BenchmarkViolationError)]
 	if !ok {
-		return fmt.Errorf("[システム] 違反エラーを取得できません")
+		violationCount = 0
 	}
 	if violationCount > 0 {
-		return ErrViolation
+		return fmt.Errorf("%d件の仕様違反エラー: %w", violationCount, ErrViolation)
 	}
 
 	return nil
+}
+
+func RunViolationChecker(ctx context.Context) chan error {
+	violate := make(chan error, 1)
+	go func() {
+		defer close(violate)
+		for {
+			select {
+			case <-ctx.Done():
+			default:
+				if err := CheckViolation(); err != nil {
+					violate <- err
+					return
+				}
+			}
+		}
+	}()
+	return violate
 }

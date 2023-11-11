@@ -9,13 +9,11 @@ import (
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
-	"github.com/isucon/isucon13/bench/internal/resolver"
 )
 
 func TestMain(m *testing.M) {
 	client, err := NewClient(
-		resolver.NewDNSResolver(),
-		agent.WithTimeout(1*time.Minute),
+		agent.WithTimeout(1 * time.Minute),
 	)
 	if err != nil {
 		log.Fatalln(err)
