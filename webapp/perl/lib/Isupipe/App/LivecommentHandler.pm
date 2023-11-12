@@ -18,6 +18,7 @@ use Isupipe::App::Util qw(
 
 use Isupipe::App::FillResponse qw(
     fill_livecomment_response
+    fill_livecomment_report_response
 );
 
 use constant PostLivecommentRequest => Dict[
@@ -166,55 +167,39 @@ sub report_livecomment_handler($app, $c) {
     my $livestream_id = $c->args->{livestream_id};
     my $livecomment_id = $c->args->{livecomment_id};
 
-    my $user_id = $c->req->session->{DEFAULT_USER_ID_KEY};
-    unless ($user_id) {
-        $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
-    }
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
-    my $dbh = $app->dbh;
-    my $txn = $dbh->txn_scope;
-
-    # 配信者自身の配信に対するGETなのかを検証
-    my $owned_livestreams = $dbh->select_all(
-        'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
-        $livestream_id,
-        $user_id,
-    );
-    if (@$owned_livestreams == 0) {
-        $c->halt_text(HTTP_BAD_REQUEST, "A streamer can't get livecomment reports that other streamers own")
-    }
-
-    $dbh->query(
-        'INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id) VALUES (:user_id, :livestream_id, :livecomment_id)',
-        {
-            user_id => $user_id,
+    my $txn = $app->dbh->txn_scope;
+    try {
+        my $report = Isupipe::Entity::LivecommentReport->new(
+            user_id       => $user_id,
             livestream_id => $livestream_id,
             livecomment_id => $livecomment_id,
-        },
-    );
+            created_at    => time,
+        );
+        $app->dbh->query(
+            'INSERT INTO livecomment_reports (user_id, livestream_id, livecomment_id, created_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at)',
+            $report->as_hashref,
+        );
+        my $report_id = $app->dbh->last_insert_id;
+        $report->id($report_id);
 
-    $dbh->query(
-        'UPDATE livecomments SET report_count = report_count + 1 WHERE id = ?',
-        $livecomment_id,
-    );
+        $report = fill_livecomment_report_response($app, $report);
 
-    my $report_id = $dbh->last_insert_id;
+        $txn->commit;
 
-    my $created_at = time;
-    my $report = Isupipe::Entity::LivecommentReport->new(
-        id => $report_id,
-        user_id => $user_id,
-        livestream_id => $livestream_id,
-        livecomment_id => $livecomment_id,
-        created_at => $created_at,
-        updated_at => $created_at,
-    );
-
-    $txn->commit;
-
-    my $res = $c->render_json($report);
-    $res->status(HTTP_CREATED);
-    return $res;
+        my $res = $c->render_json($report);
+        $res->status(HTTP_CREATED);
+        return $res;
+    }
+    catch ($e) {
+        $txn->rollback;
+        if ($e isa Kossy::Exception) {
+            die $e;
+        }
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
+    }
 }
 
 # NGワードを登録

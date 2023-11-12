@@ -85,8 +85,8 @@ get  '/api/livestream/{livestream_id:[0-9]+}/reaction',    h('Isupipe::App::Reac
 get '/api/livestream/{livestream_id:[0-9]+}/report',  h('Isupipe::App::LivestreamHandler', 'get_livecomment_reports_handler');
 get '/api/livestream/{livestream_id:[0-9]+}/ngwords', h('Isupipe::App::LivecommentHandler', 'get_ngwords_handler');
 
-# # ライブコメント報告
-# post '/livestream/:livestream_id/livecomment/:livecomment_id/report',  \&report_livecomment_handler;
+# ライブコメント報告
+post '/api/livestream/{livestream_id:[0-9]+}/livecomment/:livecomment_id/report',  h('Isupipe::App::LivecommentHandler', 'report_livecomment_handler');
 # # 配信者によるモデレーション (NGワード登録)
 # post '/livestream/:livestream_id/moderate',  \&moderate_ngword_handler;
 #

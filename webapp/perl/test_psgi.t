@@ -373,5 +373,22 @@ subtest 'GET /api/livestream/:livestream_id/ngwords' => sub {
     };
 };
 
+subtest 'POST /api/livestream/:livestream_id/livecomment/:livecomment_id/report' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = POST "/api/livestream/1/livecomment/1/report";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_CREATED) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field reporter => D;
+            etc;
+        };
+    };
+};
+
+
 
 done_testing;
