@@ -66,10 +66,8 @@ get '/api/user/:username/livestream', Isupipe::App::LivestreamHandler->can('get_
 get '/api/livestream/{livestream_id:[0-9]+}', Isupipe::App::LivestreamHandler->can('get_livestream_handler');
 # get polling livecomment timeline
 get '/api/livestream/{livestream_id:[0-9]+}/livecomment', Isupipe::App::LivecommentHandler->can('get_livecomments_handler');
-# # get polling livecomment timeline
-# get '/livestream/:livestream_id/livecomment',  \&get_livecomments_handler;
-# # ライブコメント投稿
-# post '/livestream/:livestream_id/livecomment',  \&post_livecomment_handler;
+# ライブコメント投稿
+post '/api/livestream/{livestream_id:[0-9]+}/livecomment',  Isupipe::App::LivecommentHandler->can('post_livecomment_handler');
 # post '/livestream/:livestream_id/reaction',  \&post_reaction_handler;
 # get '/livestream/:livestream_id/reaction',  \&get_reactions_handler;
 #

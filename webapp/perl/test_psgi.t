@@ -22,7 +22,7 @@ sub decode_json {
 }
 
 sub with_json_request($req, $data) {
-    state $json = Cpanel::JSON::XS->new->utf8;
+    state $json = Cpanel::JSON::XS->new->ascii(0)->utf8;
     my $encocded_json = $json->encode($data);
 
     $req->header('Content-Type' => 'application/json; charset=utf-8');
@@ -238,7 +238,6 @@ subtest 'GET /api/livestream/:livestream_id/livecomment' => sub {
     };
 };
 
-
 subtest 'POST /api/login' => sub {
     test_psgi $app, sub ($cb) {
 
@@ -251,6 +250,32 @@ subtest 'POST /api/login' => sub {
         my $res = $cb->($req);
         is $res->code, HTTP_OK;
         is $res->content, '';
+    };
+};
+
+subtest 'POST /api/livestream/:livestream_id/livecomment' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = POST "/api/livestream/1/livecomment";
+        login_default($cb, $req);
+
+        with_json_request($req, {
+            comment => '応援しています!!',
+            tip => 999,
+        });
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_CREATED) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field tip => 999;
+            field comment => '応援しています!!';
+            field user => hash {
+                field name => 'test001';
+                etc;
+            };
+            etc;
+        };
     };
 };
 

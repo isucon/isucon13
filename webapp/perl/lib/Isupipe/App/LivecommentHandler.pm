@@ -1,6 +1,7 @@
 package Isupipe::App::LivecommentHandler;
 use v5.38;
 use utf8;
+use experimental qw(try);
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
@@ -61,15 +62,13 @@ sub get_livecomments_handler($app, $c) {
     return $c->render_json($response);
 }
 
-sub post_livetcomment_handleer($app, $c) {
+sub post_livecomment_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
 
-    my $user_id = $c->req->session->{DEFAULT_USER_ID_KEY};
-    unless ($user_id) {
-        $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
-    }
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, PostLivecommentRequest)) {
@@ -81,45 +80,66 @@ sub post_livetcomment_handleer($app, $c) {
         $c->halt_text(HTTP_BAD_REQUEST, "the tips in a live comment be 1 <= tips <= 20000");
     }
 
-    my $dbh = $app->dbh;
-    my $txn = $dbh->txn_scope;
+    my $txn = $app->dbh->txn_scope;
 
-    my $query =<<~'QUERY';
-    SELECT COUNT(*) AS cnt
-    FROM ng_words AS w
-    CROSS JOIN
-    (SELECT ? AS text) AS t
-    WHERE t.text LIKE CONCAT('%', w.word, '%');
-    QUERY
+    try {
+        # スパム判定
+        my $ng_words = $app->dbh->select_all_as(
+            'Isupipe::Entity::NGWord',
+            'SELECT id, user_id, livestream_id, word FROM ng_words'
+        );
 
-    my $hit_spam = $dbh->select_one($query, $params->{comment});
-    infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment});
-    if ($hit_spam >= 1) {
-        $c->halt_text(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
+        my $hit_spam = 0;
+        for my $ng_word ($ng_words->@*) {
+            my $query =<<~ 'SQL';
+                SELECT COUNT(*)
+                FROM
+                (SELECT ? AS text) AS texts
+                INNER JOIN
+                (SELECT CONCAT('%', ?, '%') AS pattern) AS patterns
+                ON texts.text LIKE patterns.pattern
+            SQL
+
+            $hit_spam = $app->dbh->select_one($query, $params->{comment}, $ng_word->word);
+            infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment}, $ng_word->word);
+            if ($hit_spam >= 1) {
+                $c->halt_text(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
+            }
+        }
+
+        my $now = time;
+
+        my $livecomment = Isupipe::Entity::Livecomment->new(
+            user_id       => $user_id,
+            livestream_id => $livestream_id,
+            comment       => $params->{comment},
+            tip           => $params->{tip},
+            created_at    => $now,
+        );
+
+        $app->dbh->query(
+            'INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at) VALUES (:user_id, :livestream_id, :comment, :tip, :created_at)',
+            $livecomment->as_hashref,
+        );
+
+        my $livecomment_id = $app->dbh->last_insert_id;
+        $livecomment->id($livecomment_id);
+
+        my $response = fill_livecomment_response($app, $livecomment);
+
+        $txn->commit;
+
+        my $res = $c->render_json($response);
+        $res->status(HTTP_CREATED);
+        return $res;
     }
-
-    my $livecomment = Isupipe::Entity::Livecomment->new(
-        user_id => $user_id,
-        livestream_id => $livestream_id,
-        comment => $params->{comment},
-        tip => $params->{tip},
-    );
-
-    $dbh->query(
-        'INSERT INTO livecomments (user_id, livestream_id, comment, tip) VALUES (:user_id, :livestream_id, :comment, :tip)',
-        $livecomment->as_hashref,
-    );
-
-    my $livecomment_id = $dbh->last_insert_id;
-
-    $txn->commit;
-
-    $livecomment->set_id($livecomment_id);
-    my $created_at = time;
-    $livecomment->set_created_at($created_at);
-    $livecomment->set_updated_at($created_at);
-
-    return $c->render_json($livecomment);
+    catch ($e) {
+        $txn->rollback;
+        if ($e isa Kossy::Exception) {
+            die $e;
+        }
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
+    }
 }
 
 sub report_livecomment_handler($app, $c) {
