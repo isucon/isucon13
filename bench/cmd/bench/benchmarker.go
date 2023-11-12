@@ -142,7 +142,7 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 	parallelism := 4 + (now.Sub(b.startAt) / time.Second / 5)
 
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
-	if failRate > 0.01 {
+	if failRate > 0.001 {
 		parallelism = 4
 	}
 
