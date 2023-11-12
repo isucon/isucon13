@@ -9,6 +9,7 @@ import { livestreamHandler } from './handlers/livestream-handler'
 import { livecommentHandler } from './handlers/livecomment-handler'
 import { reactionHandler } from './handlers/reaction-handler'
 import { statsHandler } from './handlers/stats-handler'
+import { paymentHandler } from './handlers/payment-handler'
 
 export const createApp = async (deps: Deps) => {
   const connection = await createConnection({
@@ -73,6 +74,7 @@ export const createApp = async (deps: Deps) => {
   app.route('/', livecommentHandler(applicationDeps))
   app.route('/', reactionHandler(applicationDeps))
   app.route('/', statsHandler(applicationDeps))
+  app.route('/', paymentHandler(applicationDeps))
 
   return app
 }
