@@ -79,7 +79,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 		moderatorSem:              semaphore.NewWeighted(weight),
 		viewerSem:                 semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
 		spammerSem:                semaphore.NewWeighted(weight * 20), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:                 semaphore.NewWeighted(weight * 10), // 視聴者と同程度、攻撃を仕掛ける輩がいる
+		attackSem:                 semaphore.NewWeighted(weight),      // 配信者と同程度、攻撃を仕掛ける輩がいる
 		popularStreamerClientPool: popularStreamerClientPool,
 		streamerClientPool:        streamerClientPool,
 		viewerClientPool:          viewerClientPool,
@@ -135,19 +135,22 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
 }
 
+var loadAttackPerSecond int64 = 5000
+
 func (b *benchmarker) loadAttack(ctx context.Context) error {
 	defer b.attackSem.Release(1)
 
-	now := time.Now()
-	parallelism := 5 + (now.Sub(b.startAt) / time.Second / 5)
-
+	factor := float64(loadAttackPerSecond) / float64(config.AdvertiseCost)
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
-	if failRate > 0.001 {
-		parallelism = 5
+	if failRate < 0.03 {
+		now := time.Now()
+		d := now.Sub(b.startAt) / time.Second
+		factor = factor * (1.0 + float64(d)/10.0)
 	}
+	loadLimiter := rate.NewLimiter(rate.Limit(factor), 1)
 
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
-	if err := scenario.DnsWaterTortureAttackScenario(ctx, int(parallelism)); err != nil {
+	if err := scenario.DnsWaterTortureAttackScenario(ctx, loadLimiter); err != nil {
 		return err
 	}
 
@@ -236,8 +239,6 @@ func (b *benchmarker) run(ctx context.Context) error {
 	b.runClientProviders(ctx)
 	violateCh := bencherror.RunViolationChecker(ctx)
 
-	loadLimitter := rate.NewLimiter(500.0, 1)
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -287,9 +288,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					if err := loadLimitter.Wait(childCtx); err == nil {
-						b.loadAttack(childCtx)
-					}
+					b.loadAttack(childCtx)
 				}()
 			}
 		}
