@@ -307,5 +307,32 @@ subtest 'POST /api/livestream/:livestream_id/reaction' => sub {
     };
 };
 
+subtest 'GET /api/livestream/:livestream_id/reaction' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/1/reaction?limit=5";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_OK) or diag $res->content;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field emoji_name => D;
+                field user => hash {
+                    field name => D;
+                    etc;
+                };
+                field livestream => hash {
+                    field title => D;
+                    etc;
+                };
+                etc;
+            };
+            etc;
+        };
+    };
+};
+
 
 done_testing;

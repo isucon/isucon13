@@ -182,14 +182,16 @@ sub search_livestreams_handler($app, $c) {
     else {
         # 検索条件なし
         my $query = 'SELECT * FROM livestreams';
-        if ($c->req->query_parameters->{limit}) {
-            $query .= ' LIMIT ?';
+        if (my $limit = $c->req->parameters->{limit}) {
+            unless ($limit =~ /^\d+$/) {
+                $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be a integer");
+            }
+            $query .= sprintf(" LIMIT %d", $limit);
         }
 
         $livestreams = $app->dbh->select_all_as(
             'Isupipe::Entity::Livestream',
             $query,
-            $c->req->query_parameters->{limit} // (),
         );
     }
 

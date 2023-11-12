@@ -21,21 +21,34 @@ use constant PostReactionRequest => Dict[
     emoji_name => Str,
 ];
 
-sub get_reaction_handler($app, $c) {
+sub get_reactions_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
 
-    my $reactions = $app->dbh->select_all_as(
-        'Isupipe::Entity::Reaction',
-        'SELECT * FROM reactions WHERE livestream_id = ?',
-        $livestream_id,
-    );
-    unless (@$reactions) {
-        $c->halt_text(HTTP_NOT_FOUND, 'reactions not found');
+    my $txn = $app->dbh->txn_scope;
+
+    my $query = 'SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC';
+    if (my $limit = $c->req->parameters->{limit}) {
+        unless ($limit =~ /^\d+$/) {
+            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be a integer");
+        }
+        $query .= sprintf(" LIMIT %d", $limit);
     }
 
-    return $c->render_json($reactions);
+    my $reactions = $app->dbh->select_all_as(
+        'Isupipe::Entity::Reaction',
+        $query,
+        $livestream_id,
+    );
+
+    my $response = [
+        map { fill_reaction_response($app, $_) } @$reactions
+    ];
+
+    $txn->commit;
+
+    return $c->render_json($response);
 }
 
 sub post_reaction_handler($app, $c) {
