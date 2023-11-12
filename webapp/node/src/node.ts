@@ -32,7 +32,9 @@ const deps = {
 } satisfies Deps
 
 const main = async () => {
-  serve({ ...(await createApp(deps)), port: 8080 }, (add) =>
+  const app = await createApp(deps)
+
+  serve({ ...app, port: 8080 }, (add) =>
     console.log(`Listening on http://localhost:${add.port}`),
   )
 }

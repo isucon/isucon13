@@ -55,7 +55,6 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
           await deps.connection.rollback()
           return c.text('failed to get hitspam', 500)
         }
-        console.log(result.data)
         console.log(
           `[hitSpam=${result.data['COUNT(*)']}] comment = ${body.comment}`,
         )

@@ -64,7 +64,6 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
       if (limit) {
         const limitNumber = Number.parseInt(limit, 10)
         if (Number.isNaN(limitNumber)) {
-          console.log('limitNumber', limitNumber, 'limit', limit)
           return c.text('limit query parameter must be integer', 400)
         }
         query += ` LIMIT ${limitNumber}`
