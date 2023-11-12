@@ -79,7 +79,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 		moderatorSem:              semaphore.NewWeighted(weight),
 		viewerSem:                 semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
 		spammerSem:                semaphore.NewWeighted(weight * 20), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:                 semaphore.NewWeighted(weight * 10), // 視聴者と同程度、攻撃を仕掛ける輩がいる
+		attackSem:                 semaphore.NewWeighted(weight * 20), // 視聴者と同程度、攻撃を仕掛ける輩がいる
 		popularStreamerClientPool: popularStreamerClientPool,
 		streamerClientPool:        streamerClientPool,
 		viewerClientPool:          viewerClientPool,
@@ -140,12 +140,12 @@ var loadAttackPerSecond int64 = 5000
 func (b *benchmarker) loadAttack(ctx context.Context) error {
 	defer b.attackSem.Release(1)
 
-	factor := float64(loadAttackPerSecond) / float64(config.AdvertiseCost) * 10.0
+	factor := float64(loadAttackPerSecond) / float64(config.AdvertiseCost) * 20.0
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
-	if failRate < 0.03 {
+	if failRate < 0.01 {
 		now := time.Now()
 		d := now.Sub(b.startAt) / time.Second
-		factor = factor * (1.0 + float64(d)/10.0)
+		factor = factor * (1.0 + float64(d)/16.0)
 	}
 	loadLimiter := rate.NewLimiter(rate.Limit(factor), 1)
 
