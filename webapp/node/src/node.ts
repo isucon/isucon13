@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { serve } from '@hono/node-server'
 import { hash, compare } from 'bcrypt'
 import { createApp } from './create-app'
-import { Deps } from './types'
+import { Deps } from './types/application'
 
 const deps = {
   exec: async (cmd: string[]) =>

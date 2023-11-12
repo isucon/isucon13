@@ -1,6 +1,12 @@
-import { RowDataPacket } from 'mysql2'
-import { ApplicationDeps } from '../types'
+import { PoolConnection, RowDataPacket } from 'mysql2/promise'
+import {
+  LivestreamTagsModel,
+  LivestreamsModel,
+  TagsModel,
+  UserModel,
+} from '../types/models'
 import { UserResponse, makeUserResponse } from './make-user-response'
+import { throwErrorWith } from './throw-error-with'
 
 export interface LivestreamResponse {
   id: number
@@ -15,78 +21,44 @@ export interface LivestreamResponse {
 }
 
 export const makeLivestreamResponse = async (
-  deps: ApplicationDeps,
-  livestream: {
-    id: number
-    user_id: number
-    title: string
-    description: string
-    playlist_url: string
-    thumbnail_url: string
-    start_at: number
-    end_at: number
-  },
+  conn: PoolConnection,
+  livestream: LivestreamsModel,
 ) => {
-  const user = await deps.connection
-    .query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [
+  const [[user]] = await conn
+    .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
       livestream.user_id,
     ])
-    .then(([[user]]) => ({ ok: true, data: user }) as const)
-    .catch((error) => ({ ok: false, error }) as const)
-  if (!user.ok) {
-    return { ok: false, error: 'failed to fetch user' } as const
-  }
-  if (!user.data) {
-    return { ok: false, error: 'not found user that has the given id' } as const
-  }
+    .catch(throwErrorWith('failed to get user'))
+  if (!user) throw new Error('not found user that has the given id')
 
-  const userResponse = await makeUserResponse(deps, {
-    id: user.data.id,
-    name: user.data.name,
-    display_name: user.data.display_name,
-    description: user.data.description,
-  })
-  if (!userResponse.ok) {
-    return userResponse
-  }
+  const userResponse = await makeUserResponse(conn, user)
 
-  const livestreamTags = await deps.connection
-    .query<RowDataPacket[]>(
+  const [livestreamTags] = await conn
+    .query<(LivestreamTagsModel & RowDataPacket)[]>(
       'SELECT * FROM livestream_tags WHERE livestream_id = ?',
       [livestream.id],
     )
-    .then(([results]) => ({ ok: true, data: results }) as const)
-    .catch((error) => ({ ok: false, error }) as const)
-  if (!livestreamTags.ok) {
-    return { ok: false, error: 'failed to fetch livestream tags' } as const
-  }
+    .catch(throwErrorWith('failed to get livestream tags'))
 
-  const tags: RowDataPacket[] = []
-  for (const livestreamTag of livestreamTags.data) {
-    const tag = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM tags WHERE id = ?', [
+  const tags: TagsModel[] = []
+  for (const livestreamTag of livestreamTags) {
+    const [[tag]] = await conn
+      .query<(TagsModel & RowDataPacket)[]>('SELECT * FROM tags WHERE id = ?', [
         livestreamTag.tag_id,
       ])
-      .then(([[result]]) => ({ ok: true, data: result }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!tag.ok) {
-      return { ok: false, error: 'failed to fetch tag' } as const
-    }
-    tags.push(tag.data)
+      .catch(throwErrorWith('failed to get tag'))
+    tags.push(tag)
   }
 
   return {
-    ok: true,
-    data: {
-      id: livestream.id,
-      owner: userResponse.data,
-      title: livestream.title,
-      tags: tags.map((tag) => ({ id: tag.id, name: tag.name })),
-      description: livestream.description,
-      playlist_url: livestream.playlist_url,
-      thumbnail_url: livestream.thumbnail_url,
-      start_at: livestream.start_at,
-      end_at: livestream.end_at,
-    } satisfies LivestreamResponse,
-  } as const
+    id: livestream.id,
+    owner: userResponse,
+    title: livestream.title,
+    tags: tags.map((tag) => ({ id: tag.id, name: tag.name })),
+    description: livestream.description,
+    playlist_url: livestream.playlist_url,
+    thumbnail_url: livestream.thumbnail_url,
+    start_at: livestream.start_at,
+    end_at: livestream.end_at,
+  } satisfies LivestreamResponse
 }

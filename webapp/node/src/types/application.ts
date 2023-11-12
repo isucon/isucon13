@@ -1,6 +1,6 @@
 import { Env } from 'hono'
 import { Session } from 'hono-sessions'
-import { Connection } from 'mysql2/promise'
+import { Pool } from 'mysql2/promise'
 
 export interface Deps {
   exec: (cmd: string[]) => Promise<{ stdout: string; stderr: string }>
@@ -11,7 +11,7 @@ export interface Deps {
 }
 
 export interface ApplicationDeps extends Deps {
-  connection: Connection
+  pool: Pool
   powerDNSSubdomainAddress: string
 }
 

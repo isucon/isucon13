@@ -1,5 +1,5 @@
 import { MiddlewareHandler } from 'hono'
-import { HonoEnvironment } from '../types'
+import { HonoEnvironment } from '../types/application'
 import { defaultSessionExpiresKey, defaultUserIDKey } from '../contants'
 
 export const verifyUserSessionMiddleware: MiddlewareHandler<

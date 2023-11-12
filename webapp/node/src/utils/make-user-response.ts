@@ -1,5 +1,6 @@
-import { RowDataPacket } from 'mysql2'
-import { ApplicationDeps } from '../types'
+import { PoolConnection, RowDataPacket } from 'mysql2/promise'
+import { ThemeModel, UserModel } from '../types/models'
+import { throwErrorWith } from './throw-error-with'
 
 export interface UserResponse {
   id: number
@@ -13,28 +14,24 @@ export interface UserResponse {
 }
 
 export const makeUserResponse = async (
-  deps: ApplicationDeps,
-  user: { id: number; name: string; display_name: string; description: string },
+  conn: PoolConnection,
+  user: Omit<UserModel, 'password'>,
 ) => {
-  const theme = await deps.connection
-    .query<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [user.id])
-    .then(([[theme]]) => ({ ok: true, data: theme }) as const)
-    .catch((error) => ({ ok: false, error }) as const)
-  if (!theme.ok) {
-    return { ok: false, error: 'failed to fetch theme' } as const
-  }
+  const [[theme]] = await conn
+    .query<(ThemeModel & RowDataPacket)[]>(
+      'SELECT * FROM themes WHERE user_id = ?',
+      [user.id],
+    )
+    .catch(throwErrorWith('failed to get theme'))
 
   return {
-    ok: true,
-    data: {
-      id: user.id,
-      name: user.name,
-      display_name: user.display_name,
-      description: user.description,
-      theme: {
-        id: theme.data.id,
-        dark_mode: !!theme.data.dark_mode,
-      },
-    } satisfies UserResponse,
-  } as const
+    id: user.id,
+    name: user.name,
+    display_name: user.display_name,
+    description: user.description,
+    theme: {
+      id: theme.id,
+      dark_mode: !!theme.dark_mode,
+    },
+  } satisfies UserResponse
 }

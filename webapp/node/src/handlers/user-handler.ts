@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
-import { ApplicationDeps, HonoEnvironment } from '../types'
+import { ApplicationDeps, HonoEnvironment } from '../types/application'
 import {
   defaultUserIDKey,
   defaultUserNameKey,
@@ -8,6 +8,8 @@ import {
 } from '../contants'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { makeUserResponse } from '../utils/make-user-response'
+import { throwErrorWith } from '../utils/throw-error-with'
+import { IconModel, UserModel } from '../types/models'
 
 export const userHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -27,65 +29,52 @@ export const userHandler = (deps: ApplicationDeps) => {
 
     const hashedPassword = await deps.hashPassword(body.password)
 
-    await deps.connection.beginTransaction()
-    const result = await deps.connection
-      .execute<ResultSetHeader>(
-        'INSERT INTO users (name, display_name, description, password) VALUES(?, ?, ?, ?)',
-        [body.name, body.display_name, body.description, hashedPassword],
-      )
-      .then(([{ insertId }]) => ({ ok: true, data: insertId }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!result.ok) {
-      await deps.connection.rollback()
-      return c.text(`failed to insert user\n${result.error}`, 500)
-    }
-    const userId = result.data
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
     try {
-      await deps.connection.execute(
-        'INSERT INTO themes (user_id, dark_mode) VALUES(?, ?)',
-        [userId, body.theme.dark_mode],
-      )
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to insert user theme', 500)
-    }
+      const [{ insertId }] = await conn
+        .execute<ResultSetHeader>(
+          'INSERT INTO users (name, display_name, description, password) VALUES(?, ?, ?, ?)',
+          [body.name, body.display_name, body.description, hashedPassword],
+        )
+        .catch(throwErrorWith('failed to insert user'))
 
-    try {
-      await deps.exec([
-        'pdnsutil',
-        'add-record',
-        'u.isucon.dev',
-        body.name,
-        'A',
-        '30',
-        deps.powerDNSSubdomainAddress,
-      ])
+      await conn
+        .execute('INSERT INTO themes (user_id, dark_mode) VALUES(?, ?)', [
+          insertId,
+          body.theme.dark_mode,
+        ])
+        .catch(throwErrorWith('failed to insert user theme'))
+
+      await deps
+        .exec([
+          'pdnsutil',
+          'add-record',
+          'u.isucon.dev',
+          body.name,
+          'A',
+          '30',
+          deps.powerDNSSubdomainAddress,
+        ])
+        .catch(throwErrorWith('failed to add record to powerdns'))
+
+      const response = await makeUserResponse(conn, {
+        id: insertId,
+        name: body.name,
+        display_name: body.display_name,
+        description: body.description,
+      })
+
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
+      return c.json(response, 201)
     } catch (error) {
-      await deps.connection.rollback()
-      return c.text(String(error), 500)
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
     }
-
-    const response = await makeUserResponse(deps, {
-      id: userId,
-      name: body.name,
-      display_name: body.display_name,
-      description: body.description,
-    })
-
-    if (!response.ok) {
-      await deps.connection.rollback()
-      return c.text(response.error, 500)
-    }
-
-    try {
-      await deps.connection.commit()
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to commit', 500)
-    }
-
-    return c.json(response.data, 201)
   })
 
   handler.post('/api/login', async (c) => {
@@ -94,127 +83,112 @@ export const userHandler = (deps: ApplicationDeps) => {
       password: string
     }>()
 
-    await deps.connection.beginTransaction()
-
-    const user = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [
-        body.username,
-      ])
-      .then(([[user]]) => ({ ok: true, data: user }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!user.ok) {
-      await deps.connection.rollback()
-      return c.text('invalid username or password', 401)
-    }
-    if (!user.data) {
-      await deps.connection.rollback()
-      return c.text('invalid username or password', 401)
-    }
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
     try {
-      await deps.connection.commit()
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to commit', 500)
+      const [[user]] = await conn
+        .query<(UserModel & RowDataPacket)[]>(
+          'SELECT * FROM users WHERE name = ?',
+          [body.username],
+        )
+        .catch(throwErrorWith('failed to get user'))
+
+      if (!user) {
+        await conn.rollback()
+        return c.text('invalid username or password', 401)
+      }
+
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
+      const isPasswordMatch = await deps.comparePassword(
+        body.password,
+        user.password,
+      )
+      if (!isPasswordMatch) {
+        return c.text('invalid username or password', 401)
+      }
+
+      // 1時間でセッションが切れるようにする
+      const sessionEndAt = Date.now() + 1000 * 60 * 60
+
+      const session = c.get('session')
+      session.set(defaultUserIDKey, user.id)
+      session.set(defaultUserNameKey, user.name)
+      session.set(defaultSessionExpiresKey, sessionEndAt)
+
+      // eslint-disable-next-line unicorn/no-null
+      return c.body(null)
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
     }
-
-    const isPasswordMatch = await deps.comparePassword(
-      body.password,
-      user.data.password,
-    )
-    if (!isPasswordMatch) {
-      return c.text('invalid username or password', 401)
-    }
-
-    // 1時間でセッションが切れるようにする
-    const sessionEndAt = Date.now() + 1000 * 60 * 60
-
-    const session = c.get('session')
-    session.set(defaultUserIDKey, user.data.id)
-    session.set(defaultUserNameKey, user.data.name)
-    session.set(defaultSessionExpiresKey, sessionEndAt)
-
-    // eslint-disable-next-line unicorn/no-null
-    return c.body(null, 200)
   })
 
   handler.get('/api/user/me', verifyUserSessionMiddleware, async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
 
-    await deps.connection.beginTransaction()
-    const user = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId])
-      .then(([[user]]) => ({ ok: true, data: user }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!user.ok) {
-      await deps.connection.rollback()
-      return c.text('failed to get user', 500)
-    }
-    if (!user.data) {
-      await deps.connection.rollback()
-      return c.text('not found user that has the userid in session', 404)
-    }
-
-    const response = await makeUserResponse(deps, {
-      id: user.data.id,
-      name: user.data.name,
-      display_name: user.data.display_name,
-      description: user.data.description,
-    })
-
-    if (!response.ok) {
-      await deps.connection.rollback()
-      return c.text(response.error, 500)
-    }
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
     try {
-      await deps.connection.commit()
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to commit', 500)
-    }
+      const [[user]] = await conn
+        .query<(UserModel & RowDataPacket)[]>(
+          'SELECT * FROM users WHERE id = ?',
+          [userId],
+        )
+        .catch(throwErrorWith('failed to get user'))
 
-    return c.json(response.data, 200)
+      if (!user) {
+        await conn.rollback()
+        return c.text('not found user that has the userid in session', 404)
+      }
+
+      const response = await makeUserResponse(conn, user)
+
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
+      return c.json(response)
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
+    }
   })
 
   handler.get('/api/user/:username', verifyUserSessionMiddleware, async (c) => {
     const username = c.req.param('username')
 
-    await deps.connection.beginTransaction()
-
-    const user = await deps.connection
-      .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [username])
-      .then(([[user]]) => ({ ok: true, data: user }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!user.ok) {
-      await deps.connection.rollback()
-      return c.text('failed to get user', 500)
-    }
-    if (!user.data) {
-      await deps.connection.rollback()
-      return c.text('not found user that has the given username', 404)
-    }
-
-    const response = await makeUserResponse(deps, {
-      id: user.data.id,
-      name: user.data.name,
-      display_name: user.data.display_name,
-      description: user.data.description,
-    })
-
-    if (!response.ok) {
-      await deps.connection.rollback()
-      return c.text(response.error, 500)
-    }
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
     try {
-      await deps.connection.commit()
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to commit', 500)
-    }
+      const [[user]] = await conn
+        .query<(UserModel & RowDataPacket)[]>(
+          'SELECT * FROM users WHERE name = ?',
+          [username],
+        )
+        .catch(throwErrorWith('failed to get user'))
 
-    return c.json(response.data, 200)
+      if (!user) {
+        await conn.rollback()
+        return c.text('not found user that has the given username', 404)
+      }
+
+      const response = await makeUserResponse(conn, user)
+
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
+      return c.json(response)
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
+    }
   })
 
   handler.post('/api/icon', verifyUserSessionMiddleware, async (c) => {
@@ -223,37 +197,30 @@ export const userHandler = (deps: ApplicationDeps) => {
     // base64 encoded image
     const body = await c.req.json<{ image: string }>()
 
-    await deps.connection.beginTransaction()
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
     try {
-      await deps.connection.execute('DELETE FROM icons WHERE user_id = ?', [
-        userId,
-      ])
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to delete icon', 500)
-    }
+      await conn
+        .execute('DELETE FROM icons WHERE user_id = ?', [userId])
+        .catch(throwErrorWith('failed to delete icon'))
 
-    const result = await deps.connection
-      .query<ResultSetHeader>(
-        'INSERT INTO icons (user_id, image) VALUES (?, ?)',
-        [userId, Buffer.from(body.image, 'base64')],
-      )
-      .then(([{ insertId }]) => ({ ok: true, data: insertId }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!result.ok) {
-      await deps.connection.rollback()
-      return c.text('failed to insert icon', 500)
-    }
+      const [{ insertId }] = await conn
+        .query<ResultSetHeader>(
+          'INSERT INTO icons (user_id, image) VALUES (?, ?)',
+          [userId, Buffer.from(body.image, 'base64')],
+        )
+        .catch(throwErrorWith('failed to insert icon'))
 
-    try {
-      await deps.connection.commit()
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to commit', 500)
-    }
+      await conn.commit().catch(throwErrorWith('failed to commit'))
 
-    return c.json({ id: result.data }, 201)
+      return c.json({ id: insertId }, 201)
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
+    }
   })
 
   handler.get(
@@ -262,41 +229,42 @@ export const userHandler = (deps: ApplicationDeps) => {
     async (c) => {
       const username = c.req.param('username')
 
-      await deps.connection.beginTransaction()
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
-      const user = await deps.connection
-        .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [
-          username,
-        ])
-        .then(([[user]]) => ({ ok: true, data: user }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!user.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get user', 500)
-      }
-      if (!user.data) {
-        await deps.connection.rollback()
-        return c.text('not found user that has the given username', 404)
-      }
+      try {
+        const [[user]] = await conn
+          .query<(UserModel & RowDataPacket)[]>(
+            'SELECT * FROM users WHERE name = ?',
+            [username],
+          )
+          .catch(throwErrorWith('failed to get user'))
 
-      const icon = await deps.connection
-        .query<RowDataPacket[]>('SELECT image FROM icons WHERE user_id = ?', [
-          user.data.id,
-        ])
-        .then(([[icon]]) => ({ ok: true, data: icon }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!icon.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get icon', 500)
-      }
-      if (!icon.data) {
-        await deps.connection.rollback()
-        return c.text('not found icon', 404)
-      }
+        if (!user) {
+          await conn.rollback()
+          return c.text('not found user that has the given username', 404)
+        }
 
-      return c.body(icon.data.image, 200, {
-        'Content-Type': 'image/jpeg',
-      })
+        const [[icon]] = await conn
+          .query<(Pick<IconModel, 'image'> & RowDataPacket)[]>(
+            'SELECT image FROM icons WHERE user_id = ?',
+            [user.id],
+          )
+          .catch(throwErrorWith('failed to get icon'))
+        if (!icon) {
+          await conn.rollback()
+          return c.text('not found icon', 404)
+        }
+
+        return c.body(icon.image, 200, {
+          'Content-Type': 'image/jpeg',
+        })
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 

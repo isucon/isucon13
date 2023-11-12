@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise'
-import { ApplicationDeps, HonoEnvironment } from '../types'
+import { ApplicationDeps, HonoEnvironment } from '../types/application'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { defaultUserIDKey } from '../contants'
 import {
@@ -8,6 +8,8 @@ import {
   makeLivecommentResponse,
 } from '../utils/make-livecomment-response'
 import { makeLivecommentReportResponse } from '../utils/make-livecomment-report-response'
+import { LivecommentsModel, NgWordsModel } from '../types/models'
+import { throwErrorWith } from '../utils/throw-error-with'
 
 export const livecommentHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -24,78 +26,64 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
 
       const body = await c.req.json<{ comment: string; tip: number }>()
 
-      await deps.connection.beginTransaction()
-
-      // スパム判定
-      const ngwords = await deps.connection
-        .query<RowDataPacket[]>(
-          'SELECT id, user_id, livestream_id, word FROM ng_words',
-        )
-        .then(([results]) => ({ ok: true, data: results }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!ngwords.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get NG words', 500)
-      }
-
-      for (const ngword of ngwords.data) {
-        const query = `
-          SELECT COUNT(*)
-          FROM
-          (SELECT ? AS text) AS texts
-          INNER JOIN
-          (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
-          ON texts.text LIKE patterns.pattern;
-        `
-        const result = await deps.connection
-          .query<RowDataPacket[]>(query, [body.comment, ngword.word])
-          .then(([[result]]) => ({ ok: true, data: result }) as const)
-          .catch((error) => ({ ok: false, error }) as const)
-        if (!result.ok) {
-          await deps.connection.rollback()
-          return c.text('failed to get hitspam', 500)
-        }
-        console.log(
-          `[hitSpam=${result.data['COUNT(*)']}] comment = ${body.comment}`,
-        )
-        if (result.data['COUNT(*)'] > 0) {
-          await deps.connection.rollback()
-          return c.text('コメントがスパム判定されました', 400)
-        }
-      }
-      const livecommentResult = await deps.connection
-        .query<ResultSetHeader>(
-          'INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at) VALUES (?, ?, ?, ?, ?)',
-          [userId, livestreamId, body.comment, body.tip, Date.now()],
-        )
-        .then(([result]) => ({ ok: true, data: result.insertId }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!livecommentResult.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to insert livecomment', 500)
-      }
-
-      const livecommentResponse = await makeLivecommentResponse(deps, {
-        id: livecommentResult.data,
-        user_id: userId,
-        livestream_id: livestreamId,
-        comment: body.comment,
-        tip: body.tip,
-        created_at: Date.now(),
-      })
-      if (!livecommentResponse.ok) {
-        await deps.connection.rollback()
-        return c.text(livecommentResponse.error, 500)
-      }
-
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        // スパム判定
+        const [ngwords] = await conn
+          .query<
+            (Pick<NgWordsModel, 'id' | 'user_id' | 'livestream_id' | 'word'> &
+              RowDataPacket)[]
+          >('SELECT id, user_id, livestream_id, word FROM ng_words')
+          .catch(throwErrorWith('failed to get ngwords'))
 
-      return c.json(livecommentResponse.data, 201)
+        for (const ngword of ngwords) {
+          const query = `
+            SELECT COUNT(*)
+            FROM
+            (SELECT ? AS text) AS texts
+            INNER JOIN
+            (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+            ON texts.text LIKE patterns.pattern;
+          `
+          const [[{ 'COUNT(*)': hitSpam }]] = await conn
+            .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(query, [
+              body.comment,
+              ngword.word,
+            ])
+            .catch(throwErrorWith('failed to get hitspam'))
+
+          console.log(`[hitSpam=${hitSpam}] comment = ${body.comment}`)
+          if (hitSpam > 0) {
+            await conn.rollback()
+            return c.text('コメントがスパム判定されました', 400)
+          }
+        }
+        const [{ insertId }] = await conn
+          .query<ResultSetHeader>(
+            'INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at) VALUES (?, ?, ?, ?, ?)',
+            [userId, livestreamId, body.comment, body.tip, Date.now()],
+          )
+          .catch(throwErrorWith('failed to insert livecomment'))
+
+        const livecommentResponse = await makeLivecommentResponse(conn, {
+          id: insertId,
+          user_id: userId,
+          livestream_id: livestreamId,
+          comment: body.comment,
+          tip: body.tip,
+          created_at: Date.now(),
+        })
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json(livecommentResponse, 201)
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 
@@ -108,52 +96,45 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
         return c.text('livestream_id in path must be integer', 400)
       }
 
-      await deps.connection.beginTransaction()
-
-      let query =
-        'SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC'
-      const limit = c.req.query('limit')
-      if (limit) {
-        const limitNumber = Number.parseInt(limit, 10)
-        if (Number.isNaN(limitNumber)) {
-          return c.text('limit query must be integer', 400)
-        }
-        query += ` LIMIT ${limitNumber}`
-      }
-      const livecomments = await deps.connection
-        .query<RowDataPacket[]>(query, [livestreamId])
-        .then(([results]) => ({ ok: true, data: results }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!livecomments.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get livecomments', 500)
-      }
-
-      const livecommnetResponses: LivecommentResponse[] = []
-      for (const livecomment of livecomments.data) {
-        const livecommentResponse = await makeLivecommentResponse(deps, {
-          id: livecomment.id,
-          user_id: livecomment.user_id,
-          livestream_id: livecomment.livestream_id,
-          comment: livecomment.comment,
-          tip: livecomment.tip,
-          created_at: livecomment.created_at,
-        })
-        if (!livecommentResponse.ok) {
-          await deps.connection.rollback()
-          return c.text(livecommentResponse.error, 500)
-        }
-        livecommnetResponses.push(livecommentResponse.data)
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        let query =
+          'SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC'
+        const limit = c.req.query('limit')
+        if (limit) {
+          const limitNumber = Number.parseInt(limit, 10)
+          if (Number.isNaN(limitNumber)) {
+            return c.text('limit query must be integer', 400)
+          }
+          query += ` LIMIT ${limitNumber}`
+        }
+        const [livecomments] = await conn
+          .query<(LivecommentsModel & RowDataPacket)[]>(query, [livestreamId])
+          .catch(throwErrorWith('failed to get livecomments'))
 
-      return c.json(livecommnetResponses)
+        const livecommnetResponses: LivecommentResponse[] = []
+        for (const livecomment of livecomments) {
+          const livecommentResponse = await makeLivecommentResponse(conn, {
+            id: livecomment.id,
+            user_id: livecomment.user_id,
+            livestream_id: livecomment.livestream_id,
+            comment: livecomment.comment,
+            tip: livecomment.tip,
+            created_at: livecomment.created_at,
+          })
+          livecommnetResponses.push(livecommentResponse)
+        }
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+        return c.json(livecommnetResponses)
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 
@@ -171,45 +152,39 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
         return c.text('livecomment_id in path must be integer', 400)
       }
 
-      await deps.connection.beginTransaction()
-
-      const now = Date.now()
-
-      const livecommentReportResult = await deps.connection
-        .query<ResultSetHeader>(
-          'INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at) VALUES (?, ?, ?, ?)',
-          [userId, livestreamId, livecommentId, now],
-        )
-        .then(([result]) => ({ ok: true, data: result.insertId }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!livecommentReportResult.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to insert livecomment report', 500)
-      }
-
-      const livecommentReportResponse = await makeLivecommentReportResponse(
-        deps,
-        {
-          id: livecommentReportResult.data,
-          user_id: userId,
-          livestream_id: livestreamId,
-          livecomment_id: livecommentId,
-          created_at: now,
-        },
-      )
-      if (!livecommentReportResponse.ok) {
-        await deps.connection.rollback()
-        return c.text(livecommentReportResponse.error, 500)
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        const now = Date.now()
 
-      return c.json(livecommentReportResponse.data, 201)
+        const [{ insertId }] = await conn
+          .query<ResultSetHeader>(
+            'INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at) VALUES (?, ?, ?, ?)',
+            [userId, livestreamId, livecommentId, now],
+          )
+          .catch(throwErrorWith('failed to insert livecomment report'))
+
+        const livecommentReportResponse = await makeLivecommentReportResponse(
+          conn,
+          {
+            id: insertId,
+            user_id: userId,
+            livestream_id: livestreamId,
+            livecomment_id: livecommentId,
+            created_at: now,
+          },
+        )
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json(livecommentReportResponse, 201)
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 
@@ -225,96 +200,74 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
 
       const body = await c.req.json<{ ng_word: string }>()
 
-      await deps.connection.beginTransaction()
-
-      // 配信者自身の配信に対するmoderateなのかを検証
-      const livestream = await deps.connection
-        .query<RowDataPacket[]>(
-          'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
-          [livestreamId, userId],
-        )
-        .then(([[result]]) => ({ ok: true, data: result }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!livestream.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get livestream', 500)
-      }
-      if (!livestream.data) {
-        await deps.connection.rollback()
-        return c.text(
-          "A streamer can't moderate livestreams that other streamers own",
-          404,
-        )
-      }
-
-      const ngwordResult = await deps.connection
-        .query<ResultSetHeader>(
-          'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (?, ?, ?, ?)',
-          [userId, livestreamId, body.ng_word, Date.now()],
-        )
-        .then(([result]) => ({ ok: true, data: result.insertId }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!ngwordResult.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to insert ngword', 500)
-      }
-
-      const ngwords = await deps.connection
-        .query<RowDataPacket[]>('SELECT * FROM ng_words')
-        .then(([results]) => ({ ok: true, data: results }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!ngwords.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get ngwords', 500)
-      }
-
-      // NGワードにヒットする過去の投稿も全削除する
-      for (const ngword of ngwords.data) {
-        // ライブコメント一覧取得
-        const livecomments = await deps.connection
-          .query<RowDataPacket[]>('SELECT * FROM livecomments')
-          .then(([results]) => ({ ok: true, data: results }) as const)
-          .catch((error) => ({ ok: false, error }) as const)
-        if (!livecomments.ok) {
-          await deps.connection.rollback()
-          return c.text('failed to get livecomments', 500)
-        }
-
-        for (const livecomment of livecomments.data) {
-          try {
-            await deps.connection.query(
-              `
-            DELETE FROM livecomments
-            WHERE
-            (SELECT COUNT(*)
-            FROM
-            (SELECT ? AS text) AS texts
-            INNER JOIN
-            (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
-            ON texts.text LIKE patterns.pattern) >= 1;
-            `,
-              [livecomment.comment, ngword.word],
-            )
-          } catch {
-            await deps.connection.rollback()
-            return c.text('failed to delete livecomment', 500)
-          }
-        }
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        // 配信者自身の配信に対するmoderateなのかを検証
+        const [[livestream]] = await conn
+          .query<(LivecommentsModel & RowDataPacket)[]>(
+            'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
+            [livestreamId, userId],
+          )
+          .catch(throwErrorWith('failed to get livestream'))
 
-      return c.json(
-        {
-          word_id: ngwordResult.data,
-        },
-        201,
-      )
+        if (!livestream) {
+          await conn.rollback()
+          return c.text(
+            "A streamer can't moderate livestreams that other streamers own",
+            404,
+          )
+        }
+
+        const [{ insertId }] = await conn
+          .query<ResultSetHeader>(
+            'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (?, ?, ?, ?)',
+            [userId, livestreamId, body.ng_word, Date.now()],
+          )
+          .catch(throwErrorWith('failed to insert ngword'))
+
+        const [ngwords] = await conn
+          .query<(NgWordsModel & RowDataPacket)[]>('SELECT * FROM ng_words')
+          .catch(throwErrorWith('failed to get ngwords'))
+
+        // NGワードにヒットする過去の投稿も全削除する
+        for (const ngword of ngwords) {
+          // ライブコメント一覧取得
+          const [livecomments] = await conn
+            .query<(LivecommentsModel & RowDataPacket)[]>(
+              'SELECT * FROM livecomments',
+            )
+            .catch(throwErrorWith('failed to get livecomments'))
+
+          for (const livecomment of livecomments) {
+            await conn
+              .query(
+                `
+                  DELETE FROM livecomments
+                  WHERE
+                  (SELECT COUNT(*)
+                  FROM
+                  (SELECT ? AS text) AS texts
+                  INNER JOIN
+                  (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+                  ON texts.text LIKE patterns.pattern) >= 1;
+                `,
+                [livecomment.comment, ngword.word],
+              )
+              .catch(throwErrorWith('failed to delete livecomment'))
+          }
+        }
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json({ word_id: insertId }, 201)
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 
@@ -328,32 +281,30 @@ export const livecommentHandler = (deps: ApplicationDeps) => {
         return c.text('livestream_id in path must be integer', 400)
       }
 
-      await deps.connection.beginTransaction()
-
-      const ngwords = await deps.connection
-        .query<RowDataPacket[]>(
-          'SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ? ORDER BY created_at DESC',
-          [userId, livestreamId],
-        )
-        .then(([results]) => ({ ok: true, data: results }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!ngwords.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get ngwords', 500)
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        const [ngwords] = await conn
+          .query<(NgWordsModel & RowDataPacket)[]>(
+            'SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ? ORDER BY created_at DESC',
+            [userId, livestreamId],
+          )
+          .catch(throwErrorWith('failed to get ngwords'))
 
-      return c.json(
-        ngwords.data.map((ngword) => ({
-          ng_word: ngword.word,
-        })),
-      )
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json(
+          ngwords.map((ngword) => ({
+            ng_word: ngword.word,
+          })),
+        )
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 

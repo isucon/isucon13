@@ -1,5 +1,5 @@
 import { createApp } from './create-app'
-import { Deps } from './types'
+import { Deps } from './types/application'
 
 const deps = {
   exec: async (cmd: string[]) =>

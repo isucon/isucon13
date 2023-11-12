@@ -1,12 +1,14 @@
 import { Hono } from 'hono'
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
-import { ApplicationDeps, HonoEnvironment } from '../types'
+import { ApplicationDeps, HonoEnvironment } from '../types/application'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { defaultUserIDKey } from '../contants'
 import {
   ReactionResponse,
   makeReactionResponse,
 } from '../utils/make-reaction-response'
+import { throwErrorWith } from '../utils/throw-error-with'
+import { ReactionsModel } from '../types/models'
 
 export const reactionHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -23,41 +25,35 @@ export const reactionHandler = (deps: ApplicationDeps) => {
 
       const body = await c.req.json<{ emoji_name: string }>()
 
-      await deps.connection.beginTransaction()
-
-      const now = Date.now()
-      const reactionResult = await deps.connection
-        .query<ResultSetHeader>(
-          'INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (?, ?, ?, ?)',
-          [userId, livestreamId, body.emoji_name, now],
-        )
-        .then(([result]) => ({ ok: true, data: result.insertId }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!reactionResult.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to insert reaction', 500)
-      }
-
-      const reactionResponse = await makeReactionResponse(deps, {
-        id: reactionResult.data,
-        emoji_name: body.emoji_name,
-        user_id: userId,
-        livestream_id: livestreamId,
-        created_at: now,
-      })
-      if (!reactionResponse.ok) {
-        await deps.connection.rollback()
-        return c.text(reactionResponse.error, 500)
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        const now = Date.now()
+        const [{ insertId }] = await conn
+          .query<ResultSetHeader>(
+            'INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (?, ?, ?, ?)',
+            [userId, livestreamId, body.emoji_name, now],
+          )
+          .catch(throwErrorWith('failed to insert reaction'))
 
-      return c.json(reactionResponse, 201)
+        const reactionResponse = await makeReactionResponse(conn, {
+          id: insertId,
+          emoji_name: body.emoji_name,
+          user_id: userId,
+          livestream_id: livestreamId,
+          created_at: now,
+        })
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json(reactionResponse, 201)
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 
@@ -70,52 +66,41 @@ export const reactionHandler = (deps: ApplicationDeps) => {
         return c.text('livestream_id in path must be integer', 400)
       }
 
-      await deps.connection.beginTransaction()
-
-      let query =
-        'SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC'
-      const limit = c.req.query('limit')
-      if (limit) {
-        const limitNumber = Number.parseInt(limit, 10)
-        if (Number.isNaN(limitNumber)) {
-          return c.text('limit query parameter must be integer', 400)
-        }
-        query += ` LIMIT ${limitNumber}`
-      }
-
-      const reactions = await deps.connection
-        .query<RowDataPacket[]>(query, [livestreamId])
-        .then(([results]) => ({ ok: true, data: results }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!reactions.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get reactions', 500)
-      }
-
-      const reactionResponses: ReactionResponse[] = []
-      for (const reaction of reactions.data) {
-        const reactionResponse = await makeReactionResponse(deps, {
-          id: reaction.id,
-          emoji_name: reaction.emoji_name,
-          user_id: reaction.user_id,
-          livestream_id: reaction.livestream_id,
-          created_at: reaction.created_at,
-        })
-        if (!reactionResponse.ok) {
-          await deps.connection.rollback()
-          return c.text(reactionResponse.error, 500)
-        }
-        reactionResponses.push(reactionResponse.data)
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        let query =
+          'SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC'
+        const limit = c.req.query('limit')
+        if (limit) {
+          const limitNumber = Number.parseInt(limit, 10)
+          if (Number.isNaN(limitNumber)) {
+            return c.text('limit query parameter must be integer', 400)
+          }
+          query += ` LIMIT ${limitNumber}`
+        }
 
-      return c.json(reactionResponses)
+        const [reactions] = await conn
+          .query<(ReactionsModel & RowDataPacket)[]>(query, [livestreamId])
+          .catch(throwErrorWith('failed to get reactions'))
+
+        const reactionResponses: ReactionResponse[] = []
+        for (const reaction of reactions) {
+          const reactionResponse = await makeReactionResponse(conn, reaction)
+
+          reactionResponses.push(reactionResponse)
+        }
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json(reactionResponses)
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 

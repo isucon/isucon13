@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { RowDataPacket } from 'mysql2/promise'
-import { ApplicationDeps, HonoEnvironment } from '../types'
+import { ApplicationDeps, HonoEnvironment } from '../types/application'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
+import { TagsModel, ThemeModel, UserModel } from '../types/models'
+import { throwErrorWith } from '../utils/throw-error-with'
 
 export const topHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
@@ -12,79 +14,64 @@ export const topHandler = (deps: ApplicationDeps) => {
     async (c) => {
       const username = c.req.param('username')
 
-      await deps.connection.beginTransaction()
-
-      const result = await deps.connection
-        .execute<RowDataPacket[]>('SELECT id FROM users WHERE name = ?', [
-          username,
-        ])
-        .then(([[data]]) => ({ ok: true, data }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!result.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get user', 500)
-      }
-      if (!result.data) {
-        await deps.connection.rollback()
-        return c.text('not found user that has the given username', 404)
-      }
-
-      const theme = await deps.connection
-        .execute<RowDataPacket[]>('SELECT * FROM themes WHERE user_id = ?', [
-          result.data.id,
-        ])
-        .then(([[data]]) => ({ ok: true, data }) as const)
-        .catch((error) => ({ ok: false, error }) as const)
-      if (!theme.ok) {
-        await deps.connection.rollback()
-        return c.text('failed to get user theme', 500)
-      }
+      const conn = await deps.pool.getConnection()
+      await conn.beginTransaction()
 
       try {
-        await deps.connection.commit()
-      } catch {
-        await deps.connection.rollback()
-        return c.text('failed to commit', 500)
-      }
+        const [[result]] = await conn
+          .execute<(Pick<UserModel, 'id'> & RowDataPacket)[]>(
+            'SELECT id FROM users WHERE name = ?',
+            [username],
+          )
+          .catch(throwErrorWith('failed to get user'))
 
-      return c.json(
-        {
-          id: theme.data.id,
-          dark_mode: !!theme.data.dark_mode,
-        },
-        200,
-      )
+        if (!result) {
+          await conn.rollback()
+          return c.text('not found user that has the given username', 404)
+        }
+
+        const [[theme]] = await conn
+          .execute<(ThemeModel & RowDataPacket)[]>(
+            'SELECT * FROM themes WHERE user_id = ?',
+            [result.id],
+          )
+          .catch(throwErrorWith('failed to get user theme'))
+
+        await conn.commit().catch(throwErrorWith('failed to commit'))
+
+        return c.json({ id: theme.id, dark_mode: !!theme.dark_mode })
+      } catch (error) {
+        await conn.rollback()
+        return c.text(`Internal Server Error\n${error}`, 500)
+      } finally {
+        conn.release()
+      }
     },
   )
 
   handler.get('/api/tag', async (c) => {
-    await deps.connection.beginTransaction()
-
-    const tags = await deps.connection
-      .execute<RowDataPacket[]>('SELECT * FROM tags')
-      .then(([results]) => ({ ok: true, data: results }) as const)
-      .catch((error) => ({ ok: false, error }) as const)
-    if (!tags.ok) {
-      await deps.connection.rollback()
-      return c.text('failed to get tags', 500)
-    }
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
     try {
-      await deps.connection.commit()
-    } catch {
-      await deps.connection.rollback()
-      return c.text('failed to commit', 500)
-    }
+      const [tags] = await conn
+        .execute<(TagsModel & RowDataPacket)[]>('SELECT * FROM tags')
+        .catch(throwErrorWith('failed to get tags'))
 
-    return c.json(
-      {
-        tags: tags.data.map((tag) => ({
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
+      return c.json({
+        tags: tags.map((tag) => ({
           id: tag.id,
           name: tag.name,
         })),
-      },
-      200,
-    )
+      })
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
+    }
   })
 
   return handler

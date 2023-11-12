@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
-import { createConnection } from 'mysql2/promise'
+import { createPool } from 'mysql2/promise'
 import { sessionMiddleware, CookieStore } from 'hono-sessions'
-import { ApplicationDeps, Deps, HonoEnvironment } from './types'
+import { ApplicationDeps, Deps, HonoEnvironment } from './types/application'
 import { userHandler } from './handlers/user-handler'
 import { topHandler } from './handlers/top-handler'
 import { livestreamHandler } from './handlers/livestream-handler'
@@ -12,12 +12,13 @@ import { statsHandler } from './handlers/stats-handler'
 import { paymentHandler } from './handlers/payment-handler'
 
 export const createApp = async (deps: Deps) => {
-  const connection = await createConnection({
+  const pool = createPool({
     user: process.env['ISUCON13_MYSQL_DIALCONFIG_USER'] ?? 'isucon',
     password: process.env['ISUCON13_MYSQL_DIALCONFIG_PASSWORD'] ?? 'isucon',
     database: process.env['ISUCON13_MYSQL_DIALCONFIG_DATABASE'] ?? 'isupipe',
     host: process.env['ISUCON13_MYSQL_DIALCONFIG_ADDRESS'] ?? '127.0.0.1',
     port: Number(process.env['ISUCON13_MYSQL_DIALCONFIG_PORT'] ?? '3306'),
+    connectionLimit: 10,
   })
 
   if (!process.env['ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS']) {
@@ -32,7 +33,7 @@ export const createApp = async (deps: Deps) => {
 
   const applicationDeps = {
     ...deps,
-    connection,
+    pool: pool,
     powerDNSSubdomainAddress,
   } satisfies ApplicationDeps
 

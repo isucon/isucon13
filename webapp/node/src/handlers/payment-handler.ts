@@ -1,25 +1,29 @@
 import { Hono } from 'hono'
 import { RowDataPacket } from 'mysql2/promise'
-import { ApplicationDeps, HonoEnvironment } from '../types'
+import { ApplicationDeps, HonoEnvironment } from '../types/application'
+import { throwErrorWith } from '../utils/throw-error-with'
 
 export const paymentHandler = (deps: ApplicationDeps) => {
   const handler = new Hono<HonoEnvironment>()
 
   handler.get('/api/payment', async (c) => {
-    await deps.connection.beginTransaction()
+    const conn = await deps.pool.getConnection()
+    await conn.beginTransaction()
 
-    const totalTip = await deps.connection
-      .query<RowDataPacket[]>('SELECT IFNULL(SUM(tip), 0) FROM livecomments')
-      .then(
-        ([[row]]) => ({ ok: true, data: row['IFNULL(SUM(tip), 0)'] }) as const,
-      )
-      .catch((error) => ({ ok: false, error: error }) as const)
-    if (!totalTip.ok) {
-      await deps.connection.rollback()
-      return c.text('failed to count total tip')
+    try {
+      const [[{ 'IFNULL(SUM(tip), 0)': totalTip }]] = await conn
+        .query<({ 'IFNULL(SUM(tip), 0)': number } & RowDataPacket)[]>(
+          'SELECT IFNULL(SUM(tip), 0) FROM livecomments',
+        )
+        .catch(throwErrorWith('failed to count total tip'))
+
+      return c.json({ totalTip: totalTip })
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
     }
-
-    return c.json({ totalTip: totalTip.data })
   })
 
   return handler
