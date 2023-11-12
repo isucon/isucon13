@@ -4,12 +4,16 @@ import (
 	"context"
 	"io"
 	"math/rand"
+	"net"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
 
-	"github.com/isucon/isucon13/bench/internal/resolver"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
+	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/miekg/dns"
 	"github.com/valyala/bytebufferpool"
 )
 
@@ -29,7 +33,11 @@ var mutex sync.Mutex
 var counter = uint64(1)
 
 type DnsWaterTortureAttacker struct {
-	resolver *resolver.DNSResolver
+	connected               bool
+	dnsClient               *dns.Client
+	dnsConn                 *dns.Conn
+	maxRequestPerConnection int
+	requests                int
 }
 
 func int63() int64 {
@@ -54,9 +62,11 @@ func randString(bb io.ByteWriter, n int) {
 }
 
 func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
-	dnsResolver := resolver.NewDNSResolver()
+	c := &dns.Client{Net: "udp", Timeout: 1 * time.Second}
 	return &DnsWaterTortureAttacker{
-		resolver: dnsResolver,
+		maxRequestPerConnection: 10,
+		requests:                0,
+		dnsClient:               c,
 	}
 }
 
@@ -74,5 +84,49 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
 	}
 	buf.WriteString(zone)
 	b := buf.Bytes()
-	a.resolver.Lookup(ctx, "udp", unsafe.String(&b[0], len(b)))
+	a.lookup(ctx, unsafe.String(&b[0], len(b)))
+}
+
+var atomicId = uint64(1)
+var msgPool = sync.Pool{
+	New: func() any {
+		msg := new(dns.Msg)
+		msg.Question = make([]dns.Question, 1)
+		msg.Question[0] = dns.Question{
+			Qtype:  dns.TypeA,
+			Qclass: dns.ClassINET,
+		}
+		return msg
+	},
+}
+
+func (a *DnsWaterTortureAttacker) lookup(ctx context.Context, name string) {
+	if !a.connected {
+		nameserver := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
+		dnsConn, _ := a.dnsClient.Dial(nameserver)
+		a.connected = true
+		a.dnsConn = dnsConn
+	}
+
+	msg := msgPool.Get().(*dns.Msg)
+	defer msgPool.Put(msg)
+	msg.Id = uint16(atomic.AddUint64(&atomicId, 1))
+	msg.Question[0].Name = name
+	msg.RecursionDesired = false
+
+	a.requests++
+	_, _, err := a.dnsClient.ExchangeWithConn(msg, a.dnsConn)
+	if err != nil {
+		a.dnsConn.Close()
+		a.connected = false
+		benchscore.IncDNSFailed()
+		return
+	}
+	if a.requests >= a.maxRequestPerConnection {
+		a.dnsConn.Close()
+		a.connected = false
+		a.requests = 0
+	}
+	// プロトコル上成功をカウントする
+	benchscore.IncResolves()
 }
