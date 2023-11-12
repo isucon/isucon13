@@ -9,6 +9,7 @@ our @EXPORT_OK = qw(
     fill_livestream_response
     fill_livecomment_response
     fill_livecomment_report_response
+    fill_reaction_response
 );
 
 use Carp qw(croak);
@@ -18,6 +19,7 @@ use Isupipe::Entity::Tag;
 use Isupipe::Entity::Livestream;
 use Isupipe::Entity::LivestreamTag;
 use Isupipe::Entity::Livecomment;
+use Isupipe::Entity::Reaction;
 
 sub fill_user_response($app, $user) {
     my $theme = $app->dbh->select_row_as(
@@ -128,3 +130,28 @@ sub fill_livecomment_report_response($app, $livecomment_report) {
         created_at  => $livecomment_report->created_at,
     );
 }
+
+sub fill_reaction_response($app, $reaction) {
+    my $user = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE id = ?',
+        $reaction->user_id,
+    );
+    $user = fill_user_response($app, $user);
+
+    my $livestream = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE id = ?',
+        $reaction->livestream_id,
+    );
+    $livestream = fill_livestream_response($app, $livestream);
+
+    return Isupipe::Entity::Reaction->new(
+        id          => $reaction->id,
+        emoji_name  => $reaction->emoji_name,
+        user        => $user,
+        livestream  => $livestream,
+        created_at  => $reaction->created_at,
+    );
+}
+

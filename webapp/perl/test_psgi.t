@@ -279,4 +279,33 @@ subtest 'POST /api/livestream/:livestream_id/livecomment' => sub {
     };
 };
 
+subtest 'POST /api/livestream/:livestream_id/reaction' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = POST "/api/livestream/1/reaction";
+        login_default($cb, $req);
+
+        with_json_request($req, {
+            emoji_name => 'arrow_double_down',
+        });
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_CREATED) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field emoji_name => 'arrow_double_down';
+            field user => hash {
+                field name => 'test001';
+                etc;
+            };
+            field livestream => hash {
+                field title => 'テスト配信';
+                etc;
+            };
+            etc;
+        };
+    };
+};
+
+
 done_testing;

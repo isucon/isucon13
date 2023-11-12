@@ -68,7 +68,7 @@ get '/api/livestream/{livestream_id:[0-9]+}', Isupipe::App::LivestreamHandler->c
 get '/api/livestream/{livestream_id:[0-9]+}/livecomment', Isupipe::App::LivecommentHandler->can('get_livecomments_handler');
 # ライブコメント投稿
 post '/api/livestream/{livestream_id:[0-9]+}/livecomment',  Isupipe::App::LivecommentHandler->can('post_livecomment_handler');
-# post '/livestream/:livestream_id/reaction',  \&post_reaction_handler;
+post '/api/livestream/{livestream_id:[0-9]+}/reaction',  Isupipe::App::ReactionHandler->can('post_reaction_handler');
 # get '/livestream/:livestream_id/reaction',  \&get_reactions_handler;
 #
 # # (配信者向け)ライブコメント一覧取得API
