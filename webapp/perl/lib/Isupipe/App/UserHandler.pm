@@ -17,8 +17,7 @@ use Isupipe::App::Util qw(
     check_params
 );
 
-use constant ThemeRequest => Dict[
-    user_id   => Int,
+use constant PostUserRequestTheme => Dict[
     dark_mode => Bool,
 ];
 
@@ -28,7 +27,7 @@ use constant PostUserRequest => Dict[
     description  => Str,
     # Password is non-hashed password.
     password     => Str,
-    theme        => ThemeRequest,
+    theme        => PostUserRequestTheme,
 ];
 
 use constant LoginRequest => Dict[
@@ -39,50 +38,59 @@ use constant LoginRequest => Dict[
 ];
 
 # ユーザ登録API
-# POST /user
-sub user_register_handler($app, $c) {
+# POST /api/register
+sub register_handler($app, $c) {
     my $params = $c->req->json_parameters;
     unless (check_params($params, PostUserRequest)) {
         $c->halt(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
     }
 
+    if ($params->{name} eq 'pipe') {
+        $c->halt(HTTP_BAD_REQUEST, "the username 'pipe' is reserved");
+    }
+
     my $hashed_password = encrypt_password($params->{password});
 
-    my $user = Isupipe::Entity::User->new(
-        name         => $params->{name},
-        display_name => $params->{display_name},
-        description  => $params->{description},
-        password     => $hashed_password,
-    );
+    my $txn = $app->dbh->txn_scope;
+    try {
+        my $user = Isupipe::Entity::User->new(
+            name         => $params->{name},
+            display_name => $params->{display_name},
+            description  => $params->{description},
+            password     => $hashed_password,
+        );
 
-    {
-        my $dbh = $app->dbh;
-        my $txn = $dbh->txn_scope;
-
-        $dbh->query(
+        $app->dbh->query(
             'INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)',
             $user->as_hashref
         );
 
-        my $user_id = $dbh->last_insert_id;
-        $user->set_id($user_id);
+        my $user_id = $app->dbh->last_insert_id;
+        $user->id($user_id);
 
         my $theme = Isupipe::Entity::Theme->new(
             user_id   => $user_id,
             dark_mode => $params->{theme}{dark_mode},
         );
 
-        $dbh->query(
+        $app->dbh->query(
             'INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)',
             $theme->as_hashref
         );
 
         $txn->commit;
-    }
 
-    my $res = $c->render_json($user);
-    $res->status(HTTP_CREATED);
-    return $res;
+        my $res = $c->render_json($user);
+        $res->status(HTTP_CREATED);
+        return $res;
+    }
+    catch ($e) {
+        $txn->rollback;
+        if ($e isa Kossy::Exception) {
+            die $e;
+        }
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
+    }
 }
 
 

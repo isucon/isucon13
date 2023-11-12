@@ -95,19 +95,21 @@ post '/api/livestream/{livestream_id:[0-9]+}/moderate',  h('Isupipe::App::Liveco
 post '/api/livestream/{livestream_id:[0-9]+}/enter', h('Isupipe::App::LivestreamHandler', 'enter_livestream_handler');
 # ユーザ視聴終了 (viewer)
 router 'DELETE' => '/api/livestream/{livestream_id:[0-9]+}/exit',  h('Isupipe::App::LivestreamHandler', 'exit_livestream_handler');
-#
-# # user
-#post '/user',  \&user_register_handler;
-post '/api/login', Isupipe::App::UserHandler->can('login_handler');
-# get '/user',  \&get_users_handler;
-#
-# # FIXME: ユーザ一覧を返すAPI
-# # フロントエンドで、配信予約のコラボレーターを指定する際に必要
-# get '/user/:user_id',  \&user_handler;
-# get '/user/:user_id/theme',  \&get_user_theme_handler;
-# get '/user/:user_id/statistics',  \&get_user_statistics_handler;
-#
-# # stats
-# # ライブコメント統計情報
-# get '/livestream/:livestream_id/statistics',  \&get_livestream_statistics_handler;
 
+# user
+post '/api/register', h('Isupipe::App::UserHandler', 'register_handler');
+post '/api/login', h('Isupipe::App::UserHandler', 'login_handler');
+#get '/api/user/me',  h('Isupipe::App::UserHandler', 'get_me_handler');
+#
+## フロントエンドで、配信予約のコラボレーターを指定する際に必要
+#get '/api/user/:user_id',  h('Isupipe::App::UserHandler', 'get_user_handler');
+#get '/api/user/:user_id/statistics',  h('Isupipe::App::UserHandler', 'get_user_statistics_handler');
+#get '/api/user/:user_id/icon',  h('Isupipe::App::UserHandler', 'get_icon_handler');
+#post '/api/icon',  h('Isupipe::App::UserHandler', 'post_icon_handler');
+#
+## stats
+## ライブコメント統計情報
+#get '/api/livestream/{livestream_id:[0-9]+}/statistics', h('Isupipe::App::StatsHandler', 'get_livecomment_statistics_handler');
+#
+## 課金情報
+#get '/api/payment', h('Isupipe::App::PaymentHandler', 'get_payment_handler');

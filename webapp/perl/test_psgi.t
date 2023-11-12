@@ -433,5 +433,31 @@ subtest 'DELETE /api/livestream/:livestream_id/exit' => sub {
     };
 };
 
+subtest 'POST /api/register' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = POST "/api/register";
+
+        with_json_request($req, {
+            name => 'test999',
+            display_name => 'display_name999',
+            description => 'description999',
+            password => 'test',
+            theme => {
+                dark_mode => 1,
+            },
+        });
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_CREATED) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field name => 'test999';
+            etc;
+        };
+    };
+};
+
+
 
 done_testing;
