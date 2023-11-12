@@ -1,8 +1,8 @@
 package attacker
 
 import (
-	"bytes"
 	"context"
+	"io"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/isucon/isucon13/bench/internal/resolver"
+	"github.com/valyala/bytebufferpool"
 )
 
 // refers https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
@@ -38,7 +39,7 @@ func int63() int64 {
 	return n
 }
 
-func randString(bb *bytes.Buffer, n int) {
+func randString(bb io.ByteWriter, n int) {
 	for i, cache, remain := n-1, int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
 			cache, remain = int63(), letterIdxMax
@@ -60,7 +61,8 @@ func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
 }
 
 func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
-	buf := new(bytes.Buffer)
+	buf := bytebufferpool.Get()
+	defer bytebufferpool.Put(buf)
 	numOfLabel := 1
 	if atomic.AddUint64(&counter, 1); counter%50 == 0 {
 		numOfLabel += rand.Intn(3)

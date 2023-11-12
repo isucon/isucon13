@@ -8,6 +8,7 @@ import (
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/score"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
@@ -15,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
+	"golang.org/x/time/rate"
 )
 
 var (
@@ -137,7 +139,12 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 	defer b.attackSem.Release(1)
 
 	now := time.Now()
-	parallelism := 5 + (now.Sub(b.startAt) / time.Second / 10)
+	parallelism := 5 + (now.Sub(b.startAt) / time.Second / 5)
+
+	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
+	if failRate > 0.001 {
+		parallelism = 5
+	}
 
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
 	if err := scenario.DnsWaterTortureAttackScenario(ctx, int(parallelism)); err != nil {
@@ -228,6 +235,9 @@ func (b *benchmarker) run(ctx context.Context) error {
 
 	b.runClientProviders(ctx)
 	violateCh := bencherror.RunViolationChecker(ctx)
+
+	loadLimitter := rate.NewLimiter(500.0, 1)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -277,7 +287,9 @@ func (b *benchmarker) run(ctx context.Context) error {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					b.loadAttack(childCtx)
+					if err := loadLimitter.Wait(childCtx); err == nil {
+						b.loadAttack(childCtx)
+					}
 				}()
 			}
 		}
