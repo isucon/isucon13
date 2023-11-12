@@ -89,10 +89,10 @@ get '/api/livestream/{livestream_id:[0-9]+}/ngwords', h('Isupipe::App::Livecomme
 post '/api/livestream/{livestream_id:[0-9]+}/livecomment/:livecomment_id/report',  h('Isupipe::App::LivecommentHandler', 'report_livecomment_handler');
 # 配信者によるモデレーション (NGワード登録)
 post '/api/livestream/{livestream_id:[0-9]+}/moderate',  h('Isupipe::App::LivecommentHandler', 'moderate_handler');
-#
-# # livestream_viewersにINSERTするため必要
-# # ユーザ視聴開始 (viewer)
-# post '/livestream/:livestream_id/enter',  \&enter_livestream_handler;
+
+# livestream_viewersにINSERTするため必要
+# ユーザ視聴開始 (viewer)
+post '/api/livestream/{livestream_id:[0-9]+}/enter', h('Isupipe::App::LivestreamHandler', 'enter_livestream_handler');
 #
 # # ユーザ視聴終了 (viewer)
 # router 'DELETE' => '/livestream/:livestream_id/enter',  \&leave_livestream_handler;

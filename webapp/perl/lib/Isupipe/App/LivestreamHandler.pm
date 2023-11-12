@@ -257,40 +257,30 @@ sub get_user_livestreams_handler($app, $c) {
     return $c->render_json($response);
 }
 
-# FIXME: livestreamのカラムを追加し、視聴者数を増やす
-#
 # viewerテーブルの廃止
 sub enter_livestream_handler($app, $c) {
     verify_user_session($app, $c);
 
-    my $user_id = $c->req->session->get(DEFAULT_USER_ID_KEY);
-    unless ($user_id) {
-        $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
-    }
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
     my $livesream_id = $c->args->{livestream_id};
 
-    my $dbh = $app->dbh;
-    my $txn = $dbh->txn_scope;
+    my $txn = $app->dbh->txn_scope;
 
     my $viewer = Isupipe::Entity::LivestreamViewer->new(
-        user_id => $user_id,
+        user_id       => $user_id,
         livestream_id => $livesream_id,
+        created_at    => time,
     );
 
-    $dbh->query(
-        'INSERT INTO livestream_viewers (user_id, livestream_id) VALUES (:user_id, :livestream_id)',
+    $app->dbh->query(
+        "INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(:user_id, :livestream_id, :created_at)",
         $viewer->as_hashref,
-    );
-
-    $dbh->query(
-        'UPDATE livestreams SET viewer_count = viewer_count + 1 WHERE id = ?',
-        $livesream_id,
     );
 
     $txn->commit;
 
-    # FIXME: GO実装を返しているものが違う
     return $c->halt_no_content(HTTP_OK);
 }
 
