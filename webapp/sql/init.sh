@@ -57,10 +57,8 @@ mysql -u"$ISUCON_DB_USER" \
 		--port "$ISUCON_DB_PORT" \
 		"$ISUCON_DB_NAME" < initial_ngwords.sql
 
-pdnsutil delete-zone u.isucon.dev
-pdnsutil create-zone u.isucon.dev
-pdnsutil add-record u.isucon.dev . NS 3600 ns1.u.isucon.dev
-pdnsutil add-record u.isucon.dev . A 30 $ISUCON_SUBDOMAIN_ADDRESS
-pdnsutil add-record u.isucon.dev pipe A 30 $ISUCON_SUBDOMAIN_ADDRESS
-pdnsutil add-record u.isucon.dev test001 A 30 $ISUCON_SUBDOMAIN_ADDRESS
+temp_dir=$(mktemp -d)
+trap 'rm -rf $temp_dir' EXIT
+sed 's/<ISUCON_SUBDOMAIN_ADDRESS>/'$ISUCON_SUBDOMAIN_ADDRESS'/g' u.isucon.dev.zone > ${temp_dir}/u.isucon.dev.zone
+pdnsutil load-zone u.isucon.dev ${temp_dir}/u.isucon.dev.zone
 
