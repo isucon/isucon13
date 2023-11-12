@@ -99,7 +99,7 @@ router 'DELETE' => '/api/livestream/{livestream_id:[0-9]+}/exit',  h('Isupipe::A
 # user
 post '/api/register', h('Isupipe::App::UserHandler', 'register_handler');
 post '/api/login', h('Isupipe::App::UserHandler', 'login_handler');
-#get '/api/user/me',  h('Isupipe::App::UserHandler', 'get_me_handler');
+get '/api/user/me',  h('Isupipe::App::UserHandler', 'get_me_handler');
 #
 ## フロントエンドで、配信予約のコラボレーターを指定する際に必要
 #get '/api/user/:user_id',  h('Isupipe::App::UserHandler', 'get_user_handler');

@@ -16,6 +16,9 @@ use Isupipe::App::Util qw(
     check_password
     check_params
 );
+use Isupipe::App::FillResponse qw(
+    fill_user_response
+);
 
 use constant PostUserRequestTheme => Dict[
     dark_mode => Bool,
@@ -127,21 +130,26 @@ sub login_handler($app, $c) {
 }
 
 
-# ユーザ詳細API
-# GET /user/:user_id
-sub user_handler($app, $c) {
+sub get_me_handler($app, $c) {
     verify_user_session($app, $c);
 
-    my $user_id = $c->args->{user_id};
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
-    my $user = $app->db->select_row_as(
+    my $txn = $app->dbh->txn_scope;
+
+    my $user = $app->dbh->select_row_as(
         'Isupipe::Entity::User',
-        'SELECT * FROM users WHERE id = :id',
-        { id => $user_id }
+        'SELECT * FROM users WHERE id = ?',
+        $user_id,
     );
     unless ($user) {
-        $c->halt(HTTP_NOT_FOUND, 'user not found');
+        $c->halt(HTTP_NOT_FOUND, 'not found user that has the userid in session');
     }
+
+    $user = fill_user_response($app, $user);
+
+    $txn->commit;
 
     return $c->render_json($user);
 }
