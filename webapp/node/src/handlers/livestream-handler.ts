@@ -132,15 +132,21 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
       const termEndAt = Date.UTC(2025, 3, 1) // NOTE: month is 0-indexed
       const reserveStartAt = body.start_at
       const reserveEndAt = body.end_at
-      if (reserveStartAt >= termEndAt && reserveEndAt <= termStartAt) {
+      if (
+        reserveStartAt * 1000 <= termStartAt ||
+        reserveStartAt * 1000 >= termEndAt ||
+        reserveEndAt * 1000 <= termStartAt ||
+        reserveEndAt * 1000 >= termEndAt
+      ) {
         await deps.connection.rollback()
         return c.text('bad reservation time range', 400)
       }
 
+      // 予約枠をみて、予約が可能か調べる
       const slots = await deps.connection
         .query<RowDataPacket[]>(
           'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ?',
-          [reserveStartAt, reserveEndAt],
+          [body.start_at, body.end_at],
         )
         .then(([results]) => ({ ok: true, data: results }) as const)
         .catch((error) => ({ ok: false, error }) as const)
@@ -155,16 +161,16 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
             'SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?',
             [slot.start_at, slot.end_at],
           )
-          .then(([result]) => ({ ok: true, data: result.length }) as const)
+          .then(([[result]]) => ({ ok: true, data: result.slot }) as const)
           .catch((error) => ({ ok: false, error }) as const)
         if (!count.ok) {
           await deps.connection.rollback()
           return c.text('failed to get reservation_slots', 500)
         }
         console.log(
-          `${new Date(slot.start_at).toISOString()} ~ ${new Date(
-            slot.end_at,
-          ).toISOString()} 予約枠の残数 - ${slot.slot}`,
+          `${new Date(slot.start_at * 1000).toISOString()} ~ ${new Date(
+            slot.end_at * 1000,
+          ).toISOString()} 予約枠の残数 - ${count.data}`,
         )
         if (count.data < 1) {
           return c.text(
@@ -479,14 +485,14 @@ export const livestreamHandler = (deps: ApplicationDeps) => {
       await deps.connection.beginTransaction()
 
       const user = await deps.connection
-        .query<RowDataPacket[]>('SELECT * FROM users WHERE username = ?', [
+        .query<RowDataPacket[]>('SELECT * FROM users WHERE name = ?', [
           username,
         ])
         .then(([[result]]) => ({ ok: true, data: result }) as const)
         .catch((error) => ({ ok: false, error }) as const)
       if (!user.ok) {
         await deps.connection.rollback()
-        return c.text('failed to get user', 500)
+        return c.text(`failed to get user\n${user.error}`, 500)
       }
       if (!user.data) {
         return c.text('not found user that has the given username', 404)
