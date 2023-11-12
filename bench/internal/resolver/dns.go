@@ -36,7 +36,7 @@ type DNSResolver struct {
 func NewDNSResolver() *DNSResolver {
 	return &DNSResolver{
 		Nameserver:      net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)),
-		Timeout:         5 * time.Second,
+		Timeout:         2 * time.Second,
 		ResolveAttempts: 1,
 	}
 }

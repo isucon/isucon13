@@ -139,11 +139,11 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 	defer b.attackSem.Release(1)
 
 	now := time.Now()
-	parallelism := 4 + (now.Sub(b.startAt) / time.Second / 5)
+	parallelism := 5 + (now.Sub(b.startAt) / time.Second / 5)
 
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
 	if failRate > 0.001 {
-		parallelism = 4
+		parallelism = 5
 	}
 
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
