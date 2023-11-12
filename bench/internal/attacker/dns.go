@@ -64,7 +64,7 @@ func randString(bb io.ByteWriter, n int) {
 func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
 	c := &dns.Client{Net: "udp", Timeout: 1 * time.Second}
 	return &DnsWaterTortureAttacker{
-		maxRequestPerConnection: 100,
+		maxRequestPerConnection: 10,
 		requests:                0,
 		dnsClient:               c,
 	}
