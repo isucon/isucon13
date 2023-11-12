@@ -8,6 +8,7 @@ use DBIx::Sunny;
 
 $Kossy::JSON_SERIALIZER = Cpanel::JSON::XS->new()->ascii(0)->utf8->convert_blessed;
 
+use Isupipe::Log;
 use Isupipe::App::LivecommentHandler;
 use Isupipe::App::LivestreamHandler;
 use Isupipe::App::PaymentHandler;
@@ -48,31 +49,40 @@ sub initialize_handler($self, $c) {
     });
 }
 
+sub h($klass, $name) {
+    my $handler = $klass->can($name);
+    unless ($handler) {
+        local $Log::Minimal::TRACE_LEVEL = $Log::Minimal::TRACE_LEVEL + 1;
+        croakf("handler `%s` not found in %s", $name, $klass);
+    }
+    return $handler;
+}
+
 # 初期化
 post '/api/initialize', \&initialize_handler;
 
 # top
-get '/api/tag', Isupipe::App::TopHandler->can('get_tag_handler');
-get '/api/user/:username/theme', Isupipe::App::TopHandler->can('get_streamer_theme_handler');
+get '/api/tag',                  h('Isupipe::App::TopHandler' => 'get_tag_handler');
+get '/api/user/:username/theme', h('Isupipe::App::TopHandler' => 'get_streamer_theme_handler');
 
 # livestream
 # reserve livestream
-post '/api/livestream/reservation', Isupipe::App::LivestreamHandler->can('reserve_livestream_handler');
+post '/api/livestream/reservation', h('Isupipe::App::LivestreamHandler' => 'reserve_livestream_handler');
 # list livestream
-get '/api/livestream/search', Isupipe::App::LivestreamHandler->can('search_livestreams_handler');
-get '/api/livestream', Isupipe::App::LivestreamHandler->can('get_my_livestreams_handler');
-get '/api/user/:username/livestream', Isupipe::App::LivestreamHandler->can('get_user_livestreams_handler');
+get '/api/livestream/search',         h('Isupipe::App::LivestreamHandler' => 'search_livestreams_handler');
+get '/api/livestream',                h('Isupipe::App::LivestreamHandler' => 'get_my_livestreams_handler');
+get '/api/user/:username/livestream', h('Isupipe::App::LivestreamHandler' => 'get_user_livestreams_handler');
 # get livestream
-get '/api/livestream/{livestream_id:[0-9]+}', Isupipe::App::LivestreamHandler->can('get_livestream_handler');
+get '/api/livestream/{livestream_id:[0-9]+}', h('Isupipe::App::LivestreamHandler' => 'get_livestream_handler');
 # get polling livecomment timeline
-get '/api/livestream/{livestream_id:[0-9]+}/livecomment', Isupipe::App::LivecommentHandler->can('get_livecomments_handler');
+get '/api/livestream/{livestream_id:[0-9]+}/livecomment', h('Isupipe::App::LivecommentHandler' => 'get_livecomments_handler');
 # ライブコメント投稿
-post '/api/livestream/{livestream_id:[0-9]+}/livecomment',  Isupipe::App::LivecommentHandler->can('post_livecomment_handler');
-post '/api/livestream/{livestream_id:[0-9]+}/reaction',  Isupipe::App::ReactionHandler->can('post_reaction_handler');
-get  '/api/livestream/{livestream_id:[0-9]+}/reaction',  Isupipe::App::ReactionHandler->can('get_reactions_handler');
+post '/api/livestream/{livestream_id:[0-9]+}/livecomment', h('Isupipe::App::LivecommentHandler' => 'post_livecomment_handler');
+post '/api/livestream/{livestream_id:[0-9]+}/reaction',    h('Isupipe::App::ReactionHandler' => 'post_reaction_handler');
+get  '/api/livestream/{livestream_id:[0-9]+}/reaction',    h('Isupipe::App::ReactionHandler' => 'get_reactions_handler');
 
 # (配信者向け)ライブコメント一覧取得API
-get '/api/livestream/{livestream_id:[0-9]+}/report', Isupipe::App::LivestreamHandler->can('get_livecomment_reports_handler');
+get '/api/livestream/{livestream_id:[0-9]+}/report', h('Isupipe::App::LivestreamHandler', 'get_livecomment_reports_handler');
 
 # # ライブコメント報告
 # post '/livestream/:livestream_id/livecomment/:livecomment_id/report',  \&report_livecomment_handler;
