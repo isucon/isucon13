@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -65,6 +66,9 @@ func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int64, error) {
 	tags := []int64{}
 	for i := 0; i < n; i++ {
 		tags = append(tags, resp.Tags[i].ID)
+	}
+	if len(tags) == 0 {
+		return nil, fmt.Errorf("タグが取得できませんでした")
 	}
 
 	return tags, nil

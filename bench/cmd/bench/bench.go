@@ -253,7 +253,7 @@ var run = cli.Command{
 
 		profit := benchscore.GetTotalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
-		lgr.Infof("売上: %d", profit)
+		lgr.Infof("スコア: %d", profit)
 
 		return nil
 	},
