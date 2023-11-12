@@ -20,6 +20,7 @@ use Isupipe::App::Util qw(
 
 use Isupipe::App::FillResponse qw(
     fill_livestream_response
+    fill_livecomment_report_response
 );
 
 use constant NUM_RESERVATION_SLOT => $ENV{ISUCON13_NUM_RESERVATION_SLOT} // 2;
@@ -335,10 +336,28 @@ sub get_livestream_handler($app, $c) {
     return $c->render_json($response);
 }
 
-sub get_livecomment_report_handler($app, $c) {
+sub get_livecomment_reports_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
+
+    my $txn = $app->dbh->txn_scope;
+
+    my $livestream = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE id = ?',
+        $livestream_id,
+    );
+    unless ($livestream) {
+        $c->halt_text(HTTP_INTERNAL_SERVER_ERROR, "failed to get livestream");
+    }
+
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
+
+    if ($livestream->user_id != $user_id) {
+        $c->halt_text(HTTP_FORBIDDEN, "can't get other streamer's livecomment reports");
+    }
 
     my $reports = $app->dbh->select_all_as(
         'Isupipe::Entity::LivecommentReport',
@@ -346,7 +365,13 @@ sub get_livecomment_report_handler($app, $c) {
         $livestream_id,
     );
 
-    return $c->render_json($reports);
+    my $response = [
+        map { fill_livecomment_report_response($app, $_) } $reports->@*
+    ];
+
+    $txn->commit;
+
+    return $c->render_json($response);
 }
 
 
