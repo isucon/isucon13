@@ -163,7 +163,7 @@ statsHandler.get(
         total_reactions: totalReactions,
         total_livecomments: totalLivecomments,
         total_tip: totalTip,
-        favorite_emoji: favoriteEmoji.emoji_name,
+        favorite_emoji: favoriteEmoji?.emoji_name,
       })
     } catch (error) {
       await conn.rollback()
