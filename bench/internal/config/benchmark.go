@@ -3,7 +3,7 @@ package config
 import "time"
 
 const DefaultBenchmarkTimeout = 60 * time.Second
-const TooManySpamThresholdPercentage = 20.0
+const TooManySpamThresholdPercentage = 10.0
 
 const DefaultAgentTimeout = 5 * time.Second
 

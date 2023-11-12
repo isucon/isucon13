@@ -1,10 +1,13 @@
 package scheduler
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 )
 
 var (
@@ -101,16 +104,16 @@ type Tip struct {
 
 // ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
 type livecommentScheduler struct {
-	ngLivecomments map[string]struct{}
+	ngLivecomments map[string]string
 
 	moderatedMu sync.RWMutex
 	moderated   map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {
-	ngLivecomments := make(map[string]struct{})
+	ngLivecomments := make(map[string]string)
 	for _, comment := range negativeCommentPool {
-		ngLivecomments[comment.Comment] = struct{}{}
+		ngLivecomments[comment.Comment] = comment.NgWord
 	}
 	rand.Shuffle(len(dummyNgWords), func(i, j int) {
 		dummyNgWords[i], dummyNgWords[j] = dummyNgWords[j], dummyNgWords[i]
@@ -128,6 +131,15 @@ func (s *livecommentScheduler) IsNgLivecomment(comment string) bool {
 	} else {
 		return false
 	}
+}
+
+func (s *livecommentScheduler) GetNgWord(comment string) (string, error) {
+	ngword, ok := s.ngLivecomments[comment]
+	if !ok {
+		return "", bencherror.NewInternalError(fmt.Errorf("想定されているスパムコメントではありません: %s", comment))
+	}
+
+	return ngword, nil
 }
 
 func (s *livecommentScheduler) GetShortPositiveComment() *PositiveComment {

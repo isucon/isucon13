@@ -20,12 +20,13 @@ import (
 )
 
 var (
-	DnsWaterTortureAttackScenario score.ScoreTag = "dns-watertorture-attack"
-	BasicStreamerColdReserve      score.ScoreTag = "streamer-cold-reserve"
-	BasicStreamerModerateScenario score.ScoreTag = "streamer-moderate"
-	BasicViewerScenario           score.ScoreTag = "viewer"
-	BasicViewerReportScenario     score.ScoreTag = "viewer-report"
-	ViewerSpamScenario            score.ScoreTag = "viewer-spam"
+	DnsWaterTortureAttackScenario      score.ScoreTag = "dns-watertorture-attack"
+	BasicStreamerColdReserve           score.ScoreTag = "streamer-cold-reserve"
+	BasicStreamerModerateScenario      score.ScoreTag = "streamer-moderate"
+	BasicViewerScenario                score.ScoreTag = "viewer"
+	BasicViewerReportScenario          score.ScoreTag = "viewer-report"
+	ViewerSpamScenario                 score.ScoreTag = "viewer-spam"
+	AggressiveStreamerModerateScenario score.ScoreTag = "aggressive-streamer-moderate"
 )
 
 type benchmarker struct {
@@ -72,6 +73,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 	counter.Set(BasicViewerScenario, 1)
 	counter.Set(BasicViewerReportScenario, 1)
 	counter.Set(ViewerSpamScenario, 1)
+	counter.Set(AggressiveStreamerModerateScenario, 1)
 
 	return &benchmarker{
 		streamerSem:               semaphore.NewWeighted(weight),
@@ -219,10 +221,23 @@ func (b *benchmarker) loadViewer(ctx context.Context) error {
 func (b *benchmarker) loadSpammer(ctx context.Context) error {
 	defer b.spammerSem.Release(1)
 
-	defer b.scenarioCounter.Add(ViewerSpamScenario)
-	if err := scenario.ViewerSpamScenario(ctx, b.viewerClientPool, b.livestreamPool, b.spamPool); err != nil {
-		return err
-	}
+	var spammerGrp sync.WaitGroup
+
+	spammerGrp.Add(1)
+	go func() {
+		defer spammerGrp.Done()
+		defer b.scenarioCounter.Add(ViewerSpamScenario)
+		scenario.ViewerSpamScenario(ctx, b.viewerClientPool, b.livestreamPool, b.spamPool)
+	}()
+
+	spammerGrp.Add(1)
+	go func() {
+		defer spammerGrp.Done()
+		defer b.scenarioCounter.Add(AggressiveStreamerModerateScenario)
+		scenario.AggressiveStreamerModerateScenario(ctx, b.streamerClientPool)
+	}()
+
+	spammerGrp.Wait()
 
 	return nil
 }

@@ -72,5 +72,5 @@ func NewAssertionError(err error, msg string, args ...interface{}) error {
 
 func NewTooManySpamError(username string, req *http.Request) error {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	return WrapError(BenchmarkApplicationError, fmt.Errorf("[機会損失] %s へのリクエストに対してスパム件数が%.1f を超過したため、ユーザ %s が離脱しました", endpoint, config.TooManySpamThresholdPercentage, username))
+	return WrapError(BenchmarkApplicationError, fmt.Errorf("[機会損失] %s へのリクエストに対してスパム割合が%d%% を超過したため、ユーザ %s が離脱しました", endpoint, int64(config.TooManySpamThresholdPercentage), username))
 }

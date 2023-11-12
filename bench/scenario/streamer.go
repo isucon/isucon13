@@ -110,8 +110,11 @@ func BasicStreamerModerateScenario(
 
 		for _, report := range reports {
 			livestreamID := report.Livecomment.Livestream.ID
-			ngWord := scheduler.LivecommentScheduler.GetDummyNgWord()
-			if err := client.Moderate(ctx, livestreamID, ngWord.Word); err != nil {
+			ngword, err := scheduler.LivecommentScheduler.GetNgWord(report.Livecomment.Comment)
+			if err != nil {
+				return err
+			}
+			if err := client.Moderate(ctx, livestreamID, ngword); err != nil {
 				continue
 			}
 			scheduler.LivecommentScheduler.Moderate(report.Livecomment.Comment)
@@ -122,11 +125,36 @@ func BasicStreamerModerateScenario(
 }
 
 // 攻め気にmoderateを行う配信者シナリオ
-// スパムが怖くて焦りからこのような行動に出る
-// インターネット上のデマ記事を鵜呑みにしてしまう
-// 投機的なので、間違った単語を突っ込んだりする
+// 基本的なmoderateの流れから外れており、livecomment_reportsに存在しないNGワードを入れようとするので
+// ng_wordsテーブルが嵩む要因になる
+// livecomment_reportsを見てmoderateを弾く実装は初期ではないので、ng_wordsが異常に嵩んだり重複レコードが多かったりすることに気づいたタイミングで
+// 対策を打ってもらう想定
 func AggressiveStreamerModerateScenario(
 	ctx context.Context,
+	streamerPool *isupipe.ClientPool,
 ) error {
+	client, err := streamerPool.Get(ctx)
+	if err != nil {
+		return err
+	}
+	defer streamerPool.Put(ctx, client)
+
+	if err := VisitLivestreamAdmin(ctx, client); err != nil {
+		return err
+	}
+
+	// 自分のライブ配信一覧取得
+	livestreams, err := client.GetMyLivestreams(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, livestream := range livestreams {
+		ngWord := scheduler.LivecommentScheduler.GetDummyNgWord()
+		if err := client.Moderate(ctx, livestream.ID, ngWord.Word); err != nil {
+			continue
+		}
+	}
+
 	return nil
 }

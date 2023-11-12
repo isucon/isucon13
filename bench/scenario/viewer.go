@@ -75,7 +75,7 @@ func ViewerSpamScenario(
 	if err != nil {
 		return err
 	}
-	defer livestreamPool.Put(ctx, livestream)
+	livestreamPool.Put(ctx, livestream) // 他の視聴者、スパム投稿者が入れるようにプールにすぐ戻す
 
 	comment, isModerated := scheduler.LivecommentScheduler.GetNegativeComment()
 	if isModerated {
