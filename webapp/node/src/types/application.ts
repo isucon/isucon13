@@ -11,7 +11,6 @@ export interface Deps {
 }
 
 export interface ApplicationDeps extends Deps {
-  pool: Pool
   powerDNSSubdomainAddress: string
 }
 
@@ -19,5 +18,7 @@ export interface HonoEnvironment extends Env {
   Variables: {
     session: Session
     session_key_rotation: boolean
+    pool: Pool
+    deps: ApplicationDeps
   }
 }

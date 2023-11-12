@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { RowDataPacket } from 'mysql2/promise'
-import { ApplicationDeps, HonoEnvironment } from '../types/application'
+import { HonoEnvironment } from '../types/application'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { throwErrorWith } from '../utils/throw-error-with'
 import {
@@ -10,139 +10,138 @@ import {
   UserModel,
 } from '../types/models'
 
-export const statsHandler = (deps: ApplicationDeps) => {
-  const handler = new Hono<HonoEnvironment>()
+export const statsHandler = new Hono<HonoEnvironment>()
 
-  handler.get(
-    '/api/user/:username/statistics',
-    verifyUserSessionMiddleware,
-    async (c) => {
-      const username = c.req.param('username')
+statsHandler.get(
+  '/api/user/:username/statistics',
+  verifyUserSessionMiddleware,
+  async (c) => {
+    const username = c.req.param('username')
 
-      const conn = await deps.pool.getConnection()
-      await conn.beginTransaction()
+    const conn = await c.get('pool').getConnection()
+    await conn.beginTransaction()
 
-      try {
-        const [[user]] = await conn
-          .query<(UserModel & RowDataPacket)[]>(
-            'SELECT * FROM users WHERE name = ?',
-            [username],
-          )
-          .catch(throwErrorWith('failed to get user'))
+    try {
+      const [[user]] = await conn
+        .query<(UserModel & RowDataPacket)[]>(
+          'SELECT * FROM users WHERE name = ?',
+          [username],
+        )
+        .catch(throwErrorWith('failed to get user'))
 
-        if (!user) {
-          await conn.rollback()
-          return c.json('not found user that has the given username', 404)
-        }
+      if (!user) {
+        await conn.rollback()
+        return c.json('not found user that has the given username', 404)
+      }
 
-        // ランク算出
-        const [users] = await conn
-          .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users')
-          .catch(throwErrorWith('failed to get users'))
+      // ランク算出
+      const [users] = await conn
+        .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users')
+        .catch(throwErrorWith('failed to get users'))
 
-        const ranking: { username: string; score: number }[] = []
-        for (const user of users) {
-          const [[{ 'COUNT(*)': reaction }]] = await conn
-            .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-              `
+      const ranking: { username: string; score: number }[] = []
+      for (const user of users) {
+        const [[{ 'COUNT(*)': reaction }]] = await conn
+          .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+            `
                 SELECT COUNT(*) FROM users u
                 INNER JOIN livestreams l ON l.user_id = u.id
                 INNER JOIN reactions r ON r.livestream_id = l.id
                 WHERE u.id = ?
               `,
-              [user.id],
-            )
-            .catch(throwErrorWith('failed to count reactions'))
+            [user.id],
+          )
+          .catch(throwErrorWith('failed to count reactions'))
 
-          const [[{ 'IFNULL(SUM(l2.tip), 0)': tips }]] = await conn
-            .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
-              `
+        const [[{ 'IFNULL(SUM(l2.tip), 0)': tips }]] = await conn
+          .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
+            `
         SELECT IFNULL(SUM(l2.tip), 0) FROM users u
         INNER JOIN livestreams l ON l.user_id = u.id	
         INNER JOIN livecomments l2 ON l2.livestream_id = l.id
         WHERE u.id = ?`,
-              [user.id],
-            )
-            .catch(throwErrorWith('failed to count tips'))
+            [user.id],
+          )
+          .catch(throwErrorWith('failed to count tips'))
 
-          ranking.push({
-            username: user.name,
-            score: reaction + tips,
-          })
-        }
+        ranking.push({
+          username: user.name,
+          score: reaction + tips,
+        })
+      }
 
-        ranking.sort((a, b) => b.score - a.score)
+      ranking.sort((a, b) => b.score - a.score)
 
-        let rank = 1
-        for (const r of ranking) {
-          if (r.username === username) break
-          rank++
-        }
+      let rank = 1
+      for (const r of ranking) {
+        if (r.username === username) break
+        rank++
+      }
 
-        // リアクション数
-        const [[{ 'COUNT(*)': totalReactions }]] = await conn
-          .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-            `SELECT COUNT(*) FROM users u 
+      // リアクション数
+      const [[{ 'COUNT(*)': totalReactions }]] = await conn
+        .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+          `SELECT COUNT(*) FROM users u 
       INNER JOIN livestreams l ON l.user_id = u.id 
       INNER JOIN reactions r ON r.livestream_id = l.id
       WHERE u.name = ?
     `,
-            [username],
+          [username],
+        )
+        .catch(throwErrorWith('failed to count reactions'))
+
+      // ライブコメント数、チップ合計
+      let totalLivecomments = 0
+      let totalTip = 0
+      for (const user of users) {
+        const [livestreams] = await conn
+          .query<(LivestreamsModel & RowDataPacket)[]>(
+            `SELECT * FROM livestreams WHERE user_id = ?`,
+            [user.id],
           )
-          .catch(throwErrorWith('failed to count reactions'))
+          .catch(throwErrorWith('failed to get livestreams'))
 
-        // ライブコメント数、チップ合計
-        let totalLivecomments = 0
-        let totalTip = 0
-        for (const user of users) {
-          const [livestreams] = await conn
-            .query<(LivestreamsModel & RowDataPacket)[]>(
-              `SELECT * FROM livestreams WHERE user_id = ?`,
-              [user.id],
+        for (const livestream of livestreams) {
+          const [livecomments] = await conn
+            .query<(LivecommentsModel & RowDataPacket)[]>(
+              `SELECT * FROM livecomments WHERE livestream_id = ?`,
+              [livestream.id],
             )
-            .catch(throwErrorWith('failed to get livestreams'))
+            .catch(throwErrorWith('failed to get livecomments'))
 
-          for (const livestream of livestreams) {
-            const [livecomments] = await conn
-              .query<(LivecommentsModel & RowDataPacket)[]>(
-                `SELECT * FROM livecomments WHERE livestream_id = ?`,
-                [livestream.id],
-              )
-              .catch(throwErrorWith('failed to get livecomments'))
-
-            for (const livecomment of livecomments) {
-              totalLivecomments++
-              totalTip += livecomment.tip
-            }
+          for (const livecomment of livecomments) {
+            totalLivecomments++
+            totalTip += livecomment.tip
           }
         }
+      }
 
-        // 合計視聴者数
-        let viewersCount = 0
-        for (const user of users) {
-          const [livestreams] = await conn
-            .query<(LivestreamsModel & RowDataPacket)[]>(
-              `SELECT * FROM livestreams WHERE user_id = ?`,
-              [user.id],
+      // 合計視聴者数
+      let viewersCount = 0
+      for (const user of users) {
+        const [livestreams] = await conn
+          .query<(LivestreamsModel & RowDataPacket)[]>(
+            `SELECT * FROM livestreams WHERE user_id = ?`,
+            [user.id],
+          )
+          .catch(throwErrorWith('failed to get livestreams'))
+
+        for (const livestream of livestreams) {
+          const [[{ 'COUNT(*)': livestreamViewerCount }]] = await conn
+            .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+              `SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?`,
+              [livestream.id],
             )
-            .catch(throwErrorWith('failed to get livestreams'))
+            .catch(throwErrorWith('failed to get livecomments'))
 
-          for (const livestream of livestreams) {
-            const [[{ 'COUNT(*)': livestreamViewerCount }]] = await conn
-              .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-                `SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?`,
-                [livestream.id],
-              )
-              .catch(throwErrorWith('failed to get livecomments'))
-
-            viewersCount += livestreamViewerCount
-          }
+          viewersCount += livestreamViewerCount
         }
+      }
 
-        // お気に入り絵文字
-        const [[favoriteEmoji]] = await conn
-          .query<(Pick<ReactionsModel, 'emoji_name'> & RowDataPacket)[]>(
-            `
+      // お気に入り絵文字
+      const [[favoriteEmoji]] = await conn
+        .query<(Pick<ReactionsModel, 'emoji_name'> & RowDataPacket)[]>(
+          `
             SELECT r.emoji_name
             FROM users u
             INNER JOIN livestreams l ON l.user_id = u.id
@@ -152,141 +151,138 @@ export const statsHandler = (deps: ApplicationDeps) => {
             ORDER BY COUNT(*) DESC
             LIMIT 1
           `,
-            [username],
-          )
-          .catch(throwErrorWith('failed to get favorite emoji'))
+          [username],
+        )
+        .catch(throwErrorWith('failed to get favorite emoji'))
 
-        await conn.commit().catch(throwErrorWith('failed to commit'))
+      await conn.commit().catch(throwErrorWith('failed to commit'))
 
-        return c.json({
-          rank,
-          viewers_count: viewersCount,
-          total_reactions: totalReactions,
-          total_livecomments: totalLivecomments,
-          total_tip: totalTip,
-          favorite_emoji: favoriteEmoji.emoji_name,
-        })
-      } catch (error) {
+      return c.json({
+        rank,
+        viewers_count: viewersCount,
+        total_reactions: totalReactions,
+        total_livecomments: totalLivecomments,
+        total_tip: totalTip,
+        favorite_emoji: favoriteEmoji.emoji_name,
+      })
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
+    }
+  },
+)
+
+statsHandler.get(
+  '/api/livestream/:livestream_id/statistics',
+  verifyUserSessionMiddleware,
+  async (c) => {
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+    if (Number.isNaN(livestreamId)) {
+      return c.json('livestream_id in path must be integer', 400)
+    }
+
+    const conn = await c.get('pool').getConnection()
+    await conn.beginTransaction()
+
+    try {
+      const [[livestream]] = await conn
+        .query<(LivestreamsModel & RowDataPacket)[]>(
+          'SELECT * FROM livestreams WHERE id = ?',
+          [livestreamId],
+        )
+        .catch(throwErrorWith('failed to get livestream'))
+      if (!livestream) {
         await conn.rollback()
-        return c.text(`Internal Server Error\n${error}`, 500)
-      } finally {
-        conn.release()
-      }
-    },
-  )
-
-  handler.get(
-    '/api/livestream/:livestream_id/statistics',
-    verifyUserSessionMiddleware,
-    async (c) => {
-      const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-      if (Number.isNaN(livestreamId)) {
-        return c.json('livestream_id in path must be integer', 400)
+        return c.json('cannot get stats of not found livestream', 404)
       }
 
-      const conn = await deps.pool.getConnection()
-      await conn.beginTransaction()
+      const [livestreams] = await conn
+        .query<(LivestreamsModel & RowDataPacket)[]>(
+          'SELECT * FROM livestreams',
+        )
+        .catch(throwErrorWith('failed to get livestreams'))
 
-      try {
-        const [[livestream]] = await conn
-          .query<(LivestreamsModel & RowDataPacket)[]>(
-            'SELECT * FROM livestreams WHERE id = ?',
-            [livestreamId],
-          )
-          .catch(throwErrorWith('failed to get livestream'))
-        if (!livestream) {
-          await conn.rollback()
-          return c.json('cannot get stats of not found livestream', 404)
-        }
-
-        const [livestreams] = await conn
-          .query<(LivestreamsModel & RowDataPacket)[]>(
-            'SELECT * FROM livestreams',
-          )
-          .catch(throwErrorWith('failed to get livestreams'))
-
-        // ランク算出
-        const ranking: {
-          livestreamId: number
-          title: string
-          score: number
-        }[] = []
-        for (const livestream of livestreams) {
-          const [[{ 'COUNT(*)': reactionCount }]] = await conn
-            .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-              'SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?',
-              [livestream.id],
-            )
-            .catch(throwErrorWith('failed to count reactions'))
-
-          const [[{ 'IFNULL(SUM(l2.tip), 0)': totalTip }]] = await conn
-            .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
-              'SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?',
-              [livestream.id],
-            )
-            .catch(throwErrorWith('failed to count tips'))
-
-          ranking.push({
-            livestreamId: livestream.id,
-            title: livestream.title,
-            score: reactionCount + totalTip,
-          })
-        }
-        ranking.sort((a, b) => b.score - a.score)
-
-        let rank = 1
-        for (const r of ranking) {
-          if (r.livestreamId === livestreamId) break
-          rank++
-        }
-
-        // 視聴者数算出
-        const [[{ 'COUNT(*)': viewersCount }]] = await conn
+      // ランク算出
+      const ranking: {
+        livestreamId: number
+        title: string
+        score: number
+      }[] = []
+      for (const livestream of livestreams) {
+        const [[{ 'COUNT(*)': reactionCount }]] = await conn
           .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-            'SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?',
-            [livestreamId],
-          )
-          .catch(throwErrorWith('failed to count viewers'))
-
-        // 最大チップ額
-        const [[{ 'IFNULL(MAX(tip), 0)': maxTip }]] = await conn
-          .query<({ 'IFNULL(MAX(tip), 0)': number } & RowDataPacket)[]>(
-            'SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = ?',
-            [livestreamId],
-          )
-          .catch(throwErrorWith('failed to get max tip'))
-
-        // リアクション数
-        const [[{ 'COUNT(*)': totalReactions }]] = await conn
-          .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-            'SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = ?',
-            [livestreamId],
+            'SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?',
+            [livestream.id],
           )
           .catch(throwErrorWith('failed to count reactions'))
 
-        // スパム報告数
-        const [[{ 'COUNT(*)': totalReports }]] = await conn
-          .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-            'SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?',
-            [livestreamId],
+        const [[{ 'IFNULL(SUM(l2.tip), 0)': totalTip }]] = await conn
+          .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
+            'SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?',
+            [livestream.id],
           )
-          .catch(throwErrorWith('failed to count reports'))
+          .catch(throwErrorWith('failed to count tips'))
 
-        return c.json({
-          rank,
-          viewers_count: viewersCount,
-          total_reactions: totalReactions,
-          total_reports: totalReports,
-          max_tip: maxTip,
+        ranking.push({
+          livestreamId: livestream.id,
+          title: livestream.title,
+          score: reactionCount + totalTip,
         })
-      } catch (error) {
-        await conn.rollback()
-        return c.text(`Internal Server Error\n${error}`, 500)
-      } finally {
-        conn.release()
       }
-    },
-  )
+      ranking.sort((a, b) => b.score - a.score)
 
-  return handler
-}
+      let rank = 1
+      for (const r of ranking) {
+        if (r.livestreamId === livestreamId) break
+        rank++
+      }
+
+      // 視聴者数算出
+      const [[{ 'COUNT(*)': viewersCount }]] = await conn
+        .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+          'SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .catch(throwErrorWith('failed to count viewers'))
+
+      // 最大チップ額
+      const [[{ 'IFNULL(MAX(tip), 0)': maxTip }]] = await conn
+        .query<({ 'IFNULL(MAX(tip), 0)': number } & RowDataPacket)[]>(
+          'SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .catch(throwErrorWith('failed to get max tip'))
+
+      // リアクション数
+      const [[{ 'COUNT(*)': totalReactions }]] = await conn
+        .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+          'SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .catch(throwErrorWith('failed to count reactions'))
+
+      // スパム報告数
+      const [[{ 'COUNT(*)': totalReports }]] = await conn
+        .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+          'SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?',
+          [livestreamId],
+        )
+        .catch(throwErrorWith('failed to count reports'))
+
+      return c.json({
+        rank,
+        viewers_count: viewersCount,
+        total_reactions: totalReactions,
+        total_reports: totalReports,
+        max_tip: maxTip,
+      })
+    } catch (error) {
+      await conn.rollback()
+      return c.text(`Internal Server Error\n${error}`, 500)
+    } finally {
+      conn.release()
+    }
+  },
+)

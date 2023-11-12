@@ -33,7 +33,6 @@ export const createApp = async (deps: Deps) => {
 
   const applicationDeps = {
     ...deps,
-    pool: pool,
     powerDNSSubdomainAddress,
   } satisfies ApplicationDeps
 
@@ -52,6 +51,11 @@ export const createApp = async (deps: Deps) => {
     }),
   )
   app.use('*', async (c, next) => {
+    c.set('pool', pool)
+    c.set('deps', applicationDeps)
+    await next()
+  })
+  app.use('*', async (c, next) => {
     await next()
     if (c.res.status >= 500) {
       console.error(c.res.status, await c.res.clone().text())
@@ -69,13 +73,13 @@ export const createApp = async (deps: Deps) => {
     }
   })
 
-  app.route('/', userHandler(applicationDeps))
-  app.route('/', topHandler(applicationDeps))
-  app.route('/', livestreamHandler(applicationDeps))
-  app.route('/', livecommentHandler(applicationDeps))
-  app.route('/', reactionHandler(applicationDeps))
-  app.route('/', statsHandler(applicationDeps))
-  app.route('/', paymentHandler(applicationDeps))
+  app.route('/', userHandler)
+  app.route('/', topHandler)
+  app.route('/', livestreamHandler)
+  app.route('/', livecommentHandler)
+  app.route('/', reactionHandler)
+  app.route('/', statsHandler)
+  app.route('/', paymentHandler)
 
   return app
 }
