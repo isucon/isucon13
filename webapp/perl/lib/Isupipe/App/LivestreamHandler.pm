@@ -284,22 +284,24 @@ sub enter_livestream_handler($app, $c) {
     return $c->halt_no_content(HTTP_OK);
 }
 
-sub leave_livestream_handler($app, $c) {
+sub exit_livestream_handler($app, $c) {
     verify_user_session($app, $c);
 
-    my $live_stream_id = $c->args->{livestream_id};
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
-    my $dbh = $app->dbh;
-    my $txn = $dbh->txn_scope;
+    my $livestream_id = $c->args->{livestream_id};
 
-    $dbh->query(
-        'UPDATE livestreams SET viewer_count = viewer_count - 1 WHERE id = ?',
-        $live_stream_id,
+    my $txn = $app->dbh->txn_scope;
+
+    $app->dbh->query(
+        "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?",
+        $user_id,
+        $livestream_id,
     );
 
     $txn->commit;
 
-    # FIXME: GO実装を返しているものが違う
     return $c->halt_no_content(HTTP_OK);
 }
 

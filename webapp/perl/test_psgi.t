@@ -421,7 +421,17 @@ subtest 'POST /api/livestream/:livestream_id/enter' => sub {
     };
 };
 
+subtest 'DELETE /api/livestream/:livestream_id/exit' => sub {
 
+    test_psgi $app, sub ($cb) {
+        my $req = HTTP::Request::Common::DELETE "/api/livestream/1/exit";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is $res->code, HTTP_OK;
+        is $res->content, '';
+    };
+};
 
 
 done_testing;

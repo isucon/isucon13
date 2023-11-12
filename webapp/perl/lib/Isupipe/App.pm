@@ -93,9 +93,8 @@ post '/api/livestream/{livestream_id:[0-9]+}/moderate',  h('Isupipe::App::Liveco
 # livestream_viewersにINSERTするため必要
 # ユーザ視聴開始 (viewer)
 post '/api/livestream/{livestream_id:[0-9]+}/enter', h('Isupipe::App::LivestreamHandler', 'enter_livestream_handler');
-#
-# # ユーザ視聴終了 (viewer)
-# router 'DELETE' => '/livestream/:livestream_id/enter',  \&leave_livestream_handler;
+# ユーザ視聴終了 (viewer)
+router 'DELETE' => '/api/livestream/{livestream_id:[0-9]+}/exit',  h('Isupipe::App::LivestreamHandler', 'exit_livestream_handler');
 #
 # # user
 #post '/user',  \&user_register_handler;
