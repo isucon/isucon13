@@ -142,6 +142,24 @@ sub post_livecomment_handler($app, $c) {
     }
 }
 
+sub get_ngwords_handler($app, $c) {
+    verify_user_session($app, $c);
+
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
+
+    my $livestream_id = $c->args->{livestream_id};
+
+    my $ng_words = $app->dbh->select_all_as(
+        'Isupipe::Entity::NGWord',
+        'SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ? ORDER BY created_at DESC',
+        $user_id,
+        $livestream_id,
+    );
+
+    return $c->render_json($ng_words);
+}
+
 sub report_livecomment_handler($app, $c) {
     verify_user_session($app, $c);
 

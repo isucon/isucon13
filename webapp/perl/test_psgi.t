@@ -354,5 +354,24 @@ subtest 'GET /api/livestream/:livestream_id/report' => sub {
     };
 };
 
+subtest 'GET /api/livestream/:livestream_id/ngwords' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/1/ngwords";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_OK) or diag $res->content;
+
+        is decode_json($res->content), array {
+            all_items hash {
+                field word => D;
+                etc;
+            };
+            etc;
+        };
+    };
+};
+
 
 done_testing;
