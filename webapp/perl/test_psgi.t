@@ -474,6 +474,20 @@ subtest 'GET /api/user/me' => sub {
     };
 };
 
+subtest 'GET /api/user/:username' => sub {
 
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/user/test001";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is($res->code, HTTP_OK) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field name => 'test001';
+            etc;
+        };
+    };
+};
 
 done_testing;

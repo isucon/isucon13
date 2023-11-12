@@ -154,6 +154,31 @@ sub get_me_handler($app, $c) {
     return $c->render_json($user);
 }
 
+# ユーザー詳細API
+# GET /api/user/:username
+sub get_user_handler($app, $c) {
+    verify_user_session($app, $c);
+
+    my $username = $c->args->{username};
+
+    my $txn = $app->dbh->txn_scope;
+
+    my $user = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE name = ?',
+        $username,
+    );
+    unless ($user) {
+        $c->halt(HTTP_NOT_FOUND, 'not found user that has the given username');
+    }
+
+    $user = fill_user_response($app, $user);
+
+    $txn->commit;
+
+    return $c->render_json($user);
+}
+
 # 配信者のテーマ取得API
 # GET /user/:userid/theme
 sub get_user_theme_handler($app, $c) {
