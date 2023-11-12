@@ -203,46 +203,82 @@ sub report_livecomment_handler($app, $c) {
 }
 
 # NGワードを登録
-sub moderate_ng_word_handler($app, $c) {
+sub moderate_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $livestream_id = $c->args->{livestream_id};
-    my $user_id = $c->req->session->{DEFAULT_USER_ID_KEY};
-    unless ($user_id) {
-        $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
-    }
+
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, ModerateRequest)) {
         $c->halt_text(HTTP_BAD_REQUEST, "bad request");
     }
 
-    my $dbh = $app->dbh;
-    my $txn = $dbh->txn_scope;
+    my $txn = $app->dbh->txn_scope;
+    try {
+        # 配信者自身の廃止に対するmoderateなのかを検証
+        my $owned_livestreams = $app->dbh->select_all(
+            'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
+            $livestream_id,
+            $user_id,
+        );
+        if (@$owned_livestreams == 0) {
+            $c->halt_text(HTTP_BAD_REQUEST, "A streamer can't moderate livestreams that other streamers own");
+        }
 
-    # 配信者自身の廃止に対するmoderateなのかを検証
-    my $owned_livestreams = $dbh->select_all(
-        'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
-        $livestream_id,
-        $user_id,
-    );
-    if (@$owned_livestreams == 0) {
-        $c->halt_text(HTTP_BAD_REQUEST, "A streamer can't get livecomment reports that other streamers own")
+        $app->dbh->query(
+            'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (:user_id, :livestream_id, :word, :created_at)',
+            {
+                user_id => $user_id,
+                livestream_id => $livestream_id,
+                word => $params->{ng_word},
+                created_at => time,
+            },
+        );
+
+        my $word_id = $app->dbh->last_insert_id;
+
+        my $ng_words = $app->dbh->select_all_as(
+            'Isupipe::Entity::NGWord',
+            'SELECT * FROM ng_words',
+        );
+
+        for my $ng_word ($ng_words->@*) {
+            # ライブコメント一覧取得
+            my $livecomments = $app->dbh->select_all_as(
+                'Isupipe::Entity::Livecomment',
+                'SELECT * FROM livecomments',
+            );
+
+            for my $livecomment ($livecomments->@*) {
+                my $query = <<~ 'SQL';
+                    DELETE FROM livecomments
+                    WHERE
+                    (SELECT COUNT(*)
+                    FROM
+                    (SELECT ? AS text) AS texts
+                    INNER JOIN
+                    (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+                    ON texts.text LIKE patterns.pattern) >= 1;
+                SQL
+
+                $app->dbh->query($query, $livecomment->comment, $ng_word->word);
+            }
+        }
+
+        $txn->commit;
+
+        my $res = $c->render_json({ word_id => $word_id });
+        $res->status(HTTP_CREATED);
+        return $res;
     }
-
-    $dbh->query(
-        'INSERT INTO ng_words(user_id, livestream_id, word) VALUES (:user_id, :livestream_id, :word)',
-        {
-            user_id => $user_id,
-            livestream_id => $livestream_id,
-            word => $params->{ng_word},
-        },
-    );
-
-    my $word_id = $dbh->last_insert_id;
-    $txn->commit;
-
-    my $res = $c->render_json({ word_id => $word_id });
-    $res->status(HTTP_CREATED);
-    return $res;
+    catch ($e) {
+        $txn->rollback;
+        if ($e isa Kossy::Exception) {
+            die $e;
+        }
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
+    }
 }

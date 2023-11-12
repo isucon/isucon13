@@ -389,6 +389,25 @@ subtest 'POST /api/livestream/:livestream_id/livecomment/:livecomment_id/report'
     };
 };
 
+subtest 'POST /api/livestream/:livestream_id/moderate' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = POST "/api/livestream/1/moderate";
+        login_default($cb, $req);
+
+        with_json_request($req, {
+            ng_word => 'NGワード',
+        });
+
+        my $res = $cb->($req);
+        is ($res->code, HTTP_CREATED) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field word_id => D;
+        };
+    };
+};
+
 
 
 done_testing;

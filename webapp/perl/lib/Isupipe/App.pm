@@ -87,8 +87,8 @@ get '/api/livestream/{livestream_id:[0-9]+}/ngwords', h('Isupipe::App::Livecomme
 
 # ライブコメント報告
 post '/api/livestream/{livestream_id:[0-9]+}/livecomment/:livecomment_id/report',  h('Isupipe::App::LivecommentHandler', 'report_livecomment_handler');
-# # 配信者によるモデレーション (NGワード登録)
-# post '/livestream/:livestream_id/moderate',  \&moderate_ngword_handler;
+# 配信者によるモデレーション (NGワード登録)
+post '/api/livestream/{livestream_id:[0-9]+}/moderate',  h('Isupipe::App::LivecommentHandler', 'moderate_handler');
 #
 # # livestream_viewersにINSERTするため必要
 # # ユーザ視聴開始 (viewer)
