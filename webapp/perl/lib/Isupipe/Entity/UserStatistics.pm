@@ -7,6 +7,7 @@ class Isupipe::Entity::UserStatistics {
     field $total_reactions :param = undef;
     field $total_livecomments :param = undef;
     field $total_tip :param = undef;
+    field $favorite_emoji : param = undef;
 
     use Isupipe::Assert;
     use Types::Standard -types;
@@ -17,6 +18,7 @@ class Isupipe::Entity::UserStatistics {
         assert_field(Int, $total_reactions, 'total_reactions');
         assert_field(Int, $total_livecomments, 'total_livecomments');
         assert_field(Int, $total_tip, 'total_tip');
+        assert_field(Str, $favorite_emoji, 'favorite_emoji');
     }
 
     method as_hashref() {
@@ -30,6 +32,7 @@ class Isupipe::Entity::UserStatistics {
             total_reactions     => $total_reactions,
             total_livecomments  => $total_livecomments,
             total_tip           => $total_tip,
+            favorite_emoji      => $favorite_emoji,
         }
     }
 
@@ -56,5 +59,10 @@ class Isupipe::Entity::UserStatistics {
     method total_tip($new=undef) {
         if (defined $new) { assert_field(Int, $new, 'total_tip'); $total_tip = $new };
         $total_tip
+    }
+
+    method favorite_emoji($new=undef) {
+        if (defined $new) { assert_field(Str, $new, 'favorite_emoji'); $favorite_emoji = $new };
+        $favorite_emoji
     }
 }
