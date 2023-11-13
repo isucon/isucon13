@@ -35,7 +35,7 @@ use constant PostUserRequest => Dict[
 ];
 
 use constant LoginRequest => Dict[
-    name => Str,
+    username => Str,
 
     # Password is non-hashed password.
     password => Str,
@@ -108,7 +108,7 @@ sub login_handler($app, $c) {
     my $user = $app->dbh->select_row_as(
         'Isupipe::Entity::User',
         'SELECT * FROM users WHERE name = :name',
-        { name => $params->{name} }
+        { name => $params->{username} }
     );
     unless ($user) {
         $c->halt(HTTP_NOT_FOUND, 'invalid username or password');

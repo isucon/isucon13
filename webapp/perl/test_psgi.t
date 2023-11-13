@@ -35,7 +35,7 @@ sub with_json_request($req, $data) {
 sub login_default($cb, $req) {
     my $login_req = POST "/api/login";
     with_json_request($login_req, {
-        name     => 'test001',
+        username => 'test001',
         password => 'test',
     });
     my $login_res = $cb->($login_req);
@@ -243,7 +243,7 @@ subtest 'POST /api/login' => sub {
 
         my $req = POST "/api/login";
         with_json_request($req, {
-            name     => 'test001',
+            username => 'test001',
             password => 'test',
         });
 
