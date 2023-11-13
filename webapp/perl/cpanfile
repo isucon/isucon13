@@ -1,6 +1,6 @@
 requires 'perl', '5.038';
 
-requires 'Kossy', '0.62';
+requires 'Kossy', '0.63';
 requires 'Plack::Middleware::Session', '0.33';
 requires 'HTTP::Message', '6.45';
 requires 'Cpanel::JSON::XS', '4.37';
