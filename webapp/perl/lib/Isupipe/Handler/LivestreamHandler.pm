@@ -1,7 +1,6 @@
 package Isupipe::Handler::LivestreamHandler;
 use v5.38;
 use utf8;
-use experimental qw(try);
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
@@ -53,104 +52,95 @@ sub reserve_livestream_handler($app, $c) {
     }
 
     my $txn = $app->dbh->txn_scope;
-    try {
-        # 2024/04/01からの１年間の期間内であるかチェック
-        infof('check term');
-        if (!($params->{end_at} == TERM_END_AT || $params->{end_at} < TERM_END_AT) && (TERM_START_AT == $params->{start_at} || $params->{start_at} > TERM_START_AT)) {
-            $c->halt_text(HTTP_BAD_REQUEST, "bad reservation time range");
-        }
+    # 2024/04/01からの１年間の期間内であるかチェック
+    infof('check term');
+    if (!($params->{end_at} == TERM_END_AT || $params->{end_at} < TERM_END_AT) && (TERM_START_AT == $params->{start_at} || $params->{start_at} > TERM_START_AT)) {
+        $c->halt_text(HTTP_BAD_REQUEST, "bad reservation time range");
+    }
 
-        infof('check collaborators');
-        # 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる (ある人は同時に複数の配信に物理的に出れない)
-        my $user_ids = [];
-        push @$user_ids, $user_id;
-        push @$user_ids, $params->{collaborators}->@*;
-        for my $user_id ($user_ids->@*) {
-            my $founds = $app->dbh->select_one(
-                'SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at && ? <= end_at',
-                $user_id,
-                $params->{start_at},
-                $params->{end_at},
-            );
-            if ($founds >= NUM_RESERVATION_SLOT) {
-                $c->halt_text(HTTP_BAD_REQUEST, sprintf('ユーザ%dが予約できません', $user_id));
-            }
-        }
-
-        # 予約枠をみて、予約が可能か調べる
-        my $slots = $app->dbh->select_all_as(
-            'Isupipe::Entity::ReservationSlot',
-            'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ?',
+    infof('check collaborators');
+    # 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる (ある人は同時に複数の配信に物理的に出れない)
+    my $user_ids = [];
+    push @$user_ids, $user_id;
+    push @$user_ids, $params->{collaborators}->@*;
+    for my $user_id ($user_ids->@*) {
+        my $founds = $app->dbh->select_one(
+            'SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at && ? <= end_at',
+            $user_id,
             $params->{start_at},
             $params->{end_at},
         );
-
-        for my $slot ($slots->@*) {
-            my $count = $app->dbh->select_one(
-                'SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?',
-                $slot->start_at,
-                $slot->end_at,
-            );
-            infof('%d ~ %d予約枠の残数 = %d', $slot->start_at, $slot->end_at, $slot->slot);
-            if ($count < 1) {
-                $c->halt_text(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
-            }
+        if ($founds >= NUM_RESERVATION_SLOT) {
+            $c->halt_text(HTTP_BAD_REQUEST, sprintf('ユーザ%dが予約できません', $user_id));
         }
-
-        my $livestream = Isupipe::Entity::Livestream->new(
-            user_id       => $user_id,
-            title         => $params->{title},
-            description   => $params->{description},
-            playlist_url  => "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
-            thumbnail_url => "https://picsum.photos/200/300",
-            start_at      => $params->{start_at},
-            end_at        => $params->{end_at},
-        );
-
-        infof('insert reservation slot');
-        $app->dbh->query(
-            'UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?',
-            $params->{start_at},
-            $params->{end_at},
-        );
-
-        infof('insert livestream');
-        $app->dbh->query(
-            'INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)',
-            $livestream->as_hashref,
-        );
-
-        infof('get inserted id');
-        my $livestream_id = $app->dbh->last_insert_id;
-        $livestream->id($livestream_id);
-
-        infof('insert tags');
-        # タグ追加
-        for my $tag_id ($params->{tags}->@*) {
-            $app->dbh->query(
-                'INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)',
-                {
-                    livestream_id => $livestream_id,
-                    tag_id => $tag_id,
-                },
-            );
-        }
-
-        $livestream = fill_livestream_response($app, $livestream);
-
-        $txn->commit;
-
-        my $res = $c->render_json($livestream);
-        $res->status(HTTP_CREATED);
-        return $res;
     }
-    catch ($e) {
-        $txn->rollback;
-        if ($e isa Kossy::Exception) {
-            die $e;
+
+    # 予約枠をみて、予約が可能か調べる
+    my $slots = $app->dbh->select_all_as(
+        'Isupipe::Entity::ReservationSlot',
+        'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ?',
+        $params->{start_at},
+        $params->{end_at},
+    );
+
+    for my $slot ($slots->@*) {
+        my $count = $app->dbh->select_one(
+            'SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?',
+            $slot->start_at,
+            $slot->end_at,
+        );
+        infof('%d ~ %d予約枠の残数 = %d', $slot->start_at, $slot->end_at, $slot->slot);
+        if ($count < 1) {
+            $c->halt_text(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
         }
-        $c->halt_text(HTTP_INTERNAL_SERVER_ERROR, $e);
     }
+
+    my $livestream = Isupipe::Entity::Livestream->new(
+        user_id       => $user_id,
+        title         => $params->{title},
+        description   => $params->{description},
+        playlist_url  => "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
+        thumbnail_url => "https://picsum.photos/200/300",
+        start_at      => $params->{start_at},
+        end_at        => $params->{end_at},
+    );
+
+    infof('insert reservation slot');
+    $app->dbh->query(
+        'UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?',
+        $params->{start_at},
+        $params->{end_at},
+    );
+
+    infof('insert livestream');
+    $app->dbh->query(
+        'INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)',
+        $livestream->as_hashref,
+    );
+
+    infof('get inserted id');
+    my $livestream_id = $app->dbh->last_insert_id;
+    $livestream->id($livestream_id);
+
+    infof('insert tags');
+    # タグ追加
+    for my $tag_id ($params->{tags}->@*) {
+        $app->dbh->query(
+            'INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)',
+            {
+                livestream_id => $livestream_id,
+                tag_id => $tag_id,
+            },
+        );
+    }
+
+    $livestream = fill_livestream_response($app, $livestream);
+
+    $txn->commit;
+
+    my $res = $c->render_json($livestream);
+    $res->status(HTTP_CREATED);
+    return $res;
 }
 
 sub search_livestreams_handler($app, $c) {
@@ -183,9 +173,9 @@ sub search_livestreams_handler($app, $c) {
     else {
         # 検索条件なし
         my $query = 'SELECT * FROM livestreams';
-        if (my $limit = $c->req->parameters->{limit}) {
+        if (my $limit = $c->req->query_parameters->{limit}) {
             unless ($limit =~ /^\d+$/) {
-                $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be a integer");
+                $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be integer");
             }
             $query .= sprintf(" LIMIT %d", $limit);
         }
@@ -196,11 +186,11 @@ sub search_livestreams_handler($app, $c) {
         );
     }
 
-    my $response = [
+    $livestreams = [
         map { fill_livestream_response($app, $_) } $livestreams->@*
     ];
 
-    return $c->render_json($response);
+    return $c->render_json($livestreams);
 }
 
 
@@ -218,13 +208,13 @@ sub get_my_livestreams_handler($app, $c) {
         $user_id,
     );
 
-    my $response = [
+    $livestreams = [
         map { fill_livestream_response($app, $_) } $livestreams->@*
     ];
 
     $txn->commit;
 
-    return $c->render_json($response);
+    return $c->render_json($livestreams);
 }
 
 sub get_user_livestreams_handler($app, $c) {
@@ -248,13 +238,13 @@ sub get_user_livestreams_handler($app, $c) {
         $user->id,
     );
 
-    my $response = [
+    $livestreams = [
         map { fill_livestream_response($app, $_) } $livestreams->@*
     ];
 
     $txn->commit;
 
-    return $c->render_json($response);
+    return $c->render_json($livestreams);
 }
 
 # viewerテーブルの廃止
@@ -321,11 +311,11 @@ sub get_livestream_handler($app, $c) {
         $c->halt_text(HTTP_NOT_FOUND, "livestream not found");
     }
 
-    my $response = fill_livestream_response($app, $livestream);
+    $livestream = fill_livestream_response($app, $livestream);
 
     $txn->commit;
 
-    return $c->render_json($response);
+    return $c->render_json($livestream);
 }
 
 sub get_livecomment_reports_handler($app, $c) {
@@ -357,13 +347,12 @@ sub get_livecomment_reports_handler($app, $c) {
         $livestream_id,
     );
 
-    my $response = [
+    $reports = [
         map { fill_livecomment_report_response($app, $_) } $reports->@*
     ];
 
     $txn->commit;
 
-    return $c->render_json($response);
+    return $c->render_json($reports);
 }
-
 

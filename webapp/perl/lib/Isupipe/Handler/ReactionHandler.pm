@@ -1,7 +1,6 @@
 package Isupipe::Handler::ReactionHandler;
 use v5.38;
 use utf8;
-use experimental qw(try);
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
@@ -29,9 +28,9 @@ sub get_reactions_handler($app, $c) {
     my $txn = $app->dbh->txn_scope;
 
     my $query = 'SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC';
-    if (my $limit = $c->req->parameters->{limit}) {
+    if (my $limit = $c->req->query_parameters->{limit}) {
         unless ($limit =~ /^\d+$/) {
-            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be a integer");
+            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be integer");
         }
         $query .= sprintf(" LIMIT %d", $limit);
     }
@@ -42,13 +41,13 @@ sub get_reactions_handler($app, $c) {
         $livestream_id,
     );
 
-    my $response = [
+    $reactions = [
         map { fill_reaction_response($app, $_) } @$reactions
     ];
 
     $txn->commit;
 
-    return $c->render_json($response);
+    return $c->render_json($reactions);
 }
 
 sub post_reaction_handler($app, $c) {
@@ -65,35 +64,27 @@ sub post_reaction_handler($app, $c) {
     }
 
     my $txn = $app->dbh->txn_scope;
-    try {
-        my $reaction = Isupipe::Entity::Reaction->new(
-            user_id       => $user_id,
-            livestream_id => $livestream_id,
-            emoji_name    => $params->{emoji_name},
-            created_at    => time,
-        );
 
-        $app->dbh->query(
-            'INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (:user_id, :livestream_id, :emoji_name,:created_at)',
-            $reaction->as_hashref,
-        );
+    my $reaction = Isupipe::Entity::Reaction->new(
+        user_id       => $user_id,
+        livestream_id => $livestream_id,
+        emoji_name    => $params->{emoji_name},
+        created_at    => time,
+    );
 
-        my $reaction_id = $app->dbh->last_insert_id;
-        $reaction->id($reaction_id);
+    $app->dbh->query(
+        'INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (:user_id, :livestream_id, :emoji_name,:created_at)',
+        $reaction->as_hashref,
+    );
 
-        $txn->commit;
+    my $reaction_id = $app->dbh->last_insert_id;
+    $reaction->id($reaction_id);
 
-        my $response = fill_reaction_response($app, $reaction);
+    $txn->commit;
 
-        my $res = $c->render_json($response);
-        $res->status(HTTP_CREATED);
-        return $res;
-    }
-    catch($e) {
-        $txn->rollback;
-        if ($e isa Kossy::Exception) {
-            die $e;
-        }
-        $c->halt_text(HTTP_INTERNAL_SERVER_ERROR, $e);
-    }
+    $reaction = fill_reaction_response($app, $reaction);
+
+    my $res = $c->render_json($reaction);
+    $res->status(HTTP_CREATED);
+    return $res;
 }

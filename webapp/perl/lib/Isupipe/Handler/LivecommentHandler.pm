@@ -1,7 +1,6 @@
 package Isupipe::Handler::LivecommentHandler;
 use v5.38;
 use utf8;
-use experimental qw(try);
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
@@ -38,9 +37,9 @@ sub get_livecomments_handler($app, $c) {
     my $txn = $app->dbh->txn_scope;
 
     my $query = "SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC";
-    if (my $limit = $c->req->parameters->{limit}) {
+    if (my $limit = $c->req->query_parameters->{limit}) {
         unless ($limit =~ /^\d+$/) {
-            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be a integer");
+            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be integer");
         }
         $query .= sprintf(" LIMIT %d", $limit);
     }
@@ -54,13 +53,13 @@ sub get_livecomments_handler($app, $c) {
         return $c->render_json([]);
     }
 
-    my $response = [
+    $livecomments = [
         map { fill_livecomment_response($app, $_) } $livecomments->@*
     ];
 
     $txn->commit;
 
-    return $c->render_json($response);
+    return $c->render_json($livecomments);
 }
 
 sub post_livecomment_handler($app, $c) {
@@ -83,64 +82,55 @@ sub post_livecomment_handler($app, $c) {
 
     my $txn = $app->dbh->txn_scope;
 
-    try {
-        # スパム判定
-        my $ng_words = $app->dbh->select_all_as(
-            'Isupipe::Entity::NGWord',
-            'SELECT id, user_id, livestream_id, word FROM ng_words'
-        );
+    # スパム判定
+    my $ng_words = $app->dbh->select_all_as(
+        'Isupipe::Entity::NGWord',
+        'SELECT id, user_id, livestream_id, word FROM ng_words'
+    );
 
-        my $hit_spam = 0;
-        for my $ng_word ($ng_words->@*) {
-            my $query =<<~ 'SQL';
-                SELECT COUNT(*)
-                FROM
-                (SELECT ? AS text) AS texts
-                INNER JOIN
-                (SELECT CONCAT('%', ?, '%') AS pattern) AS patterns
-                ON texts.text LIKE patterns.pattern
-            SQL
+    my $hit_spam = 0;
+    for my $ng_word ($ng_words->@*) {
+        my $query =<<~ 'SQL';
+            SELECT COUNT(*)
+            FROM
+            (SELECT ? AS text) AS texts
+            INNER JOIN
+            (SELECT CONCAT('%', ?, '%') AS pattern) AS patterns
+            ON texts.text LIKE patterns.pattern
+        SQL
 
-            $hit_spam = $app->dbh->select_one($query, $params->{comment}, $ng_word->word);
-            infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment}, $ng_word->word);
-            if ($hit_spam >= 1) {
-                $c->halt_text(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
-            }
+        $hit_spam = $app->dbh->select_one($query, $params->{comment}, $ng_word->word);
+        infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment}, $ng_word->word);
+        if ($hit_spam >= 1) {
+            $c->halt_text(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
         }
-
-        my $now = time;
-
-        my $livecomment = Isupipe::Entity::Livecomment->new(
-            user_id       => $user_id,
-            livestream_id => $livestream_id,
-            comment       => $params->{comment},
-            tip           => $params->{tip},
-            created_at    => $now,
-        );
-
-        $app->dbh->query(
-            'INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at) VALUES (:user_id, :livestream_id, :comment, :tip, :created_at)',
-            $livecomment->as_hashref,
-        );
-
-        my $livecomment_id = $app->dbh->last_insert_id;
-        $livecomment->id($livecomment_id);
-
-        my $response = fill_livecomment_response($app, $livecomment);
-
-        $txn->commit;
-
-        my $res = $c->render_json($response);
-        $res->status(HTTP_CREATED);
-        return $res;
     }
-    catch ($e) {
-        $txn->rollback;
-        if ($e isa Kossy::Exception) {
-            die $e;
-        }
-        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
-    }
+
+    my $now = time;
+
+    my $livecomment = Isupipe::Entity::Livecomment->new(
+        user_id       => $user_id,
+        livestream_id => $livestream_id,
+        comment       => $params->{comment},
+        tip           => $params->{tip},
+        created_at    => $now,
+    );
+
+    $app->dbh->query(
+        'INSERT INTO livecomments (user_id, livestream_id, comment, tip, created_at) VALUES (:user_id, :livestream_id, :comment, :tip, :created_at)',
+        $livecomment->as_hashref,
+    );
+
+    my $livecomment_id = $app->dbh->last_insert_id;
+    $livecomment->id($livecomment_id);
+
+    my $response = fill_livecomment_response($app, $livecomment);
+
+    $txn->commit;
+
+    my $res = $c->render_json($response);
+    $res->status(HTTP_CREATED);
+    return $res;
 }
 
 sub get_ngwords_handler($app, $c) {
@@ -171,35 +161,26 @@ sub report_livecomment_handler($app, $c) {
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
     my $txn = $app->dbh->txn_scope;
-    try {
-        my $report = Isupipe::Entity::LivecommentReport->new(
-            user_id       => $user_id,
-            livestream_id => $livestream_id,
-            livecomment_id => $livecomment_id,
-            created_at    => time,
-        );
-        $app->dbh->query(
-            'INSERT INTO livecomment_reports (user_id, livestream_id, livecomment_id, created_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at)',
-            $report->as_hashref,
-        );
-        my $report_id = $app->dbh->last_insert_id;
-        $report->id($report_id);
+    my $report = Isupipe::Entity::LivecommentReport->new(
+        user_id       => $user_id,
+        livestream_id => $livestream_id,
+        livecomment_id => $livecomment_id,
+        created_at    => time,
+    );
+    $app->dbh->query(
+        'INSERT INTO livecomment_reports (user_id, livestream_id, livecomment_id, created_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at)',
+        $report->as_hashref,
+    );
+    my $report_id = $app->dbh->last_insert_id;
+    $report->id($report_id);
 
-        $report = fill_livecomment_report_response($app, $report);
+    $report = fill_livecomment_report_response($app, $report);
 
-        $txn->commit;
+    $txn->commit;
 
-        my $res = $c->render_json($report);
-        $res->status(HTTP_CREATED);
-        return $res;
-    }
-    catch ($e) {
-        $txn->rollback;
-        if ($e isa Kossy::Exception) {
-            die $e;
-        }
-        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
-    }
+    my $res = $c->render_json($report);
+    $res->status(HTTP_CREATED);
+    return $res;
 }
 
 # NGワードを登録
@@ -217,68 +198,59 @@ sub moderate_handler($app, $c) {
     }
 
     my $txn = $app->dbh->txn_scope;
-    try {
-        # 配信者自身の廃止に対するmoderateなのかを検証
-        my $owned_livestreams = $app->dbh->select_all(
-            'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
-            $livestream_id,
-            $user_id,
-        );
-        if (@$owned_livestreams == 0) {
-            $c->halt_text(HTTP_BAD_REQUEST, "A streamer can't moderate livestreams that other streamers own");
-        }
-
-        $app->dbh->query(
-            'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (:user_id, :livestream_id, :word, :created_at)',
-            {
-                user_id => $user_id,
-                livestream_id => $livestream_id,
-                word => $params->{ng_word},
-                created_at => time,
-            },
-        );
-
-        my $word_id = $app->dbh->last_insert_id;
-
-        my $ng_words = $app->dbh->select_all_as(
-            'Isupipe::Entity::NGWord',
-            'SELECT * FROM ng_words',
-        );
-
-        for my $ng_word ($ng_words->@*) {
-            # ライブコメント一覧取得
-            my $livecomments = $app->dbh->select_all_as(
-                'Isupipe::Entity::Livecomment',
-                'SELECT * FROM livecomments',
-            );
-
-            for my $livecomment ($livecomments->@*) {
-                my $query = <<~ 'SQL';
-                    DELETE FROM livecomments
-                    WHERE
-                    (SELECT COUNT(*)
-                    FROM
-                    (SELECT ? AS text) AS texts
-                    INNER JOIN
-                    (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
-                    ON texts.text LIKE patterns.pattern) >= 1;
-                SQL
-
-                $app->dbh->query($query, $livecomment->comment, $ng_word->word);
-            }
-        }
-
-        $txn->commit;
-
-        my $res = $c->render_json({ word_id => $word_id });
-        $res->status(HTTP_CREATED);
-        return $res;
+    # 配信者自身の廃止に対するmoderateなのかを検証
+    my $owned_livestreams = $app->dbh->select_all(
+        'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
+        $livestream_id,
+        $user_id,
+    );
+    if (@$owned_livestreams == 0) {
+        $c->halt_text(HTTP_BAD_REQUEST, "A streamer can't moderate livestreams that other streamers own");
     }
-    catch ($e) {
-        $txn->rollback;
-        if ($e isa Kossy::Exception) {
-            die $e;
+
+    $app->dbh->query(
+        'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (:user_id, :livestream_id, :word, :created_at)',
+        {
+            user_id => $user_id,
+            livestream_id => $livestream_id,
+            word => $params->{ng_word},
+            created_at => time,
+        },
+    );
+
+    my $word_id = $app->dbh->last_insert_id;
+
+    my $ng_words = $app->dbh->select_all_as(
+        'Isupipe::Entity::NGWord',
+        'SELECT * FROM ng_words',
+    );
+
+    for my $ng_word ($ng_words->@*) {
+        # ライブコメント一覧取得
+        my $livecomments = $app->dbh->select_all_as(
+            'Isupipe::Entity::Livecomment',
+            'SELECT * FROM livecomments',
+        );
+
+        for my $livecomment ($livecomments->@*) {
+            my $query = <<~ 'SQL';
+                DELETE FROM livecomments
+                WHERE
+                (SELECT COUNT(*)
+                FROM
+                (SELECT ? AS text) AS texts
+                INNER JOIN
+                (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+                ON texts.text LIKE patterns.pattern) >= 1;
+            SQL
+
+            $app->dbh->query($query, $livecomment->comment, $ng_word->word);
         }
-        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
     }
+
+    $txn->commit;
+
+    my $res = $c->render_json({ word_id => $word_id });
+    $res->status(HTTP_CREATED);
+    return $res;
 }

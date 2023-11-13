@@ -2,7 +2,6 @@ package Isupipe::Handler::StatsHandler;
 use v5.38;
 use utf8;
 
-# FIXME: 配信毎、ユーザごとのリアクション種別ごとの数などもだす
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
 

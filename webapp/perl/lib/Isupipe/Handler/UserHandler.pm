@@ -1,7 +1,6 @@
 package Isupipe::Handler::UserHandler;
 use v5.38;
 use utf8;
-use experimental qw(try);
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
@@ -61,45 +60,37 @@ sub register_handler($app, $c) {
     my $hashed_password = encrypt_password($params->{password});
 
     my $txn = $app->dbh->txn_scope;
-    try {
-        my $user = Isupipe::Entity::User->new(
-            name         => $params->{name},
-            display_name => $params->{display_name},
-            description  => $params->{description},
-            password     => $hashed_password,
-        );
 
-        $app->dbh->query(
-            'INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)',
-            $user->as_hashref
-        );
+    my $user = Isupipe::Entity::User->new(
+        name         => $params->{name},
+        display_name => $params->{display_name},
+        description  => $params->{description},
+        password     => $hashed_password,
+    );
 
-        my $user_id = $app->dbh->last_insert_id;
-        $user->id($user_id);
+    $app->dbh->query(
+        'INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)',
+        $user->as_hashref
+    );
 
-        my $theme = Isupipe::Entity::Theme->new(
-            user_id   => $user_id,
-            dark_mode => $params->{theme}{dark_mode},
-        );
+    my $user_id = $app->dbh->last_insert_id;
+    $user->id($user_id);
 
-        $app->dbh->query(
-            'INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)',
-            $theme->as_hashref
-        );
+    my $theme = Isupipe::Entity::Theme->new(
+        user_id   => $user_id,
+        dark_mode => $params->{theme}{dark_mode},
+    );
 
-        $txn->commit;
+    $app->dbh->query(
+        'INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)',
+        $theme->as_hashref
+    );
 
-        my $res = $c->render_json($user);
-        $res->status(HTTP_CREATED);
-        return $res;
-    }
-    catch ($e) {
-        $txn->rollback;
-        if ($e isa Kossy::Exception) {
-            die $e;
-        }
-        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $e);
-    }
+    $txn->commit;
+
+    my $res = $c->render_json($user);
+    $res->status(HTTP_CREATED);
+    return $res;
 }
 
 
