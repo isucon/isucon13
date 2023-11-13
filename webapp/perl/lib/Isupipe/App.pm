@@ -1,6 +1,7 @@
 package Isupipe::App;
 use v5.38;
 use utf8;
+use experimental qw(try);
 
 use Kossy;
 use HTTP::Status qw(:constants);
@@ -56,7 +57,13 @@ sub h($klass, $name) {
         local $Log::Minimal::TRACE_LEVEL = $Log::Minimal::TRACE_LEVEL + 1;
         croakf("handler `%s` not found in %s", $name, $handler_class);
     }
-    return $handler;
+    return sub ($app, $c) {
+        try {
+            $handler->($app, $c);
+        } catch ($error) {
+            error_response_handler($error, $app, $c);
+        }
+    }
 }
 
 # 初期化
@@ -116,3 +123,26 @@ get '/api/livestream/{livestream_id:[0-9]+}/statistics', h(StatsHandler => 'get_
 
 # 課金情報
 get '/api/payment', h(PaymentHandler => 'get_payment_result');
+
+
+sub error_response_handler($error, $app, $c) {
+    if ($error isa Kossy::Exception) {
+        if ($error->{response}) {
+            die $error; # rethrow
+        }
+
+        my $res = $c->render_json({
+            error => $error->{message},
+        });
+        $res->status($error->{code});
+        return $res;
+    }
+
+    warnf("error at %s: %s", $c->req->path, $error);
+
+    my $res = $c->render_json({
+        error => Isupipe::Log::ddf($error),
+    });
+    $res->status(HTTP_INTERNAL_SERVER_ERROR);
+    return $res;
+}

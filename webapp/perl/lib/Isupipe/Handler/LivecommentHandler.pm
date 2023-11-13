@@ -39,7 +39,7 @@ sub get_livecomments_handler($app, $c) {
     my $query = "SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC";
     if (my $limit = $c->req->query_parameters->{limit}) {
         unless ($limit =~ /^\d+$/) {
-            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be integer");
+            $c->halt(HTTP_BAD_REQUEST, "limit query parameter must be integer");
         }
         $query .= sprintf(" LIMIT %d", $limit);
     }
@@ -72,12 +72,12 @@ sub post_livecomment_handler($app, $c) {
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, PostLivecommentRequest)) {
-        $c->halt_text(HTTP_BAD_REQUEST, "bad request");
+        $c->halt(HTTP_BAD_REQUEST, "bad request");
     }
 
     if ($params->{tip} < 0 || 20000 < $params->{tip}) {
         # FIXME コメントと式が食い違ってる 1 <= tips < 20000 が正しい？
-        $c->halt_text(HTTP_BAD_REQUEST, "the tips in a live comment be 1 <= tips <= 20000");
+        $c->halt(HTTP_BAD_REQUEST, "the tips in a live comment be 1 <= tips <= 20000");
     }
 
     my $txn = $app->dbh->txn_scope;
@@ -102,7 +102,7 @@ sub post_livecomment_handler($app, $c) {
         $hit_spam = $app->dbh->select_one($query, $params->{comment}, $ng_word->word);
         infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment}, $ng_word->word);
         if ($hit_spam >= 1) {
-            $c->halt_text(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
+            $c->halt(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
         }
     }
 
@@ -194,7 +194,7 @@ sub moderate_handler($app, $c) {
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, ModerateRequest)) {
-        $c->halt_text(HTTP_BAD_REQUEST, "bad request");
+        $c->halt(HTTP_BAD_REQUEST, "bad request");
     }
 
     my $txn = $app->dbh->txn_scope;
@@ -205,7 +205,7 @@ sub moderate_handler($app, $c) {
         $user_id,
     );
     if (@$owned_livestreams == 0) {
-        $c->halt_text(HTTP_BAD_REQUEST, "A streamer can't moderate livestreams that other streamers own");
+        $c->halt(HTTP_BAD_REQUEST, "A streamer can't moderate livestreams that other streamers own");
     }
 
     $app->dbh->query(

@@ -30,7 +30,7 @@ sub get_reactions_handler($app, $c) {
     my $query = 'SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC';
     if (my $limit = $c->req->query_parameters->{limit}) {
         unless ($limit =~ /^\d+$/) {
-            $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be integer");
+            $c->halt(HTTP_BAD_REQUEST, "limit query parameter must be integer");
         }
         $query .= sprintf(" LIMIT %d", $limit);
     }
@@ -60,7 +60,7 @@ sub post_reaction_handler($app, $c) {
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, PostReactionRequest)) {
-        $c->halt_text(HTTP_BAD_REQUEST, 'invalid request');
+        $c->halt(HTTP_BAD_REQUEST, 'invalid request');
     }
 
     my $txn = $app->dbh->txn_scope;

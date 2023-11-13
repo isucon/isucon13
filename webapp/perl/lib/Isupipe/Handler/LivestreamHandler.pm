@@ -43,19 +43,19 @@ sub reserve_livestream_handler($app, $c) {
 
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
     unless ($user_id) {
-        $c->halt_text(HTTP_UNAUTHORIZED, "failed to find user-id from session");
+        $c->halt(HTTP_UNAUTHORIZED, "failed to find user-id from session");
     }
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, ReserveLivestreamRequest)) {
-        $c->halt_text(HTTP_BAD_REQUEST, "bad request");
+        $c->halt(HTTP_BAD_REQUEST, "bad request");
     }
 
     my $txn = $app->dbh->txn_scope;
     # 2024/04/01からの１年間の期間内であるかチェック
     infof('check term');
     if (!($params->{end_at} == TERM_END_AT || $params->{end_at} < TERM_END_AT) && (TERM_START_AT == $params->{start_at} || $params->{start_at} > TERM_START_AT)) {
-        $c->halt_text(HTTP_BAD_REQUEST, "bad reservation time range");
+        $c->halt(HTTP_BAD_REQUEST, "bad reservation time range");
     }
 
     infof('check collaborators');
@@ -71,7 +71,7 @@ sub reserve_livestream_handler($app, $c) {
             $params->{end_at},
         );
         if ($founds >= NUM_RESERVATION_SLOT) {
-            $c->halt_text(HTTP_BAD_REQUEST, sprintf('ユーザ%dが予約できません', $user_id));
+            $c->halt(HTTP_BAD_REQUEST, sprintf('ユーザ%dが予約できません', $user_id));
         }
     }
 
@@ -91,7 +91,7 @@ sub reserve_livestream_handler($app, $c) {
         );
         infof('%d ~ %d予約枠の残数 = %d', $slot->start_at, $slot->end_at, $slot->slot);
         if ($count < 1) {
-            $c->halt_text(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
+            $c->halt(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
         }
     }
 
@@ -175,7 +175,7 @@ sub search_livestreams_handler($app, $c) {
         my $query = 'SELECT * FROM livestreams';
         if (my $limit = $c->req->query_parameters->{limit}) {
             unless ($limit =~ /^\d+$/) {
-                $c->halt_text(HTTP_BAD_REQUEST, "limit query parameter must be integer");
+                $c->halt(HTTP_BAD_REQUEST, "limit query parameter must be integer");
             }
             $query .= sprintf(" LIMIT %d", $limit);
         }
@@ -229,7 +229,7 @@ sub get_user_livestreams_handler($app, $c) {
         $username,
     );
     unless ($user) {
-        $c->halt_text(HTTP_NOT_FOUND, "failed to get user");
+        $c->halt(HTTP_NOT_FOUND, "failed to get user");
     }
 
     my $livestreams = $app->dbh->select_all_as(
@@ -308,7 +308,7 @@ sub get_livestream_handler($app, $c) {
         $livestream_id,
     );
     unless ($livestream) {
-        $c->halt_text(HTTP_NOT_FOUND, "livestream not found");
+        $c->halt(HTTP_NOT_FOUND, "livestream not found");
     }
 
     $livestream = fill_livestream_response($app, $livestream);
@@ -331,14 +331,14 @@ sub get_livecomment_reports_handler($app, $c) {
         $livestream_id,
     );
     unless ($livestream) {
-        $c->halt_text(HTTP_INTERNAL_SERVER_ERROR, "failed to get livestream");
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, "failed to get livestream");
     }
 
     # existence already checked
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
     if ($livestream->user_id != $user_id) {
-        $c->halt_text(HTTP_FORBIDDEN, "can't get other streamer's livecomment reports");
+        $c->halt(HTTP_FORBIDDEN, "can't get other streamer's livecomment reports");
     }
 
     my $reports = $app->dbh->select_all_as(

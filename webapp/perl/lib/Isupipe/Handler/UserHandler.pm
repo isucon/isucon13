@@ -99,7 +99,7 @@ sub register_handler($app, $c) {
 sub login_handler($app, $c) {
     my $params = $c->req->json_parameters;
     unless (check_params($params, LoginRequest)) {
-        $c->halt_text(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
+        $c->halt(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
     }
 
     my $txn = $app->dbh->txn_scope;
@@ -111,13 +111,13 @@ sub login_handler($app, $c) {
         { name => $params->{name} }
     );
     unless ($user) {
-        $c->halt_text(HTTP_NOT_FOUND, 'invalid username or password');
+        $c->halt(HTTP_NOT_FOUND, 'invalid username or password');
     }
 
     $txn->commit;
 
     unless (check_password($params->{password}, $user->password)) {
-        $c->halt_text(HTTP_UNAUTHORIZED, 'invalid username or password');
+        $c->halt(HTTP_UNAUTHORIZED, 'invalid username or password');
     }
 
     my $session = Plack::Session->new($c->env);
