@@ -108,7 +108,7 @@ get '/api/user/:username/livestream', h(LivestreamHandler => 'get_user_livestrea
 get '/api/user/:username/theme', h(TopHandler => 'get_streamer_theme_handler');
 get '/api/user/:username/statistics',  h(StatsHandler => 'get_user_statistics_handler');
 get '/api/user/:username/icon',  h(UserHandler => 'get_icon_handler');
-#post '/api/icon',  h(UserHandler => 'post_icon_handler');
+post '/api/icon',  h(UserHandler => 'post_icon_handler');
 #
 ## stats
 ## ライブコメント統計情報

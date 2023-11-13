@@ -42,6 +42,10 @@ use constant LoginRequest => Dict[
     password => Str,
 ];
 
+use constant PostIconRequest => Dict[
+    image => Str, # []byte
+];
+
 # ユーザ登録API
 # POST /api/register
 sub register_handler($app, $c) {
@@ -215,3 +219,42 @@ sub get_icon_handler($app, $c) {
     $res->body($image);
     return $res;
 }
+
+sub post_icon_handler($app, $c) {
+    verify_user_session($app, $c);
+
+    # existence already checked
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
+
+    # TODO: ベンチマーカーが実際にどんなリクエストを送っているか確認する
+    my $params = $c->req->uploads;
+    unless (check_params($params, PostIconRequest)) {
+        $c->halt(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
+    }
+
+    my $image = do {
+        open my $fh, '<:raw', $params->{image} or die "Cannot open $params->{image}: $!";
+        local $/;
+        <$fh>;
+    };
+
+    my $txn = $app->dbh->txn_scope;
+    $app->dbh->query(
+        'DELETE FROM icons WHERE user_id = ?', $user_id
+    );
+
+    $app->dbh->query(
+        'INSERT INTO icons (user_id, image) VALUES(?, ?)',
+        $user_id,
+        $image,
+    );
+
+    my $icon_id = $app->dbh->last_insert_id;
+
+    $txn->commit;
+
+    my $res = $c->render_json({ id => $icon_id });
+    $res->status(HTTP_CREATED);
+    return $res;
+}
+
