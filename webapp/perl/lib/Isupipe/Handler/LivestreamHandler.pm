@@ -1,4 +1,4 @@
-package Isupipe::App::LivestreamHandler;
+package Isupipe::Handler::LivestreamHandler;
 use v5.38;
 use utf8;
 use experimental qw(try);
@@ -12,13 +12,13 @@ use Isupipe::Entity::Livestream;
 use Isupipe::Entity::LivestreamTag;
 use Isupipe::Entity::LivecommentReport;
 use Isupipe::Entity::ReservationSlot;
-use Isupipe::App::Util qw(
+use Isupipe::Util qw(
     check_params
     verify_user_session
     DEFAULT_USER_ID_KEY
 );
 
-use Isupipe::App::FillResponse qw(
+use Isupipe::FillResponse qw(
     fill_livestream_response
     fill_livecomment_report_response
 );

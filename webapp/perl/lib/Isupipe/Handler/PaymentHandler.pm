@@ -1,4 +1,4 @@
-package Isupipe::App::TopHandler;
+package Isupipe::Handler::TopHandler;
 use v5.38;
 use utf8;
 

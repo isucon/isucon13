@@ -1,4 +1,4 @@
-package Isupipe::App::FillResponse;
+package Isupipe::FillResponse;
 use v5.38;
 use utf8;
 

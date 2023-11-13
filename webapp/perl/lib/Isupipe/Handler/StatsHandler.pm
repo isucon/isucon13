@@ -1,4 +1,4 @@
-package Isupipe::App::StatsHandler;
+package Isupipe::Handler::StatsHandler;
 use v5.38;
 use utf8;
 
@@ -11,7 +11,7 @@ use Isupipe::Entity::UserRankingEntry;
 use Isupipe::Entity::UserStatistics;
 use Isupipe::Entity::LivestreamStatistics;
 
-use Isupipe::App::Util qw(
+use Isupipe::Util qw(
     verify_user_session
     check_params
 );

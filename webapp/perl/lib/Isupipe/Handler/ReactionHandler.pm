@@ -1,4 +1,4 @@
-package Isupipe::App::ReactionHandler;
+package Isupipe::Handler::ReactionHandler;
 use v5.38;
 use utf8;
 use experimental qw(try);
@@ -8,12 +8,12 @@ use Types::Standard -types;
 
 use Isupipe::Log;
 use Isupipe::Entity::Reaction;
-use Isupipe::App::Util qw(
+use Isupipe::Util qw(
     verify_user_session
     DEFAULT_USER_ID_KEY
     check_params
 );
-use Isupipe::App::FillResponse qw(
+use Isupipe::FillResponse qw(
     fill_reaction_response
 );
 

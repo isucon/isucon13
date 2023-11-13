@@ -1,4 +1,4 @@
-package Isupipe::App::LivecommentHandler;
+package Isupipe::Handler::LivecommentHandler;
 use v5.38;
 use utf8;
 use experimental qw(try);
@@ -10,13 +10,13 @@ use Isupipe::Log;
 use Isupipe::Entity::Livecomment;
 use Isupipe::Entity::LivecommentReport;
 use Isupipe::Entity::NGWord;
-use Isupipe::App::Util qw(
+use Isupipe::Util qw(
     verify_user_session
     DEFAULT_USER_ID_KEY
     check_params
 );
 
-use Isupipe::App::FillResponse qw(
+use Isupipe::FillResponse qw(
     fill_livecomment_response
     fill_livecomment_report_response
 );

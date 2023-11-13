@@ -1,4 +1,4 @@
-package Isupipe::App::Util;
+package Isupipe::Util;
 use v5.38;
 use utf8;
 

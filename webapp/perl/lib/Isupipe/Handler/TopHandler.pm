@@ -1,4 +1,4 @@
-package Isupipe::App::TopHandler;
+package Isupipe::Handler::TopHandler;
 use v5.38;
 use utf8;
 
@@ -9,7 +9,7 @@ use Isupipe::Log;
 use Isupipe::Entity::Tag;
 use Isupipe::Entity::User;
 use Isupipe::Entity::Theme;
-use Isupipe::App::Util qw(
+use Isupipe::Util qw(
     verify_user_session
 );
 

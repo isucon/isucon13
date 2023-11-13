@@ -1,4 +1,4 @@
-package Isupipe::App::UserHandler;
+package Isupipe::Handler::UserHandler;
 use v5.38;
 use utf8;
 use experimental qw(try);
@@ -9,14 +9,14 @@ use Types::Standard -types;
 use Isupipe::Log;
 use Isupipe::Entity::User;
 use Isupipe::Entity::Theme;
-use Isupipe::App::Util qw(
+use Isupipe::Util qw(
     verify_user_session
     DEFAULT_USER_ID_KEY
     encrypt_password
     check_password
     check_params
 );
-use Isupipe::App::FillResponse qw(
+use Isupipe::FillResponse qw(
     fill_user_response
 );
 
@@ -206,6 +206,8 @@ sub get_icon_handler($app, $c) {
         open my $fh, '<:raw', FALLBACK_IMAGE or die "Cannot open FALLBACK_IMAGE: $!";
         $image = do { local $/; <$fh> };
     }
+
+    $txn->commit;
 
     my $res = $c->response;
     $res->status(HTTP_OK);
