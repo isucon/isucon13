@@ -8,7 +8,7 @@ RUN apt-get update && \
     wget -q https://dev.mysql.com/get/mysql-apt-config_0.8.28-1_all.deb && \
     apt-get -y install ./mysql-apt-config_0.8.28-1_all.deb && \
     apt-get -y update && \
-    apt-get -y install libmysqlclient-dev pdns-server pdns-backend-mysql
+    apt-get -y install default-mysql-client libmysqlclient-dev pdns-server pdns-backend-mysql
 
 RUN rm -f /etc/powerdns/pdns.d/bind.conf
 
