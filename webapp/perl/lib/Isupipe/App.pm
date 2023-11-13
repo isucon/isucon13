@@ -63,7 +63,6 @@ post '/api/initialize', \&initialize_handler;
 
 # top
 get '/api/tag',                  h('Isupipe::App::TopHandler' => 'get_tag_handler');
-get '/api/user/:username/theme', h('Isupipe::App::TopHandler' => 'get_streamer_theme_handler');
 
 # livestream
 # reserve livestream
@@ -71,7 +70,6 @@ post '/api/livestream/reservation', h('Isupipe::App::LivestreamHandler' => 'rese
 # list livestream
 get '/api/livestream/search',         h('Isupipe::App::LivestreamHandler' => 'search_livestreams_handler');
 get '/api/livestream',                h('Isupipe::App::LivestreamHandler' => 'get_my_livestreams_handler');
-get '/api/user/:username/livestream', h('Isupipe::App::LivestreamHandler' => 'get_user_livestreams_handler');
 # get livestream
 get '/api/livestream/{livestream_id:[0-9]+}', h('Isupipe::App::LivestreamHandler' => 'get_livestream_handler');
 # get polling livecomment timeline
@@ -103,6 +101,8 @@ get '/api/user/me',  h('Isupipe::App::UserHandler', 'get_me_handler');
 
 # フロントエンドで、配信予約のコラボレーターを指定する際に必要
 get '/api/user/:username',  h('Isupipe::App::UserHandler', 'get_user_handler');
+get '/api/user/:username/livestream', h('Isupipe::App::LivestreamHandler' => 'get_user_livestreams_handler');
+get '/api/user/:username/theme', h('Isupipe::App::TopHandler' => 'get_streamer_theme_handler');
 get '/api/user/:username/statistics',  h('Isupipe::App::StatsHandler', 'get_user_statistics_handler');
 get '/api/user/:username/icon',  h('Isupipe::App::UserHandler', 'get_icon_handler');
 #post '/api/icon',  h('Isupipe::App::UserHandler', 'post_icon_handler');
