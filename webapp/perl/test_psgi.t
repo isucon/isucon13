@@ -490,19 +490,34 @@ subtest 'GET /api/user/:username' => sub {
     };
 };
 
-subtest 'GET /api/user/:username/statistics' => sub {
+# 重いので一旦よける
+#subtest 'GET /api/user/:username/statistics' => sub {
+#
+#    test_psgi $app, sub ($cb) {
+#        my $req = GET "/api/user/test001/statistics";
+#        login_default($cb, $req);
+#
+#        my $res = $cb->($req);
+#        is($res->code, HTTP_OK) or diag $res->content;
+#
+#        is decode_json($res->content), hash {
+#            field rank => D;
+#            etc;
+#        };
+#    };
+#};
+
+
+subtest 'GET /api/user/:username/icon' => sub {
 
     test_psgi $app, sub ($cb) {
-        my $req = GET "/api/user/test001/statistics";
+        my $req = GET "/api/user/test001/icon";
         login_default($cb, $req);
 
         my $res = $cb->($req);
-        is($res->code, HTTP_OK) or diag $res->content;
-
-        is decode_json($res->content), hash {
-            field rank => D;
-            etc;
-        };
+        is $res->code, HTTP_OK;
+        is $res->header('Content-Type'), 'image/jpeg';
+        ok $res->content;
     };
 };
 

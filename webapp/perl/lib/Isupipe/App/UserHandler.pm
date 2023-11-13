@@ -20,6 +20,8 @@ use Isupipe::App::FillResponse qw(
     fill_user_response
 );
 
+use constant FALLBACK_IMAGE => "../img/NoImage.jpg";
+
 use constant PostUserRequestTheme => Dict[
     dark_mode => Bool,
 ];
@@ -179,31 +181,35 @@ sub get_user_handler($app, $c) {
     return $c->render_json($user);
 }
 
-# 配信者のテーマ取得API
-# GET /user/:userid/theme
-sub get_user_theme_handler($app, $c) {
+
+sub get_icon_handler($app, $c) {
     verify_user_session($app, $c);
 
-    my $user_id = $c->args->{user_id};
-    my $theme = $app->db->select_row_as(
-        'Isupipe::Entity::Theme',
-        'SELECT * FROM themes WHERE user_id = ?',
-        $user_id
+    my $username = $c->args->{username};
+
+    my $txn = $app->dbh->txn_scope;
+    my $user = $app->dbh->select_row_as(
+        'Isupipe::Entity::User',
+        'SELECT * FROM users WHERE name = ?',
+        $username,
     );
-    unless ($theme) {
-        $c->halt(HTTP_NOT_FOUND, 'theme not found');
+    unless ($user) {
+        $c->halt(HTTP_NOT_FOUND, 'not found user that has the given username');
     }
 
-    return $c->render_json($theme);
-}
-
-sub get_users_handler($app, $c) {
-    my $users = $app->db->select_all_as(
-        'Isupipe::Entity::User',
-        'SELECT * FROM users'
+    my $image = $app->dbh->select_one(
+        'SELECT image FROM icons WHERE user_id = ?',
+        $user->id,
     );
 
-    return $c->render_json($users);
+    if (!$image) {
+        open my $fh, '<:raw', FALLBACK_IMAGE or die "Cannot open FALLBACK_IMAGE: $!";
+        $image = do { local $/; <$fh> };
+    }
+
+    my $res = $c->response;
+    $res->status(HTTP_OK);
+    $res->content_type('image/jpeg');
+    $res->body($image);
+    return $res;
 }
-
-

@@ -104,7 +104,7 @@ get '/api/user/me',  h('Isupipe::App::UserHandler', 'get_me_handler');
 # フロントエンドで、配信予約のコラボレーターを指定する際に必要
 get '/api/user/:username',  h('Isupipe::App::UserHandler', 'get_user_handler');
 get '/api/user/:username/statistics',  h('Isupipe::App::StatsHandler', 'get_user_statistics_handler');
-#get '/api/user/:username/icon',  h('Isupipe::App::UserHandler', 'get_icon_handler');
+get '/api/user/:username/icon',  h('Isupipe::App::UserHandler', 'get_icon_handler');
 #post '/api/icon',  h('Isupipe::App::UserHandler', 'post_icon_handler');
 #
 ## stats
