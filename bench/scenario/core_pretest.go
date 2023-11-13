@@ -34,6 +34,11 @@ func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isu
 
 // 初期データチェック -> 基本的なエンドポイントの機能テスト -> 前後比較テスト
 func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	// dns 初期レコード
+	if err := dnsrecordPretest(ctx, dnsResolver); err != nil {
+		return err
+	}
+
 	// 初期データチェック
 	initialGrp, initialCtx := errgroup.WithContext(ctx)
 	initialGrp.Go(func() error {
