@@ -5,7 +5,7 @@ requires 'Plack::Middleware::Session', '0.33';
 requires 'HTTP::Message', '6.45';
 requires 'Cpanel::JSON::XS', '4.37';
 requires 'Starlet', '0.31';
-requires 'DBD::mysql', '4.050';
+requires 'DBD::mysql', '5.002';
 requires 'DBIx::Sunny', '0.9993';
 requires 'Log::Minimal', '0.19';
 requires 'Type::Tiny', '2.004000';
@@ -13,7 +13,3 @@ requires 'Crypt::Eksblowfish::Bcrypt', '0.009';
 requires 'Crypt::OpenSSL::Random', '0.15';
 requires 'Data::Lock', '1.03';
 
-# あとで消す
-requires 'Test2::V0';
-requires 'DBIx::QueryLog';
-requires 'DBIx::Tracer';
