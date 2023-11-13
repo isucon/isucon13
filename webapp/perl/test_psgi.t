@@ -391,18 +391,18 @@ subtest 'POST /api/livestream/:livestream_id/livecomment/:livecomment_id/report'
 
 # 遅いのでコメントアウトしておく
 # subtest 'POST /api/livestream/:livestream_id/moderate' => sub {
-# 
+#
 #     test_psgi $app, sub ($cb) {
 #         my $req = POST "/api/livestream/1/moderate";
 #         login_default($cb, $req);
-# 
+#
 #         with_json_request($req, {
 #             ng_word => 'NGワード',
 #         });
-# 
+#
 #         my $res = $cb->($req);
 #         is ($res->code, HTTP_CREATED) or diag $res->content;
-# 
+#
 #         is decode_json($res->content), hash {
 #             field word_id => D;
 #         };
@@ -518,6 +518,22 @@ subtest 'GET /api/user/:username/icon' => sub {
         is $res->code, HTTP_OK;
         is $res->header('Content-Type'), 'image/jpeg';
         ok $res->content;
+    };
+};
+
+subtest 'GET /api/livestream/:livestream_id/statistics' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/livestream/1/statistics";
+        login_default($cb, $req);
+
+        my $res = $cb->($req);
+        is($res->code, HTTP_OK) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field rank => D;
+            etc;
+        };
     };
 };
 

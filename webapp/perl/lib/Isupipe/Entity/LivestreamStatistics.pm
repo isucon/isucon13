@@ -1,7 +1,7 @@
 use v5.38;
 use experimental qw(class);
 
-class Isupipe::Entity::LivesreamStatistics {
+class Isupipe::Entity::LivestreamStatistics {
     field $rank :param = undef;
     field $viewers_count :param = undef;
     field $total_reactions :param = undef;

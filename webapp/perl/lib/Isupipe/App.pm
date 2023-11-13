@@ -109,10 +109,10 @@ get '/api/user/:username/theme', h(TopHandler => 'get_streamer_theme_handler');
 get '/api/user/:username/statistics',  h(StatsHandler => 'get_user_statistics_handler');
 get '/api/user/:username/icon',  h(UserHandler => 'get_icon_handler');
 post '/api/icon',  h(UserHandler => 'post_icon_handler');
-#
-## stats
-## ライブコメント統計情報
-#get '/api/livestream/{livestream_id:[0-9]+}/statistics', h(StatsHandler => 'get_livecomment_statistics_handler');
+
+# stats
+# ライブコメント統計情報
+get '/api/livestream/{livestream_id:[0-9]+}/statistics', h(StatsHandler => 'get_livestream_statistics_handler');
 #
 ## 課金情報
 #get '/api/payment', h(PaymentHandler => 'get_payment_handler');
