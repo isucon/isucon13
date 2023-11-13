@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/attacker"
 	"golang.org/x/time/rate"
@@ -9,12 +10,12 @@ import (
 
 var maxAttackOnEachScenario = 1000
 
-func DnsWaterTortureAttackScenario(ctx context.Context, loadLimiter *rate.Limiter) error {
+func DnsWaterTortureAttackScenario(ctx context.Context, httpClient *http.Client, loadLimiter *rate.Limiter) error {
 
 	atk := attacker.NewDnsWaterTortureAttacker()
 	for j := 0; j < maxAttackOnEachScenario; j++ {
 		if err := loadLimiter.Wait(ctx); err == nil {
-			atk.Attack(ctx)
+			atk.Attack(ctx, httpClient)
 		}
 	}
 
