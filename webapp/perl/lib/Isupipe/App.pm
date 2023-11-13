@@ -113,6 +113,6 @@ post '/api/icon',  h(UserHandler => 'post_icon_handler');
 # stats
 # ライブコメント統計情報
 get '/api/livestream/{livestream_id:[0-9]+}/statistics', h(StatsHandler => 'get_livestream_statistics_handler');
-#
-## 課金情報
-#get '/api/payment', h(PaymentHandler => 'get_payment_handler');
+
+# 課金情報
+get '/api/payment', h(PaymentHandler => 'get_payment_result');

@@ -537,5 +537,19 @@ subtest 'GET /api/livestream/:livestream_id/statistics' => sub {
     };
 };
 
+subtest 'GET /api/payment' => sub {
+
+    test_psgi $app, sub ($cb) {
+        my $req = GET "/api/payment";
+
+        my $res = $cb->($req);
+        is($res->code, HTTP_OK) or diag $res->content;
+
+        is decode_json($res->content), hash {
+            field total_tip => D;
+            etc;
+        };
+    };
+};
 
 done_testing;
