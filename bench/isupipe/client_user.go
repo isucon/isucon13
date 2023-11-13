@@ -3,7 +3,6 @@ package isupipe
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
-	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
@@ -274,6 +272,10 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if len(c.username) != 0 {
+		return bencherror.NewInternalError(fmt.Errorf("同一クライアントに対して複数回ログインが試行されました"))
+	}
+
 	payload, err := json.Marshal(r)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -301,36 +303,15 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	c.username = r.UserName
 	c.isPopular = scheduler.UserScheduler.IsPopularStreamer(c.username)
 
-	// cookieを流用して各種ページアクセス用agentを初期化
-	dnsResolver := resolver.NewDNSResolver()
-	domain := fmt.Sprintf("%s.u.isucon.dev", r.UserName)
-	c.themeAgent, err = agent.NewAgent(
-		agent.WithBaseURL(fmt.Sprintf("http://%s:%d", domain, config.TargetPort)),
-		withClient(c.agent.HttpClient),
-		agent.WithCloneTransport(&http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-			// Custom DNS Resolver
-			DialContext: dnsResolver.DialContext,
-		}),
-		agent.WithNoCache(),
-	)
+	domain := fmt.Sprintf("%s.%s", r.UserName, config.BaseDomain)
+	url := fmt.Sprintf("%s://%s:%d", config.HTTPScheme, domain, config.TargetPort)
+	c.themeOptions = append(c.themeOptions, agent.WithBaseURL(url))
+	c.themeAgent, err = agent.NewAgent(c.themeOptions...)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
-	c.assetAgent, err = agent.NewAgent(
-		agent.WithBaseURL(config.TargetBaseURL),
-		withClient(c.agent.HttpClient),
-		agent.WithCloneTransport(&http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-			// Custom DNS Resolver
-			DialContext: dnsResolver.DialContext,
-		}),
-		// NOTE: 画像はキャッシュできるようにする
-	)
+
+	c.assetAgent, err = agent.NewAgent(c.assetOptions...)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}

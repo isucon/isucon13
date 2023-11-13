@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -14,6 +15,17 @@ import (
 )
 
 var atomicId = uint64(1)
+var msgPool = sync.Pool{
+	New: func() any {
+		msg := new(dns.Msg)
+		msg.Question = make([]dns.Question, 1)
+		msg.Question[0] = dns.Question{
+			Qtype:  dns.TypeA,
+			Qclass: dns.ClassINET,
+		}
+		return msg
+	},
+}
 
 type DNSResolver struct {
 	Nameserver      string
@@ -30,15 +42,10 @@ func NewDNSResolver() *DNSResolver {
 }
 
 func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP, error) {
-	msg := new(dns.Msg)
-	// faster msg.SetQuestion(dns.Fqdn(addr), dns.TypeA)
-	msg.Question = make([]dns.Question, 1)
+	msg := msgPool.Get().(*dns.Msg)
+	defer msgPool.Put(msg)
 	msg.Id = uint16(atomic.AddUint64(&atomicId, 1))
-	msg.Question[0] = dns.Question{
-		Name:   dns.Fqdn(addr),
-		Qtype:  dns.TypeA,
-		Qclass: dns.ClassINET,
-	}
+	msg.Question[0].Name = dns.Fqdn(addr)
 	msg.RecursionDesired = false
 
 	client := new(dns.Client)
