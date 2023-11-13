@@ -6,9 +6,21 @@
 //
 
 export namespace Schemas {
-  export type Theme = any;
-  export type Tag = any;
-  export type Reaction = any;
+  export interface Theme {
+    id: number;
+    dark_mode: boolean;
+  }
+  export interface Tag {
+    id: number;
+    name: string;
+  }
+  export interface Reaction {
+    id: number;
+    emoji_name: string;
+    user: Schemas.User;
+    livestream: Schemas.Livestream;
+    created_at: number;
+  }
   export interface User {
     /** Unique identifier for the given user. */
     id: number;

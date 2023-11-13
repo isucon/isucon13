@@ -523,30 +523,44 @@ paths:
 components:
   schemas:
     Theme:
-      id:
-        type: integer
-      dark_mode:
-        type: boolean
-      created_at:
-        type: integer
+      type: object
+      required:
+        - id
+        - dark_mode
+      properties:
+        id:
+          type: integer
+        dark_mode:
+          type: boolean
     Tag:
-      id:
-        type: integer
-      name:
-        type: string
-      created_at:
-        type: integer
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
     Reaction:
-      id:
-        type: integer
-      emoji_name:
-        type: string
-      user:
-        $ref: "#/components/schemas/User"
-      livestream:
-        $ref: "#/components/schemas/Livestream"
-      created_at:
-        type: integer
+      type: object
+      required:
+        - id
+        - emoji_name
+        - user
+        - livestream
+        - created_at
+      properties:
+        id:
+          type: integer
+        emoji_name:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        livestream:
+          $ref: "#/components/schemas/Livestream"
+        created_at:
+          type: integer
     User:
       title: User
       type: object
