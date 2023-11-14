@@ -66,7 +66,19 @@ jobs:
           go clean -testcache
           go test -p=1 -v ./...
 
+      - name: container logs
+        working-directory: ./development
+        run: |
+          docker compose -f docker-compose-common.yml -f docker-compose-node.yml logs webapp
+          docker compose -f docker-compose-common.yml -f docker-compose-node.yml up -d --force-recreate
+
       - name: "run bench"
         working-directory: ./bench
         run: |
           make bench
+
+      - if: failure()
+        name: container logs
+        working-directory: ./development
+        run: |
+          docker compose -f docker-compose-common.yml -f docker-compose-node.yml logs webapp
