@@ -137,8 +137,8 @@ livestreamHandler.post(
         console.log({
           termStartAt,
           termEndAt,
-          reserveStartAt,
-          reserveEndAt,
+          reserveStartAt: reserveStartAt * 1000,
+          reserveEndAt: reserveEndAt * 1000,
         })
         return c.text('bad reservation time range', 400)
       }
