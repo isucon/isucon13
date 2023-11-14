@@ -57,7 +57,7 @@ export const createApp = async (deps: Deps) => {
   })
   app.use('*', async (c, next) => {
     await next()
-    if (c.res.status >= 500) {
+    if (c.res.status >= 400) {
       console.error(c.res.status, await c.res.clone().text())
     }
   })
