@@ -134,6 +134,12 @@ livestreamHandler.post(
         reserveEndAt * 1000 >= termEndAt
       ) {
         await conn.rollback()
+        console.log({
+          termStartAt,
+          termEndAt,
+          reserveStartAt,
+          reserveEndAt,
+        })
         return c.text('bad reservation time range', 400)
       }
 
