@@ -128,10 +128,8 @@ livestreamHandler.post(
       const reserveStartAt = body.start_at // NOTE: body.start_at is unixtime, so it is in seconds
       const reserveEndAt = body.end_at // NOTE: body.end_at is unixtime, so it is in seconds
       if (
-        reserveStartAt * 1000 <= termStartAt ||
         reserveStartAt * 1000 >= termEndAt ||
-        reserveEndAt * 1000 <= termStartAt ||
-        reserveEndAt * 1000 >= termEndAt
+        reserveEndAt * 1000 <= termStartAt
       ) {
         await conn.rollback()
         console.log({
