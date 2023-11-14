@@ -5,8 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y curl wget gcc g++ make sqlite3 locales locales-all && \
-    wget -q https://dev.mysql.com/get/mysql-apt-config_0.8.28-1_all.deb && \
-    apt-get -y install ./mysql-apt-config_0.8.28-1_all.deb && \
+    wget -q https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb && \
+    apt-get -y install ./mysql-apt-config_0.8.22-1_all.deb && \
     apt-get -y update && \
     apt-get -y install default-mysql-client pdns-server pdns-backend-mysql
 
