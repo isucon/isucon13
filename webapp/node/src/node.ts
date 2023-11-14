@@ -31,12 +31,8 @@ const deps = {
   uuid: () => randomUUID(),
 } satisfies Deps
 
-const main = async () => {
-  const app = await createApp(deps)
+const app = createApp(deps)
 
-  serve({ ...app, port: 8080 }, (add) =>
-    console.log(`Listening on http://localhost:${add.port}`),
-  )
-}
-
-main()
+serve({ ...app, port: 8080 }, (add) =>
+  console.log(`Listening on http://localhost:${add.port}`),
+)

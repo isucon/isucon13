@@ -11,7 +11,7 @@ import { reactionHandler } from './handlers/reaction-handler'
 import { statsHandler } from './handlers/stats-handler'
 import { paymentHandler } from './handlers/payment-handler'
 
-export const createApp = async (deps: Deps) => {
+export const createApp = (deps: Deps) => {
   const pool = createPool({
     user: process.env['ISUCON13_MYSQL_DIALCONFIG_USER'] ?? 'isucon',
     password: process.env['ISUCON13_MYSQL_DIALCONFIG_PASSWORD'] ?? 'isucon',

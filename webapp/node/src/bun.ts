@@ -30,11 +30,9 @@ const deps = {
   uuid: () => crypto.randomUUID(),
 } satisfies Deps
 
-const main = async () => {
-  const app = await createApp(deps)
+const app = createApp(deps)
 
-  Bun.serve({ ...app, port: 8080 })
-  console.log(`Listening on http://localhost:8080`)
+export default {
+  ...app,
+  port: 8080,
 }
-
-main()
