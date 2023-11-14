@@ -100,7 +100,7 @@ sub post_livecomment_handler($app, $c) {
         SQL
 
         $hit_spam = $app->dbh->select_one($query, $params->{comment}, $ng_word->word);
-        infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment}, $ng_word->word);
+        infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment});
         if ($hit_spam >= 1) {
             $c->halt(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
         }

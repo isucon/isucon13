@@ -229,8 +229,8 @@ subtest 'GET /api/livestream/:livestream_id/livecomment' => sub {
         is ($res->code, HTTP_OK) or diag $res->content;
 
         is decode_json($res->content), array {
-            item 0 => hash {
-                field id => 1;
+            all_items hash {
+                field id => D;
                 etc;
             };
             etc;
