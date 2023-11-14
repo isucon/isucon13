@@ -9,7 +9,7 @@ services:
       dockerfile: Dockerfile.bun
     init: true
     working_dir: /home/isucon/webapp/node
-    container_name: webapp
+    container_name: webapp-bun
     volumes:
       - ../webapp/sql:/home/isucon/webapp/sql
       - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro

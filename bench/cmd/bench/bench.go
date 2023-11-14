@@ -120,7 +120,7 @@ var run = cli.Command{
 		initClient, err := isupipe.NewClient(
 			resolver.NewDNSResolver(),
 			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(1*time.Minute),
+			agent.WithTimeout(5*time.Minute),
 		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
