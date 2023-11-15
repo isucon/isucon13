@@ -1,63 +1,95 @@
-import { Typography } from '@mui/joy';
-import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
+import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
-import ListItemButton from '@mui/joy/ListItemButton';
 import Sheet from '@mui/joy/Sheet';
+import Skeleton from '@mui/joy/Skeleton';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
-import { Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { apiClient } from '~/api/client';
+import {
+  useLiveStream,
+  useLiveStreamNgWords,
+  useLiveStreamReports,
+  useMedia,
+} from '~/api/hooks';
+import { NewNgWordDialog } from '~/components/console/ngword';
+import { useGlobalToastQueue } from '~/components/toast/toast';
+import { VideoAbout } from '~/components/video/about';
 import LiveComment from '~/components/video/comment';
+import { Video } from '~/components/video/video';
 
 export default function WatchPage(): React.ReactElement {
+  const { id } = useParams();
+  const liveStream = useLiveStream(id ?? null);
+  const idNum = id ? parseInt(id) : null;
+  const media = useMedia(id ?? '');
+  const ngWords = useLiveStreamNgWords(id ?? null);
+  const reports = useLiveStreamReports(id ?? null, {
+    refreshInterval: 3000,
+  });
+
+  const toast = useGlobalToastQueue();
+  const [openNgWordDialog, setOpenNgWordDialog] =
+    React.useState<boolean>(false);
+  const onNgWordSubmit = React.useCallback(
+    async (word: string) => {
+      if (!id) {
+        return;
+      }
+      await apiClient.post$livestream$livestreamid$moderate({
+        parameter: {
+          livestreamid: id,
+        },
+        requestBody: {
+          ng_word: word,
+        },
+      });
+      await ngWords.mutate();
+      toast.add(
+        {
+          type: 'success',
+          title: 'NGワードを追加しました',
+          message: `「${word}」をNGワードに追加しました。`,
+        },
+        {
+          timeout: 3000,
+        },
+      );
+      setOpenNgWordDialog(false);
+    },
+    [id],
+  );
+
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={2}>
       <Stack direction="row" gap={2}>
         <Stack direction="column" sx={{ flexBasis: '300px', flexGrow: 1 }}>
-          <AspectRatio ratio={16 / 9} sx={{ mb: 3 }}>
-            <video />
-          </AspectRatio>
+          <Box sx={{ mb: 3 }}>
+            <Video playlist={media.data?.playlist_url} />
+          </Box>
 
-          <Typography level="h3">動画タイトル</Typography>
-          <Stack direction="row" spacing={1} sx={{ marginTop: 1 }}>
-            <Link to="/user">
-              <Avatar />
-            </Link>
-            <div>
-              <Link to="/user" style={{ textDecoration: 'none' }}>
-                <Typography level="title-sm">チャンネル名</Typography>
-              </Link>
-              <Typography level="body-sm" component="div">
-                <Stack direction="row" spacing={2}>
-                  <span>チャンネル登録者数1234人</span>
-                </Stack>
-              </Typography>
-            </div>
-            <div>
-              <Button variant="outlined" color="neutral" sx={{ marginLeft: 3 }}>
-                チャンネル登録
-              </Button>
-            </div>
-          </Stack>
-          <Card variant="plain" sx={{ my: 2 }}>
-            <Stack direction="row" spacing={2}>
-              <Typography level="title-sm">1,234人が視聴中</Typography>
-              <Typography level="title-sm">2時間前にライブ配信開始</Typography>
-            </Stack>
-            <Typography
-              level="body-md"
-              sx={{ whiteSpace: 'pre-wrap' }}
-            >{`説明文\n2行目\n三行目`}</Typography>
-          </Card>
+          <VideoAbout id={id ?? null} />
         </Stack>
 
         <Stack sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
-          <LiveComment type="random" livestream_id={1} />
+          <LiveComment
+            type="real"
+            livestream_id={idNum ?? 0}
+            is_loading={idNum === null || liveStream.isLoading}
+          />
         </Stack>
+
+        <NewNgWordDialog
+          isOpen={openNgWordDialog}
+          onClose={() => setOpenNgWordDialog(false)}
+          onSubmit={onNgWordSubmit}
+        />
         <Stack direction="column" sx={{ flexBasis: '300px', flexGrow: 1 }}>
           <Stack direction="row" sx={{ mb: 1, alignItems: 'center' }}>
             <Typography level="title-lg">NG Word</Typography>
@@ -65,21 +97,29 @@ export default function WatchPage(): React.ReactElement {
               variant="plain"
               startDecorator={<AiOutlinePlus size="1rem" />}
               sx={{ ml: 'auto' }}
+              onClick={() => setOpenNgWordDialog(true)}
             >
               追加
             </Button>
           </Stack>
           <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
             <List>
-              <ListItem>
-                <ListItemButton>item</ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton>item</ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton>item</ListItemButton>
-              </ListItem>
+              {ngWords.data?.map((word) => (
+                <ListItem key={word.id}>{word.word}</ListItem>
+              ))}
+            </List>
+          </Sheet>
+
+          <Stack direction="row" sx={{ mt: 3, mb: 1, alignItems: 'center' }}>
+            <Typography level="title-lg">通報されたコメント</Typography>
+          </Stack>
+          <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
+            <List>
+              {reports.data?.map((report) => (
+                <ListItem key={report.id}>
+                  {report.livecomment?.comment}
+                </ListItem>
+              ))}
             </List>
           </Sheet>
         </Stack>

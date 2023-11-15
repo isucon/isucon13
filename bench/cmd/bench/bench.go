@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucandar/score"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -24,13 +26,13 @@ import (
 var assetDir string
 
 var enableSSL bool
+var pretestOnly bool
 
 type BenchResult struct {
-	Pass          bool     `json:"pass"`
-	Score         int64    `json:"score"`
-	Messages      []string `json:"messages"`
-	AdvertiseCost int      `json:"advertise_cost"`
-	Language      string   `json:"language"`
+	Pass     bool     `json:"pass"`
+	Score    int64    `json:"score"`
+	Messages []string `json:"messages"`
+	Language string   `json:"language"`
 }
 
 // UniqueMsgs は重複除去したメッセージ配列を返します
@@ -50,11 +52,10 @@ func dumpFailedResult(msgs []string) {
 	lgr := zap.S()
 
 	b, err := json.Marshal(&BenchResult{
-		Pass:          false,
-		Score:         0,
-		Messages:      msgs,
-		AdvertiseCost: int(config.AdvertiseCost),
-		Language:      config.Language,
+		Pass:     false,
+		Score:    0,
+		Messages: msgs,
+		Language: config.Language,
 	})
 	if err != nil {
 		lgr.Warnf("失格判定結果書き出しに失敗. 運営に連絡してください: messages=%+v, err=%+v", msgs, err)
@@ -109,6 +110,11 @@ var run = cli.Command{
 			Destination: &enableSSL,
 			EnvVar:      "BENCH_ENABLE_SSL",
 		},
+		cli.BoolFlag{
+			Name:        "pretest-only",
+			Destination: &pretestOnly,
+			EnvVar:      "BENCH_PRETEST_ONLY",
+		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
@@ -121,9 +127,9 @@ var run = cli.Command{
 			config.HTTPScheme = "https"
 			config.TargetPort = 443
 			config.InsecureSkipVerify = false
-			lgr.Info("SSLが有効になっています")
+			lgr.Info("SSL接続が有効になっています")
 		} else {
-			lgr.Info("SSLが無効になっています")
+			lgr.Info("SSL接続が無効になっています")
 		}
 
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
@@ -148,13 +154,8 @@ var run = cli.Command{
 
 		initializeResp, err := initClient.Initialize(ctx)
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.NewExitError(fmt.Errorf("初期化が失敗しました: %w", err), 1)
 		}
-		// FIXME: 値の見直し
-		if initializeResp.AdvertiseLevel < 1 || initializeResp.AdvertiseLevel > 100 {
-			return cli.NewExitError(fmt.Errorf("不正な広告レベル"), 1)
-		}
-		config.AdvertiseCost = initializeResp.AdvertiseLevel
 		config.Language = initializeResp.Language
 
 		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
@@ -166,10 +167,15 @@ var run = cli.Command{
 
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
-		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
+		}
+		lgr.Info("整合性チェックが成功しました")
+
+		if pretestOnly {
+			lgr.Info("--pretest-onlyが指定されているため、ベンチマーク走行をスキップします")
+			return nil
 		}
 
 		lgr.Info("ベンチマーク走行を開始します")
@@ -177,7 +183,6 @@ var run = cli.Command{
 
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
-		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
 
 		benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
@@ -193,7 +198,6 @@ var run = cli.Command{
 		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
 
 		benchscore.DoneCounter()
-		benchscore.DoneProfit()
 		bencherror.Done()
 		lgr.Info("ベンチマーク走行終了")
 
@@ -220,8 +224,18 @@ var run = cli.Command{
 		var msgs []string
 
 		lgr.Info("シナリオカウンタ")
-		for name, count := range benchmarker.ScenarioCounter() {
-			lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+		scenarioCounter := benchmarker.ScenarioCounter()
+		for name, count := range scenarioCounter {
+			if strings.HasSuffix(string(name), "-fail") {
+				continue
+			}
+
+			failKey := score.ScoreTag(fmt.Sprintf("%s-fail", name))
+			if failCount, ok := scenarioCounter[failKey]; ok {
+				lgr.Infof("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount)
+			} else {
+				lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+			}
 		}
 
 		var (
@@ -241,7 +255,7 @@ var run = cli.Command{
 
 		profit := benchscore.GetTotalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
-		lgr.Infof("売上: %d", profit)
+		lgr.Infof("スコア: %d", profit)
 
 		return nil
 	},

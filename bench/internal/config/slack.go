@@ -1,4 +1,4 @@
 package config
 
-// FIXME: workerの実装がまだなのでSlack通知なにもしてない. 11月前半のつなぎ込みで発砲試験する
+// FIXME: supervisorの実装がまだなのでSlack通知なにもしてない.
 var SlackWebhookURL string

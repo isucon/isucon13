@@ -13,7 +13,7 @@ import (
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
 var (
-	ReservationSched = mustNewReservationScheduler(config.BaseAt, config.NumSlots, config.NumHours)
+	ReservationSched = mustNewReservationScheduler(config.BaseAt, config.NumSlots, config.NumHours+10)
 )
 
 func init() {
@@ -99,42 +99,6 @@ func (r *ReservationScheduler) AbortReservation(reservation *Reservation) {
 	r.intTreeStates[int(reservation.id)] = CommitState_None
 }
 
-func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
-	r.intTreeMu.Lock()
-	defer r.intTreeMu.Unlock()
-
-	intervals, err := r.intervalTempertures.findHotIntervals()
-	if err != nil {
-		return nil, ErrNoReservation
-	}
-
-	for i := len(intervals) - 1; i >= 0; i-- {
-		interval := intervals[i]
-		founds := r.intervalTree.Get(&Reservation{
-			StartAt: interval.startAt.Unix(),
-			EndAt:   interval.endAt.Unix(),
-		})
-		if len(founds) == 0 {
-			continue
-		}
-
-		reservations, err := ConvertFromIntInterface(founds)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := len(reservations) - 1; i >= 0; i-- {
-			id := reservations[i].id
-			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
-				r.intTreeStates[id] = CommitState_Inflight
-				return reservations[i], nil
-			}
-		}
-	}
-
-	return nil, ErrNoReservation
-}
-
 func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
@@ -159,11 +123,14 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 			return nil, err
 		}
 
-		for i := 0; i < len(reservations); i++ {
-			id := reservations[i].id
+		for _, reservation := range reservations {
+			id := reservation.id
+			if reservation.Hours() >= config.LongHourThreshold {
+				continue
+			}
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
-				return reservations[i], nil
+				return reservation, nil
 			}
 		}
 	}
@@ -171,7 +138,46 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 	return nil, ErrNoReservation
 }
 
-func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
+func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
+
+	intervals, err := r.intervalTempertures.findHotIntervals()
+	if err != nil {
+		return nil, ErrNoReservation
+	}
+
+	for i := 0; i < len(intervals); i++ {
+		interval := intervals[i]
+		founds := r.intervalTree.Get(&Reservation{
+			StartAt: interval.startAt.Unix(),
+			EndAt:   interval.endAt.Unix(),
+		})
+		if len(founds) == 0 {
+			continue
+		}
+
+		reservations, err := ConvertFromIntInterface(founds)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, reservation := range reservations {
+			id := reservation.id
+			if reservation.Hours() < config.LongHourThreshold {
+				continue
+			}
+			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
+				r.intTreeStates[id] = CommitState_Inflight
+				return reservation, nil
+			}
+		}
+	}
+
+	return nil, ErrNoReservation
+}
+
+func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
@@ -187,7 +193,7 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(intervals) == 0 {
-			return nil, fmt.Errorf("no hot long reservation")
+			return nil, fmt.Errorf("no cold short reservation")
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
@@ -197,6 +203,50 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 
 		for _, reservation := range reservations {
 			id := reservation.id
+			if reservation.Hours() >= config.LongHourThreshold {
+				continue
+			}
+
+			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
+				r.intTreeStates[id] = CommitState_Inflight
+				return reservation, nil
+			}
+		}
+	}
+
+	return nil, ErrNoReservation
+}
+
+func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
+
+	intervals, err := r.intervalTempertures.findColdIntervals()
+	if err != nil {
+		return nil, ErrNoReservation
+	}
+
+	for i := 0; i < len(intervals); i++ {
+		interval := intervals[i]
+		founds := r.intervalTree.Get(&Reservation{
+			StartAt: interval.startAt.Unix(),
+			EndAt:   interval.endAt.Unix(),
+		})
+		if len(intervals) == 0 {
+			return nil, fmt.Errorf("no cold long reservation")
+		}
+
+		reservations, err := ConvertFromIntInterface(founds)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, reservation := range reservations {
+			id := reservation.id
+			if reservation.Hours() < config.LongHourThreshold {
+				continue
+			}
+
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
 				return reservation, nil

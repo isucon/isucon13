@@ -9,15 +9,23 @@ import (
 // 訪問時に行うGET操作をまとめた関数郡
 
 func VisitTop(ctx context.Context, client *isupipe.Client) error {
-	// FIXME: プロフィールアイコン取得
+	if _, err := client.GetMyIcon(ctx); err != nil {
+		return err
+	}
 
-	// FIXME: 10件程度ライブストリーム取得
 	_, err := client.SearchLivestreams(ctx)
 	if err != nil {
 		return err
 	}
 
-	// FIXME: 検索
+	tags, err := client.GetRandomSearchTags(ctx, 1)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam(tags[0])); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -25,28 +33,31 @@ func VisitTop(ctx context.Context, client *isupipe.Client) error {
 // ライブ配信画面訪問
 func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
-	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
+	if err := client.EnterLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
 	}
 
-	_, err := client.GetLivestreamStatistics(ctx, livestream.ID)
+	_, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.GetLivecomments(ctx, livestream.ID)
+	_, err = client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
 	if err != nil {
 		return err
 	}
 
-	// FIXME: 処理中定期的にGET /livestream/:livestreamid/livecomment を叩く
+	_, err = client.GetReactions(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func GoAwayFromLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
+func LeaveFromLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
-	if err := client.ExitLivestream(ctx, livestream.ID); err != nil {
+	if err := client.ExitLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
 	}
 
@@ -54,7 +65,7 @@ func GoAwayFromLivestream(ctx context.Context, client *isupipe.Client, livestrea
 }
 
 // ライブ配信管理画面訪問
-func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client) error {
+func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
 	// ライブコメント一覧取得
 	// FIXME: 自分のライブストリーム一覧を取ってくる必要がある
@@ -63,15 +74,35 @@ func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client) error {
 		return err
 	}
 
-	// for _, livestream := range livestreams {
-	// 	livestreamID := livestream.ID
-	// 	if _, err := client.GetLivecommentReports(ctx, livestreamID); err != nil {
-	// 		return err
-	// 	}
-	// }
+	_, err = client.GetNgwords(ctx, livestream.ID)
+	if err != nil {
+		return err
+	}
 
-	// NGワード一覧取得
-	// FIXME: webapp側にこのエンドポイントがないので実装から
+	_, err = client.GetLivecommentReports(ctx, livestream.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func VisitUserProfile(ctx context.Context, client *isupipe.Client, user *isupipe.User) error {
+	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
+		return err
+	}
+
+	if _, err := client.GetIcon(ctx, user.Name); err != nil {
+		return err
+	}
+
+	if _, err := client.GetUserStatistics(ctx, user.Name); err != nil {
+		return err
+	}
+
+	if _, err := client.GetUserLivestreams(ctx, user.Name); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -45,7 +45,7 @@ type UserStatistics struct {
 }
 
 type UserRankingEntry struct {
-	UserName string
+	Username string
 	Score    int64
 }
 type UserRanking []UserRankingEntry
@@ -54,7 +54,7 @@ func (r UserRanking) Len() int      { return len(r) }
 func (r UserRanking) Swap(i, j int) { r[i], r[j] = r[j], r[i] }
 func (r UserRanking) Less(i, j int) bool {
 	if r[i].Score == r[j].Score {
-		return r[i].UserName < r[j].UserName
+		return r[i].Username < r[j].Username
 	} else {
 		return r[i].Score < r[j].Score
 	}
@@ -117,7 +117,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 
 		score := reactions + tips
 		ranking = append(ranking, UserRankingEntry{
-			UserName: user.Name,
+			Username: user.Name,
 			Score:    score,
 		})
 	}
@@ -126,7 +126,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 	var rank int64 = 1
 	for i := len(ranking) - 1; i >= 0; i-- {
 		entry := ranking[i]
-		if entry.UserName == username {
+		if entry.Username == username {
 			break
 		}
 		rank++
