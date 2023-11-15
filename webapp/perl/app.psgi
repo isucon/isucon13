@@ -12,7 +12,7 @@ builder {
     enable 'ReverseProxy';
     enable 'Session::Cookie',
         session_key => 'isupipe_perl',
-        domain      => 'u.isucon.dev',
+        domain      => '*.u.isucon.dev',
         path        => '/',
         expires     => 3600,
         secret      => $ENV{ISUCON13_SESSION_SECRETKEY} || 'defaultsecret';

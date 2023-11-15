@@ -19,6 +19,7 @@ use Isupipe::FillResponse qw(
     fill_user_response
 );
 
+use constant POWER_DNS_SUBDMAIN_ADDRESS => $ENV{ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS};
 use constant FALLBACK_IMAGE => "../img/NoImage.jpg";
 
 use constant PostUserRequestTheme => Dict[
@@ -85,6 +86,12 @@ sub register_handler($app, $c) {
         'INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)',
         $theme->as_hashref
     );
+
+
+    my $err = system("pdnsutil", "add-record", "u.isucon.dev", $params->{name}, "A", "30", POWER_DNS_SUBDMAIN_ADDRESS);
+    if ($err) {
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, $err);
+    }
 
     $txn->commit;
 
