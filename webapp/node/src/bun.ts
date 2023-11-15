@@ -30,7 +30,6 @@ const deps = {
     Bun.password.hash(password, { algorithm: 'bcrypt', cost: 4 }),
   comparePassword: async (password: string, hash: string) =>
     Bun.password.verify(password, hash, 'bcrypt'),
-  uuid: () => crypto.randomUUID(),
   fallbackUserIcon: file(
     // eslint-disable-next-line unicorn/prefer-module
     join(__dirname, '../../img/NoImage.jpg'),

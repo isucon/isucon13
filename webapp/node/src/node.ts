@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { serve } from '@hono/node-server'
@@ -30,7 +29,6 @@ const deps = {
   hashPassword: async (password: string) => hash(password, 4),
   comparePassword: async (password: string, hash: string) =>
     compare(password, hash),
-  uuid: () => randomUUID(),
   // eslint-disable-next-line unicorn/prefer-module, unicorn/prefer-top-level-await
   fallbackUserIcon: readFile(join(__dirname, '../../img/NoImage.jpg')).then(
     (v) => {
