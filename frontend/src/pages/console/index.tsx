@@ -1,22 +1,66 @@
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import AspectRatio from '@mui/joy/AspectRatio';
 import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
 import Card from '@mui/joy/Card';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { HTTPError, apiClient } from '~/api/client';
+import { useLiveSelfStreams } from '~/api/hooks';
 import { Schemas } from '~/api/types';
-import { NewLiveDialog } from '~/components/console/newlive';
+import { NewLiveDialog, NewLiveFormValue } from '~/components/console/newlive';
+import { useGlobalToastQueue } from '~/components/toast/toast';
 
 export default function StreamerConsolePage(): React.ReactElement {
   const [open, setOpen] = React.useState<boolean>(false);
+  const liveStreams = useLiveSelfStreams();
+  const toast = useGlobalToastQueue();
+  const onSubmitNewLive = React.useCallback(async (form: NewLiveFormValue) => {
+    try {
+      await apiClient.post$livestream$reservation({
+        requestBody: {
+          title: form.title,
+          description: form.description,
+          tags: form.tags,
+          collaborators: [],
+          start_at: new Date(form.startAt).valueOf() / 1000,
+          end_at: new Date(form.endAt).valueOf() / 1000,
+        },
+      });
+    } catch (e) {
+      let message = '配信の作成に失敗しました';
+      if (e instanceof HTTPError) {
+        if (e.response.status === 400) {
+          const body = await e.response.json();
+          if (body.message) {
+            message = body.message;
+          }
+        }
+      }
+      toast.add(
+        {
+          type: 'error',
+          title: '配信の作成に失敗しました',
+          message,
+        },
+        {
+          timeout: 5000,
+        },
+      );
+      throw e;
+    }
+  }, []);
 
   return (
     <>
-      <NewLiveDialog isOpen={open} onClose={() => setOpen(false)} />
+      <NewLiveDialog
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onSubmit={onSubmitNewLive}
+      />
       <Stack sx={{ mx: 2, my: 3 }} gap={3}>
         <Container>
           <Typography level="h3">配信一覧</Typography>
@@ -31,15 +75,13 @@ export default function StreamerConsolePage(): React.ReactElement {
             flexGrow={1}
             sx={{ padding: 2 }}
           >
-            {Array(10)
-              .fill(0)
-              .map((_, index) => (
-                <Grid key={index} xs={1}>
-                  <LiveItem
-                    liveSteram={{ id: index, title: 'title', user_id: 123 }}
-                  />
-                </Grid>
-              ))}
+            {/* {Array(10)
+              .fill(0) */
+            liveStreams.data?.map((stream) => (
+              <Grid key={stream.id} xs={1}>
+                <LiveItem liveSteram={stream} />
+              </Grid>
+            ))}
           </Grid>
         </Container>
       </Stack>

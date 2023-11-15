@@ -18,35 +18,45 @@ export interface Response$post$user$Status$201 {
 export interface Response$get$user$me$Status$200 {
   'application/json': Schemas.User;
 }
-export interface Parameter$get$users$username {
+export interface Parameter$get$user$username {
   username: string;
   /** セッションID */
   SESSIONID?: string;
 }
-export type Response$get$users$username$Status$200 = Responses.GetUser.Content;
+export type Response$get$user$username$Status$200 = Responses.GetUser.Content;
 export interface Parameter$get$theme {
   /** セッションID */
   SESSIONID?: string;
 }
 export type Response$get$theme$Status$200 = Responses.GetUserTheme.Content;
-export interface Parameter$get$users$statistics {
+export interface Parameter$get$user$statistics {
   username: string;
   /** セッションID */
   SESSIONID?: string;
 }
-export type Response$get$users$statistics$Status$200 =
+export type Response$get$user$statistics$Status$200 =
   Responses.GetUserStatistics.Content;
-export interface Parameter$get$livestream {
+export type Response$get$livestream$Status$200 =
+  Responses.GetLivestreams.Content;
+export interface Parameter$get$livestream$search {
   /** 検索に使用するタグの名前 */
   tag?: string;
+  /** 取得件数の最大数 */
+  limit?: number;
 }
-export type Response$get$livestream$Status$200 =
+export type Response$get$livestream$search$Status$200 =
   Responses.GetLivestreams.Content;
 export interface Parameter$get$livestream$_livestreamid {
   livestreamid: string;
 }
 export type Response$get$livestream$_livestreamid$Status$200 =
   Responses.GetLivestream.Content;
+export interface Parameter$get$livecomment$livecommentid$ngwords {
+  livestreamid: string;
+}
+export interface Response$get$livecomment$livecommentid$ngwords$Status$200 {
+  'application/json': Schemas.LivestreamNgWord[];
+}
 export interface Parameter$post$livestream$livestreamid$moderate {
   livestreamid: string;
 }
@@ -59,6 +69,8 @@ export interface Response$post$livestream$livestreamid$moderate$Status$201 {
 }
 export interface Parameter$get$livestream$_livestreamid$livecomment {
   livestreamid: string;
+  /** 取得件数の最大数 */
+  limit?: number;
 }
 export interface Response$get$livestream$_livestreamid$livecomment$Status$200 {
   'application/json': Schemas.Livecomment[];
@@ -76,11 +88,13 @@ export interface Response$post$livestream$livestreamid$livecomment$Status$201 {
 export interface Parameter$post$livestream$livestreamid$enter {
   livestreamid: string;
 }
-export interface Parameter$delete$livestream$livestreamid$enter {
+export interface Parameter$delete$livestream$livestreamid$exit {
   livestreamid: string;
 }
 export interface Parameter$get$livestream$_livestreamid$reaction {
   livestreamid: string;
+  /** 取得件数の最大数 */
+  limit?: number;
 }
 export interface Response$get$livestream$_livestreamid$reaction$Status$200 {
   'application/json': Schemas.Reaction[];
@@ -118,6 +132,10 @@ export interface Parameter$post$livecomment$livecommentid$report {
 export interface Response$post$livecomment$livecommentid$report$Status$201 {
   'application/json': Schemas.LivecommentReport;
 }
+export type RequestBody$post$icon = RequestBodies.PostIcon.Content;
+export interface Response$post$icon$Status$201 {
+  'application/json': Schemas.Icon;
+}
 export type ResponseContentType$get$tag = keyof Response$get$tag$Status$200;
 export type RequestContentType$post$login = keyof RequestBody$post$login;
 export interface Params$post$login {
@@ -131,29 +149,36 @@ export interface Params$post$user {
 }
 export type ResponseContentType$get$user$me =
   keyof Response$get$user$me$Status$200;
-export type ResponseContentType$get$users$username =
-  keyof Response$get$users$username$Status$200;
-export interface Params$get$users$username {
-  parameter: Parameter$get$users$username;
+export type ResponseContentType$get$user$username =
+  keyof Response$get$user$username$Status$200;
+export interface Params$get$user$username {
+  parameter: Parameter$get$user$username;
 }
 export type ResponseContentType$get$theme = keyof Response$get$theme$Status$200;
 export interface Params$get$theme {
   parameter: Parameter$get$theme;
 }
-export type ResponseContentType$get$users$statistics =
-  keyof Response$get$users$statistics$Status$200;
-export interface Params$get$users$statistics {
-  parameter: Parameter$get$users$statistics;
+export type ResponseContentType$get$user$statistics =
+  keyof Response$get$user$statistics$Status$200;
+export interface Params$get$user$statistics {
+  parameter: Parameter$get$user$statistics;
 }
 export type ResponseContentType$get$livestream =
   keyof Response$get$livestream$Status$200;
-export interface Params$get$livestream {
-  parameter: Parameter$get$livestream;
+export type ResponseContentType$get$livestream$search =
+  keyof Response$get$livestream$search$Status$200;
+export interface Params$get$livestream$search {
+  parameter: Parameter$get$livestream$search;
 }
 export type ResponseContentType$get$livestream$_livestreamid =
   keyof Response$get$livestream$_livestreamid$Status$200;
 export interface Params$get$livestream$_livestreamid {
   parameter: Parameter$get$livestream$_livestreamid;
+}
+export type ResponseContentType$get$livecomment$livecommentid$ngwords =
+  keyof Response$get$livecomment$livecommentid$ngwords$Status$200;
+export interface Params$get$livecomment$livecommentid$ngwords {
+  parameter: Parameter$get$livecomment$livecommentid$ngwords;
 }
 export type RequestContentType$post$livestream$livestreamid$moderate =
   keyof RequestBody$post$livestream$livestreamid$moderate;
@@ -179,8 +204,8 @@ export interface Params$post$livestream$livestreamid$livecomment {
 export interface Params$post$livestream$livestreamid$enter {
   parameter: Parameter$post$livestream$livestreamid$enter;
 }
-export interface Params$delete$livestream$livestreamid$enter {
-  parameter: Parameter$delete$livestream$livestreamid$enter;
+export interface Params$delete$livestream$livestreamid$exit {
+  parameter: Parameter$delete$livestream$livestreamid$exit;
 }
 export type ResponseContentType$get$livestream$_livestreamid$reaction =
   keyof Response$get$livestream$_livestreamid$reaction$Status$200;
@@ -217,6 +242,11 @@ export type ResponseContentType$post$livecomment$livecommentid$report =
 export interface Params$post$livecomment$livecommentid$report {
   parameter: Parameter$post$livecomment$livecommentid$report;
 }
+export type RequestContentType$post$icon = keyof RequestBody$post$icon;
+export type ResponseContentType$post$icon = keyof Response$post$icon$Status$201;
+export interface Params$post$icon {
+  requestBody: RequestBody$post$icon['application/json'];
+}
 export type HttpMethod =
   | 'GET'
   | 'PUT'
@@ -242,11 +272,13 @@ export type SuccessResponses =
   | Response$get$users$Status$200
   | Response$post$user$Status$201
   | Response$get$user$me$Status$200
-  | Response$get$users$username$Status$200
+  | Response$get$user$username$Status$200
   | Response$get$theme$Status$200
-  | Response$get$users$statistics$Status$200
+  | Response$get$user$statistics$Status$200
   | Response$get$livestream$Status$200
+  | Response$get$livestream$search$Status$200
   | Response$get$livestream$_livestreamid$Status$200
+  | Response$get$livecomment$livecommentid$ngwords$Status$200
   | Response$post$livestream$livestreamid$moderate$Status$201
   | Response$get$livestream$_livestreamid$livecomment$Status$200
   | Response$post$livestream$livestreamid$livecomment$Status$201
@@ -255,29 +287,33 @@ export type SuccessResponses =
   | Response$get$livestream$_livestreamid$statistics$Status$200
   | Response$post$livestream$reservation$Status$201
   | Response$get$livecomment$livecommentid$reports$Status$200
-  | Response$post$livecomment$livecommentid$report$Status$201;
+  | Response$post$livecomment$livecommentid$report$Status$201
+  | Response$post$icon$Status$201;
 export namespace ErrorResponse {
   export type get$tag = void;
   export type post$login = void;
   export type get$users = void;
   export type post$user = void;
   export type get$user$me = void;
-  export type get$users$username = void;
+  export type get$user$username = void;
   export type get$theme = void;
-  export type get$users$statistics = void;
+  export type get$user$statistics = void;
   export type get$livestream = void;
+  export type get$livestream$search = void;
   export type get$livestream$_livestreamid = void;
+  export type get$livecomment$livecommentid$ngwords = void;
   export type post$livestream$livestreamid$moderate = void;
   export type get$livestream$_livestreamid$livecomment = void;
   export type post$livestream$livestreamid$livecomment = void;
   export type post$livestream$livestreamid$enter = void;
-  export type delete$livestream$livestreamid$enter = void;
+  export type delete$livestream$livestreamid$exit = void;
   export type get$livestream$_livestreamid$reaction = void;
   export type post$livestream$livestreamid$reaction = void;
   export type get$livestream$_livestreamid$statistics = void;
   export type post$livestream$reservation = void;
   export type get$livecomment$livecommentid$reports = void;
   export type post$livecomment$livecommentid$report = void;
+  export type post$icon = void;
 }
 export interface Encoding {
   readonly contentType?: string;
@@ -400,11 +436,11 @@ export class Client<RequestOption> {
     );
   }
   /** ユーザプロフィール取得 */
-  public async get$users$username(
-    params: Params$get$users$username,
+  public async get$user$username(
+    params: Params$get$user$username,
     option?: RequestOption,
-  ): Promise<Response$get$users$username$Status$200['application/json']> {
-    const url = this.baseUrl + `/users/${params.parameter.username}`;
+  ): Promise<Response$get$user$username$Status$200['application/json']> {
+    const url = this.baseUrl + `/user/${params.parameter.username}`;
     const headers = {
       Accept: 'application/json',
     };
@@ -436,11 +472,31 @@ export class Client<RequestOption> {
     );
   }
   /** ユーザの配信に関する統計情報取得 */
-  public async get$users$statistics(
-    params: Params$get$users$statistics,
+  public async get$user$statistics(
+    params: Params$get$user$statistics,
     option?: RequestOption,
-  ): Promise<Response$get$users$statistics$Status$200['application/json']> {
-    const url = this.baseUrl + `/users/${params.parameter.username}/statistics`;
+  ): Promise<Response$get$user$statistics$Status$200['application/json']> {
+    const url = this.baseUrl + `/user/${params.parameter.username}/statistics`;
+    const headers = {
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'GET',
+        url,
+        headers,
+      },
+      option,
+    );
+  }
+  /**
+   * Your GET endpoint
+   * 自分が関連する配信の一覧取得
+   */
+  public async get$livestream(
+    option?: RequestOption,
+  ): Promise<Response$get$livestream$Status$200['application/json']> {
+    const url = this.baseUrl + `/livestream`;
     const headers = {
       Accept: 'application/json',
     };
@@ -457,16 +513,17 @@ export class Client<RequestOption> {
    * Your GET endpoint
    * ライブストリームの情報取得エンドポイント
    */
-  public async get$livestream(
-    params: Params$get$livestream,
+  public async get$livestream$search(
+    params: Params$get$livestream$search,
     option?: RequestOption,
-  ): Promise<Response$get$livestream$Status$200['application/json']> {
-    const url = this.baseUrl + `/livestream`;
+  ): Promise<Response$get$livestream$search$Status$200['application/json']> {
+    const url = this.baseUrl + `/livestream/search`;
     const headers = {
       Accept: 'application/json',
     };
     const queryParameters: QueryParameters = {
       tag: { value: params.parameter.tag, explode: false },
+      limit: { value: params.parameter.limit, explode: false },
     };
     return this.apiClient.request(
       {
@@ -489,6 +546,26 @@ export class Client<RequestOption> {
     Response$get$livestream$_livestreamid$Status$200['application/json']
   > {
     const url = this.baseUrl + `/livestream/${params.parameter.livestreamid}`;
+    const headers = {
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'GET',
+        url,
+        headers,
+      },
+      option,
+    );
+  }
+  public async get$livecomment$livecommentid$ngwords(
+    params: Params$get$livecomment$livecommentid$ngwords,
+    option?: RequestOption,
+  ): Promise<
+    Response$get$livecomment$livecommentid$ngwords$Status$200['application/json']
+  > {
+    const url =
+      this.baseUrl + `/livestream/${params.parameter.livestreamid}/ngwords`;
     const headers = {
       Accept: 'application/json',
     };
@@ -539,11 +616,15 @@ export class Client<RequestOption> {
     const headers = {
       Accept: 'application/json',
     };
+    const queryParameters: QueryParameters = {
+      limit: { value: params.parameter.limit, explode: false },
+    };
     return this.apiClient.request(
       {
         httpMethod: 'GET',
         url,
         headers,
+        queryParameters: queryParameters,
       },
       option,
     );
@@ -589,12 +670,12 @@ export class Client<RequestOption> {
     );
   }
   /** 配信の視聴終了 */
-  public async delete$livestream$livestreamid$enter(
-    params: Params$delete$livestream$livestreamid$enter,
+  public async delete$livestream$livestreamid$exit(
+    params: Params$delete$livestream$livestreamid$exit,
     option?: RequestOption,
   ): Promise<void> {
     const url =
-      this.baseUrl + `/livestream/${params.parameter.livestreamid}/enter`;
+      this.baseUrl + `/livestream/${params.parameter.livestreamid}/exit`;
     const headers = {};
     return this.apiClient.request(
       {
@@ -620,11 +701,15 @@ export class Client<RequestOption> {
     const headers = {
       Accept: 'application/json',
     };
+    const queryParameters: QueryParameters = {
+      limit: { value: params.parameter.limit, explode: false },
+    };
     return this.apiClient.request(
       {
         httpMethod: 'GET',
         url,
         headers,
+        queryParameters: queryParameters,
       },
       option,
     );
@@ -734,6 +819,25 @@ export class Client<RequestOption> {
         httpMethod: 'POST',
         url,
         headers,
+      },
+      option,
+    );
+  }
+  public async post$icon(
+    params: Params$post$icon,
+    option?: RequestOption,
+  ): Promise<Response$post$icon$Status$201['application/json']> {
+    const url = this.baseUrl + `/icon`;
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'POST',
+        url,
+        headers,
+        requestBody: params.requestBody,
       },
       option,
     );

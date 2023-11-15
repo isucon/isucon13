@@ -1,6 +1,5 @@
 import { Global } from '@emotion/react';
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import Autocomplete from '@mui/joy/Autocomplete';
 import Dropdown from '@mui/joy/Dropdown';
 import Menu from '@mui/joy/Menu';
@@ -9,15 +8,11 @@ import MenuItem from '@mui/joy/MenuItem';
 import Stack from '@mui/joy/Stack';
 import { useColorScheme } from '@mui/joy/styles';
 import React from 'react';
-import {
-  MdChair,
-  MdOutlineDarkMode,
-  MdDarkMode,
-  MdSearch,
-} from 'react-icons/md';
+import { MdOutlineDarkMode, MdDarkMode, MdSearch } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toast } from '../toast/toast';
 import { useTags, useUserMe } from '~/api/hooks';
+import logo from './ISUPipe_yoko_color.png';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -68,10 +63,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
         }}
       >
         <LogoLink to="/">
-          <MdChair size="25px" />
-          <Typography level="h1" sx={{ fontSize: '20px' }}>
-            ISUTUBE
-          </Typography>
+          <img src={logo} title="ISUPipe" height="25" />
         </LogoLink>
         <Stack>
           <Autocomplete
