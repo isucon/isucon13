@@ -51,7 +51,7 @@ func TestLivestream(t *testing.T) {
 	// * 予約枠
 
 	// 期間外の予約がきちんとエラーで弾かれるかチェック
-	_, err = client.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+	_, err = client.ReserveLivestream(ctx, user.Name, &ReserveLivestreamRequest{
 		Title:        "livestream-test",
 		Description:  "livestream-test",
 		PlaylistUrl:  "https://example.com",
@@ -61,7 +61,7 @@ func TestLivestream(t *testing.T) {
 		Tags:         []int64{},
 	}, WithStatusCode(http.StatusBadRequest))
 	assert.NoError(t, err)
-	_, err = client.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+	_, err = client.ReserveLivestream(ctx, user.Name, &ReserveLivestreamRequest{
 		Title:        "livestream-test",
 		Description:  "livestream-test",
 		PlaylistUrl:  "https://example.com",
@@ -103,7 +103,7 @@ func TestLivestream(t *testing.T) {
 		assert.NoError(t, err)
 
 		if i > config.NumSlots {
-			_, err = loopClient.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+			_, err = loopClient.ReserveLivestream(ctx, loopClientName, &ReserveLivestreamRequest{
 				Title:        fmt.Sprintf("livestream-test%d", i),
 				Description:  fmt.Sprintf("livestream-test%d", i),
 				PlaylistUrl:  "https://example.com",
@@ -114,7 +114,7 @@ func TestLivestream(t *testing.T) {
 			}, WithStatusCode(http.StatusBadRequest))
 			assert.NoError(t, err)
 		} else {
-			livestream, err := loopClient.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+			livestream, err := loopClient.ReserveLivestream(ctx, loopClientName, &ReserveLivestreamRequest{
 				Title:        fmt.Sprintf("livestream-test%d", i),
 				Description:  fmt.Sprintf("livestream-test%d", i),
 				PlaylistUrl:  "https://example.com",
@@ -126,7 +126,7 @@ func TestLivestream(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotZero(t, livestream.ID)
 
-			err = loopClient.GetLivestream(ctx, livestream.ID)
+			err = loopClient.GetLivestream(ctx, livestream.ID, loopClientName)
 			assert.NoError(t, err)
 
 			myLivestreams, err := loopClient.GetMyLivestreams(ctx)

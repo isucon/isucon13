@@ -45,6 +45,7 @@ type (
 func (c *Client) GetLivestream(
 	ctx context.Context,
 	livestreamID int64,
+	streamerName string,
 	opts ...ClientOption,
 ) error {
 	var (
@@ -52,6 +53,9 @@ func (c *Client) GetLivestream(
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -186,7 +190,7 @@ func (c *Client) GetUserLivestreams(ctx context.Context, username string, opts .
 	return livestreams, nil
 }
 
-func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest, opts ...ClientOption) (*Livestream, error) {
+func (c *Client) ReserveLivestream(ctx context.Context, streamerName string, r *ReserveLivestreamRequest, opts ...ClientOption) (*Livestream, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -197,6 +201,9 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 		return nil, bencherror.NewInternalError(err)
 	}
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
 	req, err := c.themeAgent.NewRequest(http.MethodPost, "/api/livestream/reservation", bytes.NewReader(payload))
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
@@ -226,12 +233,15 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	return livestream, nil
 }
 
-func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, opts ...ClientOption) error {
+func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
@@ -255,12 +265,15 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, opts .
 	return nil
 }
 
-func (c *Client) ExitLivestream(ctx context.Context, livestreamID int64, opts ...ClientOption) error {
+func (c *Client) ExitLivestream(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/exit", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {

@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucandar/score"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -165,7 +167,6 @@ var run = cli.Command{
 
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
-		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
@@ -182,7 +183,6 @@ var run = cli.Command{
 
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
-		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
 
 		benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
@@ -198,7 +198,6 @@ var run = cli.Command{
 		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
 
 		benchscore.DoneCounter()
-		benchscore.DoneProfit()
 		bencherror.Done()
 		lgr.Info("ベンチマーク走行終了")
 
@@ -225,8 +224,18 @@ var run = cli.Command{
 		var msgs []string
 
 		lgr.Info("シナリオカウンタ")
-		for name, count := range benchmarker.ScenarioCounter() {
-			lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+		scenarioCounter := benchmarker.ScenarioCounter()
+		for name, count := range scenarioCounter {
+			if strings.HasSuffix(string(name), "-fail") {
+				continue
+			}
+
+			failKey := score.ScoreTag(fmt.Sprintf("%s-fail", name))
+			if failCount, ok := scenarioCounter[failKey]; ok {
+				lgr.Infof("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount)
+			} else {
+				lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+			}
 		}
 
 		var (

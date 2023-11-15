@@ -142,8 +142,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			startAt = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
 			endAt   = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 		)
-		_, err = overflowClient.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-			Tags:        []int64{},
+		_, err = overflowClient.ReserveLivestream(ctx, overflowUser.Name, &isupipe.ReserveLivestreamRequest{
 			Title:       name,
 			Description: name,
 			// FIXME: フロントで困らないようにちゃんとしたのを設定
@@ -185,8 +184,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		startAt = time.Date(2026, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt   = time.Date(2026, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	if _, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:         []int64{},
+	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
 		PlaylistUrl:  "",
@@ -201,8 +199,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		startAt2 = time.Date(2023, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt2   = time.Date(2023, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	if _, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:         []int64{},
+	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
 		PlaylistUrl:  "",

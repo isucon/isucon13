@@ -91,7 +91,7 @@ func normalInitialReactionPretest(ctx context.Context, dnsResolver *resolver.DNS
 	}
 	livestream := livestreams[0]
 
-	reactions, err := client.GetReactions(ctx, livestream.ID)
+	reactions, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}

@@ -34,33 +34,40 @@ func BasicViewerScenario(
 	}
 	defer livestreamPool.Put(ctx, livestream)
 
+	if err := VisitUserProfile(ctx, client, &livestream.Owner); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		return err
+	}
+
 	if err := VisitLivestream(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 		return err
 	}
 
-	for hour := 0; hour < livestream.Hours(); hour++ {
-		if _, err := client.GetLivestreamStatistics(ctx, livestream.ID); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+	for hour := 1; hour <= livestream.Hours(); hour++ {
+		if _, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			continue
 		}
 
-		if _, err := client.GetLivecomments(ctx, livestream.ID); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		if _, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			continue
 		}
 
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
-		tip := scheduler.LivecommentScheduler.GetTipsForStream(livestream.Hours(), hour)
-		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livecomment.Comment, tip); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		tip, err := scheduler.LivecommentScheduler.GetTipsForStream(livestream.Hours(), hour)
+		if err != nil {
+			return err
+		}
+		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, tip); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			// FIXME: 真面目にログを書く
 			lgr.Info("離脱: %s", err.Error())
 			return err
 		}
 
-		if _, err := client.GetReactions(ctx, livestream.ID); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		if _, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			continue
 		}
 
 		emojiName := scheduler.GetReaction()
-		if _, err := client.PostReaction(ctx, livestream.ID, &isupipe.PostReactionRequest{
+		if _, err := client.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
 			EmojiName: emojiName,
 		}); err != nil {
 			continue
@@ -96,12 +103,12 @@ func ViewerSpamScenario(
 
 	comment, isModerated := scheduler.LivecommentScheduler.GetNegativeComment()
 	if isModerated {
-		_, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{}, isupipe.WithStatusCode(http.StatusBadRequest))
+		_, _, err := viewer.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, comment.Comment, &scheduler.Tip{}, isupipe.WithStatusCode(http.StatusBadRequest))
 		if err != nil {
 			return err
 		}
 	} else {
-		resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{})
+		resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, comment.Comment, &scheduler.Tip{})
 		if err != nil {
 			return err
 		}
@@ -136,7 +143,7 @@ func BasicViewerReportScenario(
 	}
 	defer livecommentPool.Put(ctx, spam)
 
-	if err := viewer.ReportLivecomment(ctx, spam.Livestream.ID, spam.ID); err != nil {
+	if err := viewer.ReportLivecomment(ctx, spam.Livestream.ID, spam.Livestream.Owner.Name, spam.ID); err != nil {
 		return err
 	}
 

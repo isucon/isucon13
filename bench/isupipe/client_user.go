@@ -10,8 +10,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/config"
-	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
 type User struct {
@@ -105,12 +103,12 @@ func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOpt
 		resp.Body.Close()
 	}()
 
-	if resp.StatusCode != o.wantStatusCode {
+	if resp.StatusCode != http.StatusNotModified && resp.StatusCode != o.wantStatusCode {
 		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
 	var imageBytes []byte
-	if resp.StatusCode == defaultStatusCode {
+	if resp.StatusCode == http.StatusNotModified || resp.StatusCode == defaultStatusCode {
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
@@ -308,11 +306,8 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 	}
 
 	c.username = r.Username
-	c.isPopular = scheduler.UserScheduler.IsPopularStreamer(c.username)
 
-	domain := fmt.Sprintf("%s.%s", r.Username, config.BaseDomain)
-	url := fmt.Sprintf("%s://%s:%d", config.HTTPScheme, domain, config.TargetPort)
-	c.themeOptions = append(c.themeOptions, agent.WithBaseURL(url))
+	c.themeOptions = append(c.themeOptions)
 	c.themeAgent, err = agent.NewAgent(c.themeOptions...)
 	if err != nil {
 		return bencherror.NewInternalError(err)

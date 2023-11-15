@@ -2,21 +2,16 @@ package scheduler
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"sync"
-	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/config"
 )
 
-var randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-// GenerateIntBetween generates integer satisfies [min, max) constraint
-func generateTipValueBetween(min, max int) int {
-	v := randomSource.Intn(max-min) + min
-
+// 数値の端数を落とす
+func trimFraction(v int) int {
 	// 桁数
 	var numDigit int
 	for target := v; target > 0; {
@@ -62,18 +57,6 @@ type Tip struct {
 	Tip   int
 }
 
-// どの配信に対して色々投げたらいいか、いい感じにしてくれる君
-
-// Positiveの方は、長いコメント、短いコメントみたいな感じで取れると良い
-
-// シナリオを書く際の疑問を列挙しよう
-// どこにスパムを投げればいい？
-// どこにスパチャを投げると、平等に投げられそう？
-// 人気配信はどこ？そこにスパチャや投げ銭を集中させたい
-//    人気配信は、人気ユーザに紐づく配信が用いられる
-//
-
-// ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
 type livecommentScheduler struct {
 	ngLivecomments map[string]string
 
@@ -148,82 +131,87 @@ func (s *livecommentScheduler) Moderate(comment string) {
 	s.moderated[comment] = struct{}{}
 }
 
-func (s *livecommentScheduler) generateTip(level int) int {
+func (s *livecommentScheduler) ModerateNgWord(ngword string) {
+	s.moderatedMu.Lock()
+	defer s.moderatedMu.Unlock()
+
+	for _, comment := range negativeCommentPool {
+		if comment.NgWord == ngword {
+			s.moderated[comment.Comment] = struct{}{}
+		}
+	}
+}
+
+func (s *livecommentScheduler) generateTip(level int, totalHours, currentHour int) int {
+	progressRate := currentHour / totalHours
 	switch level {
 	case 0:
 		return 0
 	case 1:
-		return generateTipValueBetween(10, 100)
+		var (
+			minTip = 10
+			maxTip = 100
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
 	case 2:
-		return generateTipValueBetween(100, 1000)
+		var (
+			minTip = 100
+			maxTip = 1000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
 	case 3:
-		return generateTipValueBetween(1000, 5000)
+		var (
+			minTip = 1000
+			maxTip = 5000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
 	case 4:
-		return generateTipValueBetween(5000, 10000)
+		var (
+			minTip = 5000
+			maxTip = 10000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
 	case 5:
-		return generateTipValueBetween(10000, 100000)
+		var (
+			minTip = 10000
+			maxTip = 100000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
 	default:
 		return 0
 	}
 }
 
-// 通常配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForStream(totalHours, currentHour int) *Tip {
+func (s *livecommentScheduler) GetTipsForStream(totalHours, currentHour int) (*Tip, error) {
 	if currentHour > totalHours {
-		log.Fatalf("GetTipsForPopularStream: 引数が不正です currentHour=%d > totalHours=%d\n", currentHour, totalHours)
-		return &Tip{Level: 0, Tip: 0}
+		return &Tip{Level: 0, Tip: 0}, bencherror.NewInternalError(fmt.Errorf("GetTipsForStreamの引数が不正です: current=%d, total=%d", currentHour, totalHours))
 	}
-	if totalHours == 1 {
-		return &Tip{
-			Level: 1,
-			Tip:   s.generateTip(1),
-		}
+	if totalHours < 1 || currentHour < 1 {
+		return &Tip{Level: 0, Tip: 0}, bencherror.NewInternalError(fmt.Errorf("GetTipsForStreamの引数が不正です: current=%d, total=%d", currentHour, totalHours))
 	}
+
+	// levelによって金額クラスが分かれる. より長い配信枠のほうが高いレベルになる. 予約が捌けているほど高いレベルになる.
+	// level内ではどれだけ視聴し続けられたかが評価される. これも長い配信枠のほうがよりTipが高額になるが、それだけでなくwebappがライブコメント投稿を捌けていないと高額にならない
 	var level int
-	threshold := totalHours / 2
-	if currentHour >= threshold {
+	switch {
+	case totalHours >= 20:
+		level = 5
+	case totalHours >= 15:
+		level = 4
+	case totalHours >= config.LongHourThreshold:
+		level = 3
+	case totalHours >= 5:
 		level = 2
-	} else {
+	default:
 		level = 1
 	}
 
-	tip := s.generateTip(level)
+	tip := s.generateTip(1, totalHours, currentHour)
 	return &Tip{
 		Level: level,
 		Tip:   tip,
-	}
+	}, nil
 }
-
-// 長時間配信に対するチップ取得
-// 10h以上を想定
-func (s *livecommentScheduler) GetTipsForLongStream(totalHours, currentHour int) *Tip {
-	if totalHours < 10 {
-		log.Fatalf("GetTipsForPopularStream: 時間枠が短すぎます: totalHours=%d\n", totalHours)
-		return &Tip{Level: 0, Tip: 0}
-	}
-	if currentHour > totalHours {
-		log.Fatalf("GetTipsForPopularStream: 引数が不正です currentHour=%d > totalHours=%d\n", currentHour, totalHours)
-		return &Tip{Level: 0, Tip: 0}
-	}
-	if totalHours < 1 {
-		return &Tip{
-			Level: 0,
-			Tip:   0,
-		}
-	}
-	threshold := totalHours / 5
-	level := min(1+(currentHour/threshold), 5)
-
-	tip := s.generateTip(level)
-	return &Tip{
-		Level: level,
-		Tip:   tip,
-	}
-}
-
-// 3 6 9 12 15
-// thres=3
-// 1 2 3 4 5
 
 func (s *livecommentScheduler) GetDummyNgWord() *NgWord {
 	idx := rand.Intn(len(dummyNgWords))

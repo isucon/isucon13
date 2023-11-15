@@ -44,7 +44,7 @@ func TestModerate(t *testing.T) {
 		startAt = time.Date(2024, 6, 12, 0, 0, 0, 0, time.UTC).Unix()
 		endAt   = time.Date(2024, 6, 12, 9, 0, 0, 0, time.UTC).Unix()
 	)
-	livestream, err := client.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+	livestream, err := client.ReserveLivestream(ctx, user.Name, &ReserveLivestreamRequest{
 		Title:        "livestream-test1",
 		Description:  "livestream-test1",
 		PlaylistUrl:  "https://example.com",
@@ -87,7 +87,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	livestream, err := client.ReserveLivestream(ctx, &ReserveLivestreamRequest{
+	livestream, err := client.ReserveLivestream(ctx, user.Name, &ReserveLivestreamRequest{
 		Title:        "ngword-test",
 		Description:  "ngword-test",
 		PlaylistUrl:  "https://example.com",

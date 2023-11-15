@@ -36,7 +36,7 @@ func BasicStreamerColdReserveScenario(
 		return err
 	}
 
-	reservation, err := scheduler.ReservationSched.GetColdReservation()
+	reservation, err := scheduler.ReservationSched.GetColdShortReservation()
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func BasicStreamerColdReserveScenario(
 		return err
 	}
 
-	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+	livestream, err := client.ReserveLivestream(ctx, username, &isupipe.ReserveLivestreamRequest{
 		Tags:         tags,
 		Title:        reservation.Title,
 		Description:  reservation.Description,
@@ -152,6 +152,7 @@ func AggressiveStreamerModerateScenario(
 		if err := client.Moderate(ctx, livestream.ID, ngWord.Word); err != nil {
 			continue
 		}
+		scheduler.LivecommentScheduler.ModerateNgWord(ngWord.Word)
 	}
 
 	return nil

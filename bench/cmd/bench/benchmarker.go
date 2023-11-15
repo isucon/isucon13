@@ -20,13 +20,19 @@ import (
 )
 
 var (
-	DnsWaterTortureAttackScenario      score.ScoreTag = "dns-watertorture-attack"
-	BasicStreamerColdReserve           score.ScoreTag = "streamer-cold-reserve"
-	BasicStreamerModerateScenario      score.ScoreTag = "streamer-moderate"
-	BasicViewerScenario                score.ScoreTag = "viewer"
-	BasicViewerReportScenario          score.ScoreTag = "viewer-report"
-	ViewerSpamScenario                 score.ScoreTag = "viewer-spam"
-	AggressiveStreamerModerateScenario score.ScoreTag = "aggressive-streamer-moderate"
+	DnsWaterTortureAttackScenario          score.ScoreTag = "dns-watertorture-attack"
+	BasicStreamerColdReserve               score.ScoreTag = "streamer-cold-reserve"
+	BasicStreamerColdReserveFail           score.ScoreTag = "streamer-cold-reserve-fail"
+	BasicStreamerModerateScenario          score.ScoreTag = "streamer-moderate"
+	BasicStreamerModerateScenarioFail      score.ScoreTag = "streamer-moderate-fail"
+	BasicViewerScenario                    score.ScoreTag = "viewer"
+	BasicViewerScenarioFail                score.ScoreTag = "viewer-fail"
+	BasicViewerReportScenario              score.ScoreTag = "viewer-report"
+	BasicViewerReportScenarioFail          score.ScoreTag = "viewer-report-fail"
+	ViewerSpamScenario                     score.ScoreTag = "viewer-spam"
+	ViewerSpamScenarioFail                 score.ScoreTag = "viewer-spam-fail"
+	AggressiveStreamerModerateScenario     score.ScoreTag = "aggressive-streamer-moderate"
+	AggressiveStreamerModerateScenarioFail score.ScoreTag = "aggressive-streamer-moderate-fail"
 )
 
 type benchmarker struct {
@@ -37,9 +43,9 @@ type benchmarker struct {
 	spammerSem      *semaphore.Weighted
 	attackSem       *semaphore.Weighted
 
-	popularStreamerClientPool *isupipe.ClientPool
-	streamerClientPool        *isupipe.ClientPool
-	viewerClientPool          *isupipe.ClientPool
+	longStreamerClientPool *isupipe.ClientPool
+	streamerClientPool     *isupipe.ClientPool
+	viewerClientPool       *isupipe.ClientPool
 
 	popularLivestreamPool *isupipe.LivestreamPool
 	livestreamPool        *isupipe.LivestreamPool
@@ -57,7 +63,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 	var weight int64 = int64(config.BaseParallelism)
 	lgr.Infof("負荷レベル: %d", weight)
 
-	popularStreamerClientPool := isupipe.NewClientPool(ctx)
+	longStreamerClientPool := isupipe.NewClientPool(ctx)
 	streamerClientPool := isupipe.NewClientPool(ctx)
 	viewerClientPool := isupipe.NewClientPool(ctx)
 
@@ -76,20 +82,20 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 	counter.Set(AggressiveStreamerModerateScenario, 1)
 
 	return &benchmarker{
-		streamerSem:               semaphore.NewWeighted(weight),
-		longStreamerSem:           semaphore.NewWeighted(weight),
-		moderatorSem:              semaphore.NewWeighted(weight),
-		viewerSem:                 semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
-		spammerSem:                semaphore.NewWeighted(weight * 20), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:                 semaphore.NewWeighted(weight * 20), // 視聴者と同程度、攻撃を仕掛ける輩がいる
-		popularStreamerClientPool: popularStreamerClientPool,
-		streamerClientPool:        streamerClientPool,
-		viewerClientPool:          viewerClientPool,
-		popularLivestreamPool:     popularLivestreamPool,
-		livestreamPool:            livestreamPool,
-		spamPool:                  spamPool,
-		startAt:                   time.Now(),
-		scenarioCounter:           score.NewScore(ctx),
+		streamerSem:            semaphore.NewWeighted(weight),
+		longStreamerSem:        semaphore.NewWeighted(weight),
+		moderatorSem:           semaphore.NewWeighted(weight),
+		viewerSem:              semaphore.NewWeighted(weight * 1), // 配信者の10倍視聴者トラフィックがある
+		spammerSem:             semaphore.NewWeighted(weight * 2), // 視聴者の２倍はスパム投稿者が潜んでいる
+		attackSem:              semaphore.NewWeighted(weight * 1), // 視聴者と同程度、攻撃を仕掛ける輩がいる
+		longStreamerClientPool: longStreamerClientPool,
+		streamerClientPool:     streamerClientPool,
+		viewerClientPool:       viewerClientPool,
+		popularLivestreamPool:  popularLivestreamPool,
+		livestreamPool:         livestreamPool,
+		spamPool:               spamPool,
+		startAt:                time.Now(),
+		scenarioCounter:        score.NewScore(ctx),
 	}
 }
 
@@ -132,7 +138,6 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 		}
 	}
 
-	scheduler.UserScheduler.RangePopularStreamer(loginFn(b.popularStreamerClientPool))
 	scheduler.UserScheduler.RangeStreamer(loginFn(b.streamerClientPool))
 	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
 }
@@ -161,14 +166,14 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 
 func (b *benchmarker) loadStreamer(ctx context.Context) error {
 	defer b.streamerSem.Release(1)
-	eg, childCtx := errgroup.WithContext(ctx)
 
-	defer b.scenarioCounter.Add(BasicStreamerColdReserve)
-	if err := scenario.BasicStreamerColdReserveScenario(childCtx, b.streamerClientPool, b.popularLivestreamPool, b.livestreamPool); err != nil {
+	if err := scenario.BasicStreamerColdReserveScenario(ctx, b.streamerClientPool, b.popularLivestreamPool, b.livestreamPool); err != nil {
+		b.scenarioCounter.Add(BasicStreamerColdReserveFail)
 		return err
 	}
+	b.scenarioCounter.Add(BasicStreamerColdReserve)
 
-	return eg.Wait()
+	return nil
 }
 
 func (b *benchmarker) loadLongStreamer(ctx context.Context) error {
@@ -183,14 +188,13 @@ func (b *benchmarker) loadModerator(ctx context.Context) error {
 
 	eg, childCtx := errgroup.WithContext(ctx)
 
-	defer b.scenarioCounter.Add(BasicStreamerModerateScenario)
 	eg.Go(func() error {
-		return scenario.BasicStreamerModerateScenario(childCtx, b.popularStreamerClientPool)
-	})
-
-	defer b.scenarioCounter.Add(BasicStreamerModerateScenario)
-	eg.Go(func() error {
-		return scenario.BasicStreamerModerateScenario(childCtx, b.streamerClientPool)
+		if err := scenario.BasicStreamerModerateScenario(childCtx, b.streamerClientPool); err != nil {
+			b.scenarioCounter.Add(BasicStreamerModerateScenarioFail)
+			return err
+		}
+		b.scenarioCounter.Add(BasicStreamerModerateScenario)
+		return nil
 	})
 
 	return eg.Wait()
@@ -200,14 +204,22 @@ func (b *benchmarker) loadViewer(ctx context.Context) error {
 	defer b.viewerSem.Release(1)
 	eg, childCtx := errgroup.WithContext(ctx)
 
-	defer b.scenarioCounter.Add(BasicViewerScenario)
 	eg.Go(func() error {
-		return scenario.BasicViewerScenario(childCtx, b.viewerClientPool, b.livestreamPool)
+		if err := scenario.BasicViewerScenario(childCtx, b.viewerClientPool, b.livestreamPool); err != nil {
+			b.scenarioCounter.Add(BasicViewerScenarioFail)
+			return err
+		}
+		b.scenarioCounter.Add(BasicViewerScenario)
+		return nil
 	})
 
-	defer b.scenarioCounter.Add(BasicViewerReportScenario)
 	eg.Go(func() error {
-		return scenario.BasicViewerReportScenario(childCtx, b.viewerClientPool, b.spamPool)
+		if err := scenario.BasicViewerReportScenario(childCtx, b.viewerClientPool, b.spamPool); err != nil {
+			b.scenarioCounter.Add(BasicViewerReportScenarioFail)
+			return err
+		}
+		b.scenarioCounter.Add(BasicViewerReportScenario)
+		return nil
 	})
 
 	return eg.Wait()
@@ -221,15 +233,21 @@ func (b *benchmarker) loadSpammer(ctx context.Context) error {
 	spammerGrp.Add(1)
 	go func() {
 		defer spammerGrp.Done()
-		defer b.scenarioCounter.Add(ViewerSpamScenario)
-		scenario.ViewerSpamScenario(ctx, b.viewerClientPool, b.livestreamPool, b.spamPool)
+		if err := scenario.ViewerSpamScenario(ctx, b.viewerClientPool, b.livestreamPool, b.spamPool); err != nil {
+			b.scenarioCounter.Add(ViewerSpamScenarioFail)
+			return
+		}
+		b.scenarioCounter.Add(ViewerSpamScenario)
 	}()
 
 	spammerGrp.Add(1)
 	go func() {
 		defer spammerGrp.Done()
-		defer b.scenarioCounter.Add(AggressiveStreamerModerateScenario)
-		scenario.AggressiveStreamerModerateScenario(ctx, b.streamerClientPool)
+		if err := scenario.AggressiveStreamerModerateScenario(ctx, b.streamerClientPool); err != nil {
+			b.scenarioCounter.Add(AggressiveStreamerModerateScenarioFail)
+			return
+		}
+		b.scenarioCounter.Add(AggressiveStreamerModerateScenario)
 	}()
 
 	spammerGrp.Wait()
@@ -294,13 +312,13 @@ func (b *benchmarker) run(ctx context.Context) error {
 					b.loadSpammer(childCtx)
 				}()
 			}
-			if ok := b.attackSem.TryAcquire(1); ok {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					b.loadAttack(childCtx)
-				}()
-			}
+			// if ok := b.attackSem.TryAcquire(1); ok {
+			// 	wg.Add(1)
+			// 	go func() {
+			// 		defer wg.Done()
+			// 		b.loadAttack(childCtx)
+			// 	}()
+			// }
 		}
 	}
 }
