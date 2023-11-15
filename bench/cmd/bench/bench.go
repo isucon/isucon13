@@ -177,6 +177,7 @@ var run = cli.Command{
 		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
 		}
+		lgr.Info("整合性チェックが成功しました")
 
 		if pretestOnly {
 			lgr.Info("--pretest-onlyが指定されているため、ベンチマーク走行をスキップします")
