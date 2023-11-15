@@ -62,12 +62,15 @@ func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ..
 	return stats, nil
 }
 
-func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int64, opts ...ClientOption) (*LivestreamStatistics, error) {
+func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) (*LivestreamStatistics, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/statistics", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {

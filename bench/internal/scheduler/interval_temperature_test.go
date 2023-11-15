@@ -15,7 +15,7 @@ func TestFindIntervals(t *testing.T) {
 		testStartUnix int64 = 1711897200
 		testStartAt         = time.Unix(testStartUnix, 0)
 		// 枠数1
-		maxTemperature = 1
+		maxTemperature = 2
 	)
 
 	// 5時間分取っておく
@@ -69,7 +69,7 @@ func TestMaxTemperture_is_2(t *testing.T) {
 		testStartUnix int64 = 1711897200
 		testStartAt         = time.Unix(testStartUnix, 0)
 		// 枠数1
-		maxTemperature = 1
+		maxTemperature = 2
 	)
 
 	// 24時間分取っておく

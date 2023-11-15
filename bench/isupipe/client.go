@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -23,8 +24,7 @@ type Client struct {
 	agent        *agent.Agent
 	agentOptions []agent.AgentOption
 
-	username  string
-	isPopular bool
+	username string
 
 	// ユーザカスタムテーマ適用ページアクセス用agent
 	// ライブ配信画面など
@@ -107,7 +107,7 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 	}, nil
 }
 
-func (c *Client) LoginUserName() (string, error) {
+func (c *Client) Username() (string, error) {
 	if len(c.username) == 0 {
 		return "", bencherror.NewInternalError(fmt.Errorf("未ログインクライアントです"))
 	}
@@ -115,8 +115,16 @@ func (c *Client) LoginUserName() (string, error) {
 	return c.username, nil
 }
 
-func (c *Client) IsPopular() bool {
-	return c.isPopular
+func (c *Client) setStreamerURL(streamerName string) error {
+	domain := fmt.Sprintf("%s.%s", streamerName, config.BaseDomain)
+	baseURL, err := url.Parse(fmt.Sprintf("%s://%s:%d", config.HTTPScheme, domain, config.TargetPort))
+	if err != nil {
+		return err
+	}
+
+	c.themeAgent.BaseURL = baseURL
+
+	return nil
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数

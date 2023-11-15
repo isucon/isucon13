@@ -82,12 +82,15 @@ func isTooManySpam(livecomments []*Livecomment) bool {
 	return uint64(float64(spamCount)/float64(total))*100 >= config.TooManySpamThresholdPercentage
 }
 
-func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]*Livecomment, error) {
+func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]*Livecomment, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -197,7 +200,7 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...Cli
 	return ngwords, nil
 }
 
-func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, comment string, tip *scheduler.Tip, opts ...ClientOption) (*PostLivecommentResponse, int, error) {
+func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, streamerName string, comment string, tip *scheduler.Tip, opts ...ClientOption) (*PostLivecommentResponse, int, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -212,6 +215,9 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, commen
 		return nil, 0, bencherror.NewInternalError(err)
 	}
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, 0, bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
@@ -238,18 +244,21 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, commen
 			return nil, 0, bencherror.NewHttpResponseError(err, req)
 		}
 
-		benchscore.AddTipLevel(int64(tip.Level))
+		benchscore.AddTip(uint64(tip.Tip))
 	}
 
 	return livecommentResponse, tip.Tip, nil
 }
 
-func (c *Client) ReportLivecomment(ctx context.Context, livestreamID, livecommentID int64, opts ...ClientOption) error {
+func (c *Client) ReportLivecomment(ctx context.Context, livestreamID int64, streamerName string, livecommentID int64, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/livecomment/%d/report", livestreamID, livecommentID)
 	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {

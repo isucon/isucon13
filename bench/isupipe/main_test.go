@@ -25,7 +25,6 @@ func TestMain(m *testing.M) {
 
 	ctx := context.Background()
 	benchscore.InitCounter(ctx)
-	benchscore.InitProfit(ctx)
 	bencherror.InitErrors(ctx)
 
 	m.Run()
