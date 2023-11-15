@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"sync"
@@ -10,10 +11,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 )
 
-var (
-	randomSource  = rand.New(rand.NewSource(time.Now().UnixNano()))
-	tipRandSource = rand.New(rand.NewSource(42066173513625362))
-)
+var randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // GenerateIntBetween generates integer satisfies [min, max) constraint
 func generateTipValueBetween(min, max int) int {
@@ -37,34 +35,7 @@ func generateTipValueBetween(min, max int) int {
 	}
 }
 
-func generateTipLevelBetween(minLevel, maxLevel int) int {
-	return tipRandSource.Intn(maxLevel-minLevel) + minLevel
-}
-
 var LivecommentScheduler = mustNewLivecommentScheduler()
-
-// スパムを取り出す (ただし、なるべく投稿数の少ないスパム)
-// ライブコメントを取り出す (ただし、なるべく投稿数の少ないライブコメント)
-// チップを取り出す
-//// チップレベルを指定したら、それに合わせて金額を返すように
-
-// ライブコメント数、スパム数などに応じて投げ銭するモチベーションを制御したい
-// ただし、ゲーム性を損なわない範囲にしたいので、投げ銭してもらうまでの難易度が上がるというようにしたい
-
-// 予約後、ライブ配信の処理が重くなるように、ライブコメント(+投げ銭)やリアクションなどを管理し、考える
-// 投げ銭が偏るように采配するか、偏らないように分散させるか
-
-// 配信の種類を決める
-// * 通常
-// * 人気
-// * 炎上
-
-// 炎上ノルマ達成か？
-// 人気ノルマ達成か？
-// などのメソッドをはやし、呼び出し側で未達成なら炎上配信者払い出しなどというふうにする
-// 炎上配信者は、可能な限り人気があると良い
-// 人気は、もちろん人気がまだないことが条件
-// それ以外、通常に分類され、ユーザは通常配信者と視聴者になる
 
 type Livecomment struct {
 	UserID       int
@@ -182,11 +153,11 @@ func (s *livecommentScheduler) generateTip(level int) int {
 	case 0:
 		return 0
 	case 1:
-		return generateTipValueBetween(10, 1000)
+		return generateTipValueBetween(10, 100)
 	case 2:
-		return generateTipValueBetween(1000, 2000)
+		return generateTipValueBetween(100, 1000)
 	case 3:
-		return generateTipValueBetween(2000, 5000)
+		return generateTipValueBetween(1000, 5000)
 	case 4:
 		return generateTipValueBetween(5000, 10000)
 	case 5:
@@ -197,8 +168,25 @@ func (s *livecommentScheduler) generateTip(level int) int {
 }
 
 // 通常配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForStream() *Tip {
-	level := generateTipLevelBetween(1, 3)
+func (s *livecommentScheduler) GetTipsForStream(totalHours, currentHour int) *Tip {
+	if currentHour > totalHours {
+		log.Fatalf("GetTipsForPopularStream: 引数が不正です currentHour=%d > totalHours=%d\n", currentHour, totalHours)
+		return &Tip{Level: 0, Tip: 0}
+	}
+	if totalHours == 1 {
+		return &Tip{
+			Level: 1,
+			Tip:   s.generateTip(1),
+		}
+	}
+	var level int
+	threshold := totalHours / 2
+	if currentHour >= threshold {
+		level = 2
+	} else {
+		level = 1
+	}
+
 	tip := s.generateTip(level)
 	return &Tip{
 		Level: level,
@@ -206,15 +194,36 @@ func (s *livecommentScheduler) GetTipsForStream() *Tip {
 	}
 }
 
-// 人気配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForPopularStream() *Tip {
-	level := generateTipLevelBetween(3, 6)
+// 長時間配信に対するチップ取得
+// 10h以上を想定
+func (s *livecommentScheduler) GetTipsForLongStream(totalHours, currentHour int) *Tip {
+	if totalHours < 10 {
+		log.Fatalf("GetTipsForPopularStream: 時間枠が短すぎます: totalHours=%d\n", totalHours)
+		return &Tip{Level: 0, Tip: 0}
+	}
+	if currentHour > totalHours {
+		log.Fatalf("GetTipsForPopularStream: 引数が不正です currentHour=%d > totalHours=%d\n", currentHour, totalHours)
+		return &Tip{Level: 0, Tip: 0}
+	}
+	if totalHours < 1 {
+		return &Tip{
+			Level: 0,
+			Tip:   0,
+		}
+	}
+	threshold := totalHours / 5
+	level := min(1+(currentHour/threshold), 5)
+
 	tip := s.generateTip(level)
 	return &Tip{
 		Level: level,
 		Tip:   tip,
 	}
 }
+
+// 3 6 9 12 15
+// thres=3
+// 1 2 3 4 5
 
 func (s *livecommentScheduler) GetDummyNgWord() *NgWord {
 	idx := rand.Intn(len(dummyNgWords))

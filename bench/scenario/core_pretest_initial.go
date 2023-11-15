@@ -45,7 +45,7 @@ func normalInitialLivecommentPretest(ctx context.Context, dnsResolver *resolver.
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -79,7 +79,7 @@ func normalInitialReactionPretest(ctx context.Context, dnsResolver *resolver.DNS
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -114,7 +114,7 @@ func normalInitialTagPretest(ctx context.Context, dnsResolver *resolver.DNSResol
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err

@@ -10,3 +10,6 @@ const NumSlots = 5
 
 // NOTE: 初期データ予約済みの1時間分を引く必要がある
 const NumHours = (24 * 365) - 1
+
+// この時間[h]を超えた配信枠は長時間配信とみなす
+const LongHourThreshold = 10

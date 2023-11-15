@@ -50,7 +50,7 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 		return bencherror.NewInternalError(err)
 	}
 	unknownUserReq := isupipe.LoginRequest{
-		UserName: "unknownUser4328904823",
+		Username: "unknownUser4328904823",
 		Password: "unknownUser",
 	}
 
@@ -67,7 +67,7 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 		return bencherror.NewInternalError(err)
 	}
 	wrongPasswordReq := isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "wrongPassword",
 	}
 	if err := client2.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
@@ -132,7 +132,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			return err
 		}
 		if err := overflowClient.Login(ctx, &isupipe.LoginRequest{
-			UserName: overflowUser.Name,
+			Username: overflowUser.Name,
 			Password: "test",
 		}); err != nil {
 			return err
@@ -175,7 +175,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err

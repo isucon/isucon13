@@ -36,7 +36,7 @@ func TestLivestream(t *testing.T) {
 	})
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: user.Name,
+		Username: user.Name,
 		Password: user.RawPassword,
 	})
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func TestLivestream(t *testing.T) {
 			},
 		})
 		err = loopClient.Login(ctx, &LoginRequest{
-			UserName: fmt.Sprintf("user%d", i),
+			Username: fmt.Sprintf("user%d", i),
 			Password: "test",
 		})
 		assert.NoError(t, err)

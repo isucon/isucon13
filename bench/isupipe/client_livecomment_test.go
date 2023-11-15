@@ -35,7 +35,7 @@ func TestModerate(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: user.Name,
+		Username: user.Name,
 		Password: user.RawPassword,
 	})
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	})
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: user.Name,
+		Username: user.Name,
 		Password: user.RawPassword,
 	})
 	assert.NoError(t, err)

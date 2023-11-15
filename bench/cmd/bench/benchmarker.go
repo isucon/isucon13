@@ -30,12 +30,12 @@ var (
 )
 
 type benchmarker struct {
-	streamerSem        *semaphore.Weighted
-	popularStreamerSem *semaphore.Weighted
-	moderatorSem       *semaphore.Weighted
-	viewerSem          *semaphore.Weighted
-	spammerSem         *semaphore.Weighted
-	attackSem          *semaphore.Weighted
+	streamerSem     *semaphore.Weighted
+	longStreamerSem *semaphore.Weighted
+	moderatorSem    *semaphore.Weighted
+	viewerSem       *semaphore.Weighted
+	spammerSem      *semaphore.Weighted
+	attackSem       *semaphore.Weighted
 
 	popularStreamerClientPool *isupipe.ClientPool
 	streamerClientPool        *isupipe.ClientPool
@@ -54,7 +54,7 @@ type benchmarker struct {
 func newBenchmarker(ctx context.Context) *benchmarker {
 	lgr := zap.S()
 
-	var weight int64 = int64(config.AdvertiseCost)
+	var weight int64 = int64(config.BaseParallelism)
 	lgr.Infof("負荷レベル: %d", weight)
 
 	popularStreamerClientPool := isupipe.NewClientPool(ctx)
@@ -77,7 +77,7 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 
 	return &benchmarker{
 		streamerSem:               semaphore.NewWeighted(weight),
-		popularStreamerSem:        semaphore.NewWeighted(weight),
+		longStreamerSem:           semaphore.NewWeighted(weight),
 		moderatorSem:              semaphore.NewWeighted(weight),
 		viewerSem:                 semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
 		spammerSem:                semaphore.NewWeighted(weight * 20), // 視聴者の２倍はスパム投稿者が潜んでいる
@@ -121,7 +121,7 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 				}
 
 				if err := client.Login(ctx, &isupipe.LoginRequest{
-					UserName: u.Name,
+					Username: u.Name,
 					Password: u.RawPassword,
 				}); err != nil {
 					return
@@ -171,8 +171,8 @@ func (b *benchmarker) loadStreamer(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func (b *benchmarker) loadPopularStreamer(ctx context.Context) error {
-	defer b.popularStreamerSem.Release(1)
+func (b *benchmarker) loadLongStreamer(ctx context.Context) error {
+	defer b.longStreamerSem.Release(1)
 
 	return nil
 }
@@ -192,11 +192,6 @@ func (b *benchmarker) loadModerator(ctx context.Context) error {
 	eg.Go(func() error {
 		return scenario.BasicStreamerModerateScenario(childCtx, b.streamerClientPool)
 	})
-
-	// FIXME: aggressiveは正常系の影響受けたくない
-	// eg.Go(func() error {
-	// 	return scenario.AggressiveStreamerModerateScenario(childCtx)
-	// })
 
 	return eg.Wait()
 }
@@ -271,11 +266,11 @@ func (b *benchmarker) run(ctx context.Context) error {
 					b.loadStreamer(childCtx)
 				}()
 			}
-			if ok := b.popularStreamerSem.TryAcquire(1); ok {
+			if ok := b.longStreamerSem.TryAcquire(1); ok {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					b.loadPopularStreamer(childCtx)
+					b.loadLongStreamer(childCtx)
 				}()
 			}
 			if ok := b.moderatorSem.TryAcquire(1); ok {

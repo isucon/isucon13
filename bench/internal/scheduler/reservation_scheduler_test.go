@@ -15,7 +15,7 @@ func TestReservationScheduler_Edgecase(t *testing.T) {
 		hours          = 24
 	)
 
-	sched := mustNewReservationScheduler(baseUnix, 1, hours)
+	sched := mustNewReservationScheduler(baseUnix, 2, hours)
 	log.Println("load")
 	sched.loadReservations([]*Reservation{
 		{id: 1, StartAt: baseAt.Add(0 * time.Hour).Unix(), EndAt: baseAt.Add(1 * time.Hour).Unix()},
@@ -26,7 +26,7 @@ func TestReservationScheduler_Edgecase(t *testing.T) {
 		{id: 6, StartAt: baseAt.Add(21 * time.Hour).Unix(), EndAt: baseAt.Add(23 * time.Hour).Unix()},
 	})
 	log.Println("===== test1 =====")
-	reservation, err := sched.GetHotShortReservation()
+	reservation, err := sched.GetColdShortReservation()
 	assert.NoError(t, err)
 	assert.NotNil(t, reservation)
 	assert.Equal(t, 1, reservation.id)
@@ -36,7 +36,7 @@ func TestReservationScheduler_Edgecase(t *testing.T) {
 	sched.CommitReservation(reservation)
 
 	log.Println("===== test2 =====")
-	reservation, err = sched.GetHotShortReservation()
+	reservation, err = sched.GetColdLongReservation()
 	assert.NoError(t, err)
 	assert.Equal(t, 2, reservation.id)
 	assert.Equal(t, baseAt.Add(3*time.Hour).Unix(), reservation.StartAt)
@@ -45,7 +45,7 @@ func TestReservationScheduler_Edgecase(t *testing.T) {
 	sched.CommitReservation(reservation)
 
 	log.Println("===== test3 =====")
-	reservation, err = sched.GetHotLongReservation()
+	reservation, err = sched.GetColdShortReservation()
 	log.Printf("[Test] id=%d, [%s,%s)\n", reservation.id, time.Unix(reservation.StartAt, 0), time.Unix(reservation.EndAt, 0))
 	assert.NoError(t, err)
 	assert.Equal(t, 6, reservation.id)
@@ -55,7 +55,7 @@ func TestReservationScheduler_Edgecase(t *testing.T) {
 	sched.CommitReservation(reservation)
 
 	log.Println("===== test4 ====")
-	reservation, err = sched.GetHotShortReservation()
+	reservation, err = sched.GetHotReservation()
 	assert.NoError(t, err)
 	assert.Equal(t, 3, reservation.id)
 	assert.Equal(t, baseAt.Add(6*time.Hour).Unix(), reservation.StartAt)
@@ -71,7 +71,7 @@ func TestReservationScheduler_Edgecase(t *testing.T) {
 
 	sched.CommitReservation(reservation)
 
-	reservation, err = sched.GetHotShortReservation()
+	reservation, err = sched.GetHotReservation()
 	assert.NoError(t, err)
 	assert.Equal(t, 4, reservation.id)
 	assert.Equal(t, baseAt.Add(10*time.Hour).Unix(), reservation.StartAt)

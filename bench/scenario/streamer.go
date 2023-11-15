@@ -2,13 +2,15 @@ package scenario
 
 import (
 	"context"
+	"errors"
 
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 )
 
 // 枠数1のタイミングで、複数クライアントから一斉に書き込み、１個だけ成立しない場合は失格判定
-func BasicPopularStreamerScenario(
+func BasicLongStreamerScenario(
 	ctx context.Context,
 	popularStreamerPool *isupipe.ClientPool,
 ) error {
@@ -29,12 +31,8 @@ func BasicStreamerColdReserveScenario(
 	}
 	streamerPool.Put(ctx, client) // 他のviewerが参入できるようにプールにすぐもどす
 
-	username, err := client.LoginUserName()
+	username, err := client.Username()
 	if err != nil {
-		return err
-	}
-
-	if err := VisitLivestreamAdmin(ctx, client); err != nil {
 		return err
 	}
 
@@ -43,7 +41,7 @@ func BasicStreamerColdReserveScenario(
 		return err
 	}
 
-	tags, err := client.GetRandomTags(ctx, 5)
+	tags, err := client.GetRandomLivestreamTags(ctx, 5)
 	if err != nil {
 		return err
 	}
@@ -73,7 +71,7 @@ func BasicStreamerColdReserveScenario(
 }
 
 // 人気VTuber同士を衝突させる？
-func BasicStreamerHotScenario(
+func BasicLongStreamerHotScenario(
 	ctx context.Context,
 	streamerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
@@ -92,10 +90,6 @@ func BasicStreamerModerateScenario(
 	}
 	defer streamerPool.Put(ctx, client)
 
-	if err := VisitLivestreamAdmin(ctx, client); err != nil {
-		return err
-	}
-
 	// 自分のライブ配信一覧取得
 	livestreams, err := client.GetMyLivestreams(ctx)
 	if err != nil {
@@ -103,9 +97,13 @@ func BasicStreamerModerateScenario(
 	}
 
 	for _, livestream := range livestreams {
+		if err := VisitLivestreamAdmin(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			return err
+		}
+
 		reports, err := client.GetLivecommentReports(ctx, livestream.ID)
 		if err != nil {
-			return err
+			continue
 		}
 
 		for _, report := range reports {
@@ -139,10 +137,6 @@ func AggressiveStreamerModerateScenario(
 	}
 	defer streamerPool.Put(ctx, client)
 
-	if err := VisitLivestreamAdmin(ctx, client); err != nil {
-		return err
-	}
-
 	// 自分のライブ配信一覧取得
 	livestreams, err := client.GetMyLivestreams(ctx)
 	if err != nil {
@@ -150,6 +144,10 @@ func AggressiveStreamerModerateScenario(
 	}
 
 	for _, livestream := range livestreams {
+		if err := VisitLivestreamAdmin(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			return err
+		}
+
 		ngWord := scheduler.LivecommentScheduler.GetDummyNgWord()
 		if err := client.Moderate(ctx, livestream.ID, ngWord.Word); err != nil {
 			continue

@@ -8,8 +8,7 @@ import (
 )
 
 type InitializeResponse struct {
-	AdvertiseLevel int64  `json:"advertise_level"`
-	Language       string `json:"language"`
+	Language string `json:"language"`
 }
 
 func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {

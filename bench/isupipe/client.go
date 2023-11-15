@@ -107,7 +107,7 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 	}, nil
 }
 
-func (c *Client) LoginUserName() (string, error) {
+func (c *Client) Username() (string, error) {
 	if len(c.username) == 0 {
 		return "", bencherror.NewInternalError(fmt.Errorf("未ログインクライアントです"))
 	}

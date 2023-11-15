@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 )
@@ -22,6 +23,11 @@ type Livestream struct {
 	StartAt      int64  `json:"start_at"`
 	EndAt        int64  `json:"end_at"`
 	CreatedAt    int64  `json:"created_at"`
+}
+
+func (l *Livestream) Hours() int {
+	diffSec := time.Unix(l.EndAt, 0).Sub(time.Unix(l.StartAt, 0))
+	return int(diffSec / time.Hour)
 }
 
 type (
@@ -80,6 +86,11 @@ func (c *Client) SearchLivestreams(
 	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream/search", nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
+	}
+	if o.searchTag != nil {
+		query := req.URL.Query()
+		query.Add("tag", o.searchTag.Tag)
+		req.URL.RawQuery = query.Encode()
 	}
 
 	resp, err := sendRequest(ctx, c.agent, req)
@@ -173,40 +184,6 @@ func (c *Client) GetUserLivestreams(ctx context.Context, username string, opts .
 	}
 
 	return livestreams, nil
-}
-
-func (c *Client) SearchLivestreamsByTag(
-	ctx context.Context,
-	tag string,
-	opts ...ClientOption,
-) error {
-	var (
-		defaultStatusCode = http.StatusOK
-		o                 = newClientOptions(defaultStatusCode, opts...)
-	)
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/api/livestream/search", nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-	query := req.URL.Query()
-	query.Add("tag", tag)
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := sendRequest(ctx, c.agent, req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-	}()
-
-	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
-	}
-
-	return nil
 }
 
 func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest, opts ...ClientOption) (*Livestream, error) {

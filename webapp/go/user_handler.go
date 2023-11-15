@@ -21,7 +21,7 @@ const (
 	defaultSessionIDKey      = "SESSIONID"
 	defaultSessionExpiresKey = "EXPIRES"
 	defaultUserIDKey         = "USERID"
-	defaultUserNameKey       = "USERNAME"
+	defaultUsernameKey       = "USERNAME"
 	bcryptDefaultCost        = bcrypt.MinCost
 )
 
@@ -68,7 +68,7 @@ type PostUserRequestTheme struct {
 }
 
 type LoginRequest struct {
-	UserName string `json:"username"`
+	Username string `json:"username"`
 	// Password is non-hashed password.
 	Password string `json:"password"`
 }
@@ -292,7 +292,7 @@ func loginHandler(c echo.Context) error {
 
 	userModel := UserModel{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.UserName)
+	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.Username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
@@ -329,7 +329,7 @@ func loginHandler(c echo.Context) error {
 	sess.Values[defaultSessionIDKey] = sessionID
 	// FIXME: ユーザ名
 	sess.Values[defaultUserIDKey] = userModel.ID
-	sess.Values[defaultUserNameKey] = userModel.Name
+	sess.Values[defaultUsernameKey] = userModel.Name
 	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {

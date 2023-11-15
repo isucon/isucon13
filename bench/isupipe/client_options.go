@@ -6,10 +6,15 @@ type LimitParam struct {
 	Limit int
 }
 
+type SearchTagParam struct {
+	Tag string
+}
+
 type ClientOptions struct {
 	wantStatusCode int
 	spamCheck      bool
 	limitParam     *LimitParam
+	searchTag      *SearchTagParam
 }
 
 func newClientOptions(defaultStatusCode int, opts ...ClientOption) *ClientOptions {
@@ -38,8 +43,18 @@ func WithNoSpamCheck() ClientOption {
 	}
 }
 
-func WithLimitQueryParam(param *LimitParam) ClientOption {
+func WithLimitQueryParam(limit int) ClientOption {
 	return func(o *ClientOptions) {
-		o.limitParam = param
+		o.limitParam = &LimitParam{
+			Limit: limit,
+		}
+	}
+}
+
+func WithSearchTagQueryParam(tag string) ClientOption {
+	return func(o *ClientOptions) {
+		o.searchTag = &SearchTagParam{
+			Tag: tag,
+		}
 	}
 }

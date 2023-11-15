@@ -44,7 +44,7 @@ func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: user.Name,
+		Username: user.Name,
 		Password: testUserRawPassword,
 	}); err != nil {
 		return err
@@ -79,7 +79,7 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -131,7 +131,7 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	}
 
 	// FIXME: 結果をちゃんと確認
-	if err := client.SearchLivestreamsByTag(ctx, "椅子" /* tag name */); err != nil {
+	if _, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("椅子")); err != nil {
 		return err
 	}
 
@@ -148,7 +148,7 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -193,7 +193,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -218,9 +218,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return err
 	}
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, isupipe.WithLimitQueryParam(&isupipe.LimitParam{
-		Limit: 1,
-	}))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, isupipe.WithLimitQueryParam(1))
 	if err != nil {
 		return err
 	}
@@ -247,7 +245,7 @@ func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResol
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -293,7 +291,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -314,9 +312,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 		return fmt.Errorf("初期のtest001ユーザのライブ配信におけるスパム報告は0件でなければなりません")
 	}
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, isupipe.WithLimitQueryParam(&isupipe.LimitParam{
-		Limit: 10,
-	}))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, isupipe.WithLimitQueryParam(10))
 	if err != nil {
 		return err
 	}
@@ -349,7 +345,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 		return err
 	}
 	if err := reporterClient.Login(ctx, &isupipe.LoginRequest{
-		UserName: reporter.Name,
+		Username: reporter.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -383,7 +379,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -431,7 +427,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return err
 	}
 	if err := spammerClient.Login(ctx, &isupipe.LoginRequest{
-		UserName: "spam",
+		Username: "spam",
 		Password: "test",
 	}); err != nil {
 		return err

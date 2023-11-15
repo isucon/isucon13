@@ -2,11 +2,13 @@ package scenario
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
-	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 func BasicViewerScenario(
@@ -14,6 +16,7 @@ func BasicViewerScenario(
 	viewerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
+	lgr := zap.S()
 
 	client, err := viewerPool.Get(ctx)
 	if err != nil {
@@ -21,7 +24,7 @@ func BasicViewerScenario(
 	}
 	defer viewerPool.Put(ctx, client)
 
-	if err := VisitTop(ctx, client); err != nil {
+	if err := VisitTop(ctx, client); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 		return err
 	}
 
@@ -31,26 +34,40 @@ func BasicViewerScenario(
 	}
 	defer livestreamPool.Put(ctx, livestream)
 
-	if err := VisitLivestream(ctx, client, livestream); err != nil {
+	if err := VisitLivestream(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 		return err
 	}
 
-	for i := 0; i < int(config.AdvertiseCost*10); i++ {
+	for hour := 0; hour < livestream.Hours(); hour++ {
+		if _, err := client.GetLivestreamStatistics(ctx, livestream.ID); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			continue
+		}
+
+		if _, err := client.GetLivecomments(ctx, livestream.ID); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			continue
+		}
+
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
-		tip := scheduler.LivecommentScheduler.GetTipsForStream()
-		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livecomment.Comment, tip); err != nil {
+		tip := scheduler.LivecommentScheduler.GetTipsForStream(livestream.Hours(), hour)
+		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livecomment.Comment, tip); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			// FIXME: 真面目にログを書く
+			lgr.Info("離脱: %s", err.Error())
 			return err
+		}
+
+		if _, err := client.GetReactions(ctx, livestream.ID); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			continue
 		}
 
 		emojiName := scheduler.GetReaction()
 		if _, err := client.PostReaction(ctx, livestream.ID, &isupipe.PostReactionRequest{
 			EmojiName: emojiName,
 		}); err != nil {
-			return err
+			continue
 		}
 	}
 
-	if err := GoAwayFromLivestream(ctx, client, livestream); err != nil {
+	if err := LeaveFromLivestream(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 		return err
 	}
 

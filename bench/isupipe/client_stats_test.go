@@ -28,7 +28,7 @@ func TestGetUserStats(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: user.Name,
+		Username: user.Name,
 		Password: "test",
 	})
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestGetUserStats(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	err = streamer1Client.Login(ctx, &LoginRequest{
-		UserName: streamer1.Name,
+		Username: streamer1.Name,
 		Password: "test",
 	})
 	assert.NoError(t, err)
@@ -98,8 +98,10 @@ func TestGetUserStats(t *testing.T) {
 	assert.Equal(t, "helicopter", stats3.FavoriteEmoji)
 
 	// 配信にライブコメントを投稿してみる
-	tip := scheduler.LivecommentScheduler.GetTipsForStream()
-	_, tipAmount, err := client.PostLivecomment(ctx, livestream1.ID, "isu~", tip)
+	_, tipAmount, err := client.PostLivecomment(ctx, livestream1.ID, "isu~", &scheduler.Tip{
+		Level: 1,
+		Tip:   10,
+	})
 	assert.NoError(t, err)
 
 	stats4, err := client.GetUserStatistics(ctx, streamer1.Name)
@@ -126,7 +128,7 @@ func TestGetLivestreamStats(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: user.Name,
+		Username: user.Name,
 		Password: "test",
 	})
 	assert.NoError(t, err)
@@ -161,12 +163,14 @@ func TestGetLivestreamStats(t *testing.T) {
 		},
 	})
 	err = commenterClient.Login(ctx, &LoginRequest{
-		UserName: commenter.Name,
+		Username: commenter.Name,
 		Password: "test",
 	})
 	assert.NoError(t, err)
-	tip := scheduler.LivecommentScheduler.GetTipsForPopularStream()
-	livecomment, tipAmount, err := commenterClient.PostLivecomment(ctx, 1, "isuisu", tip)
+	livecomment, tipAmount, err := commenterClient.PostLivecomment(ctx, 1, "isuisu", &scheduler.Tip{
+		Level: 5,
+		Tip:   10000,
+	})
 	assert.NoError(t, err)
 	stats4, err := client.GetLivestreamStatistics(ctx, 1)
 	assert.NoError(t, err)

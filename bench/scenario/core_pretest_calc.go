@@ -68,7 +68,7 @@ func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSRe
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "user-stats-calc",
+		Username: "user-stats-calc",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -105,7 +105,7 @@ func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSRe
 		}
 
 		if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
-			UserName: viewer.Name,
+			Username: viewer.Name,
 			Password: "test",
 		}); err != nil {
 			return err
@@ -151,7 +151,7 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err

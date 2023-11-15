@@ -27,11 +27,10 @@ var enableSSL bool
 var pretestOnly bool
 
 type BenchResult struct {
-	Pass          bool     `json:"pass"`
-	Score         int64    `json:"score"`
-	Messages      []string `json:"messages"`
-	AdvertiseCost int      `json:"advertise_cost"`
-	Language      string   `json:"language"`
+	Pass     bool     `json:"pass"`
+	Score    int64    `json:"score"`
+	Messages []string `json:"messages"`
+	Language string   `json:"language"`
 }
 
 // UniqueMsgs は重複除去したメッセージ配列を返します
@@ -51,11 +50,10 @@ func dumpFailedResult(msgs []string) {
 	lgr := zap.S()
 
 	b, err := json.Marshal(&BenchResult{
-		Pass:          false,
-		Score:         0,
-		Messages:      msgs,
-		AdvertiseCost: int(config.AdvertiseCost),
-		Language:      config.Language,
+		Pass:     false,
+		Score:    0,
+		Messages: msgs,
+		Language: config.Language,
 	})
 	if err != nil {
 		lgr.Warnf("失格判定結果書き出しに失敗. 運営に連絡してください: messages=%+v, err=%+v", msgs, err)
@@ -127,9 +125,9 @@ var run = cli.Command{
 			config.HTTPScheme = "https"
 			config.TargetPort = 443
 			config.InsecureSkipVerify = false
-			lgr.Info("SSLが有効になっています")
+			lgr.Info("SSL接続が有効になっています")
 		} else {
-			lgr.Info("SSLが無効になっています")
+			lgr.Info("SSL接続が無効になっています")
 		}
 
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
@@ -154,13 +152,8 @@ var run = cli.Command{
 
 		initializeResp, err := initClient.Initialize(ctx)
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.NewExitError(fmt.Errorf("初期化が失敗しました: %w", err), 1)
 		}
-		// FIXME: 値の見直し
-		if initializeResp.AdvertiseLevel < 1 || initializeResp.AdvertiseLevel > 100 {
-			return cli.NewExitError(fmt.Errorf("不正な広告レベル"), 1)
-		}
-		config.AdvertiseCost = initializeResp.AdvertiseLevel
 		config.Language = initializeResp.Language
 
 		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
