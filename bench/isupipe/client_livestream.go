@@ -47,12 +47,12 @@ func (c *Client) GetLivestream(
 	)
 
 	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return err
 	}
@@ -240,8 +240,10 @@ func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequ
 	}
 
 	var livestream *Livestream
-	if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
-		return nil, bencherror.NewHttpResponseError(err, req)
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
 	}
 
 	return livestream, nil
@@ -254,13 +256,13 @@ func (c *Client) EnterLivestream(ctx context.Context, livestreamID int64, opts .
 	)
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/enter", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
+	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return err
 	}
@@ -283,12 +285,12 @@ func (c *Client) ExitLivestream(ctx context.Context, livestreamID int64, opts ..
 	)
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/exit", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
+	req, err := c.themeAgent.NewRequest(http.MethodDelete, urlPath, nil)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return err
 	}

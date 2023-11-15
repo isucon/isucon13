@@ -94,7 +94,7 @@ CREATE TABLE `livecomment_reports` (
   `created_at` BIGINT NOT NULL,
   CONSTRAINT FK_livecomment_reports_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT FK_livecomment_reports_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`),
-  CONSTRAINT FK_livecomment_reports_livecomment_id FOREIGN KEY (`livecomment_id`) REFERENCES `livecomments` (`id`)
+  CONSTRAINT FK_livecomment_reports_livecomment_id FOREIGN KEY (`livecomment_id`) REFERENCES `livecomments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- 配信者からのNGワード登録

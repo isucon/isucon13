@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
@@ -34,10 +35,6 @@ func BasicViewerScenario(
 		return err
 	}
 
-	if err := client.EnterLivestream(ctx, livestream.ID); err != nil {
-		return err
-	}
-
 	for i := 0; i < int(config.AdvertiseCost*10); i++ {
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip := scheduler.LivecommentScheduler.GetTipsForStream()
@@ -53,7 +50,7 @@ func BasicViewerScenario(
 		}
 	}
 
-	if err := client.ExitLivestream(ctx, livestream.ID); err != nil {
+	if err := GoAwayFromLivestream(ctx, client, livestream); err != nil {
 		return err
 	}
 
@@ -80,12 +77,18 @@ func ViewerSpamScenario(
 	}
 	defer livestreamPool.Put(ctx, livestream)
 
-	for i := 0; i < 10; i++ {
-		comment := scheduler.LivecommentScheduler.GetNegativeComment()
+	comment, isModerated := scheduler.LivecommentScheduler.GetNegativeComment()
+	if isModerated {
+		_, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{}, isupipe.WithStatusCode(http.StatusBadRequest))
+		if err != nil {
+			return err
+		}
+	} else {
 		resp, _, err := viewer.PostLivecomment(ctx, livestream.ID, comment.Comment, &scheduler.Tip{})
 		if err != nil {
-			continue
+			return err
 		}
+
 		livecommentPool.Put(ctx, &isupipe.Livecomment{
 			ID:         resp.ID,
 			User:       resp.User,

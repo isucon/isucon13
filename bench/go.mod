@@ -8,8 +8,10 @@ require (
 	github.com/miekg/dns v1.1.56
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.1
+	github.com/valyala/bytebufferpool v1.0.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.4.0
+	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 
 )
 

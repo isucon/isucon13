@@ -52,6 +52,11 @@
     path: /etc/nginx/sites-enabled/default
     state: absent
 
+- name: "roles/nginx/tasks: check nginx config"
+  become: true
+  shell: |
+    nginx -t
+
 - name: "roles/nginx/tasks: Start nginx"
   become: true
   systemd:

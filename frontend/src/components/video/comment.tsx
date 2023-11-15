@@ -1,24 +1,33 @@
 import { Emoji } from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import Avatar from '@mui/joy/Avatar';
 import Button from '@mui/joy/Button';
 import ButtonGroup from '@mui/joy/ButtonGroup';
 import Card from '@mui/joy/Card';
 import CardContent from '@mui/joy/CardContent';
 import CardOverflow from '@mui/joy/CardOverflow';
+import DialogContent from '@mui/joy/DialogContent';
+import DialogTitle from '@mui/joy/DialogTitle';
+import FormControl from '@mui/joy/FormControl';
+import FormLabel from '@mui/joy/FormLabel';
 import IconButton from '@mui/joy/IconButton';
 import Input from '@mui/joy/Input';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
 import Skeleton from '@mui/joy/Skeleton';
 import Slider from '@mui/joy/Slider';
 import Stack from '@mui/joy/Stack';
+import Textarea from '@mui/joy/Textarea';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AiFillHeart, AiOutlineClose } from 'react-icons/ai';
 import { HiCurrencyYen } from 'react-icons/hi2';
+import { useGlobalToastQueue } from '../toast/toast';
 import { apiClient } from '~/api/client';
 import { useLiveStreamComment, useLiveStreamReaction } from '~/api/hooks';
+import { iconUrl } from '~/api/icon';
 import { Schemas } from '~/api/types';
 import {
   RandomReactions,
@@ -26,9 +35,9 @@ import {
   ReactionView,
 } from '~/components/reaction/reaction';
 
-const chipTable = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+const tipTable = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
-export function chipColor(price: number): [string, boolean] {
+export function tipColor(price: number): [string, boolean] {
   // blue
   if (price < 200) return ['#33d', true];
   // light blue
@@ -45,13 +54,6 @@ export function chipColor(price: number): [string, boolean] {
   return ['#f00', true];
 }
 
-// interface LiveComment {
-//   id: string;
-//   userName: string;
-//   text: string;
-//   chip?: number;
-// }
-
 export interface LiveCommentProps {
   type: 'real' | 'random'; // real: 実際のAPIコールを伴う, random: ランダムコメントでのデモ
   livestream_id: number;
@@ -61,10 +63,11 @@ export interface LiveCommentProps {
 export default function LiveComment(
   props: LiveCommentProps,
 ): React.ReactElement {
+  /* ********** COMMENTS ********** */
   const [commentMode, setCommentMode] = React.useState<
-    'normal' | 'chip' | 'emoji'
+    'normal' | 'tip' | 'emoji'
   >('normal');
-  const [chipAmount, setChipAmount] = React.useState(2000);
+  const [tipAmount, setTipAmount] = React.useState(2000);
 
   const [localLiveComments, setLocalLiveComments] = React.useState<
     Schemas.Livecomment[]
@@ -97,7 +100,7 @@ export default function LiveComment(
         counterRef.current++;
         let tip: number | undefined;
         if (Math.random() < 0.1) {
-          tip = chipTable[Math.floor(Math.random() * chipTable.length)];
+          tip = tipTable[Math.floor(Math.random() * tipTable.length)];
         }
         setLocalLiveComments((comments) => {
           const newList = [
@@ -195,7 +198,7 @@ export default function LiveComment(
           },
           requestBody: {
             comment: comment,
-            tip: chipAmount,
+            tip: tipAmount,
           },
         });
         remoteLiveComment.mutate();
@@ -220,20 +223,21 @@ export default function LiveComment(
               theme: '',
             },
             comment: comment,
-            tip: chipAmount,
+            tip: tipAmount,
           } satisfies Schemas.Livecomment,
         ];
       });
       form.setValue('tipComment', '');
     }
-  }, [form, props.type, chipAmount]);
+  }, [form, props.type, tipAmount]);
 
+  /* ********** REACTIONS ********** */
   const remoteReaction = useLiveStreamReaction(
     props.type === 'real' ? props.livestream_id.toString() : null,
   );
   const reactions: Reaction[] =
     remoteReaction.data?.map(
-      (r) => ({ id: r.id, shortcodes: r.emoji_name }) satisfies Reaction,
+      (r) => ({ id: r.id, shortcodes: `:${r.emoji_name}:` }) satisfies Reaction,
     ) ?? [];
   const onEmojiSelect = React.useCallback(
     async (emoji: Emoji & { shortcodes: string }) => {
@@ -252,9 +256,78 @@ export default function LiveComment(
     [],
   );
 
+  /* ********** REPORT ********** */
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [reportComment, setReportComment] =
+    React.useState<Schemas.Livecomment | null>(null);
+
+  const [isReportloading, setIsReportLoading] = React.useState(false);
+  const onReportClick = React.useCallback(
+    (id: number) => {
+      const reportComment = liveComments.find((c) => c.id === id);
+      if (reportComment) {
+        setReportComment(reportComment);
+      }
+    },
+    [liveComments],
+  );
+  const toast = useGlobalToastQueue();
+  const onReportSubmit = React.useCallback(async () => {
+    if (reportComment) {
+      setIsReportLoading(true);
+      try {
+        await apiClient.post$livecomment$livecommentid$report({
+          parameter: {
+            livestreamid: props.livestream_id.toString(),
+            livecommentid: reportComment.id?.toString() ?? '0',
+          },
+        });
+        setReportComment(null);
+
+        toast.add(
+          {
+            type: 'success',
+            title: 'Report Success',
+            message: 'コメントの通報に成功しました',
+          },
+          { timeout: 3000 },
+        );
+      } finally {
+        setIsReportLoading(false);
+      }
+    }
+  }, [reportComment, props.livestream_id]);
+
   return (
     <>
-      <Card sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }}>
+      <ReportModal
+        container={() => cardRef.current}
+        open={reportComment !== null}
+        onClose={() => setReportComment(null)}
+      >
+        <ModalDialog>
+          <DialogTitle>コメントの通報</DialogTitle>
+          <DialogContent>通報内容を確認してください</DialogContent>
+          <Stack spacing={2}>
+            <FormControl>
+              <FormLabel>投稿ユーザ</FormLabel>
+              <Input readOnly value={reportComment?.user?.name} />
+            </FormControl>
+            <FormControl>
+              <FormLabel>投稿内容</FormLabel>
+              <Textarea readOnly value={reportComment?.comment} />
+            </FormControl>
+            <Button onClick={() => onReportSubmit()} loading={isReportloading}>
+              通報
+            </Button>
+            <Button variant="soft" onClick={() => setReportComment(null)}>
+              キャンセル
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </ReportModal>
+
+      <Card sx={{ flexBasis: '250px', flexGrow: 1, gap: 0 }} ref={cardRef}>
         <CardOverflow
           sx={{
             borderBottom: (t) =>
@@ -292,7 +365,11 @@ export default function LiveComment(
               </>
             ) : (
               liveComments.map((comment) => (
-                <Comment key={comment.id} comment={comment} />
+                <Comment
+                  key={comment.id}
+                  comment={comment}
+                  onReport={onReportClick}
+                />
               ))
             )}
           </Stack>
@@ -305,10 +382,10 @@ export default function LiveComment(
                   : commentMode === 'normal'
                   ? '70px'
                   : '300px',
-              right: commentMode === 'chip' ? '45px' : '15px',
+              right: commentMode === 'tip' ? '45px' : '15px',
             }}
           >
-            {commentMode !== 'chip' && (
+            {commentMode !== 'tip' && (
               <IconButton
                 onClick={() =>
                   setCommentMode((mode) =>
@@ -373,14 +450,14 @@ export default function LiveComment(
                   variant="plain"
                   color="neutral"
                   sx={{ py: 0, px: 1 }}
-                  onClick={() => setCommentMode('chip')}
+                  onClick={() => setCommentMode('tip')}
                 >
                   <HiCurrencyYen size="1.5rem" />
                 </Button>
               </Stack>
             </>
           )}
-          {commentMode === 'chip' && (
+          {commentMode === 'tip' && (
             <>
               <Stack spacing={2}>
                 <Typography level="body-lg" sx={{ py: 1 }}>
@@ -393,7 +470,7 @@ export default function LiveComment(
                     <TipComment
                       text={field.value}
                       onChange={(text) => field.onChange(text)}
-                      amount={chipAmount}
+                      amount={tipAmount}
                       isEditable
                     />
                   )}
@@ -404,10 +481,10 @@ export default function LiveComment(
                   marks
                   min={0}
                   max={7}
-                  scale={(x) => chipTable[x] ?? 0}
+                  scale={(x) => tipTable[x] ?? 0}
                   valueLabelDisplay="auto"
-                  value={chipTable.indexOf(chipAmount)}
-                  onChange={(e, v) => setChipAmount(chipTable[v as number])}
+                  value={tipTable.indexOf(tipAmount)}
+                  onChange={(e, v) => setTipAmount(tipTable[v as number])}
                 />
                 <ButtonGroup buttonFlex="1 0 100px">
                   <Button
@@ -444,17 +521,36 @@ const PickerWrapper = styled.div`
   }
 `;
 
+const ReportModal = styled(Modal)`
+  position: absolute;
+  & .MuiModal-backdrop {
+    position: absolute;
+  }
+  z-index: 1;
+`;
+
 interface CommentProps {
   comment: Schemas.Livecomment;
+  onReport?(id: number): void;
 }
 const Comment = React.memo(function Comment({
   comment,
+  onReport,
 }: CommentProps): React.ReactElement {
   return comment.tip ? (
-    <TipComment text={comment.comment ?? ''} amount={comment.tip ?? 0} />
+    <TipComment
+      text={comment.comment ?? ''}
+      amount={comment.tip ?? 0}
+      onClick={() => comment.id && onReport?.(comment.id)}
+      username={comment.user?.name}
+    />
   ) : (
-    <CommentWrapper>
-      <Avatar size="sm" sx={{ position: 'absolute' }} />
+    <CommentWrapper onClick={() => comment.id && onReport?.(comment.id)}>
+      <Avatar
+        size="sm"
+        sx={{ position: 'absolute' }}
+        src={iconUrl(comment.user?.name)}
+      />
       <Typography component="div" sx={{ ml: '40px', pt: '2px' }}>
         <Typography level="title-sm" component="span">
           {comment.user?.display_name ?? ''}
@@ -476,27 +572,32 @@ const Comment = React.memo(function Comment({
 
 const CommentWrapper = styled.div`
   position: relative;
+  cursor: pointer;
 `;
 
 interface TipCommentProps {
   amount: number;
   text: string;
+  username?: string;
   isEditable?: boolean;
   onChange?(text: string): void;
+  onClick?(): void;
 }
 function TipComment(props: TipCommentProps): React.ReactElement {
-  const color = chipColor(props.amount);
+  const color = tipColor(props.amount);
   return (
     <Stack
       sx={{
         p: 2,
         background: color[0],
         borderRadius: 10,
+        cursor: props.onClick ? 'pointer' : 'default',
       }}
       spacing={1}
+      onClick={props.onClick}
     >
       <Stack direction="row" spacing={1} alignItems="center">
-        <Avatar size="sm" />
+        <Avatar size="sm" src={iconUrl(props.username)} />
         <Typography
           level="title-sm"
           sx={{

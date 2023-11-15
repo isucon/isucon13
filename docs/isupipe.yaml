@@ -84,7 +84,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-  "/users/{username}":
+  "/user/{username}":
     parameters:
       - schema:
           type: string
@@ -93,7 +93,7 @@ paths:
         required: true
     get:
       summary: ""
-      operationId: get-users-username
+      operationId: get-user-username
       responses:
         "200":
           $ref: "#/components/responses/GetUser"
@@ -132,7 +132,7 @@ paths:
           in: cookie
           name: SESSIONID
           description: セッションID
-  "/users/{username}/statistics":
+  "/user/{username}/statistics":
     parameters:
       - schema:
           type: string
@@ -141,7 +141,7 @@ paths:
         required: true
     get:
       summary: ""
-      operationId: get-users-statistics
+      operationId: get-user-statistics
       responses:
         "200":
           $ref: "#/components/responses/GetUserStatistics"
@@ -159,12 +159,6 @@ paths:
           name: SESSIONID
           description: セッションID
   /livestream:
-    parameters:
-      - in: query
-        name: tag
-        schema:
-          type: string
-        description: 検索に使用するタグの名前
     get:
       summary: Your GET endpoint
       tags: []
@@ -174,6 +168,28 @@ paths:
         "500":
           description: Internal Server Error
       operationId: get-livestream
+      description: 自分が関連する配信の一覧取得
+  /livestream/search:
+    parameters:
+      - in: query
+        name: tag
+        schema:
+          type: string
+        description: 検索に使用するタグの名前
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: 取得件数の最大数
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        "200":
+          $ref: "#/components/responses/GetLivestreams"
+        "500":
+          description: Internal Server Error
+      operationId: get-livestream-search
       description: ライブストリームの情報取得エンドポイント
   "/livestream/{livestreamid}":
     parameters:
@@ -190,6 +206,25 @@ paths:
           $ref: "#/components/responses/GetLivestream"
       operationId: "get-livestream-_livestreamid"
       description: ライブストリーム視聴画面の情報取得
+  "/livestream/{livestreamid}/ngwords":
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
+    get:
+      summary: ""
+      operationId: get-livecomment-livecommentid-ngwords
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LivestreamNgWord"
   "/livestream/{livestreamid}/moderate":
     parameters:
       - schema:
@@ -231,6 +266,12 @@ paths:
       tags: []
       operationId: "get-livestream-_livestreamid-livecomment"
       description: 当該ライブストリームのライブコメント取得
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: 取得件数の最大数
       responses:
         "200":
           description: OK
@@ -291,9 +332,16 @@ paths:
         "500":
           description: Internal Server Error
       description: 配信の視聴開始
+  "/livestream/{livestreamid}/exit":
+    parameters:
+      - schema:
+          type: string
+        name: livestreamid
+        in: path
+        required: true
     delete:
       summary: ""
-      operationId: delete-livestream-livestreamid-enter
+      operationId: delete-livestream-livestreamid-exit
       responses:
         "200":
           description: OK
@@ -316,6 +364,12 @@ paths:
       tags: []
       operationId: "get-livestream-_livestreamid-reaction"
       description: 当該ライブストリームのリアクション取得
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: 取得件数の最大数
       responses:
         "200":
           description: OK
@@ -453,33 +507,60 @@ paths:
                     livecomment_id: 153
                     created_at: 12345
                     updated_at: 12345
+  "/icon":
+    post:
+      summary: ""
+      operationId: post-icon
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Icon"
+      requestBody:
+        $ref: "#/components/requestBodies/PostIcon"
 components:
   schemas:
     Theme:
-      id:
-        type: integer
-      dark_mode:
-        type: boolean
-      created_at:
-        type: integer
+      type: object
+      required:
+        - id
+        - dark_mode
+      properties:
+        id:
+          type: integer
+        dark_mode:
+          type: boolean
     Tag:
-      id:
-        type: integer
-      name:
-        type: string
-      created_at:
-        type: integer
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
     Reaction:
-      id:
-        type: integer
-      emoji_name:
-        type: string
-      user:
-        $ref: "#/components/schemas/User"
-      livestream:
-        $ref: "#/components/schemas/Livestream"
-      created_at:
-        type: integer
+      type: object
+      required:
+        - id
+        - emoji_name
+        - user
+        - livestream
+        - created_at
+      properties:
+        id:
+          type: integer
+        emoji_name:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        livestream:
+          $ref: "#/components/schemas/Livestream"
+        created_at:
+          type: integer
     User:
       title: User
       type: object
@@ -570,35 +651,46 @@ components:
     LivestreamStatistics:
       title: LivestreamrStatistics
       type: object
+      required:
+        - rank
+        - viewers_count
+        - total_reactions
+        - total_reports
+        - max_tip
       properties:
-        most_tip_ranking:
-          type: array
-          items:
-            type: object
-            properties:
-              tip_rank:
-                type: integer
-              total_tip:
-                type: integer
-        most_posted_reaction_ranking:
-          type: array
-          items:
-            type: object
-            properties:
-              reaction_rank:
-                type: integer
-              total_reaction:
-                type: integer
-              emoji_name:
-                type: string
+        rank:
+          type: integer
+        viewers_count:
+          type: integer
+        total_reactions:
+          type: integer
+        total_reports:
+          type: integer
+        max_tip:
+          type: integer
     UserStatistics:
       title: LivesteamStatistics
       type: object
+      required:
+        - rank
+        - viewers_count
+        - total_reactions
+        - total_livecomments
+        - total_tip
+        - favorite_emoji
       properties:
-        tip_rank_by_livestream:
-          type: object # map
-          additionalProperties:
-            type: string
+        rank:
+          type: integer
+        viewers_count:
+          type: integer
+        total_reactions:
+          type: integer
+        total_livecomments:
+          type: integer
+        total_tip:
+          type: integer
+        favorite_emoji:
+          type: string
     LivecommentReport:
       title: LivecommentReport
       x-stoplight:
@@ -614,6 +706,31 @@ components:
         created_at:
           type: integer
         updated_at:
+          type: integer
+    LivestreamNgWord:
+      title: LivestreamNgWord
+      type: object
+      required:
+        - id
+        - livestream_id
+        - word
+        - created_at
+      properties:
+        id:
+          type: integer
+        livestream_id:
+          type: integer
+        word:
+          type: string
+        created_at:
+          type: integer
+    Icon:
+      title: Icon
+      type: object
+      required:
+        - id
+      properties:
+        id:
           type: integer
   requestBodies:
     PostLivestreamModerate:
@@ -718,6 +835,14 @@ components:
                 description: "配信のマナー: ★みんな仲良くしましょう★"
                 start_at: 0
                 end_at: 0
+    PostIcon:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              image:
+                type: string
   responses:
     GetTag:
       description: Example response

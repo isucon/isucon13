@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/isucon/isucon13/bench/internal/resolver"
+	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +13,7 @@ import (
 func TestGetUserStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(resolver.NewDNSResolver())
+	client, err := NewClient(agent.WithTimeout(3 * time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
@@ -34,7 +34,7 @@ func TestGetUserStats(t *testing.T) {
 	assert.NoError(t, err)
 
 	// (２つくらい配信作る)
-	streamer1Client, err := NewClient(resolver.NewDNSResolver())
+	streamer1Client, err := NewClient()
 	assert.NoError(t, err)
 	streamer1, err := streamer1Client.Register(ctx, &RegisterRequest{
 		Name:        "get-user-stats-streamer1",
@@ -111,7 +111,7 @@ func TestGetUserStats(t *testing.T) {
 func TestGetLivestreamStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(resolver.NewDNSResolver())
+	client, err := NewClient(agent.WithTimeout(3 * time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
@@ -149,7 +149,7 @@ func TestGetLivestreamStats(t *testing.T) {
 	assert.Equal(t, int64(1), stats3.TotalReactions-stats2.TotalReactions)
 
 	// コメント (チップ)
-	commenterClient, err := NewClient(resolver.NewDNSResolver())
+	commenterClient, err := NewClient()
 	assert.NoError(t, err)
 	commenter, _ := commenterClient.Register(ctx, &RegisterRequest{
 		Name:        "get-livestream-stats-commenter",

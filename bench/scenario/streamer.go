@@ -113,6 +113,7 @@ func BasicStreamerModerateScenario(
 			if err := client.Moderate(ctx, livestreamID, ngWord.Word); err != nil {
 				continue
 			}
+			scheduler.LivecommentScheduler.Moderate(report.Livecomment.Comment)
 		}
 	}
 

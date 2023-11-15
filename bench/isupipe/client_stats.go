@@ -69,7 +69,7 @@ func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int64
 	)
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/statistics", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}

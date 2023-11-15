@@ -6,9 +6,21 @@
 //
 
 export namespace Schemas {
-  export type Theme = any;
-  export type Tag = any;
-  export type Reaction = any;
+  export interface Theme {
+    id: number;
+    dark_mode: boolean;
+  }
+  export interface Tag {
+    id: number;
+    name: string;
+  }
+  export interface Reaction {
+    id: number;
+    emoji_name: string;
+    user: Schemas.User;
+    livestream: Schemas.Livestream;
+    created_at: number;
+  }
   export interface User {
     /** Unique identifier for the given user. */
     id: number;
@@ -44,20 +56,19 @@ export namespace Schemas {
     updated_at?: number;
   }
   export interface LivestreamStatistics {
-    most_tip_ranking?: {
-      tip_rank?: number;
-      total_tip?: number;
-    }[];
-    most_posted_reaction_ranking?: {
-      reaction_rank?: number;
-      total_reaction?: number;
-      emoji_name?: string;
-    }[];
+    rank: number;
+    viewers_count: number;
+    total_reactions: number;
+    total_reports: number;
+    max_tip: number;
   }
   export interface UserStatistics {
-    tip_rank_by_livestream?: {
-      [key: string]: string;
-    };
+    rank: number;
+    viewers_count: number;
+    total_reactions: number;
+    total_livecomments: number;
+    total_tip: number;
+    favorite_emoji: string;
   }
   export interface LivecommentReport {
     id?: number;
@@ -65,6 +76,15 @@ export namespace Schemas {
     livecomment?: Schemas.Livecomment;
     created_at?: number;
     updated_at?: number;
+  }
+  export interface LivestreamNgWord {
+    id: number;
+    livestream_id: number;
+    word: string;
+    created_at: number;
+  }
+  export interface Icon {
+    id: number;
   }
 }
 export namespace Responses {
@@ -172,6 +192,13 @@ export namespace RequestBodies {
         collaborators?: number[];
         start_at?: number;
         end_at?: number;
+      };
+    }
+  }
+  export namespace PostIcon {
+    export interface Content {
+      'application/json': {
+        image?: string;
       };
     }
   }

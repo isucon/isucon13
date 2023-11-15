@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -22,11 +23,14 @@ import (
 
 var assetDir string
 
+var enableSSL bool
+var pretestOnly bool
+
 type BenchResult struct {
 	Pass          bool     `json:"pass"`
 	Score         int64    `json:"score"`
 	Messages      []string `json:"messages"`
-	AvailableDays int      `json:"available_days"`
+	AdvertiseCost int      `json:"advertise_cost"`
 	Language      string   `json:"language"`
 }
 
@@ -43,24 +47,23 @@ func uniqueMsgs(msgs []string) (uniqMsgs []string) {
 	return
 }
 
-func benchmark(ctx context.Context) error {
+func dumpFailedResult(msgs []string) {
 	lgr := zap.S()
 
-	// pretest, benchmarkにはこれら初期化が必要
-	benchscore.InitCounter(ctx)
-	benchscore.InitProfit(ctx)
-	bencherror.InitErrors(ctx)
-
-	benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
-	defer cancelBench()
-
-	benchmarker := newBenchmarker(benchCtx)
-	if err := benchmarker.run(benchCtx); err != nil {
-		lgr.Warnf("ベンチマーク走行エラー", zap.Error(err))
-		return err
+	b, err := json.Marshal(&BenchResult{
+		Pass:          false,
+		Score:         0,
+		Messages:      msgs,
+		AdvertiseCost: int(config.AdvertiseCost),
+		Language:      config.Language,
+	})
+	if err != nil {
+		lgr.Warnf("失格判定結果書き出しに失敗. 運営に連絡してください: messages=%+v, err=%+v", msgs, err)
+		fmt.Println(fmt.Sprintf(`{"pass": false, "score": 0, "messages": ["%s"]}`, string(b)))
+		return
 	}
 
-	return nil
+	fmt.Println(string(b))
 }
 
 var run = cli.Command{
@@ -102,14 +105,33 @@ var run = cli.Command{
 			EnvVar:      "BENCH_LOG_PATH",
 			Value:       "/tmp/isupipe-benchmarker.log",
 		},
+		cli.BoolFlag{
+			Name:        "enable-ssl",
+			Destination: &enableSSL,
+			EnvVar:      "BENCH_ENABLE_SSL",
+		},
+		cli.BoolFlag{
+			Name:        "pretest-only",
+			Destination: &pretestOnly,
+			EnvVar:      "BENCH_PRETEST_ONLY",
+		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
-
 		lgr, err := logger.InitZapLogger()
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
+
+		if enableSSL {
+			config.HTTPScheme = "https"
+			config.TargetPort = 443
+			config.InsecureSkipVerify = false
+			lgr.Info("SSLが有効になっています")
+		} else {
+			lgr.Info("SSLが無効になっています")
+		}
+
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
 		lgr.Infof("nameserver: %s", net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)))
 
@@ -118,30 +140,32 @@ var run = cli.Command{
 
 		lgr.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(
-			resolver.NewDNSResolver(),
 			agent.WithBaseURL(config.TargetBaseURL),
 			agent.WithTimeout(5*time.Minute),
 		)
 		if err != nil {
+			dumpFailedResult([]string{})
 			return cli.NewExitError(err, 1)
 		}
+
+		// FIXME: initialize以後のdumpFailedResult、ポータル報告への書き出しを実装
+		// Actionsの結果にも乗ってしまうが、サイズ的に問題ないか
+		// ベンチの出力変動が落ち着いてから実装する
 
 		initializeResp, err := initClient.Initialize(ctx)
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
-		if initializeResp.AdvertiseLevel < 1 {
-			return cli.NewExitError("不正な広告レベル", 1)
+		// FIXME: 値の見直し
+		if initializeResp.AdvertiseLevel < 1 || initializeResp.AdvertiseLevel > 100 {
+			return cli.NewExitError(fmt.Errorf("不正な広告レベル"), 1)
 		}
 		config.AdvertiseCost = initializeResp.AdvertiseLevel
+		config.Language = initializeResp.Language
 
 		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
 		pretestDNSResolver := resolver.NewDNSResolver()
 		pretestDNSResolver.ResolveAttempts = 10
-		pretestClient, err := isupipe.NewClient(
-			pretestDNSResolver,
-			agent.WithBaseURL(config.TargetBaseURL),
-		)
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
@@ -150,12 +174,35 @@ var run = cli.Command{
 		benchscore.InitCounter(ctx)
 		benchscore.InitProfit(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx, pretestClient); err != nil {
+		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
+		}
+		lgr.Info("整合性チェックが成功しました")
+
+		if pretestOnly {
+			lgr.Info("--pretest-onlyが指定されているため、ベンチマーク走行をスキップします")
+			return nil
 		}
 
 		lgr.Info("ベンチマーク走行を開始します")
-		_ = benchmark(ctx)
+		benchStartAt := time.Now()
+
+		// pretest, benchmarkにはこれら初期化が必要
+		benchscore.InitCounter(ctx)
+		benchscore.InitProfit(ctx)
+		bencherror.InitErrors(ctx)
+
+		benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
+		defer cancelBench()
+
+		benchmarker := newBenchmarker(benchCtx)
+		if err := benchmarker.run(benchCtx); err != nil {
+			lgr.Warnf("ベンチマーク走行エラー: %s", err.Error())
+			// FIXME: 失格相当エラーハンドリング
+		}
+
+		benchElapsedSec := time.Now().Sub(benchStartAt)
+		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
 
 		benchscore.DoneCounter()
 		benchscore.DoneProfit()
@@ -165,15 +212,7 @@ var run = cli.Command{
 		lgr.Info("===== 最終チェック =====")
 		finalcheckDNSResolver := resolver.NewDNSResolver()
 		finalcheckDNSResolver.ResolveAttempts = 10
-		finalcheckClient, err := isupipe.NewClient(
-			finalcheckDNSResolver,
-			agent.WithBaseURL(config.TargetBaseURL),
-		)
-		if err != nil {
-			return cli.NewExitError(err, 1)
-		}
-
-		if err := scenario.FinalcheckScenario(ctx, finalcheckClient); err != nil {
+		if err := scenario.FinalcheckScenario(ctx, finalcheckDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
@@ -191,6 +230,11 @@ var run = cli.Command{
 
 		lgr.Info("===== ベンチ走行結果 =====")
 		var msgs []string
+
+		lgr.Info("シナリオカウンタ")
+		for name, count := range benchmarker.ScenarioCounter() {
+			lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+		}
 
 		var (
 			tooManySlows = benchscore.GetByTag(benchscore.TooSlow)

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -17,44 +16,94 @@ import (
 
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
 
+// Client は、ISUPipeに対するHTTPクライアントです
+// NOTE: スレッドセーフではありません
+// NOTE: ログインは一度しかできません (何回もログインする場合はClientを個別に作り直す必要がある)
 type Client struct {
-	agent     *agent.Agent
+	agent        *agent.Agent
+	agentOptions []agent.AgentOption
+
 	username  string
 	isPopular bool
 
 	// ユーザカスタムテーマ適用ページアクセス用agent
 	// ライブ配信画面など
-	themeAgent *agent.Agent
+	themeAgent   *agent.Agent
+	themeOptions []agent.AgentOption
 
 	// 画像ダウンロード用agent
 	// キャッシュ可能
-	assetAgent *agent.Agent
+	assetAgent   *agent.Agent
+	assetOptions []agent.AgentOption
 }
 
-// FIXME: テスト用に、ネームサーバのアドレスや接続先アドレスなどをオプションで渡せるように
-func NewClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
+func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
+	return NewCustomResolverClient(resolver.NewDNSResolver(), customOpts...)
+}
+
+// NewClient は、HTTPクライアント群を初期化します
+// NOTE: キャッシュ無効化オプションなどを指定すると、意図しない挙動をする可能性があります
+// タイムアウトやURLなどの振る舞いでないパラメータを指定するのにcustomOptsを用いてください
+func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
-			// Custom DNS Resolver
-			DialContext: dnsResolver.DialContext,
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
 		agent.WithNoCache(),
-		agent.WithTimeout(10 * time.Second),
 	}
 	for _, customOpt := range customOpts {
 		opts = append(opts, customOpt)
 	}
-	agent, err := agent.NewAgent(opts...)
+
+	baseAgent, err := agent.NewAgent(opts...)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
+	themeOpts := []agent.AgentOption{
+		withClient(baseAgent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.InsecureSkipVerify,
+			},
+			// Custom DNS Resolver
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
+		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
+		agent.WithNoCache(),
+	}
+	for _, customOpt := range customOpts {
+		themeOpts = append(themeOpts, customOpt)
+	}
+
+	assetOpts := []agent.AgentOption{
+		agent.WithBaseURL(config.TargetBaseURL),
+		withClient(baseAgent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.InsecureSkipVerify,
+			},
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
+		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
+		// NOTE: 画像はキャッシュできるようにする
+	}
+	for _, customOpt := range customOpts {
+		assetOpts = append(assetOpts, customOpt)
+	}
+
 	return &Client{
-		agent: agent,
+		agent:        baseAgent,
+		themeOptions: themeOpts,
+		assetOptions: assetOpts,
 	}, nil
 }
 
@@ -68,10 +117,6 @@ func (c *Client) LoginUserName() (string, error) {
 
 func (c *Client) IsPopular() bool {
 	return c.isPopular
-}
-
-func (c *Client) IsTooSlow(startTime, endTime time.Time) bool {
-	return endTime.Sub(startTime) >= config.RequestTooSlowThreshold
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数
@@ -92,7 +137,7 @@ func sendRequest(ctx context.Context, agent *agent.Agent, req *http.Request) (*h
 				return resp, bencherror.NewTimeoutError(err, "%s", endpoint)
 			} else {
 				// 接続ができないなど、ベンチ継続する上で致命的なエラー
-				return resp, bencherror.NewViolationError(err, "webappの %s に対するリクエストで、接続に失敗しました", endpoint)
+				return resp, bencherror.NewTimeoutError(err, "webappの %s に対するリクエストで、接続に失敗しました", endpoint)
 			}
 		} else {
 			return resp, bencherror.NewApplicationError(err, "%s に対するリクエストが失敗しました", endpoint)
