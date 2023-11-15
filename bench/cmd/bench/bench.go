@@ -24,6 +24,7 @@ import (
 var assetDir string
 
 var enableSSL bool
+var pretestOnly bool
 
 type BenchResult struct {
 	Pass          bool     `json:"pass"`
@@ -109,6 +110,11 @@ var run = cli.Command{
 			Destination: &enableSSL,
 			EnvVar:      "BENCH_ENABLE_SSL",
 		},
+		cli.BoolFlag{
+			Name:        "pretest-only",
+			Destination: &pretestOnly,
+			EnvVar:      "BENCH_PRETEST_ONLY",
+		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
@@ -170,6 +176,12 @@ var run = cli.Command{
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
 			return cli.NewExitError(err, 1)
+		}
+		lgr.Info("整合性チェックが成功しました")
+
+		if pretestOnly {
+			lgr.Info("--pretest-onlyが指定されているため、ベンチマーク走行をスキップします")
+			return nil
 		}
 
 		lgr.Info("ベンチマーク走行を開始します")
