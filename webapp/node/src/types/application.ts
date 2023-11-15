@@ -8,6 +8,7 @@ export interface Deps {
   comparePassword: (password: string, hash: string) => Promise<boolean>
   // TODO: remove
   uuid: () => string
+  fallbackUserIcon: Promise<Readonly<ArrayBuffer>>
 }
 
 export interface ApplicationDeps extends Deps {

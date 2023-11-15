@@ -255,6 +255,9 @@ userHandler.get(
         )
         .catch(throwErrorWith('failed to get icon'))
       if (!icon) {
+        return c.body(await c.get('deps').fallbackUserIcon, 200, {
+          'Content-Type': 'image/jpeg',
+        })
         await conn.rollback()
         return c.text('not found icon', 404)
       }

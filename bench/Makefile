@@ -30,5 +30,6 @@ bench: build
 
 clean:
 	$(RM) ./bin/bench_darwin_amd64
+	$(RM) ./bin/bench_darwin_arm64
 	$(RM) ./bin/bench_linux_amd64
 	$(RM) ./bin/bench_linux_arm64

@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { serve } from '@hono/node-server'
 import { hash, compare } from 'bcrypt'
 import { createApp } from './create-app'
@@ -29,6 +31,17 @@ const deps = {
   comparePassword: async (password: string, hash: string) =>
     compare(password, hash),
   uuid: () => randomUUID(),
+  // eslint-disable-next-line unicorn/prefer-module, unicorn/prefer-top-level-await
+  fallbackUserIcon: readFile(join(__dirname, '../../img/NoImage.jpg')).then(
+    (v) => {
+      const buf = v.buffer
+      if (buf instanceof ArrayBuffer) {
+        return buf
+      } else {
+        throw new TypeError(`NoImage.jpg should be ArrayBuffer, but ${buf}`)
+      }
+    },
+  ),
 } satisfies Deps
 
 const app = createApp(deps)

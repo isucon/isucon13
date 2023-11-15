@@ -245,6 +245,7 @@ livecommentHandler.post(
               `
                   DELETE FROM livecomments
                   WHERE
+                  id = ? AND
                   (SELECT COUNT(*)
                   FROM
                   (SELECT ? AS text) AS texts
@@ -252,7 +253,7 @@ livecommentHandler.post(
                   (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
                   ON texts.text LIKE patterns.pattern) >= 1;
                 `,
-              [livecomment.comment, ngword.word],
+              [livecomment.id, livecomment.comment, ngword.word],
             )
             .catch(throwErrorWith('failed to delete livecomment'))
         }

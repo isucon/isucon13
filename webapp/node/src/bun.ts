@@ -1,3 +1,6 @@
+import { join } from 'node:path'
+// eslint-disable-next-line import/no-unresolved
+import { file } from 'bun'
 import { createApp } from './create-app'
 import { Deps } from './types/application'
 
@@ -28,6 +31,10 @@ const deps = {
   comparePassword: async (password: string, hash: string) =>
     Bun.password.verify(password, hash, 'bcrypt'),
   uuid: () => crypto.randomUUID(),
+  fallbackUserIcon: file(
+    // eslint-disable-next-line unicorn/prefer-module
+    join(__dirname, '../../img/NoImage.jpg'),
+  ).arrayBuffer(),
 } satisfies Deps
 
 const app = createApp(deps)
