@@ -147,7 +147,7 @@ var loadAttackPerSecond int64 = 5000
 func (b *benchmarker) loadAttack(ctx context.Context) error {
 	defer b.attackSem.Release(1)
 
-	factor := float64(loadAttackPerSecond) / float64(config.AdvertiseCost) * 20.0
+	factor := float64(loadAttackPerSecond) / float64(config.BaseParallelism) * 20.0
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
 	if failRate < 0.01 {
 		now := time.Now()
