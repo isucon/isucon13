@@ -308,7 +308,7 @@ sub get_livestream_handler($app, $c) {
         $livestream_id,
     );
     unless ($livestream) {
-        $c->halt(HTTP_NOT_FOUND, "livestream not found");
+        $c->halt(HTTP_NOT_FOUND, "not found livestream that has the given id");
     }
 
     $livestream = fill_livestream_response($app, $livestream);

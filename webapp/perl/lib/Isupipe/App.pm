@@ -58,8 +58,11 @@ sub h($klass, $name) {
         croakf("handler `%s` not found in %s", $name, $handler_class);
     }
     return sub ($app, $c) {
+        debugf(">> (Req) %s %s : %s", $c->req->method, $c->req->path_info, $c->req->headers->as_string);
         try {
-            $handler->($app, $c);
+            my $res = $handler->($app, $c);
+            debugf("<< [Res] %s %s : %s", $c->req->method, $c->req->path_info, $res->headers->as_string);
+            return $res;
         } catch ($error) {
             error_response_handler($error, $app, $c);
         }
@@ -127,9 +130,13 @@ get '/api/payment', h(PaymentHandler => 'get_payment_result');
 
 sub error_response_handler($error, $app, $c) {
     if ($error isa Kossy::Exception) {
+
         if ($error->{response}) {
+            debugf("<< (Kossy::Exception) %s %s : %s %s", $c->req->method, $c->req->path, $error->{code}, $error->{response}->headers->as_string);
             die $error; # rethrow
         }
+
+        debugf("<< (Kossy::Exception) %s %s : %s %s", $c->req->method, $c->req->path, $error->{code}, $error->{message});
 
         my $res = $c->render_json({
             error => $error->{message},

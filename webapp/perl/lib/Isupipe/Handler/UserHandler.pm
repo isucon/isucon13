@@ -4,6 +4,7 @@ use utf8;
 
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
+use Plack::Session;;
 
 use Isupipe::Log;
 use Isupipe::Entity::User;
@@ -130,9 +131,10 @@ sub login_handler($app, $c) {
     my $session = Plack::Session->new($c->env);
     $session->set(DEFAULT_USER_ID_KEY, $user->id);
 
-    return $c->halt_no_content(HTTP_OK);
-}
+    debugf('login success: %s', $user->name);
 
+    $c->halt_no_content(HTTP_OK);
+}
 
 sub get_me_handler($app, $c) {
     verify_user_session($app, $c);

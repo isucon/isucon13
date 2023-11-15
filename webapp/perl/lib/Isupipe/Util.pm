@@ -15,13 +15,11 @@ our @EXPORT_OK = qw(
 );
 
 use HTTP::Status qw(:constants);
-use Plack::Session;
 use Crypt::Eksblowfish::Bcrypt ();
 use Crypt::OpenSSL::Random ();
 use Type::Params qw(compile);
 use Data::Lock qw(dlock);
 use Scalar::Util qw(refaddr);
-use Carp qw(croak);
 
 use Isupipe::Assert qw(ASSERT);
 
@@ -29,17 +27,10 @@ use constant DEFAULT_USER_ID_KEY => 'USERID';
 use constant BCRYPT_DEFAULT_COST => 4;
 
 sub verify_user_session($app, $c) {
-    my $session = Plack::Session->new($c->env);
+    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
-    unless ($session->get(DEFAULT_USER_ID_KEY)) {
-        # FIXME: エラーメッセージを検討する
-
-        croak Kossy::Exception->new(
-            HTTP_FORBIDDEN,
-            response => $c->render_json(
-                { error => 'session not found' }
-            )
-        );
+    unless ($user_id) {
+        $c->halt(HTTP_FORBIDDEN, 'failed to get USERID value from session');
     }
 
     return;
