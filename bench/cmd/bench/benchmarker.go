@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -144,7 +147,33 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 
 var loadAttackPerSecond int64 = 5000
 
-func (b *benchmarker) loadAttack(ctx context.Context) error {
+// dns水責め攻撃につかうhttp client
+func (b *benchmarker) loadAttackHTTPClient() *http.Client {
+	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	transport := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if ip, ok := ctx.Value(config.AttackHTTPClientContextKey).(string); ok {
+				addr = ip
+			}
+			return dialer.DialContext(ctx, network, addr)
+		},
+		TLSHandshakeTimeout: 5 * time.Second,
+		// 複数labelがあるのでskip verify
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: false},
+		ExpectContinueTimeout: 5 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+		// TODO ここだけHTTP2
+		ForceAttemptHTTP2: true,
+	}
+	return &http.Client{
+		Transport: transport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
+func (b *benchmarker) loadAttack(ctx context.Context, httpClient *http.Client) error {
 	defer b.attackSem.Release(1)
 
 	factor := float64(loadAttackPerSecond) / float64(config.BaseParallelism) * 20.0
@@ -157,7 +186,7 @@ func (b *benchmarker) loadAttack(ctx context.Context) error {
 	loadLimiter := rate.NewLimiter(rate.Limit(factor), 1)
 
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
-	if err := scenario.DnsWaterTortureAttackScenario(ctx, loadLimiter); err != nil {
+	if err := scenario.DnsWaterTortureAttackScenario(ctx, httpClient, loadLimiter); err != nil {
 		return err
 	}
 
@@ -267,6 +296,8 @@ func (b *benchmarker) run(ctx context.Context) error {
 	b.runClientProviders(ctx)
 	violateCh := bencherror.RunViolationChecker(ctx)
 
+	loadAttackHTTPClient := b.loadAttackHTTPClient()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -312,13 +343,13 @@ func (b *benchmarker) run(ctx context.Context) error {
 					b.loadSpammer(childCtx)
 				}()
 			}
-			// if ok := b.attackSem.TryAcquire(1); ok {
-			// 	wg.Add(1)
-			// 	go func() {
-			// 		defer wg.Done()
-			// 		b.loadAttack(childCtx)
-			// 	}()
-			// }
+			if ok := b.attackSem.TryAcquire(1); ok {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadAttack(childCtx, loadAttackHTTPClient)
+				}()
+			}
 		}
 	}
 }

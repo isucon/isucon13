@@ -30,3 +30,5 @@ const BaseDomain = "u.isucon.dev"
 // 暇になってる接続のタイムアウト
 // NOTE: これを設定しないと、keepaliveで繋ぎっぱなしの接続が増え、Nginxでworker_connectionが不十分だというエラーログが出るようになる
 const ClientIdleConnTimeout = 5 * time.Second
+
+const AttackHTTPClientContextKey = "dns-attack-http-realip"
