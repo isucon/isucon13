@@ -15,6 +15,7 @@ import {
   useUserStatistics,
 } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
+import { normalizeUrl } from '~/api/url';
 
 export interface VideoAboutProps {
   id: string | null;
@@ -42,7 +43,7 @@ export function VideoAbout({ id }: VideoAboutProps): React.ReactElement {
     <Stack sx={{ flexBasis: '600px', flexGrow: 3 }}>
       <Typography level="h3">{liveStream.data?.title}</Typography>
       <Stack direction="row" columnGap={2} flexWrap="wrap">
-        <Link to="/user">
+        <Link to={normalizeUrl(`/user`, liveStream.data?.owner?.name)}>
           <Avatar src={iconUrl(liveStream.data?.owner?.name)} />
         </Link>
         <div>
@@ -50,7 +51,7 @@ export function VideoAbout({ id }: VideoAboutProps): React.ReactElement {
             <Skeleton variant="text" level="title-sm" width={100} />
           ) : (
             <Link
-              to={`/user/${liveStream.data?.owner?.name}`}
+              to={normalizeUrl(`/user`, liveStream.data?.owner?.name)}
               style={{ textDecoration: 'none' }}
             >
               <Typography level="title-sm">

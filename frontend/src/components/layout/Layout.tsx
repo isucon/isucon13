@@ -12,6 +12,7 @@ import { MdOutlineDarkMode, MdDarkMode, MdSearch } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toast } from '../toast/toast';
 import { useTags, useUserMe } from '~/api/hooks';
+import { normalizeUrl } from '~/api/url';
 import logo from './ISUPipe_yoko_color.png';
 
 interface LayoutProps {
@@ -24,10 +25,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
 
   function onChange(e: React.SyntheticEvent, value: string | null): void {
     if (value) {
-      navigate({
-        pathname: '/search',
-        search: `?q=${value}`,
-      });
+      window.location.href = normalizeUrl(`/search?q=${value}`);
     } else {
       navigate('/');
     }
@@ -62,7 +60,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
           backgroundColor: mode === 'light' ? 'white' : 'black',
         }}
       >
-        <LogoLink to="/">
+        <LogoLink to={normalizeUrl('/')}>
           <img src={logo} title="ISUPipe" height="25" />
         </LogoLink>
         <Stack>

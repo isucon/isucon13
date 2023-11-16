@@ -6,6 +6,7 @@ import Modal from '@mui/joy/Modal';
 import ModalDialog from '@mui/joy/ModalDialog';
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { normalizeUrl } from '~/api/url';
 
 export interface LoginModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export function LoginModal(props: LoginModalProps): React.ReactElement {
             <Box>
               <Button
                 component={Link}
-                to="/account/login"
+                to={normalizeUrl(`/account/login`)}
                 variant="soft"
                 onClick={() => props.onClose()}
               >

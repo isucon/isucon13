@@ -113,7 +113,10 @@ export default function LiveComment(
                 display_name: `ユーザー名${counterRef.current}`,
                 description: '',
                 is_popular: false,
-                theme: '',
+                theme: {
+                  id: 1,
+                  dark_mode: false,
+                },
               },
               comment: `メッセージ${counterRef.current}`,
               tip: tip,
@@ -176,7 +179,10 @@ export default function LiveComment(
               display_name: `ユーザー名${counterRef.current}`,
               description: '',
               is_popular: false,
-              theme: '',
+              theme: {
+                id: 1,
+                dark_mode: false,
+              },
             },
             comment: comment,
             tip: undefined,
@@ -220,7 +226,10 @@ export default function LiveComment(
               display_name: `ユーザー名${counterRef.current}`,
               description: '',
               is_popular: false,
-              theme: '',
+              theme: {
+                id: 1,
+                dark_mode: false,
+              },
             },
             comment: comment,
             tip: tipAmount,
@@ -237,7 +246,8 @@ export default function LiveComment(
   );
   const reactions: Reaction[] =
     remoteReaction.data?.map(
-      (r) => ({ id: r.id, shortcodes: `:${r.emoji_name}:` }) satisfies Reaction,
+      (r) =>
+        ({ id: `${r.id}`, shortcodes: `:${r.emoji_name}:` }) satisfies Reaction,
     ) ?? [];
   const onEmojiSelect = React.useCallback(
     async (emoji: Emoji & { shortcodes: string }) => {

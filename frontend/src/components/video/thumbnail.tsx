@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { useLiveStreamStatistics, useMedia } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
 import { Schemas } from '~/api/types';
+import { normalizeUrl } from '~/api/url';
 
 export interface VideoThumbnailProps {
   liveSteram: Schemas.Livestream;
@@ -30,7 +31,10 @@ export function VideoThumbnail({
   const statistics = useLiveStreamStatistics(liveSteram.id?.toString() ?? null);
 
   return (
-    <Link to={`/watch/${liveSteram.id}`} style={{ textDecoration: 'none' }}>
+    <Link
+      to={normalizeUrl(`/watch/${liveSteram.id}`, liveSteram.owner?.name)}
+      style={{ textDecoration: 'none' }}
+    >
       <AspectRatio sx={{ borderRadius: 10 }}>
         <img src={media.data?.thumbnail_url} loading="lazy" />
       </AspectRatio>
