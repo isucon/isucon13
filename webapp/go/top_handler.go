@@ -27,7 +27,7 @@ func getTagHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin new transaction")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin new transaction: "+err.Error())
 	}
 	defer tx.Rollback()
 
