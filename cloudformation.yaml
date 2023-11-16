@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  AWS CloudFormation for ISUCON13 Qualify
+  AWS CloudFormation for ISUCON13 Final
 Resources:
   GetAvailabilityZoneFunctionExecutionRole:
     Type: AWS::IAM::Role
@@ -95,7 +95,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref VPC
-      GroupDescription: Security Group for ISUCON13 Qualify
+      GroupDescription: Security Group for ISUCON13 Final
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: "22"
@@ -164,7 +164,7 @@ Resources:
     Properties:
       KeyName: isucon13-quarify-cfn
 
-  QualifyInstance1:
+  FinalInstance1:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0d52744d6551d851e
@@ -182,13 +182,13 @@ Resources:
             VolumeType: gp3
       Tags:
         - Key: Name
-          Value: isucon13-qualify-1
-  QualifyInstanceIP1:
+          Value: isucon13-final-1
+  FinalInstanceIP1:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-      InstanceId: !Ref QualifyInstance1
-  QualifyInstance2:
+      InstanceId: !Ref FinalInstance1
+  FinalInstance2:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0d52744d6551d851e
@@ -206,13 +206,13 @@ Resources:
             VolumeType: gp3
       Tags:
         - Key: Name
-          Value: isucon13-qualify-2
-  QualifyInstanceIP2:
+          Value: isucon13-final-2
+  FinalInstanceIP2:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-      InstanceId: !Ref QualifyInstance2
-  QualifyInstance3:
+      InstanceId: !Ref FinalInstance2
+  FinalInstance3:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0d52744d6551d851e
@@ -230,9 +230,9 @@ Resources:
             VolumeType: gp3
       Tags:
         - Key: Name
-          Value: isucon13-qualify-3
-  QualifyInstanceIP3:
+          Value: isucon13-final-3
+  FinalInstanceIP3:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-      InstanceId: !Ref QualifyInstance3
+      InstanceId: !Ref FinalInstance3
