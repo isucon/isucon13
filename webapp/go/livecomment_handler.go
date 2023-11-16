@@ -372,7 +372,6 @@ func moderateHandler(c echo.Context) error {
 			DELETE FROM livecomments
 			WHERE
 			id = ? AND
-			user_id = ? AND
 			livestream_id = ? AND
 			(SELECT COUNT(*)
 			FROM
@@ -381,7 +380,7 @@ func moderateHandler(c echo.Context) error {
 			(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
 			ON texts.text LIKE patterns.pattern) >= 1;
 			`
-			if _, err := tx.ExecContext(ctx, query, livecomment.ID, userID, livestreamID, livecomment.Comment, ngword.Word); err != nil {
+			if _, err := tx.ExecContext(ctx, query, livecomment.ID, livestreamID, livecomment.Comment, ngword.Word); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete old livecomments that hit spams: "+err.Error())
 			}
 		}
