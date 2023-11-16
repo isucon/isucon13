@@ -189,7 +189,7 @@ func postLivecommentHandler(c echo.Context) error {
 
 	// スパム判定
 	var ngwords []*NGWord
-	if err := tx.SelectContext(ctx, &ngwords, "SELECT id, user_id, livestream_id, word FROM ng_words"); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err := tx.SelectContext(ctx, &ngwords, "SELECT id, user_id, livestream_id, word FROM ng_words WHERE user_id = ? AND livestream_id = ?", userID, livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get NG words: "+err.Error())
 	}
 
@@ -372,6 +372,8 @@ func moderateHandler(c echo.Context) error {
 			DELETE FROM livecomments
 			WHERE
 			id = ? AND
+			user_id = ? AND
+			livestream_id = ? AND
 			(SELECT COUNT(*)
 			FROM
 			(SELECT ? AS text) AS texts
@@ -379,7 +381,7 @@ func moderateHandler(c echo.Context) error {
 			(SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
 			ON texts.text LIKE patterns.pattern) >= 1;
 			`
-			if _, err := tx.ExecContext(ctx, query, livecomment.ID, livecomment.Comment, ngword.Word); err != nil {
+			if _, err := tx.ExecContext(ctx, query, livecomment.ID, userID, livestreamID, livecomment.Comment, ngword.Word); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete old livecomments that hit spams: "+err.Error())
 			}
 		}
