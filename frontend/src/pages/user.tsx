@@ -6,7 +6,6 @@ import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import React from 'react';
-import { useParams } from 'react-router-dom';
 import { apiClient } from '~/api/client';
 import { useUser, useUserMe, useUserStatistics } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
@@ -14,7 +13,8 @@ import { ChangeIconDialog } from '~/components/account/iconmodal';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function UserPage(): React.ReactElement {
-  const { name: username } = useParams();
+  // const { name: username } = useParams();
+  const username = window.location.hostname.split('.')[0];
   const user = useUser(username ?? null);
   const me = useUserMe();
   const userStatistics = useUserStatistics(username ?? null);

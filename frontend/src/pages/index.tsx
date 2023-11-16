@@ -10,6 +10,7 @@ import { MdManageHistory } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { useLiveStreamsSearch, useUserMe } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
+import { normalizeUrl } from '~/api/url';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
@@ -35,7 +36,7 @@ export default function IndexPage(): React.ReactElement {
           </SidebarButton>
           <SidebarButton
             startDecorator={<BsFillPersonFill size="20px" />}
-            {...{ to: `/user/${userMe.data?.name}` }}
+            {...{ to: normalizeUrl(`/user`, userMe.data?.name) }}
           >
             プロフィール
           </SidebarButton>
