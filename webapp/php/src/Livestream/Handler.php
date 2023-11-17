@@ -415,10 +415,55 @@ class Handler extends AbstractHandler
 
     /**
      * viewerテーブルの廃止
+     *
+     * @param array<string, string> $params
      */
-    public function enterLivestreamHandler(Request $request, Response $response): Response
+    public function enterLivestreamHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id must be integer',
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        $viewer = new LivestreamViewerModel(
+            userId: $userId,
+            livestreamId: $livestreamId,
+            createdAt: time(),
+        );
+
+        try {
+            $stmt = $this->db->prepare('INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(:user_id, :livestream_id, :created_at)');
+            $stmt->bindValue(':user_id', $viewer->userId, PDO::PARAM_INT);
+            $stmt->bindValue(':livestream_id', $viewer->livestreamId, PDO::PARAM_INT);
+            $stmt->bindValue(':created_at', $viewer->createdAt, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert livestream_view_history',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
         return $response;
     }
 
