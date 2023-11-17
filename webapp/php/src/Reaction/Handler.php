@@ -14,6 +14,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use RuntimeException;
 use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
 use SlimSession\Helper as Session;
+use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
@@ -98,10 +99,81 @@ class Handler extends AbstractHandler
         return $this->jsonResponse($response, $reactions);
     }
 
-    public function postReactionHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function postReactionHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        try {
+            $req = PostReactionRequest::fromJson($request->getBody()->getContents());
+        } catch (UnexpectedValueException $e) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'failed to decode the request body as json',
+                previous: $e,
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        $reactionModel = new ReactionModel(
+            userId: $userId,
+            livestreamId: $livestreamId,
+            emojiName: $req->emojiName,
+            createdAt: time(),
+        );
+
+        try {
+            $stmt = $this->db->prepare('INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (:user_id, :livestream_id, :emoji_name, :created_at)');
+            $stmt->bindValue(':user_id', $reactionModel->userId, PDO::PARAM_INT);
+            $stmt->bindValue(':livestream_id', $reactionModel->livestreamId, PDO::PARAM_INT);
+            $stmt->bindValue(':emoji_name', $reactionModel->emojiName);
+            $stmt->bindValue(':created_at', $reactionModel->createdAt, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert reaction',
+                previous: $e,
+            );
+        }
+
+        $reactionId = (int) $this->db->lastInsertId();
+        $reactionModel->id = $reactionId;
+
+        try {
+            $reaction = $this->fillReactionResponse($reactionModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill reaction',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $reaction, 201);
     }
 
     /**
