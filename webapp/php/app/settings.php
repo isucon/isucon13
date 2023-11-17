@@ -39,7 +39,6 @@ return function (ContainerBuilder $containerBuilder) {
                     'subdomainAddress' => getenv('ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS') ?:
                         throw new ErrorException('ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS must be provided'),
                 ],
-                'numReservationSlot' => getenv('ISUCON13_NUM_RESERVATION_SLOT') ?: 2,
             ]);
         },
     ]);

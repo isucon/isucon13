@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace IsuPipe\Livestream;
 
-use App\Application\Settings\SettingsInterface as Settings;
 use DateTimeImmutable;
 use DateTimeZone;
-use ErrorException;
 use IsuPipe\AbstractHandler;
 use IsuPipe\Livecomment\{ FillLivecommentReportResponse, LivecommentReport, LivecommentReportModel };
 use IsuPipe\User\{ UserModel, VerifyUserSession };
@@ -28,18 +26,11 @@ class Handler extends AbstractHandler
 {
     use FillLivecommentReportResponse, FillLivestreamResponse, VerifyUserSession;
 
-    private readonly int $numReservationSlot;
-
-    /**
-     * @throws ErrorException
-     */
     public function __construct(
         private PDO $db,
         private Session $session,
         private Logger $logger,
-        Settings $settings,
     ) {
-        $this->numReservationSlot = $settings->get('numReservationSlot');
     }
 
     public function reserveLivestreamHandler(Request $request, Response $response): Response
