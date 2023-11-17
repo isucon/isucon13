@@ -9,14 +9,14 @@ use DateTimeImmutable;
 use DateTimeZone;
 use ErrorException;
 use IsuPipe\AbstractHandler;
-use IsuPipe\User\{ VerifyUserSession };
+use IsuPipe\User\{ UserModel, VerifyUserSession };
 use PDO;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Log\LoggerInterface as Logger;
 use RuntimeException;
-use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException };
+use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
 use SlimSession\Helper as Session;
 use UnexpectedValueException;
 
@@ -346,10 +346,71 @@ class Handler extends AbstractHandler
         return $this->jsonResponse($response, $livestreams);
     }
 
-    public function getUserLivestreamsHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function getUserLivestreamsHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $username = $params['username'] ?? '';
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE name = ?');
+            $stmt->bindValue(1, $username);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get user',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'failed to get user',
+            );
+        }
+        $user = UserModel::fromRow($row);
+
+        /** @var list<LivestreamModel> $livestreamModels */
+        $livestreamModels = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
+            $stmt->bindValue(1, $user->id, PDO::PARAM_INT);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $livestreamModels[] = LivestreamModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestreams',
+                previous: $e,
+            );
+        }
+
+        /** @var list<Livestream> $livestreams */
+        $livestreams = [];
+        foreach ($livestreamModels as $livestreamModel) {
+            try {
+                $livestreams[] = $this->fillLivestreamResponse($livestreamModel, $this->db);
+            } catch (RuntimeException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to fill livestream',
+                    previous: $e,
+                );
+            }
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $livestreams);
     }
 
     /**
