@@ -97,10 +97,54 @@ class Handler extends AbstractHandler
         return $this->jsonResponse($response, $livecomments);
     }
 
-    public function getNgwords(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function getNgwords(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        /** @var list<NGWord> $ngWords */
+        $ngWords = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM ng_words WHERE user_id = ? AND livestream_id = ? ORDER BY created_at DESC');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $ngWords[] = NGWord::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get NG words',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $ngWords);
     }
 
     public function postLivecommentHandler(Request $request, Response $response): Response
