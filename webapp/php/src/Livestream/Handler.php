@@ -512,10 +512,63 @@ class Handler extends AbstractHandler
         return $response;
     }
 
-    public function getLivestreamHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function getLivestreamHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestream',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'not found livestream that has the given id',
+            );
+        }
+        $livestreamModel = LivestreamModel::fromRow($row);
+
+        try {
+            $livestream = $this->fillLivestreamResponse($livestreamModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill livestream',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $livestream);
     }
 
     public function getLivecommentReportsHandler(Request $request, Response $response): Response
