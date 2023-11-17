@@ -162,8 +162,7 @@ func (b *benchmarker) loadAttackHTTPClient() *http.Client {
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: false},
 		ExpectContinueTimeout: 5 * time.Second,
 		ResponseHeaderTimeout: 5 * time.Second,
-		// TODO ここだけHTTP2
-		ForceAttemptHTTP2: true,
+		ForceAttemptHTTP2:     true,
 	}
 	return &http.Client{
 		Transport: transport,
