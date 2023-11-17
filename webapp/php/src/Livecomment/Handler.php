@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IsuPipe\Livecomment;
 
 use IsuPipe\AbstractHandler;
+use IsuPipe\Livestream\LivestreamModel;
 use IsuPipe\User\VerifyUserSession;
 use PDO;
 use PDOException;
@@ -364,10 +365,152 @@ class Handler extends AbstractHandler
 
     /**
      * NGワードを登録
+     *
+     * @param array<string, string> $params
      */
-    public function moderateHandler(Request $request, Response $response): Response
+    public function moderateHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        try {
+            $req = ModerateRequest::fromJson($request->getBody()->getContents());
+        } catch (UnexpectedValueException $e) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'failed to decode the request body as json',
+                previous: $e,
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        // 配信者自身の配信に対するmoderateなのかを検証
+        /** @var list<LivestreamModel> $ownedLivestreams */
+        $ownedLivestreams = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ? AND user_id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $ownedLivestreams[] = LivestreamModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestreams',
+                previous: $e,
+            );
+        }
+        if (count($ownedLivestreams) === 0) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'A streamer can\'t moderate livestreams that other streamers own',
+            );
+        }
+
+        try {
+            $stmt = $this->db->prepare('INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (:user_id, :livestream_id, :word, :created_at)');
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':livestream_id', $livestreamId, PDO::PARAM_INT);
+            $stmt->bindValue(':word', $req->ngWord);
+            $stmt->bindValue(':created_at', time(), PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert new NG word',
+                previous: $e,
+            );
+        }
+
+        $wordId = (int) $this->db->lastInsertId();
+
+        /** @var list<NGWord> $ngwords */
+        $ngwords = [];
+        try {
+            $stmt = $this->db->query('SELECT * FROM ng_words');
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $ngwords[] = NGWord::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get NG words',
+                previous: $e,
+            );
+        }
+
+        // NGワードにヒットする過去の投稿も全削除する
+        foreach ($ngwords as $ngword) {
+            // ライブコメント一覧取得
+            /** @var list<LivecommentModel> $livecomments */
+            $livecomments = [];
+            try {
+                $stmt = $this->db->query('SELECT * FROM livecomments');
+                $stmt->execute();
+                while (($row = $stmt->fetch()) !== false) {
+                    $livecomments[] = LivecommentModel::fromRow($row);
+                }
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to get livecomments',
+                    previous: $e,
+                );
+            }
+
+            foreach ($livecomments as $livecomment) {
+                $query = <<<SQL
+                    DELETE FROM livecomments
+                    WHERE
+                    id = ? AND
+                    livestream_id = ? AND
+                    (SELECT COUNT(*)
+                    FROM
+                    (SELECT ? AS text) AS texts
+                    INNER JOIN
+                    (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
+                    ON texts.text LIKE patterns.pattern) >= 1;
+                SQL;
+                try {
+                    $stmt = $this->db->prepare($query);
+                    $stmt->bindValue(1, $livecomment->id, PDO::PARAM_INT);
+                    $stmt->bindValue(2, $livecomment->livestreamId, PDO::PARAM_INT);
+                    $stmt->bindValue(3, $livecomment->comment);
+                    $stmt->bindValue(4, $ngword->word);
+                    $stmt->execute();
+                } catch (PDOException $e) {
+                    throw new HttpInternalServerErrorException(
+                        request: $request,
+                        message: 'failed to delete old livecomments that hit spams',
+                        previous: $e,
+                    );
+                }
+            }
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, ['word_id' => $wordId], 201);
     }
 }
