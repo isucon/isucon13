@@ -467,9 +467,48 @@ class Handler extends AbstractHandler
         return $response;
     }
 
-    public function exitLivestreamHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function exitLivestreamHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert livestream_view_history',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
         return $response;
     }
 
