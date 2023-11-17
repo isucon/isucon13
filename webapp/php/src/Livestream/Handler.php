@@ -189,8 +189,116 @@ class Handler extends AbstractHandler
 
     public function searchLivestreamsHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
-        return $response;
+        $keyTagName = $request->getQueryParams()['tag'] ?? '';
+
+        $this->db->beginTransaction();
+
+        /** @var list<LivestreamModel> $livestreamModels */
+        $livestreamModels = [];
+        if ($keyTagName !== '') {
+            // タグによる取得
+            try {
+                $stmt = $this->db->prepare('SELECT id FROM tags WHERE name = ?');
+                $stmt->bindValue(1, $keyTagName);
+                $stmt->execute();
+                /** @var list<int> $tagIdList */
+                $tagIdList = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to get tags',
+                    previous: $e,
+                );
+            }
+
+            /** @var list<LivestreamTagModel> $keyTaggedLivestreams */
+            $keyTaggedLivestreams = [];
+            try {
+                $sql = 'SELECT * FROM livestream_tags WHERE tag_id IN (';
+                $sql .= implode(',', array_fill(0, count($tagIdList), '?'));
+                $sql .= ')';
+                $stmt = $this->db->prepare($sql);
+                foreach ($tagIdList as $i => $tagId) {
+                    $stmt->bindValue($i + 1, $tagId, PDO::PARAM_INT);
+                }
+                $stmt->execute();
+                while (($row = $stmt->fetch()) !== false) {
+                    $keyTaggedLivestreams[] = LivestreamTagModel::fromRow($row);
+                }
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to get keyTaggedLivestreams',
+                    previous: $e,
+                );
+            }
+
+            foreach ($keyTaggedLivestreams as $keyTaggedLivestream) {
+                try {
+                    $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ?');
+                    $stmt->bindValue(1, $keyTaggedLivestream->livestreamId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $row = $stmt->fetch();
+                } catch (PDOException $e) {
+                    throw new HttpInternalServerErrorException(
+                        request: $request,
+                        message: 'failed to get livestreams',
+                        previous: $e,
+                    );
+                }
+                if ($row === false) {
+                    throw new HttpInternalServerErrorException(
+                        request: $request,
+                        message: 'failed to get livestreams',
+                    );
+                }
+                $livestreamModels[] = LivestreamModel::fromRow($row);
+            }
+        } else {
+            // 検索条件なし
+            $query = 'SELECT * FROM livestreams';
+            $limitStr = $request->getQueryParams()['limit'] ?? '';
+            if ($limitStr !== '') {
+                $limit = filter_var($limitStr, FILTER_VALIDATE_INT);
+                if (!is_int($limit)) {
+                    throw new HttpBadRequestException(
+                        request: $request,
+                        message: 'limit query parameter must be integer',
+                    );
+                }
+                $query .= sprintf(' LIMIT %d', $limit);
+            }
+            try {
+                $stmt = $this->db->query($query);
+                while (($row = $stmt->fetch()) !== false) {
+                    $livestreamModels[] = LivestreamModel::fromRow($row);
+                }
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to get livestreams',
+                    previous: $e,
+                );
+            }
+        }
+
+        /** @var list<Livestream> $livestreams */
+        $livestreams = [];
+        foreach ($livestreamModels as $livestreamModel) {
+            try {
+                $livestreams[] = $this->fillLivestreamResponse($livestreamModel, $this->db);
+            } catch (RuntimeException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to fill livestream',
+                    previous: $e,
+                );
+            }
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $livestreams);
     }
 
     public function getMyLivestreamsHandler(Request $request, Response $response): Response
