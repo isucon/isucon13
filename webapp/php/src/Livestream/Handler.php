@@ -5,19 +5,34 @@ declare(strict_types=1);
 namespace IsuPipe\Livestream;
 
 use App\Application\Settings\SettingsInterface as Settings;
+use DateTimeImmutable;
+use DateTimeZone;
 use ErrorException;
 use IsuPipe\AbstractHandler;
+use IsuPipe\User\{ VerifyUserSession };
+use PDO;
+use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Log\LoggerInterface as Logger;
+use RuntimeException;
+use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException };
+use SlimSession\Helper as Session;
+use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
+    use FillLivestreamResponse, VerifyUserSession;
+
     private readonly int $numReservationSlot;
 
     /**
      * @throws ErrorException
      */
     public function __construct(
+        private PDO $db,
+        private Session $session,
+        private Logger $logger,
         Settings $settings,
     ) {
         $this->numReservationSlot = $settings->get('numReservationSlot');
@@ -25,8 +40,151 @@ class Handler extends AbstractHandler
 
     public function reserveLivestreamHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        try {
+            $req = ReserveLivestreamRequest::fromJson($request->getBody()->getContents());
+        } catch (UnexpectedValueException $e) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'failed to decode the request body as json',
+                previous: $e,
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        // 2024/04/01からの１年間の期間内であるかチェック
+        $termStartAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2024-04-01 00:00:00', new DateTimeZone('UTC'));
+        $termEndAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2025-04-01 00:00:00', new DateTimeZone('UTC'));
+        $reserveStartAt = DateTimeImmutable::createFromFormat('U', (string) $req->startAt, new DateTimeZone('UTC'));
+        $reserveEndAt = DateTimeImmutable::createFromFormat('U', (string) $req->endAt, new DateTimeZone('UTC'));
+        if ($reserveStartAt >= $termEndAt || $reserveEndAt <= $termStartAt) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'bad reservation time range',
+            );
+        }
+
+        // 予約枠をみて、予約が可能か調べる
+        /** @var list<ReservationSlotModel> $slots */
+        $slots = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE');
+            $stmt->bindValue(1, $req->startAt, PDO::PARAM_INT);
+            $stmt->bindValue(2, $req->endAt, PDO::PARAM_INT);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $slots[] = ReservationSlotModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            $this->logger->warning('予約枠一覧取得でエラー発生: ' . $e->getMessage());
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get reservation_slots',
+                previous: $e,
+            );
+        }
+        foreach ($slots as $slot) {
+            try {
+                $stmt = $this->db->prepare('SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?');
+                $stmt->bindValue(1, $slot->startAt, PDO::PARAM_INT);
+                $stmt->bindValue(2, $slot->endAt, PDO::PARAM_INT);
+                $stmt->execute();
+                $count = $stmt->fetchColumn();
+                assert(is_int($count));
+                $this->logger->info(sprintf('%d ~ %d予約枠の残数 = %d', $slot->startAt, $slot->endAt, $slot->slot));
+                if ($count < 1) {
+                    throw new HttpBadRequestException(
+                        request: $request,
+                        message: sprintf('予約区間 %d ~ %dが予約できません', $req->startAt, $req->endAt),
+                    );
+                }
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to get reservation_slots',
+                    previous: $e,
+                );
+            }
+        }
+
+        $livestreamModel = new LivestreamModel(
+            userId: $userId,
+            title: $req->title,
+            description: $req->description,
+            playlistUrl: $req->playlistUrl,
+            thumbnailUrl: $req->thumbnailUrl,
+            startAt: $req->startAt,
+            endAt: $req->endAt,
+        );
+
+        try {
+            $stmt = $this->db->prepare('UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?');
+            $stmt->bindValue(1, $req->startAt, PDO::PARAM_INT);
+            $stmt->bindValue(2, $req->endAt, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to update reservation_slots',
+                previous: $e,
+            );
+        }
+
+        try {
+            $stmt = $this->db->prepare('INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)');
+            $stmt->bindValue(':user_id', $livestreamModel->userId, PDO::PARAM_INT);
+            $stmt->bindValue(':title', $livestreamModel->title);
+            $stmt->bindValue(':description', $livestreamModel->description);
+            $stmt->bindValue(':playlist_url', $livestreamModel->playlistUrl);
+            $stmt->bindValue(':thumbnail_url', $livestreamModel->thumbnailUrl);
+            $stmt->bindValue(':start_at', $livestreamModel->startAt, PDO::PARAM_INT);
+            $stmt->bindValue(':end_at', $livestreamModel->endAt, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert livestream',
+                previous: $e,
+            );
+        }
+
+        $livestreamId = (int) $this->db->lastInsertId();
+        $livestreamModel->id = $livestreamId;
+
+        // タグ追加
+        foreach ($req->tags as $tagId) {
+            try {
+                $stmt = $this->db->prepare('INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)');
+                $stmt->bindValue(':livestream_id', $livestreamId, PDO::PARAM_INT);
+                $stmt->bindValue(':tag_id', $tagId, PDO::PARAM_INT);
+                $stmt->execute();
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to insert livestream tag',
+                    previous: $e,
+                );
+            }
+        }
+
+        try {
+            $livestream = $this->fillLivestreamResponse($livestreamModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill livestream',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $livestream, 201);
     }
 
     public function searchLivestreamsHandler(Request $request, Response $response): Response
