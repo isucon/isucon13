@@ -18,7 +18,7 @@ use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
-    use FillLivecommentResponse, VerifyUserSession;
+    use FillLivecommentResponse, FillLivecommentReportResponse, VerifyUserSession;
 
     public function __construct(
         private PDO $db,
@@ -280,10 +280,86 @@ class Handler extends AbstractHandler
         return $this->jsonResponse($response, $livecomment, 201);
     }
 
-    public function reportLivecommentHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function reportLivecommentHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $livecommentIdStr = $params['livecomment_id'] ?? '';
+        if ($livecommentIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livecomment_id in path must be integer',
+            );
+        }
+        $livecommentId = filter_var($livecommentIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livecommentId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livecomment_id in path must be integer',
+            );
+        }
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        $this->db->beginTransaction();
+
+        $now = time();
+        $reportModel = new LivecommentReportModel(
+            userId: $userId,
+            livestreamId: $livestreamId,
+            livecommentId: $livecommentId,
+            createdAt: $now,
+        );
+        try {
+            $stmt = $this->db->prepare('INSERT INTO livecomment_reports(user_id, livestream_id, livecomment_id, created_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at)');
+            $stmt->bindValue(':user_id', $reportModel->userId, PDO::PARAM_INT);
+            $stmt->bindValue(':livestream_id', $reportModel->livestreamId, PDO::PARAM_INT);
+            $stmt->bindValue(':livecomment_id', $reportModel->livecommentId, PDO::PARAM_INT);
+            $stmt->bindValue(':created_at', $reportModel->createdAt, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert livecomment report',
+                previous: $e,
+            );
+        }
+
+        $reportId = (int) $this->db->lastInsertId();
+        $reportModel->id = $reportId;
+
+        try {
+            $report = $this->fillLivecommentReportResponse($reportModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill livecomment report',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $report, 201);
     }
 
     /**
