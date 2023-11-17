@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use ErrorException;
 use IsuPipe\AbstractHandler;
+use IsuPipe\Livecomment\{ FillLivecommentReportResponse, LivecommentReport, LivecommentReportModel };
 use IsuPipe\User\{ UserModel, VerifyUserSession };
 use PDO;
 use PDOException;
@@ -16,13 +17,16 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Log\LoggerInterface as Logger;
 use RuntimeException;
-use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
+use Slim\Exception\{ HttpBadRequestException,
+    HttpForbiddenException,
+    HttpInternalServerErrorException,
+    HttpNotFoundException };
 use SlimSession\Helper as Session;
 use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
-    use FillLivestreamResponse, VerifyUserSession;
+    use FillLivecommentReportResponse, FillLivestreamResponse, VerifyUserSession;
 
     private readonly int $numReservationSlot;
 
@@ -571,9 +575,93 @@ class Handler extends AbstractHandler
         return $this->jsonResponse($response, $livestream);
     }
 
-    public function getLivecommentReportsHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function getLivecommentReportsHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestream',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'not found livestream that has the given id',
+            );
+        }
+        $livestreamModel = LivestreamModel::fromRow($row);
+
+        // existence already check
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        if ($livestreamModel->userId !== $userId) {
+            throw new HttpForbiddenException(
+                request: $request,
+                message: 'can\'t get other streamer\'s livecomment reports',
+            );
+        }
+
+        /** @var list<LivecommentReportModel> $reportModels */
+        $reportModels = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livecomment_reports WHERE livestream_id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $reportModels[] = LivecommentReportModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livecomment reports',
+                previous: $e,
+            );
+        }
+
+        /** @var list<LivecommentReport> $reports */
+        $reports = [];
+        foreach ($reportModels as $reportModel) {
+            try {
+                $reports[] = $this->fillLivecommentReportResponse($reportModel, $this->db);
+            } catch (RuntimeException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to fill livecomment report',
+                    previous: $e,
+                );
+            }
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $reports);
     }
 }
