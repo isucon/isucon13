@@ -303,8 +303,47 @@ class Handler extends AbstractHandler
 
     public function getMyLivestreamsHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $this->db->beginTransaction();
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        /** @var list<LivestreamModel> $livestreamModels */
+        $livestreamModels = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $livestreamModels[] = LivestreamModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestreams',
+                previous: $e,
+            );
+        }
+
+        /** @var list<Livestream> $livestreams */
+        $livestreams = [];
+        foreach ($livestreamModels as $livestreamModel) {
+            try {
+                $livestreams[] = $this->fillLivestreamResponse($livestreamModel, $this->db);
+            } catch (RuntimeException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to fill livestream',
+                    previous: $e,
+                );
+            }
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $livestreams);
     }
 
     public function getUserLivestreamsHandler(Request $request, Response $response): Response
