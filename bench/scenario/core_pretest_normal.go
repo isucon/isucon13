@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"fmt"
+	"log"
 	"math/rand"
 	"slices"
 	"time"
@@ -133,17 +134,13 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 		tagNames[tag.ID] = tag.Name
 	}
 
-	var (
-		tagCount    = rand.Intn(5)
-		tagStartIdx = rand.Intn(len(tagResponse.Tags)) + 2 // 1,2を含まないようにする
-		tagEndIdx   = min(tagStartIdx+tagCount, len(tagResponse.Tags))
-	)
-	if len(tagResponse.Tags) < tagEndIdx {
-		return fmt.Errorf("タグの数が足りません")
-	}
+	tagStartIdx := rand.Intn(len(tagResponse.Tags) - 10)
 	tags := []int64{1, 103}
-	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
-		tags = append(tags, tag.ID)
+	i := 0
+	for len(tags) <= 5 {
+		if tagResponse.Tags[tagStartIdx+i].ID > 2 {
+			tags = append(tags, tagResponse.Tags[tagStartIdx+i].ID)
+		}
 	}
 	slices.Sort(tags)
 	tags = slices.Compact(tags)
@@ -154,6 +151,7 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	)
 	title := "pretest" + randstr.String(10)
 	description := "pretest" + randstr.String(30)
+	log.Printf("%v", tags)
 	livestream, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Tags:        tags,
 		Title:       title,
@@ -227,6 +225,7 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	title2nd := "isutest" + randstr.String(10)
 	description2nd := "isutest" + randstr.String(30)
 	tags2nd := []int64{1, 2}
+	log.Printf("%v", tags2nd)
 	livestream2nd, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Tags:        tags2nd,
 		Title:       title2nd,
@@ -273,6 +272,54 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 		if err := checkPretestLivestream("「ゲーム実況」検索結果1個目の", searchedStream[0], title2nd, description2nd, tags2nd, tagNames, startAt2nd, endAt2nd); err != nil {
 			return err
 		}
+	}
+	extLivestreams := make([]*isupipe.Livestream, 0)
+	{
+		// いくつか登録する
+		for i := 0; i < 19; i++ {
+			startAtExt := time.Date(2024, 4, 1, i+2, 0, 0, 0, time.Local)
+			endAtExt := time.Date(2024, 4, 1, i+3, 0, 0, 0, time.Local)
+			titleExt := "isutest" + randstr.String(10)
+			descriptionExt := "isutest" + randstr.String(30)
+			tagId := int64(rand.Intn(99)) + 1
+			tagsExt := []int64{tagId, tagId + 1}
+			log.Printf("%v", tagsExt)
+			livestreamExt, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
+				Tags:        tagsExt,
+				Title:       titleExt,
+				Description: descriptionExt,
+				// FIXME: フロントで困らないようにちゃんとしたのを設定
+				PlaylistUrl:  "",
+				ThumbnailUrl: "",
+				StartAt:      startAtExt.Unix(),
+				EndAt:        endAtExt.Unix(),
+			})
+			if err != nil {
+				return err
+			}
+			if err := checkPretestLivestream("予約した", livestreamExt, titleExt, descriptionExt, tagsExt, tagNames, startAtExt, endAtExt); err != nil {
+				return err
+			}
+			extLivestreams = append(extLivestreams, livestreamExt)
+		}
+	}
+	{
+		// タグ指定なし検索
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(20))
+		if err != nil {
+			return err
+		}
+		if len(searchedStream) != 20 {
+			return fmt.Errorf("limitありstreamの検索結果の数が想定外です (expected:%d actual:%d)", 20, len(searchedStream))
+		}
+		extTags := make([]int64, 0)
+		for _, t := range extLivestreams[16].Tags {
+			extTags = append(extTags, t.ID)
+		}
+		if err := checkPretestLivestream("検索結果20個目の", searchedStream[19], extLivestreams[16].Title, extLivestreams[16].Description, extTags, tagNames, time.Unix(extLivestreams[16].StartAt, 0), time.Unix(extLivestreams[16].EndAt, 0)); err != nil {
+			return err
+		}
+
 	}
 
 	return nil

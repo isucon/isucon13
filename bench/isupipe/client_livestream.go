@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -101,6 +102,12 @@ func (c *Client) SearchLivestreams(
 	if o.searchTag != nil {
 		query := req.URL.Query()
 		query.Add("tag", o.searchTag.Tag)
+		req.URL.RawQuery = query.Encode()
+	}
+
+	if o.limitParam != nil {
+		query := req.URL.Query()
+		query.Add("limit", strconv.Itoa(o.limitParam.Limit))
 		req.URL.RawQuery = query.Encode()
 	}
 
