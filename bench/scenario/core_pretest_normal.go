@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"fmt"
-	"log"
 	"math/rand"
 	"slices"
 	"time"
@@ -151,7 +150,6 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	)
 	title := "pretest" + randstr.String(10)
 	description := "pretest" + randstr.String(30)
-	log.Printf("%v", tags)
 	livestream, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Tags:        tags,
 		Title:       title,
@@ -225,7 +223,6 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	title2nd := "isutest" + randstr.String(10)
 	description2nd := "isutest" + randstr.String(30)
 	tags2nd := []int64{1, 2}
-	log.Printf("%v", tags2nd)
 	livestream2nd, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Tags:        tags2nd,
 		Title:       title2nd,
@@ -283,7 +280,6 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 			descriptionExt := "isutest" + randstr.String(30)
 			tagId := int64(rand.Intn(99)) + 1
 			tagsExt := []int64{tagId, tagId + 1}
-			log.Printf("%v", tagsExt)
 			livestreamExt, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 				Tags:        tagsExt,
 				Title:       titleExt,
