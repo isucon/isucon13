@@ -185,9 +185,9 @@ func (b *benchmarker) loadAttack(ctx context.Context, asize int64, httpClient *h
 	if failRate < 0.01 {
 		now := time.Now()
 		d := now.Sub(b.startAt) / time.Second
-		b.attackParallelis = int(float64(config.BaseParallelism) * (1.0 + float64(d)/12.0))
-		if b.attackParallelis > 8 {
-			b.attackParallelis = 8
+		b.attackParallelis = int(2.0 * (1.0 + float64(d)/12.0))
+		if b.attackParallelis > 10 {
+			b.attackParallelis = 10
 		}
 	}
 
