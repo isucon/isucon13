@@ -4,11 +4,26 @@ declare(strict_types=1);
 
 namespace IsuPipe\User;
 
+use App\Application\Settings\SettingsInterface as Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 class Handler
 {
+    const DEFAULT_SESSION_EXPIRES_KEY = 'EXPIRES';
+    const DEFAULT_USER_ID_KEY = 'USERID';
+    const DEFAULT_USERNAME_KEY = 'USERNAME';
+    const BCRYPT_DEFAULT_COST = 4;
+    const FALLBACK_IMAGE = __DIR__ . '/../../../img/NoImage.jpg';
+
+    private readonly string $powerDNSSubdomainAddress;
+
+    public function __construct(
+        Settings $settings,
+    ) {
+        $this->powerDNSSubdomainAddress = $settings->get('powerdns')['subdomainAddress'];
+    }
+
     public function getIconHandler(Request $request, Response $response): Response
     {
         // TODO: 実装

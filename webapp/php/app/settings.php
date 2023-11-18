@@ -35,6 +35,11 @@ return function (ContainerBuilder $containerBuilder) {
                     'username' => getenv('ISUCON13_MYSQL_DIALCONFIG_USER') ?: 'isucon',
                     'password' => getenv('ISUCON13_MYSQL_DIALCONFIG_PASSWORD') ?: 'isucon',
                 ],
+                'powerdns' => [
+                    'subdomainAddress' => getenv('ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS') ?:
+                        throw new ErrorException('ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS must be provided'),
+                ],
+                'numReservationSlot' => getenv('ISUCON13_NUM_RESERVATION_SLOT') ?: 2,
             ]);
         },
     ]);
