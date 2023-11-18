@@ -50,7 +50,7 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 		return bencherror.NewInternalError(err)
 	}
 	unknownUserReq := isupipe.LoginRequest{
-		UserName: "unknownUser4328904823",
+		Username: "unknownUser4328904823",
 		Password: "unknownUser",
 	}
 
@@ -67,7 +67,7 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 		return bencherror.NewInternalError(err)
 	}
 	wrongPasswordReq := isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "wrongPassword",
 	}
 	if err := client2.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
@@ -132,7 +132,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			return err
 		}
 		if err := overflowClient.Login(ctx, &isupipe.LoginRequest{
-			UserName: overflowUser.Name,
+			Username: overflowUser.Name,
 			Password: "test",
 		}); err != nil {
 			return err
@@ -142,7 +142,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			startAt = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
 			endAt   = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 		)
-		_, err = overflowClient.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+		_, err = overflowClient.ReserveLivestream(ctx, overflowUser.Name, &isupipe.ReserveLivestreamRequest{
 			Title:       name,
 			Description: name,
 			// FIXME: フロントで困らないようにちゃんとしたのを設定
@@ -150,6 +150,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			ThumbnailUrl: "",
 			StartAt:      startAt.Unix(),
 			EndAt:        endAt.Unix(),
+			Tags:         []int64{},
 		})
 		if err != nil {
 			overflow = true
@@ -174,7 +175,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -184,13 +185,14 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		startAt = time.Date(2026, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt   = time.Date(2026, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	if _, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
 		PlaylistUrl:  "",
 		ThumbnailUrl: "",
 		StartAt:      startAt.Unix(),
 		EndAt:        endAt.Unix(),
+		Tags:         []int64{},
 	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}
@@ -199,13 +201,14 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		startAt2 = time.Date(2023, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt2   = time.Date(2023, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	if _, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
+	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
 		PlaylistUrl:  "",
 		ThumbnailUrl: "",
 		StartAt:      startAt2.Unix(),
 		EndAt:        endAt2.Unix(),
+		Tags:         []int64{},
 	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}

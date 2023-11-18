@@ -1,10 +1,10 @@
 import styled from '@emotion/styled';
-import { Typography } from '@mui/joy';
 import Grid from '@mui/joy/Grid';
 import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useLiveStreams } from '~/api/hooks';
+import { useLiveStreamsSearch } from '~/api/hooks';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function SearchResultPage(): React.ReactElement {
@@ -12,7 +12,7 @@ export default function SearchResultPage(): React.ReactElement {
   const [searchParams] = useSearchParams();
   const tag = searchParams.get('q');
 
-  const liveSterams = useLiveStreams({
+  const liveSterams = useLiveStreamsSearch({
     tag: tag ?? '',
   });
 

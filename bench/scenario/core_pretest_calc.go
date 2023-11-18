@@ -68,7 +68,7 @@ func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSRe
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "user-stats-calc",
+		Username: "user-stats-calc",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -105,7 +105,7 @@ func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSRe
 		}
 
 		if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
-			UserName: viewer.Name,
+			Username: viewer.Name,
 			Password: "test",
 		}); err != nil {
 			return err
@@ -151,7 +151,7 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "test",
 	}); err != nil {
 		return err
@@ -170,7 +170,7 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver
 	livestream := livestreams[0]
 
 	// NOTE: rankは変動をみる
-	stats1, err := client.GetLivestreamStatistics(ctx, livestream.ID)
+	stats1, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
@@ -191,36 +191,38 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver
 			return err
 		}
 
-		_, err = viewer.Register(ctx, &isupipe.RegisterRequest{})
+		_, err = viewer.Register(ctx, &isupipe.RegisterRequest{
+			// FIXME: ユーザ
+		})
 		if err != nil {
 			return err
 		}
 
-		if err := viewer.EnterLivestream(ctx, livestream.ID); err != nil {
+		if err := viewer.EnterLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 			return err
 		}
 
-		_, err = viewer.PostReaction(ctx, livestream.ID, &isupipe.PostReactionRequest{
+		_, err = viewer.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
 			EmojiName: "innocent",
 		})
 		if err != nil {
 			return err
 		}
 
-		livecommentResp, _, err := viewer.PostLivecomment(ctx, livestream.ID, "isuisu~", &scheduler.Tip{
+		livecommentResp, _, err := viewer.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, "isuisu~", &scheduler.Tip{
 			Tip: i,
 		})
 		if err != nil {
 			return err
 		}
 
-		err = viewer.ReportLivecomment(ctx, livestream.ID, livecommentResp.ID)
+		err = viewer.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecommentResp.ID)
 		if err != nil {
 			return err
 		}
 	}
 
-	stats2, err := client.GetLivestreamStatistics(ctx, livestream.ID)
+	stats2, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}

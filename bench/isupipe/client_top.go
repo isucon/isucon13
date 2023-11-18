@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -53,7 +54,7 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 	return tags, nil
 }
 
-func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int64, error) {
+func (c *Client) getRandomTags(ctx context.Context, n int) ([]*Tag, error) {
 	resp, err := c.GetTags(ctx)
 	if err != nil {
 		return nil, err
@@ -61,11 +62,37 @@ func (c *Client) GetRandomTags(ctx context.Context, n int) ([]int64, error) {
 	rand.Shuffle(len(resp.Tags), func(i, j int) {
 		resp.Tags[i], resp.Tags[j] = resp.Tags[j], resp.Tags[i]
 	})
-
-	tags := []int64{}
-	for i := 0; i < n; i++ {
-		tags = append(tags, resp.Tags[i].ID)
+	if len(resp.Tags) < n {
+		return nil, fmt.Errorf("タグが取得できませんでした")
 	}
 
-	return tags, nil
+	return resp.Tags[:n], nil
+}
+
+func (c *Client) GetRandomLivestreamTags(ctx context.Context, n int) ([]int64, error) {
+	tags, err := c.getRandomTags(ctx, n)
+	if err != nil {
+		return nil, err
+	}
+
+	livestreamTags := []int64{}
+	for _, tag := range tags {
+		livestreamTags = append(livestreamTags, tag.ID)
+	}
+
+	return livestreamTags, nil
+}
+
+func (c *Client) GetRandomSearchTags(ctx context.Context, n int) ([]string, error) {
+	tags, err := c.getRandomTags(ctx, n)
+	if err != nil {
+		return nil, err
+	}
+
+	searchTags := []string{}
+	for _, tag := range tags {
+		searchTags = append(searchTags, tag.Name)
+	}
+
+	return searchTags, nil
 }

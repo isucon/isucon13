@@ -15,10 +15,4 @@ const (
 // ScenarioTestTimeoutSeconds = 3
 )
 
-var (
-	// 広告費用
-	// 1~10で設定
-	// NOTE: webappのinitializeによって更新される
-	AdvertiseCost int64  = 1
-	Language      string = "unknown"
-)
+var Language string = "unknown"

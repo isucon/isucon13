@@ -39,7 +39,7 @@ func TestClientUser_Login(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: streamer.Name,
+		Username: streamer.Name,
 		Password: streamer.RawPassword,
 	})
 	assert.NoError(t, err)

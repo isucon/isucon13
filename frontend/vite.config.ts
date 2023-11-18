@@ -7,11 +7,14 @@ export default defineConfig({
   plugins: [react(), Pages({})],
   server: {
     port: 4000,
+    https: {
+      key: '../provisioning/ansible/roles/nginx/files/etc/nginx/tls/_.u.isucon.dev.key',
+      cert: '../provisioning/ansible/roles/nginx/files/etc/nginx/tls/_.u.isucon.dev.crt',
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:12345',
+        target: 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
