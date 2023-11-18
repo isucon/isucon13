@@ -24,7 +24,7 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 		return nil, fmt.Errorf("initializeのリクエストに失敗しました %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("initializeのステータスが200ではありません %d", resp.StatusCode)
+		return nil, fmt.Errorf("initialize へのリクエストに対して、期待されたHTTPステータスコードが確認できませんでした (expected:%d, actual:%d)", http.StatusOK, resp.StatusCode)
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
