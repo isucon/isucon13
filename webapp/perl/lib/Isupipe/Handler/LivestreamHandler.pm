@@ -47,20 +47,22 @@ sub reserve_livestream_handler($app, $c) {
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, ReserveLivestreamRequest)) {
-        $c->halt(HTTP_BAD_REQUEST, "bad request");
+        $c->halt(HTTP_BAD_REQUEST, "failed to decode the request body as jso");
     }
 
     my $txn = $app->dbh->txn_scope;
     # 2024/04/01からの１年間の期間内であるかチェック
-    infof('check term');
-    if (!($params->{end_at} == TERM_END_AT || $params->{end_at} < TERM_END_AT) && (TERM_START_AT == $params->{start_at} || $params->{start_at} > TERM_START_AT)) {
+    if (
+        ($params->{start_at} == TERM_END_AT || $params->{start_at} > TERM_END_AT) ||
+        ($params->{end_at} == TERM_START_AT || $params->{end_at} < TERM_START_AT)
+    ) {
         $c->halt(HTTP_BAD_REQUEST, "bad reservation time range");
     }
 
     # 予約枠をみて、予約が可能か調べる
     my $slots = $app->dbh->select_all_as(
         'Isupipe::Entity::ReservationSlot',
-        'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ?',
+        'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE',
         $params->{start_at},
         $params->{end_at},
     );
@@ -81,37 +83,33 @@ sub reserve_livestream_handler($app, $c) {
         user_id       => $user_id,
         title         => $params->{title},
         description   => $params->{description},
-        playlist_url  => "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
-        thumbnail_url => "https://picsum.photos/200/300",
+        playlist_url  => $params->{playlist_url},
+        thumbnail_url => $params->{thumbnail_url},
         start_at      => $params->{start_at},
         end_at        => $params->{end_at},
     );
 
-    infof('insert reservation slot');
     $app->dbh->query(
         'UPDATE reservation_slots SET slot = slot - 1 WHERE start_at >= ? AND end_at <= ?',
         $params->{start_at},
         $params->{end_at},
     );
 
-    infof('insert livestream');
     $app->dbh->query(
         'INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES(:user_id, :title, :description, :playlist_url, :thumbnail_url, :start_at, :end_at)',
         $livestream->as_hashref,
     );
 
-    infof('get inserted id');
     my $livestream_id = $app->dbh->last_insert_id;
     $livestream->id($livestream_id);
 
-    infof('insert tags');
     # タグ追加
     for my $tag_id ($params->{tags}->@*) {
         $app->dbh->query(
             'INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)',
             {
                 livestream_id => $livestream_id,
-                tag_id => $tag_id,
+                tag_id        => $tag_id,
             },
         );
     }
