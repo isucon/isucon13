@@ -10,13 +10,14 @@ use PDO;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use RuntimeException;
 use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
 use SlimSession\Helper as Session;
 use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
-    use VerifyUserSession;
+    use FillUserResponse, VerifyUserSession;
 
     const DEFAULT_USERNAME_KEY = 'USERNAME';
     const BCRYPT_DEFAULT_COST = 4;
@@ -143,8 +144,46 @@ class Handler extends AbstractHandler
 
     public function getMeHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE id = ?');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get user',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'not found user that has the userid in session',
+            );
+        }
+        $userModel = UserModel::fromRow($row);
+
+        try {
+            $user = $this->fillUserResponse($userModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill user',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $user);
     }
 
     /**
