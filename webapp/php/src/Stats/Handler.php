@@ -16,6 +16,7 @@ use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException }
 use SlimSession\Helper as Session;
 
 /**
+ * @phpstan-import-type LivestreamRanking from LivestreamRankingEntry
  * @phpstan-import-type UserRanking from UserRankingEntry
  */
 class Handler extends AbstractHandler
@@ -282,9 +283,178 @@ class Handler extends AbstractHandler
         return $this->jsonResponse($response, $stats);
     }
 
-    public function getLivestreamStatisticsHandler(Request $request, Response $response): Response
+    /**
+     * @param array<string, string> $params
+     */
+    public function getLivestreamStatisticsHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $livestreamIdStr = $params['livestream_id'] ?? '';
+        if ($livestreamIdStr === '') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
+        if (!is_int($livestreamId)) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'livestream_id in path must be integer',
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestream',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'cannot get stats of not found livestream',
+            );
+        }
+
+        /** @var list<LivestreamModel> $livestreams */
+        $livestreams = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams');
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $livestreams[] = LivestreamModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestreams',
+                previous: $e,
+            );
+        }
+
+        // ランク算出
+        /** @var LivestreamRanking $ranking */
+        $ranking = [];
+        foreach ($livestreams as $livestream) {
+            try {
+                $stmt = $this->db->prepare('SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?');
+                $stmt->bindValue(1, $livestream->id, PDO::PARAM_INT);
+                $stmt->execute();
+                $reactions = $stmt->fetchColumn();
+                assert(is_int($reactions));
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to count reactions',
+                    previous: $e,
+                );
+            }
+
+            try {
+                $stmt = $this->db->prepare('SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?');
+                $stmt->bindValue(1, $livestream->id, PDO::PARAM_INT);
+                $stmt->execute();
+                $tips = (int) $stmt->fetchColumn();
+            } catch (PDOException $e) {
+                throw new HttpInternalServerErrorException(
+                    request: $request,
+                    message: 'failed to count tips',
+                    previous: $e,
+                );
+            }
+
+            $score = $reactions + $tips;
+            $ranking[] = new LivestreamRankingEntry(
+                livestreamId: $livestream->id,
+                title: $livestream->title,
+                score: $score,
+            );
+        }
+        usort($ranking, fn (LivestreamRankingEntry $a, LivestreamRankingEntry $b) => $b->compare($a));
+
+        $rank = 1;
+        foreach ($ranking as $entry) {
+            if ($entry->livestreamId === $livestreamId) {
+                break;
+            }
+            $rank++;
+        }
+
+        // 視聴者数算出
+        try {
+            $stmt = $this->db->prepare('SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $viewersCount = $stmt->fetchColumn();
+            assert(is_int($viewersCount));
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to count livestream viewers',
+                previous: $e,
+            );
+        }
+
+        // 最大チップ額
+        try {
+            $stmt = $this->db->prepare('SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $maxTip = (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to find maximum tip livecomment',
+                previous: $e,
+            );
+        }
+
+        // リアクション数
+        try {
+            $stmt = $this->db->prepare('SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $totalReactions = $stmt->fetchColumn();
+            assert(is_int($totalReactions));
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to count total reactions',
+                previous: $e,
+            );
+        }
+
+        // スパム報告数
+        try {
+            $stmt = $this->db->prepare('SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $totalReports = $stmt->fetchColumn();
+            assert(is_int($totalReports));
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to count total spam reports',
+                previous: $e,
+            );
+        }
+
+        return $this->jsonResponse($response, new LivestreamStatistics(
+            rank: $rank,
+            viewersCount: $viewersCount,
+            maxTip: $maxTip,
+            totalReactions: $totalReactions,
+            totalReports: $totalReports,
+        ));
     }
 }
