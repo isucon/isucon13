@@ -11,7 +11,10 @@ use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use RuntimeException;
-use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
+use Slim\Exception\{ HttpBadRequestException,
+    HttpInternalServerErrorException,
+    HttpNotFoundException,
+    HttpUnauthorizedException };
 use SlimSession\Helper as Session;
 use UnexpectedValueException;
 
@@ -285,7 +288,57 @@ class Handler extends AbstractHandler
      */
     public function loginHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
+        try {
+            $req = LoginRequest::fromJson($request->getBody()->getContents());
+        } catch (UnexpectedValueException $e) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'failed to decode the request body as json',
+                previous: $e,
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            // usernameはUNIQUEなので、whereで一意に特定できる
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE name = ?');
+            $stmt->bindValue(1, $req->username);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get user',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpUnauthorizedException(
+                request: $request,
+                message: 'invalid username or password',
+            );
+        }
+        $userModel = UserModel::fromRow($row);
+
+        $this->db->commit();
+
+        if (!password_verify($req->password, $userModel->hashedPassword)) {
+            throw new HttpUnauthorizedException(
+                request: $request,
+                message: 'invalid username or password',
+            );
+        }
+
+        $sessionEndAt = strtotime('+1 hour');
+
+        $this->session->id(true);
+
+        // FIXME: ユーザ名
+        $this->session->set($this::DEFAULT_USER_ID_KEY, $userModel->id);
+        $this->session->set($this::DEFAULT_USERNAME_KEY, $userModel->name);
+        $this->session->set($this::DEFAULT_SESSION_EXPIRES_KEY, $sessionEndAt);
+
         return $response;
     }
 
