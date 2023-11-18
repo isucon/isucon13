@@ -345,10 +345,49 @@ class Handler extends AbstractHandler
     /**
      * ユーザ詳細API
      * GET /api/user/:username
+     *
+     * @param array<string, string> $params
      */
-    public function getUserHandler(Request $request, Response $response): Response
+    public function getUserHandler(Request $request, Response $response, array $params): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        $username = $params['username'] ?? '';
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE name = ?');
+            $stmt->bindValue(1, $username);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get user',
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'not found user that has the given username',
+            );
+        }
+        $userModel = UserModel::fromRow($row);
+
+        try {
+            $user = $this->fillUserResponse($userModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill user',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $user);
     }
 }
