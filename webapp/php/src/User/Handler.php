@@ -192,8 +192,91 @@ class Handler extends AbstractHandler
      */
     public function registerHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
-        return $response;
+        try {
+            $req = PostUserRequest::fromJson($request->getBody()->getContents());
+        } catch (UnexpectedValueException $e) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'failed to decode the request body as json',
+                previous: $e,
+            );
+        }
+
+        if ($req->name === 'pipe') {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'the username \'pipe\' is reserved',
+            );
+        }
+
+        $hashedPassword = password_hash($req->password, PASSWORD_BCRYPT, ['cost' => $this::BCRYPT_DEFAULT_COST]);
+
+        $this->db->beginTransaction();
+
+        $userModel = new UserModel(
+            name: $req->name,
+            displayName: $req->displayName,
+            description: $req->description,
+            hashedPassword: $hashedPassword,
+        );
+        try {
+            $stmt = $this->db->prepare('INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)');
+            $stmt->bindValue(':name', $userModel->name);
+            $stmt->bindValue(':display_name', $userModel->displayName);
+            $stmt->bindValue(':description', $userModel->description);
+            $stmt->bindValue(':password', $userModel->hashedPassword);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert user',
+                previous: $e,
+            );
+        }
+
+        $userId = (int) $this->db->lastInsertId();
+        $userModel->id = $userId;
+
+        $themeModel = new ThemeModel(
+            userId: $userId,
+            darkMode: $req->theme->darkMode,
+        );
+        try {
+            $stmt = $this->db->prepare('INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)');
+            $stmt->bindValue(':user_id', $themeModel->userId, PDO::PARAM_INT);
+            $stmt->bindValue(':dark_mode', $themeModel->darkMode, PDO::PARAM_BOOL);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert user theme',
+                previous: $e,
+            );
+        }
+
+        try {
+            $this->execCommand(['pdnsutil', 'add-record', 'u.isucon.dev', $req->name, 'A', '30', $this->powerDNSSubdomainAddress]);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: $e->getMessage(),
+                previous: $e,
+            );
+        }
+
+        try {
+            $user = $this->fillUserResponse($userModel, $this->db);
+        } catch (RuntimeException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to fill user',
+                previous: $e,
+            );
+        }
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, $user, 201);
     }
 
     /**
