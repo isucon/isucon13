@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"math"
 	"net"
 	"net/http"
 	"sync"
@@ -39,12 +40,13 @@ var (
 )
 
 type benchmarker struct {
-	streamerSem     *semaphore.Weighted
-	longStreamerSem *semaphore.Weighted
-	moderatorSem    *semaphore.Weighted
-	viewerSem       *semaphore.Weighted
-	spammerSem      *semaphore.Weighted
-	attackSem       *semaphore.Weighted
+	streamerSem      *semaphore.Weighted
+	longStreamerSem  *semaphore.Weighted
+	moderatorSem     *semaphore.Weighted
+	viewerSem        *semaphore.Weighted
+	spammerSem       *semaphore.Weighted
+	attackSem        *semaphore.Weighted
+	attackParallelis int
 
 	longStreamerClientPool *isupipe.ClientPool
 	streamerClientPool     *isupipe.ClientPool
@@ -58,6 +60,10 @@ type benchmarker struct {
 	scenarioCounter *score.Score
 
 	startAt time.Time
+}
+
+func powWeightSize(m int) int64 {
+	return int64(math.Pow(2, float64(m)))
 }
 
 func newBenchmarker(ctx context.Context) *benchmarker {
@@ -90,7 +96,8 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 		moderatorSem:           semaphore.NewWeighted(weight),
 		viewerSem:              semaphore.NewWeighted(weight * 1), // 配信者の10倍視聴者トラフィックがある
 		spammerSem:             semaphore.NewWeighted(weight * 2), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:              semaphore.NewWeighted(weight * 1), // 視聴者と同程度、攻撃を仕掛ける輩がいる
+		attackSem:              semaphore.NewWeighted(512),        // 攻撃を段階的に大きくする最大値
+		attackParallelis:       2,
 		longStreamerClientPool: longStreamerClientPool,
 		streamerClientPool:     streamerClientPool,
 		viewerClientPool:       viewerClientPool,
@@ -145,8 +152,6 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
 }
 
-var loadAttackPerSecond int64 = 5000
-
 // dns水責め攻撃につかうhttp client
 func (b *benchmarker) loadAttackHTTPClient() *http.Client {
 	dialer := &net.Dialer{Timeout: 5 * time.Second}
@@ -172,23 +177,23 @@ func (b *benchmarker) loadAttackHTTPClient() *http.Client {
 	}
 }
 
-func (b *benchmarker) loadAttack(ctx context.Context, httpClient *http.Client) error {
-	defer b.attackSem.Release(1)
+func (b *benchmarker) loadAttack(ctx context.Context, asize int64, httpClient *http.Client, loadLimiter *rate.Limiter) error {
+	defer b.attackSem.Release(asize)
 
-	factor := float64(loadAttackPerSecond) / float64(config.BaseParallelism) * 20.0
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
 	if failRate < 0.01 {
 		now := time.Now()
 		d := now.Sub(b.startAt) / time.Second
-		factor = factor * (1.0 + float64(d)/16.0)
+		b.attackParallelis = int(2.0 * (1.0 + float64(d)/12.0))
+		if b.attackParallelis > 10 {
+			b.attackParallelis = 10
+		}
 	}
-	loadLimiter := rate.NewLimiter(rate.Limit(factor), 1)
 
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
 	if err := scenario.DnsWaterTortureAttackScenario(ctx, httpClient, loadLimiter); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -296,6 +301,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 	violateCh := bencherror.RunViolationChecker(ctx)
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
+	loadAttackLimiter := rate.NewLimiter(rate.Limit(900), 1)
 
 	for {
 		select {
@@ -342,11 +348,13 @@ func (b *benchmarker) run(ctx context.Context) error {
 					b.loadSpammer(childCtx)
 				}()
 			}
-			if ok := b.attackSem.TryAcquire(1); ok {
+			asize := int64(512.0 / float64(b.attackParallelis))
+			if ok := b.attackSem.TryAcquire(asize); ok {
 				wg.Add(1)
+				asize := asize
 				go func() {
 					defer wg.Done()
-					b.loadAttack(childCtx, loadAttackHTTPClient)
+					b.loadAttack(childCtx, asize, loadAttackHTTPClient, loadAttackLimiter)
 				}()
 			}
 		}

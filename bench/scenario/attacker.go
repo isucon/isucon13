@@ -8,7 +8,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var maxAttackOnEachScenario = 1000
+var maxAttackOnEachScenario = 100
 
 func DnsWaterTortureAttackScenario(ctx context.Context, httpClient *http.Client, loadLimiter *rate.Limiter) error {
 

