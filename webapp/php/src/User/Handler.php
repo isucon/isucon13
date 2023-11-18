@@ -10,8 +10,9 @@ use PDO;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Exception\{ HttpInternalServerErrorException, HttpNotFoundException };
+use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
 use SlimSession\Helper as Session;
+use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
@@ -89,8 +90,55 @@ class Handler extends AbstractHandler
 
     public function postIconHandler(Request $request, Response $response): Response
     {
-        // TODO: 実装
-        return $response;
+        $this->verifyUserSession($request, $this->session);
+
+        // existence already checked
+        $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
+
+        try {
+            $req = PostIconRequest::fromJson($request->getBody()->getContents());
+        } catch (UnexpectedValueException $e) {
+            throw new HttpBadRequestException(
+                request: $request,
+                message: 'failed to decode the request body as json',
+                previous: $e,
+            );
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('DELETE FROM icons WHERE user_id = ?');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to delete old user icon',
+                previous: $e,
+            );
+        }
+
+        try {
+            $stmt = $this->db->prepare('INSERT INTO icons (user_id, image) VALUES (?, ?)');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $req->image);
+            $stmt->execute();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to insert new user icon',
+                previous: $e,
+            );
+        }
+
+        $iconId = (int) $this->db->lastInsertId();
+
+        $this->db->commit();
+
+        return $this->jsonResponse($response, new PostIconResponse(
+            id: $iconId,
+        ), 201);
     }
 
     public function getMeHandler(Request $request, Response $response): Response
