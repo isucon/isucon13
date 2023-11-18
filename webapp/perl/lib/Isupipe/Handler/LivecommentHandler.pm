@@ -236,6 +236,7 @@ sub moderate_handler($app, $c) {
                 DELETE FROM livecomments
                 WHERE
                 id = ? AND
+                livestream_id = ? AND
                 (SELECT COUNT(*)
                 FROM
                 (SELECT ? AS text) AS texts
@@ -244,7 +245,7 @@ sub moderate_handler($app, $c) {
                 ON texts.text LIKE patterns.pattern) >= 1;
             SQL
 
-            $app->dbh->query($query, $livecomment->id, $livecomment->comment, $ng_word->word);
+            $app->dbh->query($query, $livecomment->id, $livestream_id, $livecomment->comment, $ng_word->word);
         }
     }
 
