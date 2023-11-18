@@ -13,6 +13,7 @@ class Isupipe::Entity::Livecomment {
 
     use Isupipe::Assert;
     use Types::Standard -types;
+    use JSON::Types;
 
     ADJUST {
         assert_field(Int, $id, 'id');
@@ -42,7 +43,7 @@ class Isupipe::Entity::Livecomment {
             user          => $user,
             livestream    => $livestream,
             comment       => $comment,
-            tip           => $tip,
+            tip           => number $tip,
             created_at    => $created_at,
         };
     }

@@ -73,12 +73,7 @@ sub post_livecomment_handler($app, $c) {
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, PostLivecommentRequest)) {
-        $c->halt(HTTP_BAD_REQUEST, "bad request");
-    }
-
-    if ($params->{tip} < 0 || 20000 < $params->{tip}) {
-        # FIXME コメントと式が食い違ってる 1 <= tips < 20000 が正しい？
-        $c->halt(HTTP_BAD_REQUEST, "the tips in a live comment be 1 <= tips <= 20000");
+        $c->halt(HTTP_BAD_REQUEST, "failed to decode the request body as json");
     }
 
     my $txn = $app->dbh->txn_scope;
@@ -127,11 +122,11 @@ sub post_livecomment_handler($app, $c) {
     my $livecomment_id = $app->dbh->last_insert_id;
     $livecomment->id($livecomment_id);
 
-    my $response = fill_livecomment_response($app, $livecomment);
+    $livecomment = fill_livecomment_response($app, $livecomment);
 
     $txn->commit;
 
-    my $res = $c->render_json($response);
+    my $res = $c->render_json($livecomment);
     $res->status(HTTP_CREATED);
     return $res;
 }
