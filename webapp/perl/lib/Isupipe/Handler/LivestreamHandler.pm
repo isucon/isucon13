@@ -40,10 +40,8 @@ use constant ReserveLivestreamRequest => Dict[
 sub reserve_livestream_handler($app, $c) {
     verify_user_session($app, $c);
 
+    # existence already checked
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
-    unless ($user_id) {
-        $c->halt(HTTP_UNAUTHORIZED, "failed to find user-id from session");
-    }
 
     my $params = $c->req->json_parameters;
     unless (check_params($params, ReserveLivestreamRequest)) {
@@ -51,6 +49,7 @@ sub reserve_livestream_handler($app, $c) {
     }
 
     my $txn = $app->dbh->txn_scope;
+
     # 2024/04/01からの１年間の期間内であるかチェック
     if (
         ($params->{start_at} == TERM_END_AT || $params->{start_at} > TERM_END_AT) ||
