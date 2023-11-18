@@ -156,6 +156,8 @@ sub get_user_statistics_handler($app, $c) {
         $username
     );
 
+    $txn->commit;
+
     my $stats = Isupipe::Entity::UserStatistics->new(
         rank               => $rank,
         viewers_count      => $viewers_count,
