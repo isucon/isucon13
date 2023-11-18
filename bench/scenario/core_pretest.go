@@ -22,8 +22,10 @@ func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isu
 	}
 
 	user, err := client.Register(ctx, &isupipe.RegisterRequest{
-		Name:     "pretestuser",
-		Password: "test",
+		Name:        "pretestuser",
+		Password:    "test",
+		DisplayName: "pretest user",
+		Description: "this is a pre test user",
 	})
 	if err != nil {
 		return nil, err

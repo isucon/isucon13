@@ -1,8 +1,8 @@
 ---
 - hosts: benchmarker
   roles:
-    - base
-    - apt
-    - isucon-user
-    - xbuild
+#    - base
+#    - apt
+#    - isucon-user
+#    - xbuild
     - bench

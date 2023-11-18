@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/isucon/isucandar/agent"
@@ -14,6 +15,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/najeira/randstr"
 )
 
 //go:embed testdata/NoImage.jpg
@@ -65,6 +67,42 @@ func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 	return nil
 }
 
+// FIXME PlaylistUrlとThumbnailUrlの確認
+func checkPretestLivestream(subject string, livestream *isupipe.Livestream, title, description string, tags []int64, tagNames map[int64]string, startAt, endAt time.Time) error {
+	// Check livestream
+	if livestream.ID == 0 {
+		return fmt.Errorf("%s livestreamのIDが正しくありません (actual:%d)", subject, livestream.ID)
+	}
+	if livestream.Title != title {
+		return fmt.Errorf("%s livestreamのTitleが一致しません (expected:%s actual:%s)", subject, title, livestream.Title)
+	}
+	if livestream.Description != description {
+		return fmt.Errorf("%s livestreamのDescriptionが一致しません (expected:%s actual:%s)", subject, description, livestream.Description)
+	}
+	if len(livestream.Tags) != len(tags) {
+		return fmt.Errorf("%s livestreamのTagの数が一致しません (expected:%d actual:%d)", subject, len(tags), len(livestream.Tags))
+	}
+	for i := 0; i < len(tags); i++ {
+		found := false
+		for j := 0; j < len(livestream.Tags); j++ {
+			n := tagNames[tags[i]]
+			if tags[i] == livestream.Tags[j].ID && n == livestream.Tags[j].Name {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("%s livestreamにTag.IDがみつかりません (expected:%d)", subject, tags[i])
+		}
+	}
+	if livestream.StartAt != startAt.Unix() {
+		return fmt.Errorf("%s livestreamのStartAtが異なります (expected:%d actual:%d)", subject, startAt.Unix(), livestream.StartAt)
+	}
+	if livestream.EndAt != endAt.Unix() {
+		return fmt.Errorf("%s livestreamのEndAtが異なります (expected:%d actual:%d)", subject, endAt.Unix(), livestream.EndAt)
+	}
+	return nil
+}
+
 func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 機能的なテスト
 	// 予約したライブ配信が一覧に見えるか、取得できるか、検索によって見つけられるか
@@ -90,27 +128,36 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 		return err
 	}
 
+	tagNames := map[int64]string{}
+	for _, tag := range tagResponse.Tags {
+		tagNames[tag.ID] = tag.Name
+	}
+
 	var (
 		tagCount    = rand.Intn(5)
-		tagStartIdx = rand.Intn(len(tagResponse.Tags))
+		tagStartIdx = rand.Intn(len(tagResponse.Tags)) + 2 // 1,2を含まないようにする
 		tagEndIdx   = min(tagStartIdx+tagCount, len(tagResponse.Tags))
 	)
 	if len(tagResponse.Tags) < tagEndIdx {
 		return fmt.Errorf("タグの数が足りません")
 	}
-	tags := []int64{}
+	tags := []int64{1, 103}
 	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
-		tags = append(tags, int64(tag.ID))
+		tags = append(tags, tag.ID)
 	}
+	slices.Sort(tags)
+	tags = slices.Compact(tags)
 
 	var (
 		startAt = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt   = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 	)
+	title := "pretest" + randstr.String(10)
+	description := "pretest" + randstr.String(30)
 	livestream, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Tags:        tags,
-		Title:       "pretest",
-		Description: "pretest",
+		Title:       title,
+		Description: description,
 		// FIXME: フロントで困らないようにちゃんとしたのを設定
 		PlaylistUrl:  "",
 		ThumbnailUrl: "",
@@ -120,8 +167,22 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	if err != nil {
 		return err
 	}
+	if err := checkPretestLivestream("予約した", livestream, title, description, tags, tagNames, startAt, endAt); err != nil {
+		return err
+	}
+	//配信主
+	if livestream.Owner.ID != testUser.ID {
+		return fmt.Errorf("予約したlivestreamのuser.IDが異なります (expected:%d actual:%d)", testUser.ID, livestream.Owner.ID)
+	}
+	if livestream.Owner.DisplayName != "pretest user" {
+		return fmt.Errorf("予約したlivestreamのuser.DisplayNameが異なります (expected:%s actual:%s)", "pretestuser", livestream.Owner.DisplayName)
+	}
 
-	if err = client.GetLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
+	gotLivestream, err := client.GetLivestream(ctx, livestream.ID, livestream.Owner.Name)
+	if err != nil {
+		return err
+	}
+	if err := checkPretestLivestream("取得した", gotLivestream, title, description, tags, tagNames, startAt, endAt); err != nil {
 		return err
 	}
 
@@ -134,8 +195,84 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	}
 
 	// FIXME: 結果をちゃんと確認
-	if _, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("椅子")); err != nil {
+	{
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("椅子"))
+		if err != nil {
+			return err
+		}
+		if len(searchedStream) != 2 {
+			return fmt.Errorf("streamの検索結果の数が足りません (expected:%d actual:%d)", 2, len(searchedStream))
+		}
+		if err := checkPretestLivestream("「椅子」検索結果1個目の", searchedStream[0], "テスト配信", "サービステスト用の配信。部門ごとに記録するデータを分けたいので、将来的にはもう少し増やす。きっといつかやると思う。", []int64{103}, tagNames, time.Unix(1711897200, 0), time.Unix(1711900800, 0)); err != nil {
+			return err
+		}
+
+		if searchedStream[0].Owner.ID != 1 {
+			return fmt.Errorf("「椅子」検索結果1個目のlivestreamのuser.IDが異なります (expected:%d actual:%d)", 1, livestream.Owner.ID)
+		}
+		if searchedStream[0].Owner.DisplayName != "検証用ユーザ" {
+			return fmt.Errorf("「椅子」検索結果1個目のlivestreamのuser.Nameが異なります (expected:%s actual:%s)", "検証用ユーザ", searchedStream[0].Owner.DisplayName)
+		}
+
+		if err := checkPretestLivestream("「椅子」検索結果2個目の", searchedStream[1], title, description, tags, tagNames, startAt, endAt); err != nil {
+			return err
+		}
+	}
+
+	// もう一つ登録
+	var (
+		startAt2nd = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
+		endAt2nd   = time.Date(2024, 4, 1, 2, 0, 0, 0, time.Local)
+	)
+	title2nd := "isutest" + randstr.String(10)
+	description2nd := "isutest" + randstr.String(30)
+	tags2nd := []int64{1, 2}
+	livestream2nd, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
+		Tags:        tags2nd,
+		Title:       title2nd,
+		Description: description2nd,
+		// FIXME: フロントで困らないようにちゃんとしたのを設定
+		PlaylistUrl:  "",
+		ThumbnailUrl: "",
+		StartAt:      startAt2nd.Unix(),
+		EndAt:        endAt2nd.Unix(),
+	})
+	if err != nil {
 		return err
+	}
+	if err := checkPretestLivestream("予約した", livestream2nd, title2nd, description2nd, tags2nd, tagNames, startAt2nd, endAt2nd); err != nil {
+		return err
+	}
+
+	{
+		//検索2回目
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("ライブ配信"))
+		if err != nil {
+			return err
+		}
+		if len(searchedStream) != 2 {
+			return fmt.Errorf("「ライブ配信」streamの検索結果の数が足りません (expected:%d actual:%d)", 2, len(searchedStream))
+		}
+
+		if err := checkPretestLivestream("「ライブ配信」検索結果1個目の", searchedStream[0], title, description, tags, tagNames, startAt, endAt); err != nil {
+			return err
+		}
+		if err := checkPretestLivestream("「ライブ配信」検索結果2個目の", searchedStream[1], title2nd, description2nd, tags2nd, tagNames, startAt2nd, endAt2nd); err != nil {
+			return err
+		}
+	}
+	{
+		//検索3回目
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("ゲーム実況"))
+		if err != nil {
+			return err
+		}
+		if len(searchedStream) != 1 {
+			return fmt.Errorf("「ゲーム実況」streamの検索結果の数が想定外です (expected:%d actual:%d)", 1, len(searchedStream))
+		}
+		if err := checkPretestLivestream("「ゲーム実況」検索結果1個目の", searchedStream[0], title2nd, description2nd, tags2nd, tagNames, startAt2nd, endAt2nd); err != nil {
+			return err
+		}
 	}
 
 	return nil
