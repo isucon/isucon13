@@ -62,21 +62,13 @@ sub reserve_livestream_handler($app, $c) {
     # 予約枠をみて、予約が可能か調べる
     my $slots = $app->dbh->select_all_as(
         'Isupipe::Entity::ReservationSlot',
-        'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE',
+        'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? AND slot > 0 FOR UPDATE',
         $params->{start_at},
         $params->{end_at},
     );
-
-    for my $slot ($slots->@*) {
-        my $count = $app->dbh->select_one(
-            'SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?',
-            $slot->start_at,
-            $slot->end_at,
-        );
-        infof('%d ~ %d予約枠の残数 = %d', $slot->start_at, $slot->end_at, $slot->slot);
-        if ($count < 1) {
-            $c->halt(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
-        }
+    unless (@$slots) {
+        $txn->rollback;
+        $c->halt(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
     }
 
     my $livestream = Isupipe::Entity::Livestream->new(

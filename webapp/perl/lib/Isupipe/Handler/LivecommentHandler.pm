@@ -88,18 +88,7 @@ sub post_livecomment_handler($app, $c) {
 
     my $hit_spam = 0;
     for my $ng_word ($ng_words->@*) {
-        my $query =<<~ 'SQL';
-            SELECT COUNT(*)
-            FROM
-            (SELECT ? AS text) AS texts
-            INNER JOIN
-            (SELECT CONCAT('%', ?, '%') AS pattern) AS patterns
-            ON texts.text LIKE patterns.pattern
-        SQL
-
-        $hit_spam = $app->dbh->select_one($query, $params->{comment}, $ng_word->word);
-        infof("[hitSpam=%d] comment=%s", $hit_spam, $params->{comment});
-        if ($hit_spam >= 1) {
+        if ($params->{comment} =~ /$ng_word->word/) {
             $c->halt(HTTP_BAD_REQUEST, "このコメントがスパム判定されました");
         }
     }
@@ -218,36 +207,15 @@ sub moderate_handler($app, $c) {
 
     my $word_id = $app->dbh->last_insert_id;
 
-    my $ng_words = $app->dbh->select_all_as(
-        'Isupipe::Entity::NGWord',
-        'SELECT * FROM ng_words',
-    );
-
     # NGワードにヒットする過去の投稿も全削除する
-    for my $ng_word ($ng_words->@*) {
-        # ライブコメント一覧取得
-        my $livecomments = $app->dbh->select_all_as(
-            'Isupipe::Entity::Livecomment',
-            'SELECT * FROM livecomments',
-        );
+    my $query = <<~ 'SQL';
+        DELETE FROM livecomments
+        WHERE
+        livestream_id = ? AND
+        comment LIKE CONCAT('%', ?, '%')
+    SQL
 
-        for my $livecomment ($livecomments->@*) {
-            my $query = <<~ 'SQL';
-                DELETE FROM livecomments
-                WHERE
-                id = ? AND
-                livestream_id = ? AND
-                (SELECT COUNT(*)
-                FROM
-                (SELECT ? AS text) AS texts
-                INNER JOIN
-                (SELECT CONCAT('%', ?, '%')	AS pattern) AS patterns
-                ON texts.text LIKE patterns.pattern) >= 1;
-            SQL
-
-            $app->dbh->query($query, $livecomment->id, $livestream_id, $livecomment->comment, $ng_word->word);
-        }
-    }
+    $app->dbh->query($query, $livestream_id, $params->{ng_word});
 
     $txn->commit;
 
