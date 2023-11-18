@@ -1,0 +1,40 @@
+---
+- name: Send envcheck tarball
+  become: true
+  ansible.builtin.copy:
+    src: envcheck.tar.gz
+    dest: /home/isucon/envcheck.tar.gz
+  
+- name: mkdir for envcheck
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/envcheck
+    state: directory
+
+- name: Extract envcheck.tar.gz into /home/isucon/envcheck
+  become: true
+  become_user: isucon
+  ansible.builtin.unarchive:
+    remote_src: true
+    src: /home/isucon/envcheck.tar.gz
+    dest: /home/isucon/envcheck/
+
+- name: Build envcheck
+  become: yes
+  shell: >
+    /home/isucon/local/golang/bin/go build -o /home/isucon/envcheck/envcheck -ldflags "-s -w"
+  args:
+    chdir: /home/isucon/envcheck
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: envcheck.service
+    dest: /etc/systemd/system/
+
+- name: Start envcheck
+  become: true
+  service:
+    name: envcheck
+    enabled: true
