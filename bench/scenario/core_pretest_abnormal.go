@@ -150,6 +150,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			ThumbnailUrl: "",
 			StartAt:      startAt.Unix(),
 			EndAt:        endAt.Unix(),
+			Tags:         []int64{},
 		})
 		if err != nil {
 			overflow = true
@@ -191,6 +192,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		ThumbnailUrl: "",
 		StartAt:      startAt.Unix(),
 		EndAt:        endAt.Unix(),
+		Tags:         []int64{},
 	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}
@@ -206,6 +208,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		ThumbnailUrl: "",
 		StartAt:      startAt2.Unix(),
 		EndAt:        endAt2.Unix(),
+		Tags:         []int64{},
 	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}
