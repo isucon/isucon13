@@ -86,7 +86,9 @@ sub post_livecomment_handler($app, $c) {
     # スパム判定
     my $ng_words = $app->dbh->select_all_as(
         'Isupipe::Entity::NGWord',
-        'SELECT id, user_id, livestream_id, word FROM ng_words'
+        'SELECT id, user_id, livestream_id, word FROM ng_words WHERE user_id = ? AND livestream_id = ?',
+        $user_id,
+        $livestream_id,
     );
 
     my $hit_spam = 0;
