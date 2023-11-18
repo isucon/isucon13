@@ -3,6 +3,7 @@ package isupipe
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -20,7 +21,10 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("initializeのリクエストに失敗しました %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("initializeのステータスが200ではありません")
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -29,7 +33,7 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 
 	var initializeResp *InitializeResponse
 	if json.NewDecoder(resp.Body).Decode(&initializeResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("initializeのJSONのdecodeに失敗しました %v", err)
 	}
 
 	return initializeResp, nil

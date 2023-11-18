@@ -110,6 +110,7 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context, httpClient *http.C
 			return
 		}
 		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
 	}
 }
 
