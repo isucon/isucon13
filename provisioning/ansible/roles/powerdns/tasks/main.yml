@@ -46,10 +46,10 @@
   shell: >
     mysql -uroot -e "
       DROP DATABASE IF EXISTS isudns;
-      CREATE DATABASE isudns;
+      CREATE DATABASE IF NOT EXISTS isudns;
     "
 
-- name: Create tables onn isudns
+- name: Create tables on isudns
   become: true
   shell: >
     cat /usr/share/doc/pdns-backend-mysql/schema.mysql.sql|mysql -uroot isudns
@@ -70,15 +70,22 @@
 
 - name: Copy pdns.d/mysql.conf
   become: true
+  file:
+    state: absent
+    path: /etc/powerdns/pdns.d/mysql.conf
+
+- name: Copy pdns.d/gmysql-host.conf
+  become: true
   copy:
-    src: mysql.conf
-    dest: /etc/powerdns/pdns.d/mysql.conf
+    src: pdns.d/gmysql-host.conf
+    dest: /etc/powerdns/pdns.d/gmysql-host.conf
     mode: 0644
 
-- name: Chmod pdns.conf
+- name: Copy pdns.conf
   become: true
-  file:
-    path: /etc/powerdns/pdns.conf
+  copy:
+    src: pdns.conf
+    dest: /etc/powerdns/pdns.conf
     mode: 0644
 
 - name: Copy systemd/resolved.conf
@@ -96,12 +103,12 @@
     state: link
     force: true
 
-- name: Stop systemd-resolved
+- name: Restart systemd-resolved
   become: true
   service:
     name: systemd-resolved
-    enabled: false
-    state: stopped
+    enabled: true
+    state: restarted
 
 - name: Start pdns
   become: true
@@ -109,3 +116,16 @@
     name: pdns
     enabled: true
     state: restarted
+
+- name: initialize zone
+  become: true
+  shell: |
+    pdnsutil delete-zone u.isucon.dev
+    pdnsutil create-zone u.isucon.dev
+
+- name: create A records for u.isucon.dev
+  become: true
+  shell: |
+    pdnsutil add-record u.isucon.dev "." A 30 {{ ansible_default_ipv4.address }}
+    pdnsutil add-record u.isucon.dev "pipe" A 30 {{ ansible_default_ipv4.address }}
+    pdnsutil add-record u.isucon.dev "test001" A 30 {{ ansible_default_ipv4.address }}

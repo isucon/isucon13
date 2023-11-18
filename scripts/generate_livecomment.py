@@ -34,15 +34,35 @@ def generate_positives(n=10):
 
 
 NEGATIVE_COMMENT_FORMAT = "&NegativeComment{{Comment: \"{comment}\", NgWord: \"{ngword}\"}},"
+NGWORD_FORMAT = "&NgWord{{ Word: \"{word}\" }},"
 
 
 def generate_negatives(n=10):
+    with open('./initial-data/initial_ngwords.txt', 'r') as f:
+        initial_ngwords = list(line.rstrip() for line in f.readlines())
+
+    with open("./initial-data/negative_formats.txt", "r") as f:
+        lines = f.readlines()
+        formats = list(line.rstrip() for line in lines if all(initial_ngword not in line for initial_ngword in initial_ngwords))
+
+    with open('./initial-data/bench_ngwords.txt', 'r') as f:
+        ngwords = list(line.rstrip() for line in f.readlines() if len(line) >= 4)
+        for _ in range(n):
+            ngword = random.choice(ngwords)
+            fmt = random.choice(formats)
+            comment = NEGATIVE_COMMENT_FORMAT.format(
+                comment=fmt.format(word=ngword),
+                ngword=ngword
+            )
+            yield comment
+
+def generate_initial_negatives(n=10):
     with open("./initial-data/negative_formats.txt", "r") as f:
         lines = f.readlines()
         formats = list(line.rstrip() for line in lines)
 
-    with open('./initial-data/ngwords.txt', 'r') as f:
-        ngwords = list(line.rstrip() for line in f.readlines())
+    with open('./initial-data/initial_ngwords.txt', 'r') as f:
+        ngwords = list(line.rstrip() for line in f.readlines() if len(line) >= 4)
         for _ in range(n):
             ngword = random.choice(ngwords)
             fmt = random.choice(formats)
@@ -51,6 +71,16 @@ def generate_negatives(n=10):
                 ngword=ngword
             )
             yield comment 
+
+def iter_initial_ngwords():
+    with open('./initial-data/initial_ngwords.txt', 'r') as f:
+        for line in f.readlines():
+            yield line.rstrip()
+
+def iter_dummy_ngwords():
+    with open("./initial-data/bench_dummy_ngwords.txt", "r") as f:
+        for line in f.readlines():
+            yield line.rstrip()
 
 def main():
     def command_positive(args):
@@ -62,10 +92,22 @@ def main():
 
     def command_negative(args):
         print('package scheduler')
+        print('var initialNegativeCommentPool = []*NegativeComment{')
+        for negative in generate_initial_negatives(args.n):
+            print(negative)
+        print('}')
+
         print('var negativeCommentPool = []*NegativeComment{')
         for negative in generate_negatives(args.n):
             print(negative)
         print('}')
+
+        print('var dummyNgWords = []*NgWord{')
+        for ngword in iter_dummy_ngwords():
+            print(NGWORD_FORMAT.format(word=ngword))
+        print('}')
+
+
 
     def command_help(args):
         print(parser.parse_args([args.command, '--help']))
@@ -78,7 +120,7 @@ def main():
     parser_positive.set_defaults(handler=command_positive)
 
     parser_negative = subparsers.add_parser('negative', help='ネガティブな文章生成')
-    parser_negative.add_argument('-n', type=int, default=100, help='文章生成数')
+    parser_negative.add_argument('-n', type=int, default=1000, help='文章生成数')
     parser_negative.set_defaults(handler=command_negative)
 
     parser_help = subparsers.add_parser('help', help='see `help -h`')

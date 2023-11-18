@@ -3,33 +3,24 @@ package scenario
 import (
 	"context"
 
+	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
-	"go.uber.org/zap"
 )
 
-func FinalcheckScenario(ctx context.Context, client *isupipe.Client) error {
-	lgr := zap.S()
+func FinalcheckScenario(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 
-	result, err := client.GetPaymentResult(ctx)
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.FinalcheckTimeout),
+	)
 	if err != nil {
 		return err
 	}
 
-	// payments := result.Payments
-
-	// var found bool
-
-	// 金額チェック
-	// total := scheduler.GetTotal()
-	// if result.Total
-
-	// 予約の整合性チェック
-	for _, payment := range result.Payments {
-		_ = payment
-		// payment.ReservationId
-	}
-
-	lgr.Infof("result = %+v\n", result)
+	// FIXME: ライブコメント存在チェック
+	_ = client
 
 	return nil
 }

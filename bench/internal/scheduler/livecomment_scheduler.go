@@ -1,47 +1,40 @@
 package scheduler
 
 import (
+	"fmt"
+	"math"
 	"math/rand"
-	"time"
+	"sync"
+
+	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/config"
 )
 
-var (
-	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
-)
+// 数値の端数を落とす
+func trimFraction(v int) int {
+	// 桁数
+	var numDigit int
+	for target := v; target > 0; {
+		target = target / 10
+		numDigit++
+	}
 
-// GenerateIntBetween generates integer satisfies [min, max) constraint
-func GenerateIntBetween(min, max int) int {
-	return randomSource.Intn(max-min) + min
+	if v >= 10 && numDigit >= 2 {
+		var (
+			quotient = int(math.Pow(10, float64(numDigit)-1))
+			surplus  = v % quotient
+		)
+		return v - surplus
+	} else {
+		return v
+	}
 }
 
 var LivecommentScheduler = mustNewLivecommentScheduler()
 
-// スパムを取り出す (ただし、なるべく投稿数の少ないスパム)
-// ライブコメントを取り出す (ただし、なるべく投稿数の少ないライブコメント)
-// チップを取り出す
-//// チップレベルを指定したら、それに合わせて金額を返すように
-
-// ライブコメント数、スパム数などに応じて投げ銭するモチベーションを制御したい
-// ただし、ゲーム性を損なわない範囲にしたいので、投げ銭してもらうまでの難易度が上がるというようにしたい
-
-// 予約後、ライブ配信の処理が重くなるように、ライブコメント(+投げ銭)やリアクションなどを管理し、考える
-// 投げ銭が偏るように采配するか、偏らないように分散させるか
-
-// 配信の種類を決める
-// * 通常
-// * 人気
-// * 炎上
-
-// 炎上ノルマ達成か？
-// 人気ノルマ達成か？
-// などのメソッドをはやし、呼び出し側で未達成なら炎上配信者払い出しなどというふうにする
-// 炎上配信者は、可能な限り人気があると良い
-// 人気は、もちろん人気がまだないことが条件
-// それ以外、通常に分類され、ユーザは通常配信者と視聴者になる
-
 type Livecomment struct {
-	UserId       int
-	LivestreamId int
+	UserID       int
+	LivestreamID int
 	Comment      string
 	Tip          int
 }
@@ -55,38 +48,53 @@ type NegativeComment struct {
 	NgWord  string
 }
 
-// どの配信に対して色々投げたらいいか、いい感じにしてくれる君
+type NgWord struct {
+	Word string
+}
 
-// Positiveの方は、長いコメント、短いコメントみたいな感じで取れると良い
-
-// シナリオを書く際の疑問を列挙しよう
-// どこにスパムを投げればいい？
-// どこにスパチャを投げると、平等に投げられそう？
-// 人気配信はどこ？そこにスパチャや投げ銭を集中させたい
-//    人気配信は、人気ユーザに紐づく配信が用いられる
-//
-
-// ポジティブ？長い？といった、どういうコメントを取得するかは取得側で判断
-//
-
-type StreamerStatistics struct {
-	NumLivecomments   int
-	TotalTips         int
-	TotalReportsCount int
+type Tip struct {
+	Level int
+	Tip   int
 }
 
 type livecommentScheduler struct {
-	// 配信者ごと、ライブコメント数、投げ銭売上合計、スパム数の統計を取る
-	// 構造体は全部Livecommentなので、Commit, Abortを用意すればいいか
-	// ライブコメント、投げ銭は投稿時でどちらも扱えるけど、スパムはスパムメッセージなのかスパム報告なのか難しいな
-	streamerStats map[int]*StreamerStatistics
+	ngLivecomments map[string]string
+
+	moderatedMu sync.RWMutex
+	moderated   map[string]struct{}
 }
 
 func mustNewLivecommentScheduler() *livecommentScheduler {
-	return &livecommentScheduler{}
+	ngLivecomments := make(map[string]string)
+	for _, comment := range negativeCommentPool {
+		ngLivecomments[comment.Comment] = comment.NgWord
+	}
+	rand.Shuffle(len(dummyNgWords), func(i, j int) {
+		dummyNgWords[i], dummyNgWords[j] = dummyNgWords[j], dummyNgWords[i]
+	})
+	return &livecommentScheduler{
+		ngLivecomments: ngLivecomments,
+		moderated:      make(map[string]struct{}),
+	}
 }
 
-// FIXME:
+// ライブコメント一覧に何件スパムが含まれるか調べるために使う
+func (s *livecommentScheduler) IsNgLivecomment(comment string) bool {
+	if _, ok := s.ngLivecomments[comment]; ok {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (s *livecommentScheduler) GetNgWord(comment string) (string, error) {
+	ngword, ok := s.ngLivecomments[comment]
+	if !ok {
+		return "", bencherror.NewInternalError(fmt.Errorf("想定されているスパムコメントではありません: %s", comment))
+	}
+
+	return ngword, nil
+}
 
 func (s *livecommentScheduler) GetShortPositiveComment() *PositiveComment {
 	idx := rand.Intn(len(positiveCommentPool))
@@ -98,22 +106,114 @@ func (s *livecommentScheduler) GetLongPositiveComment() *PositiveComment {
 	return positiveCommentPool[idx]
 }
 
-func (s *livecommentScheduler) GetNegativeComment() *NegativeComment {
+func (s *livecommentScheduler) GetNegativeComment() (*NegativeComment, bool) {
+	s.moderatedMu.RLock()
+	defer s.moderatedMu.RUnlock()
+
 	idx := rand.Intn(len(negativeCommentPool))
-	return negativeCommentPool[idx]
+	comment := negativeCommentPool[idx]
+	_, isModerated := s.moderated[comment.Comment]
+	return comment, isModerated
 }
 
-// 通常配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForStream() int {
-	return GenerateIntBetween(1, 4)
+func (s *livecommentScheduler) IsModerated(comment string) bool {
+	s.moderatedMu.RLock()
+	defer s.moderatedMu.RUnlock()
+
+	_, isModerated := s.moderated[comment]
+	return isModerated
 }
 
-// 人気配信に対するチップ取得
-func (s *livecommentScheduler) GetTipsForPopularStream() int {
-	n := rand.Intn(2)
-	if n == 1 {
-		return 5
-	} else {
-		return s.GetTipsForStream()
+func (s *livecommentScheduler) Moderate(comment string) {
+	s.moderatedMu.Lock()
+	defer s.moderatedMu.Unlock()
+
+	s.moderated[comment] = struct{}{}
+}
+
+func (s *livecommentScheduler) ModerateNgWord(ngword string) {
+	s.moderatedMu.Lock()
+	defer s.moderatedMu.Unlock()
+
+	for _, comment := range negativeCommentPool {
+		if comment.NgWord == ngword {
+			s.moderated[comment.Comment] = struct{}{}
+		}
 	}
+}
+
+func (s *livecommentScheduler) generateTip(level int, totalHours, currentHour int) int {
+	progressRate := currentHour / totalHours
+	switch level {
+	case 0:
+		return 0
+	case 1:
+		var (
+			minTip = 10
+			maxTip = 100
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
+	case 2:
+		var (
+			minTip = 100
+			maxTip = 1000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
+	case 3:
+		var (
+			minTip = 1000
+			maxTip = 5000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
+	case 4:
+		var (
+			minTip = 5000
+			maxTip = 10000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
+	case 5:
+		var (
+			minTip = 10000
+			maxTip = 100000
+		)
+		return ((maxTip - minTip) * progressRate) + minTip
+	default:
+		return 0
+	}
+}
+
+func (s *livecommentScheduler) GetTipsForStream(totalHours, currentHour int) (*Tip, error) {
+	if currentHour > totalHours {
+		return &Tip{Level: 0, Tip: 0}, bencherror.NewInternalError(fmt.Errorf("GetTipsForStreamの引数が不正です: current=%d, total=%d", currentHour, totalHours))
+	}
+	if totalHours < 1 || currentHour < 1 {
+		return &Tip{Level: 0, Tip: 0}, bencherror.NewInternalError(fmt.Errorf("GetTipsForStreamの引数が不正です: current=%d, total=%d", currentHour, totalHours))
+	}
+
+	// levelによって金額クラスが分かれる. より長い配信枠のほうが高いレベルになる. 予約が捌けているほど高いレベルになる.
+	// level内ではどれだけ視聴し続けられたかが評価される. これも長い配信枠のほうがよりTipが高額になるが、それだけでなくwebappがライブコメント投稿を捌けていないと高額にならない
+	var level int
+	switch {
+	case totalHours >= 20:
+		level = 5
+	case totalHours >= 15:
+		level = 4
+	case totalHours >= config.LongHourThreshold:
+		level = 3
+	case totalHours >= 5:
+		level = 2
+	default:
+		level = 1
+	}
+
+	tip := s.generateTip(1, totalHours, currentHour)
+	return &Tip{
+		Level: level,
+		Tip:   tip,
+	}, nil
+}
+
+func (s *livecommentScheduler) GetDummyNgWord() *NgWord {
+	idx := rand.Intn(len(dummyNgWords))
+	return dummyNgWords[idx]
 }

@@ -16,5 +16,7 @@
     mysql -uroot -e "
       CREATE USER IF NOT EXISTS 'isucon'@'localhost' IDENTIFIED BY 'isucon';
       GRANT ALL PRIVILEGES ON *.* TO 'isucon'@'localhost' WITH GRANT OPTION;
+      CREATE USER IF NOT EXISTS 'isudns'@'localhost' IDENTIFIED BY 'isudns';
+      GRANT ALL PRIVILEGES ON *.* TO 'isudns'@'localhost' WITH GRANT OPTION;
       FLUSH PRIVILEGES;
     "

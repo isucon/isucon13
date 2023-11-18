@@ -2,130 +2,114 @@ package scenario
 
 import (
 	"context"
-	"log"
 
-	"github.com/isucon/isucon13/bench/internal/scheduler"
+	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"golang.org/x/sync/errgroup"
 )
 
-func Pretest(ctx context.Context, client *isupipe.Client) error {
-	// FIXME: 処理前、paymentが0円になってることをチェック
-	// FIXME: 処理後、paymentが指定金額になっていることをチェック
+const testUserRawPassword = "s3cr3t"
 
-	user, err := client.PostUser(ctx, &isupipe.PostUserRequest{
-		Name:        "test",
-		DisplayName: "test",
-		Description: "blah blah blah",
-		Password:    "s3cr3t",
-		Theme: isupipe.Theme{
-			DarkMode: true,
-		},
+func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isupipe.User, error) {
+	client, err := isupipe.NewCustomResolverClient(
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := client.Register(ctx, &isupipe.RegisterRequest{
+		Name:     "pretestuser",
+		Password: "test",
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// 初期データチェック -> 基本的なエンドポイントの機能テスト -> 前後比較テスト
+func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+	// dns 初期レコード
+	if err := dnsrecordPretest(ctx, dnsResolver); err != nil {
 		return err
 	}
 
-	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: user.Name,
-		Password: "s3cr3t",
-	}); err != nil {
-		return err
-	}
-
-	log.Printf("try to get user(me)...")
-	if err := client.GetUserSession(ctx); err != nil {
-		return err
-	}
-
-	log.Printf("try to get user...")
-	if err := client.GetUser(ctx, user.Id /* user id */); err != nil {
-		return err
-	}
-
-	if _, err := client.GetUsers(ctx); err != nil {
-		log.Printf("failed to get users %s", err.Error())
-		return err
-	}
-
-	// FIXME
-
-	// if err := client.GetStreamerTheme(ctx, user.Id /* user id */); err != nil {
-	// return err
-	// }
-
-	if _, err := client.GetTags(ctx); err != nil {
-		return err
-	}
-
-	reservation, err := scheduler.Phase2ReservationScheduler.GetHotShortReservation()
-	if err != nil {
-		return err
-	}
-	livestream, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:        []int{},
-		Title:       reservation.Title,
-		Description: reservation.Description,
-		StartAt:     reservation.StartAt,
-		EndAt:       reservation.EndAt,
+	// 初期データチェック
+	initialGrp, initialCtx := errgroup.WithContext(ctx)
+	initialGrp.Go(func() error {
+		return normalInitialPaymentPretest(initialCtx, dnsResolver)
 	})
-	if err != nil {
-		scheduler.Phase2ReservationScheduler.AbortReservation(reservation)
-		return err
-	}
-	scheduler.Phase2ReservationScheduler.CommitReservation(reservation)
-
-	if _, err = client.GetLivecommentReports(ctx, livestream.Id); err != nil {
-		return err
-	}
-	if err = client.GetLivestream(ctx, livestream.Id); err != nil {
-		return err
-	}
-
-	if err := client.EnterLivestream(ctx, livestream.Id); err != nil {
-		return err
-	}
-
-	livecomment, err := client.PostLivecomment(ctx, livestream.Id, &isupipe.PostLivecommentRequest{
-		Comment: "test",
-		Tip:     3,
+	initialGrp.Go(func() error {
+		return normalInitialLivecommentPretest(initialCtx, dnsResolver)
 	})
+	initialGrp.Go(func() error {
+		return normalInitialReactionPretest(initialCtx, dnsResolver)
+	})
+	initialGrp.Go(func() error {
+		return normalInitialTagPretest(ctx, dnsResolver)
+	})
+	if err := initialGrp.Wait(); err != nil {
+		return err
+	}
+
+	// 独立動作可能なテスト
+	testUser, err := setupTestUser(ctx, dnsResolver)
 	if err != nil {
 		return err
 	}
-
-	if _, err := client.GetLivecomments(ctx, livestream.Id /* livestream id*/); err != nil {
+	if err := NormalLivestreamPretest(ctx, testUser, dnsResolver); err != nil {
 		return err
 	}
 
-	if err := client.ReportLivecomment(ctx, livestream.Id, livecomment.Id); err != nil {
+	logicGrp, childCtx := errgroup.WithContext(ctx)
+	// 正常系
+	logicGrp.Go(func() error {
+		return NormalUserPretest(childCtx, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return NormalIconPretest(childCtx, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return NormalReactionPretest(childCtx, testUser, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		if err := NormalPostLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
+			return err
+		}
+		if err := NormalModerateLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
+			return err
+		}
+		return nil
+	})
+	// 異常系
+	logicGrp.Go(func() error {
+		return assertBadLogin(childCtx, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return assertPipeUserRegistration(childCtx, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return assertUserUniqueConstraint(childCtx, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return assertReserveOverflowPretest(childCtx, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return assertReserveOutOfTerm(childCtx, testUser, dnsResolver)
+	})
+	logicGrp.Go(func() error {
+		return assertMultipleEnterLivestream(childCtx, dnsResolver)
+	})
+	if err := logicGrp.Wait(); err != nil {
 		return err
 	}
 
-	if _, err := client.PostReaction(ctx, livestream.Id /* livestream id*/, &isupipe.PostReactionRequest{
-		EmojiName: ":chair:",
-	}); err != nil {
-		return err
-	}
-
-	if _, err := client.GetReactions(ctx, livestream.Id /* livestream id*/); err != nil {
-		return err
-	}
-
-	if err := client.GetLivestreamsByTag(ctx, "椅子" /* tag name */); err != nil {
-		return err
-	}
-
-	if _, err := client.GetUserStatistics(ctx, user.Id); err != nil {
-		return err
-	}
-
-	if _, err := client.GetLivestreamStatistics(ctx, livestream.Id); err != nil {
-		return err
-	}
-
-	if err := client.LeaveLivestream(ctx, livestream.Id); err != nil {
-		return err
-	}
+	// FIXME: 統計情報、Paymentなど、前後比較するものは他のシナリオが割り込まないようにする
 
 	return nil
 }

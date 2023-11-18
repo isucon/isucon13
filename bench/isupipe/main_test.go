@@ -1,30 +1,31 @@
 package isupipe
 
 import (
+	"context"
 	"log"
-	"os"
 	"testing"
+	"time"
 
-	"github.com/isucon/isucon13/bench/internal/benchtest"
+	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/bencherror"
+	"github.com/isucon/isucon13/bench/internal/benchscore"
 )
 
-// NOTE: パッケージ内では並列にテストを実行しないため、この変数で競合が起きない
-var webappIPAddress string
-
 func TestMain(m *testing.M) {
-	testResource, err := benchtest.Setup("isupipe")
+	client, err := NewClient(
+		agent.WithTimeout(1 * time.Minute),
+	)
 	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 
-	webappIPAddress = testResource.WebappIPAddress()
-	code := m.Run()
-
-	if err := benchtest.Teardown(testResource); err != nil {
-		log.Println(err)
-		os.Exit(1)
+	if _, err := client.Initialize(context.Background()); err != nil {
+		log.Fatalln(err)
 	}
 
-	os.Exit(code)
+	ctx := context.Background()
+	benchscore.InitCounter(ctx)
+	bencherror.InitErrors(ctx)
+
+	m.Run()
 }

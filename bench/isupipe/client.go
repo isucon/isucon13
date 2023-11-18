@@ -1,863 +1,139 @@
 package isupipe
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
-	"time"
+	"net/url"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
-	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/resolver"
 )
 
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
 
+// Client は、ISUPipeに対するHTTPクライアントです
+// NOTE: スレッドセーフではありません
+// NOTE: ログインは一度しかできません (何回もログインする場合はClientを個別に作り直す必要がある)
 type Client struct {
-	agent *agent.Agent
-	// initialize用、課金用のagentを設ける
+	agent        *agent.Agent
+	agentOptions []agent.AgentOption
+
+	username string
+
+	// ユーザカスタムテーマ適用ページアクセス用agent
+	// ライブ配信画面など
+	themeAgent   *agent.Agent
+	themeOptions []agent.AgentOption
+
+	// 画像ダウンロード用agent
+	// キャッシュ可能
+	assetAgent   *agent.Agent
+	assetOptions []agent.AgentOption
 }
 
 func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
+	return NewCustomResolverClient(resolver.NewDNSResolver(), customOpts...)
+}
+
+// NewClient は、HTTPクライアント群を初期化します
+// NOTE: キャッシュ無効化オプションなどを指定すると、意図しない挙動をする可能性があります
+// タイムアウトやURLなどの振る舞いでないパラメータを指定するのにcustomOptsを用いてください
+func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: config.InsecureSkipVerify,
 			},
-			// Custom DNS Resolver
-			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				nameserverAddress := config.TargetNameserver
-				dialTimeout := 10000 * time.Millisecond
-				dialer := net.Dialer{
-					Timeout: dialTimeout,
-					Resolver: &net.Resolver{
-						PreferGo: true,
-						Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-							dialer := net.Dialer{Timeout: dialTimeout}
-							nameserver := net.JoinHostPort(nameserverAddress, "53")
-							return dialer.DialContext(ctx, "udp", nameserver)
-						},
-					},
-				}
-				return dialer.DialContext(ctx, network, address)
-			},
+			DialContext:       dnsResolver.DialContext,
+			IdleConnTimeout:   config.ClientIdleConnTimeout,
+			ForceAttemptHTTP2: true,
 		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
 		agent.WithNoCache(),
-		agent.WithTimeout(1 * time.Second),
 	}
 	for _, customOpt := range customOpts {
 		opts = append(opts, customOpt)
 	}
-	customAgent, err := agent.NewAgent(opts...)
+
+	baseAgent, err := agent.NewAgent(opts...)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
+	}
+
+	themeOpts := []agent.AgentOption{
+		withClient(baseAgent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.InsecureSkipVerify,
+			},
+			// Custom DNS Resolver
+			DialContext:       dnsResolver.DialContext,
+			IdleConnTimeout:   config.ClientIdleConnTimeout,
+			ForceAttemptHTTP2: true,
+		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
+		agent.WithNoCache(),
+	}
+	for _, customOpt := range customOpts {
+		themeOpts = append(themeOpts, customOpt)
+	}
+
+	assetOpts := []agent.AgentOption{
+		agent.WithBaseURL(config.TargetBaseURL),
+		withClient(baseAgent.HttpClient),
+		agent.WithCloneTransport(&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.InsecureSkipVerify,
+			},
+			DialContext:     dnsResolver.DialContext,
+			IdleConnTimeout: config.ClientIdleConnTimeout,
+		}),
+		agent.WithTimeout(config.DefaultAgentTimeout),
+		// NOTE: 画像はキャッシュできるようにする
+	}
+	for _, customOpt := range customOpts {
+		assetOpts = append(assetOpts, customOpt)
 	}
 
 	return &Client{
-		agent: customAgent,
+		agent:        baseAgent,
+		themeOptions: themeOpts,
+		assetOptions: assetOpts,
 	}, nil
 }
 
-func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
-	req, err := c.agent.NewRequest(http.MethodPost, "/initialize", nil)
-	if err != nil {
-		return nil, err
+func (c *Client) Username() (string, error) {
+	if len(c.username) == 0 {
+		return "", bencherror.NewInternalError(fmt.Errorf("未ログインクライアントです"))
 	}
 
-	resp, err := c.agent.Do(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var initializeResp *InitializeResponse
-	if json.NewDecoder(resp.Body).Decode(&initializeResp); err != nil {
-		return nil, err
-	}
-
-	return initializeResp, nil
+	return c.username, nil
 }
 
-func (c *Client) PostUser(ctx context.Context, r *PostUserRequest, options ...AssertOption) (*User, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusCreated,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	payload, err := json.Marshal(r)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodPost, "/user", bytes.NewReader(payload))
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		// sendRequestはWrapErrorを行っているのでそのままreturn
-		return nil, err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var user *User
-	if pat.DecodeBody {
-		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-			return nil, bencherror.NewHttpResponseError(err, req)
-		}
-	}
-
-	benchscore.AddScore(benchscore.SuccessRegister)
-	return user, nil
-}
-
-func (c *Client) Login(ctx context.Context, r *LoginRequest, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-	payload, err := json.Marshal(r)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodPost, "/login", bytes.NewReader(payload))
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
+func (c *Client) setStreamerURL(streamerName string) error {
+	domain := fmt.Sprintf("%s.%s", streamerName, config.BaseDomain)
+	baseURL, err := url.Parse(fmt.Sprintf("%s://%s:%d", config.HTTPScheme, domain, config.TargetPort))
 	if err != nil {
 		return err
 	}
 
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessLogin)
-	return nil
-}
-
-func (c *Client) GetUserSession(ctx context.Context, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/user/me", nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
+	c.themeAgent.BaseURL = baseURL
 
 	return nil
-}
-
-func (c *Client) GetUser(ctx context.Context, userId int, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/user/%d", userId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetUser)
-	return nil
-}
-
-// FIXME: Hostヘッダにusernameを含めたドメインを入れてリクエスト
-func (c *Client) GetStreamerTheme(ctx context.Context, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/theme", nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetUserTheme)
-	return nil
-}
-
-func (c *Client) ReserveLivestream(ctx context.Context, r *ReserveLivestreamRequest, options ...AssertOption) (*Livestream, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusCreated,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	payload, err := json.Marshal(r)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodPost, "/livestream/reservation", bytes.NewReader(payload))
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var livestream *Livestream
-	if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
-		return nil, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessReserveLivestream)
-	return livestream, nil
-}
-
-func (c *Client) PostReaction(ctx context.Context, livestreamId int, r *PostReactionRequest, options ...AssertOption) (*Reaction, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusCreated,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	payload, err := json.Marshal(r)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	reaction := &Reaction{}
-	if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
-		return nil, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessPostReaction)
-	return reaction, nil
-}
-
-func (c *Client) PostLivecomment(ctx context.Context, livestreamId int, r *PostLivecommentRequest, options ...AssertOption) (*PostLivecommentResponse, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusCreated,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	payload, err := json.Marshal(r)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var livecommentResponse *PostLivecommentResponse
-	if err := json.NewDecoder(resp.Body).Decode(&livecommentResponse); err != nil {
-		return nil, bencherror.NewHttpResponseError(err, req)
-	}
-
-	if resp.StatusCode != pat.StatusCode {
-		return nil, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessPostLivecomment)
-	benchscore.AddTipProfit(livecommentResponse.Tip)
-
-	return livecommentResponse, nil
-}
-
-func (c *Client) ReportLivecomment(ctx context.Context, livestreamId, livecommentId int, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusCreated,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment/%d/report", livestreamId, livecommentId)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessReportLivecomment)
-	return nil
-}
-
-func (c *Client) Moderate(ctx context.Context, livestreamId int, ngWord string, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusCreated,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/moderate", livestreamId)
-
-	payload, err := json.Marshal(&ModerateRequest{
-		NGWord: ngWord,
-	})
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(payload))
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) GetLivestream(
-	ctx context.Context,
-	livestreamId int,
-	options ...AssertOption,
-) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetLivestream)
-	return nil
-}
-
-func (c *Client) GetLivestreams(
-	ctx context.Context,
-	options ...AssertOption,
-) ([]*Livestream, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/livestream", nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var livestreams []*Livestream
-	if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
-		return nil, err
-	}
-
-	return livestreams, nil
-}
-
-func (c *Client) GetLivestreamsByTag(
-	ctx context.Context,
-	tag string,
-	options ...AssertOption,
-) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream?tag=%s", tag)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetLivestreamByTag)
-	return nil
-}
-
-func (c *Client) GetTags(ctx context.Context, options ...AssertOption) (*TagsResponse, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	req, err := c.agent.NewRequest(http.MethodGet, "/tag", nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var tags *TagsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
-		return nil, err
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetTags)
-	return tags, nil
-}
-
-func (c *Client) GetReactions(ctx context.Context, livestreamId int, options ...AssertOption) ([]Reaction, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/reaction", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	reactions := []Reaction{}
-	if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
-		return nil, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetReactions)
-	return reactions, nil
-}
-
-func (c *Client) GetLivecomments(ctx context.Context, livestreamId int, options ...AssertOption) ([]Livecomment, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-	urlPath := fmt.Sprintf("/livestream/%d/livecomment", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	livecomments := []Livecomment{}
-	if err := json.NewDecoder(resp.Body).Decode(&livecomments); err != nil {
-		return livecomments, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetLivecomments)
-	return livecomments, nil
-}
-
-func (c *Client) GetUsers(ctx context.Context, options ...AssertOption) ([]*User, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-	req, err := c.agent.NewRequest(http.MethodGet, "/user", nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var users []*User
-	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
-		return users, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetUsers)
-	return users, nil
-}
-
-func (c *Client) GetLivecommentReports(ctx context.Context, livestreamId int, options ...AssertOption) ([]LivecommentReport, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/report", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	reports := []LivecommentReport{}
-	if err := json.NewDecoder(resp.Body).Decode(&reports); err != nil {
-		return reports, bencherror.NewHttpResponseError(err, req)
-	}
-
-	benchscore.AddScore(benchscore.SuccessGetLivecommentReports)
-	return reports, nil
-}
-
-func (c *Client) EnterLivestream(ctx context.Context, livestreamId int, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessEnterLivestream)
-	return nil
-}
-
-func (c *Client) LeaveLivestream(ctx context.Context, livestreamId int, options ...AssertOption) error {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/enter", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodDelete, urlPath, nil)
-	if err != nil {
-		return bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return err
-	}
-
-	benchscore.AddScore(benchscore.SuccessLeaveLivestream)
-	return nil
-}
-
-// FIXME: 統計情報取得
-
-func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
-	req, err := c.agent.NewRequest(http.MethodGet, "/payment", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.agent.Do(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var paymentResp *PaymentResult
-	if json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
-		return nil, err
-	}
-
-	return paymentResp, nil
-}
-
-func (c *Client) GetUserStatistics(ctx context.Context, userId int, options ...AssertOption) (*UserStatistics, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/user/%d/statistics", userId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var stats *UserStatistics
-	if json.NewDecoder(resp.Body).Decode(&stats); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
-}
-
-func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamId int, options ...AssertOption) (*LivestreamStatistics, error) {
-	pat := ClientAssertPattern{
-		StatusCode: http.StatusOK,
-		DecodeBody: true,
-	}
-
-	for _, option := range options {
-		option(&pat)
-	}
-
-	urlPath := fmt.Sprintf("/livestream/%d/statistics", livestreamId)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
-		return nil, bencherror.NewInternalError(err)
-	}
-
-	resp, err := c.sendRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := pat.assertStatuscode(req, resp); err != nil {
-		return nil, err
-	}
-
-	var stats *LivestreamStatistics
-	if json.NewDecoder(resp.Body).Decode(&stats); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
 }
 
 // sendRequestはagent.Doをラップしたリクエスト送信関数
 // bencherror.WrapErrorはここで実行しているので、呼び出し側ではwrapしない
-func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+func sendRequest(ctx context.Context, agent *agent.Agent, req *http.Request) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	resp, err := c.agent.Do(ctx, req)
+	resp, err := agent.Do(ctx, req)
 	if err != nil {
 		var (
 			netErr net.Error
@@ -871,7 +147,7 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Resp
 				return resp, bencherror.NewTimeoutError(err, "%s", endpoint)
 			} else {
 				// 接続ができないなど、ベンチ継続する上で致命的なエラー
-				return resp, bencherror.NewViolationError(err, "webappの %s に対するリクエストで、接続に失敗しました", endpoint)
+				return resp, bencherror.NewTimeoutError(err, "webappの %s に対するリクエストで、接続に失敗しました", endpoint)
 			}
 		} else {
 			return resp, bencherror.NewApplicationError(err, "%s に対するリクエストが失敗しました", endpoint)
@@ -879,35 +155,4 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request) (*http.Resp
 	}
 
 	return resp, nil
-}
-
-type ClientAssertPattern struct {
-	StatusCode int
-	SetCookie  bool
-	DecodeBody bool
-}
-
-func (pat *ClientAssertPattern) assertStatuscode(
-	req *http.Request,
-	resp *http.Response,
-) error {
-	if resp.StatusCode != pat.StatusCode {
-		return bencherror.NewHttpStatusError(req, pat.StatusCode, resp.StatusCode)
-	}
-
-	return nil
-}
-
-type AssertOption = func(cap *ClientAssertPattern)
-
-func WithStatusCode(code int) AssertOption {
-	return func(cap *ClientAssertPattern) {
-		cap.StatusCode = code
-	}
-}
-
-func DecodeBody(decode bool) AssertOption {
-	return func(cap *ClientAssertPattern) {
-		cap.DecodeBody = decode
-	}
 }

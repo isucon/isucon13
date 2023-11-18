@@ -1,0 +1,5 @@
+[benchmarker]
+localhost ansible_connection=local
+
+[application]
+localhost ansible_connection=local

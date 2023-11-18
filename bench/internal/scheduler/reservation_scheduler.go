@@ -4,29 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"sync"
 
 	"github.com/biogo/store/interval"
+	"github.com/isucon/isucon13/bench/internal/config"
 )
 
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
 
-// NOTE: phase1は初期状態ですべての予約が埋まっている
-// FIXME: 各所でシーズン判定ができないと、選べなさそう。使う側はシーズンがわかっているので取り出せるが、clientから予約のたびにココに突っ込むとなると、どれに突っ込めばいいかもたないといけない
-// フェーズ切り替えの際、
-// FIXME: baseAtちゃんとした値に直す
 var (
-	Phase1ReservationScheduler = mustNewReservationScheduler(1711897200, (24*(30+31+30))-(24*1))
-	Phase2ReservationScheduler = mustNewReservationScheduler(1719759600, (24*(31+31+30))-(24*1))
-	Phase3ReservationScheduler = mustNewReservationScheduler(1727708400, (24*(31+30+31))-(24*1))
-	Phase4ReservationScheduler = mustNewReservationScheduler(1735657200, (24*(31+28+31))-(24*1))
+	ReservationSched = mustNewReservationScheduler(config.BaseAt, config.NumSlots, config.NumHours+10)
 )
 
 func init() {
 	// スケジューラに初期データをロード
-	Phase1ReservationScheduler.loadReservations(phase1ReservationPool)
-	Phase2ReservationScheduler.loadReservations(phase2ReservationPool)
+	ReservationSched.loadReservations(reservationPool)
 }
 
 // FIXME: 予約のタイトルと説明文はベンチ走行中にランダムに割り当てる
@@ -50,12 +42,12 @@ type ReservationScheduler struct {
 	// 最終的にfinalcheckの突合に使う
 	reservationsMu sync.Mutex
 	reservations   []*Reservation
+
+	// FIXME: 振ったタグを覚えておく
+	// reservationid => []string{"tag1", "tag2", ...} という感じで持てばいいか
 }
 
-func mustNewReservationScheduler(baseAt int64, hours int) *ReservationScheduler {
-	// 同時配信枠数
-	// FIXME: 最低限、枠数１、枠数２の場合はテストを十分に行っておきたい
-	const numSlots = 1
+func mustNewReservationScheduler(baseAt int64, numSlots int64, hours int) *ReservationScheduler {
 	intervalTempertures, err := newIntervalTemperture(baseAt, numSlots, hours)
 	if err != nil {
 		log.Fatalln(err)
@@ -72,33 +64,13 @@ func (r *ReservationScheduler) loadReservations(reservations []*Reservation) {
 	const needFastInsertion = true
 	for _, reservation := range reservations {
 		r.intervalTree.Insert(reservation, needFastInsertion)
-		r.intTreeStates[reservation.Id] = CommitState_None
+		r.intTreeStates[reservation.id] = CommitState_None
 		r.reservationPool = append(r.reservationPool, reservation)
 	}
 	// Get, DoMatching*が呼び出される前に必ずRangesで調整しておく
 	// NOTE: 以後、区間木に対する挿入は行われないので逐次呼び出す必要はない
 	// AdjustRangeはLLRBノードの範囲(Range)を更新する関数. AdjustRangesはツリーを再帰的にこれを各ノードについて実施していく.
 	r.intervalTree.AdjustRanges()
-}
-
-func (r *ReservationScheduler) getStreamsFor(user *User) []*Reservation {
-	var reservations []*Reservation
-	for _, reservation := range r.reservationPool {
-		if reservation.UserId == user.UserId {
-			reservations = append(reservations, reservation)
-		}
-	}
-
-	return reservations
-}
-
-func (r *ReservationScheduler) GetStreamFor(user *User) (*Reservation, error) {
-	livestreams := r.getStreamsFor(user)
-	if len(livestreams) == 0 {
-		return nil, fmt.Errorf("no livestreams")
-	}
-	idx := rand.Intn(len(livestreams))
-	return livestreams[idx], nil
 }
 
 // CommitReservation は、予約追加リクエストが通ったことをintervalTemperturesに記録します
@@ -115,50 +87,16 @@ func (r *ReservationScheduler) CommitReservation(reservation *Reservation) {
 
 	r.reservations = append(r.reservations, reservation)
 
-	r.intTreeStates[int(reservation.Id)] = CommitState_Committed
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
+	r.intTreeStates[int(reservation.id)] = CommitState_Committed
 }
 
 func (r *ReservationScheduler) AbortReservation(reservation *Reservation) {
-	r.reservationsMu.Lock()
-	defer r.reservationsMu.Unlock()
-
-	r.intTreeStates[int(reservation.Id)] = CommitState_None
-}
-
-func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
-	intervals, err := r.intervalTempertures.findHotIntervals()
-	if err != nil {
-		return nil, ErrNoReservation
-	}
-
-	for i := len(intervals) - 1; i >= 0; i-- {
-		interval := intervals[i]
-		founds := r.intervalTree.Get(&Reservation{
-			StartAt: interval.startAt.Unix(),
-			EndAt:   interval.endAt.Unix(),
-		})
-		if len(founds) == 0 {
-			continue
-		}
-
-		reservations, err := ConvertFromIntInterface(founds)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := len(reservations) - 1; i >= 0; i-- {
-			id := reservations[i].Id
-			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
-				r.intTreeStates[id] = CommitState_Inflight
-				return reservations[i], nil
-			}
-		}
-	}
-
-	return nil, ErrNoReservation
+	r.intTreeStates[int(reservation.id)] = CommitState_None
 }
 
 func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
@@ -185,11 +123,14 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 			return nil, err
 		}
 
-		for i := 0; i < len(reservations); i++ {
-			id := reservations[i].Id
+		for _, reservation := range reservations {
+			id := reservation.id
+			if reservation.Hours() >= config.LongHourThreshold {
+				continue
+			}
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
-				return reservations[i], nil
+				return reservation, nil
 			}
 		}
 	}
@@ -197,7 +138,46 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 	return nil, ErrNoReservation
 }
 
-func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
+func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
+
+	intervals, err := r.intervalTempertures.findHotIntervals()
+	if err != nil {
+		return nil, ErrNoReservation
+	}
+
+	for i := 0; i < len(intervals); i++ {
+		interval := intervals[i]
+		founds := r.intervalTree.Get(&Reservation{
+			StartAt: interval.startAt.Unix(),
+			EndAt:   interval.endAt.Unix(),
+		})
+		if len(founds) == 0 {
+			continue
+		}
+
+		reservations, err := ConvertFromIntInterface(founds)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, reservation := range reservations {
+			id := reservation.id
+			if reservation.Hours() < config.LongHourThreshold {
+				continue
+			}
+			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
+				r.intTreeStates[id] = CommitState_Inflight
+				return reservation, nil
+			}
+		}
+	}
+
+	return nil, ErrNoReservation
+}
+
+func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
@@ -213,7 +193,7 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(intervals) == 0 {
-			return nil, fmt.Errorf("no hot long reservation")
+			return nil, fmt.Errorf("no cold short reservation")
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
@@ -222,7 +202,51 @@ func (r *ReservationScheduler) GetColdReservation() (*Reservation, error) {
 		}
 
 		for _, reservation := range reservations {
-			id := reservation.Id
+			id := reservation.id
+			if reservation.Hours() >= config.LongHourThreshold {
+				continue
+			}
+
+			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
+				r.intTreeStates[id] = CommitState_Inflight
+				return reservation, nil
+			}
+		}
+	}
+
+	return nil, ErrNoReservation
+}
+
+func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
+	r.intTreeMu.Lock()
+	defer r.intTreeMu.Unlock()
+
+	intervals, err := r.intervalTempertures.findColdIntervals()
+	if err != nil {
+		return nil, ErrNoReservation
+	}
+
+	for i := 0; i < len(intervals); i++ {
+		interval := intervals[i]
+		founds := r.intervalTree.Get(&Reservation{
+			StartAt: interval.startAt.Unix(),
+			EndAt:   interval.endAt.Unix(),
+		})
+		if len(intervals) == 0 {
+			return nil, fmt.Errorf("no cold long reservation")
+		}
+
+		reservations, err := ConvertFromIntInterface(founds)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, reservation := range reservations {
+			id := reservation.id
+			if reservation.Hours() < config.LongHourThreshold {
+				continue
+			}
+
 			if state, ok := r.intTreeStates[id]; ok && state == CommitState_None {
 				r.intTreeStates[id] = CommitState_Inflight
 				return reservation, nil

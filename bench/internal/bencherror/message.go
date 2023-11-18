@@ -4,15 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/isucon/isucon13/bench/internal/config"
 )
 
 // NOTE: Goのhttp.Clientがcontext.DeadlineExceededをラップして返してくれないので、暫定対応
 var ErrTimeout = errors.New("タイムアウトによりリクエスト失敗")
 
+// ベンチマーカー本体由来のエラー
+
 func NewInternalError(err error) error {
 	err = fmt.Errorf("[ベンチ本体のエラー] 運営に連絡してください: %w", err)
 	return WrapError(SystemError, err)
 }
+
+// タイムアウト
 
 func NewTimeoutError(err error, msg string, args ...interface{}) error {
 	message := fmt.Sprintf(msg, args...)
@@ -21,11 +27,7 @@ func NewTimeoutError(err error, msg string, args ...interface{}) error {
 	return WrapError(BenchmarkTimeoutError, err)
 }
 
-func NewViolationError(err error, msg string, args ...interface{}) error {
-	message := fmt.Sprintf(msg, args...)
-	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
-	return WrapError(BenchmarkViolationError, err)
-}
+// 一般エラー
 
 func NewApplicationError(err error, msg string, args ...interface{}) error {
 	message := fmt.Sprintf(msg, args...)
@@ -52,8 +54,23 @@ func NewHttpResponseError(err error, req *http.Request) error {
 	return WrapError(BenchmarkApplicationError, err)
 }
 
+// 仕様違反
+
+func NewViolationError(err error, msg string, args ...interface{}) error {
+	message := fmt.Sprintf(msg, args...)
+	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
+	return WrapError(BenchmarkViolationError, err)
+}
+
 func NewAssertionError(err error, msg string, args ...interface{}) error {
 	message := fmt.Sprintf(msg, args...)
 	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
 	return WrapError(BenchmarkViolationError, err)
+}
+
+// ページ離脱
+
+func NewTooManySpamError(username string, req *http.Request) error {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
+	return WrapError(BenchmarkApplicationError, fmt.Errorf("[機会損失] %s へのリクエストに対してスパム割合が%d%% を超過したため、ユーザ %s が離脱しました", endpoint, int64(config.TooManySpamThresholdPercentage), username))
 }

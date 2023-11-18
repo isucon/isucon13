@@ -1,27 +1,27 @@
 import argparse
+from collections import defaultdict
 from datetime import datetime, timedelta
 import random
-import time
+import sys
+sys.setrecursionlimit(3000)
 
 from faker import Faker
 
 
 fake = Faker('ja-JP')
 
+# FIXME: livestream_texts、もうちょっと増やしたい
 
-# 投入するSQL文のフォーマット
-SQL_FORMAT="INSERT INTO livestreams (user_id, title, description, playlist_url, thumbnail_url, start_at, end_at) VALUES ({user_id}, '{title}', '{description}', 'https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8', 'https://picsum.photos/200/300', '{start_at}', '{end_at}');"
+# FIXME: id, usernameを外す
+GO_FORMAT="\tmustNewReservation({id}, \"{title}\", \"{description}\", \"{start_at}\", \"{end_at}\", \"{playlist_url}\", \"{thumbnail_url}\"),\n"
 
-# FIXME: Goコードのフォーマット
-GO_SCHEDULER_PATTERN_FORMAT="""
-package scheduler
+playlists = [
+    "https://d2jpkt808jogxx.cloudfront.net/BigBuckBunny/playlist.m3u8",
+]
 
-var {livestream_schedule_pattern_name} = []*Reservation{{
-{schedules}
-}}
-"""
-
-GO_SCHEDULER_PATTERN_UNIT_FORMAT="    mustNewReservation({id}, {user_id}, \"{title}\", \"{description}\", \"{start_at}\", \"{end_at}\"),\n"
+thumbnails = [
+    "https://picsum.photos/200/300",
+]
 
 livestream_texts = [
 ("夜のゲーム実況！新作RPG攻略中","新しいRPGゲームを実況しながら進めていきます！みんなでワイワイ攻略しよう！",),
@@ -112,160 +112,103 @@ livestream_texts = [
 ("歴史講座ライブ！戦国時代の英雄たち","歴史学者が、戦国時代の英雄たちやその背景を詳しく解説します",),
 ]
 
+## 同一枠長の採用数制限
+SAME_PATTERN_LIMIT = 40
 # 時間枠のパターン(hourの粒度)
-patterns = [1,3,5,10,20,24]
+patterns = list(n for n in range(1, 25))
 
-def solve(total, limits, assigned, schedules, max_schedules=10):
+def solve(total, counters, assigned, schedules):
     """スケジュール候補を生成します"""
-    def dec_limit(limits, idx):
-        """ストック制限数から、指定idxのパターンを消費します"""
-        new_limits = limits[:]
-        new_limits[idx] -= 1
-        return new_limits
-
-    if total < 0:
-        return schedules
-    if sum(limits) == 0:
+    if total < 0: # overflow
         return schedules
     if total == 0:
         return schedules + [assigned]
 
-    for idx, pattern in enumerate(patterns):
-        if limits[idx] <= 0:
+    for pattern in patterns:
+        if counters[pattern] >= SAME_PATTERN_LIMIT:
             continue
-        if len(schedules) >= max_schedules:
-            return schedules
 
-        new_schedules = solve(total-pattern, dec_limit(limits, idx), assigned[:]+[pattern], schedules)
+        counters[pattern] += 1
+        new_schedules = solve(total-pattern, counters, assigned+[pattern], schedules)
         if len(new_schedules) > len(schedules):
             schedules = new_schedules
+        else:
+            counters[pattern] -= 1
 
     return schedules
 
 
-def generate_season1(max_schedules, max_users):
-    # NOTE: season1は、初心者救済期間
-    #       可能な限り多くの予約を取れるようにし、たくさんライブコメント、投げ銭、リアクションを稼げるようにしてあげる
-    #       あまりにもスコアが上がりすぎる場合は大型枠を増やして調整
+def dump(base_time, schedules, gopath):
+    """生成されたスケジュールをSQLファイル、Goファイルに出力します"""
+    def create_timeslice(base_time, hours):
+        """渡されたbase_timeを基点として、指定時間の枠を表現するタイムスライスを作成します"""
+        delta_hours = timedelta(hours=hours)
+        return (base_time, base_time+delta_hours,)
 
-    # NOTE:１日引いている(exclusiveな期間)
-    available_hours = (24*(30+31+30)) - (24*1)
-    # 各時間枠のストック (雑設定。生成できるだけあればいい)
-    limits = [400,40,40,40,40,20]
+    go_schedules = []
+    schedule_idx = 1
+    for schedule in schedules:
+        cursor_time = base_time
+        for hours in random.sample(schedule, len(schedule)): # スケジュール要素をシャッフル
+            title, description = livestream_texts[schedule_idx%len(livestream_texts)]
+            start_at, end_at = create_timeslice(cursor_time, hours)
 
-    schedules = solve(available_hours, limits, [], [], max_schedules)
-    base_time = datetime(2024, 4, 1, 0)
-    dump(base_time, available_hours, schedules, max_schedules, max_users, for_season1=True)
-
-
-def generate_season2(max_schedules, max_users):
-    # NOTE: season2は、新人VTuberからの予約が殺到する
-    # 新人VTuber宛のライブコメント、投げ銭、リアクションはそこまで多くないが、予約が多い期間
-    # 様々な予約パターンを試せると良さそうなので、一旦均等に分配する
-
-    available_hours = (24*(31+31+30)) - (24*1)
-    limits = [100,100,100,100,100,100]
-
-    schedules = solve(available_hours, limits, [], [], max_schedules)
-    base_time = datetime(2024, 7, 1, 0)
-    dump(base_time, available_hours, schedules, max_schedules, max_users)
-
-
-def generate_season3(max_schedules, max_users):
-    # NOTE: season3は、新人VTuberが成長する期間。season2ではリクエストが少なかったVTuberにもリクエストが飛ぶようになる
-    # 投げ銭やライブコメント、リアクションがたくさんくるので、人気VTuberだけ優遇するアプローチ一本ではうまくいかない
-    # このとき、予約枠の大きさは大きな配信枠が多めになり、衝突が増えてくる
-
-    available_hours = (24*(31+30+31)) - (24*1)
-    limits = [40,40,40,140,140,200]
-
-    schedules = solve(available_hours, limits, [], [], max_schedules)
-    base_time = datetime(2024, 10, 1, 0)
-    dump(base_time, available_hours, schedules, max_schedules, max_users)
-
-
-def generate_season4(max_schedules, max_users):
-    # NOTE: season4は、まんべんなくリクエストがくる。広告費用係数に応じて負荷レベルがここから先際限なく上昇していく
-    # 予約は大きめな枠がおおくなる
-    available_hours = (24*(31+28+31)) - (24*1)
-    limits = [40,40,40,140,140,200]
-
-    schedules = solve(available_hours, limits, [], [], max_schedules)
-    base_time = datetime(2025, 1, 1, 0)
-    dump(base_time, available_hours, schedules, max_schedules, max_users)
-
-def create_timeslice(base_time, hours):
-    """渡されたbase_timeを基点として、指定時間の枠を表現するタイムスライスを作成します"""
-    delta_hours = timedelta(hours=hours)
-    return (base_time, base_time+delta_hours,)
-
-def dump(base_time, available_hours, schedules, max_schedules, max_users, for_season1=False):
-    for schedule in schedules[:max_schedules]:
-        assert(sum(schedule) == available_hours)
-
-        go_schedule_units = []
-
-        # Go生成
-        sqls = []
-        for idx, hours in enumerate(random.sample(schedule, len(schedule))):
-            user_id = (idx%max_users)+1
-            title, description = livestream_texts[idx%len(livestream_texts)]
-            start_at, end_at = create_timeslice(base_time, hours)
-            go_schedule_unit = GO_SCHEDULER_PATTERN_UNIT_FORMAT.format(
-                id=idx+1,
-                user_id=user_id,
+            go_schedules.append(GO_FORMAT.format(
+                id=schedule_idx,
                 title=title,
                 description=description,
                 start_at=start_at.strftime("%Y-%m-%d %H:%M:%S"),
                 end_at=end_at.strftime("%Y-%m-%d %H:%M:%S"),
-            )
-            go_schedule_units.append(go_schedule_unit)
-            sqls.append(SQL_FORMAT.format(
-                user_id=user_id,
-                title=title,
-                description=description,
-                start_at=start_at.strftime("%Y-%m-%d %H:%M:%S"),
-                end_at=end_at.strftime("%Y-%m-%d %H:%M:%S"),
+                playlist_url=random.choice(playlists),
+                thumbnail_url=random.choice(thumbnails),
             ))
-            base_time = end_at
+            print(end_at - start_at)
 
-        if for_season1: # season1の場合、SQLの初期データが登録される
-            print('\n'.join(sqls))
+            cursor_time = end_at
+            schedule_idx += 1
 
-        print(GO_SCHEDULER_PATTERN_FORMAT.format(
-            livestream_schedule_pattern_name="phase2ReservationPool",
-            schedules=''.join(go_schedule_units),
-        ))
+    with open(gopath, 'w') as gofile:
+        gofile.write('package scheduler\n\n')
+        gofile.write('var reservationPool = []*Reservation{\n')
+        for go_schedule in go_schedules:
+            gofile.write(go_schedule)
+        gofile.write('}')
+        gofile.write('\n')
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--users', type=int, default=500, help='対象ユーザ数')
+    parser.add_argument('--users', type=int, default=1000, help='対象ユーザ数')
     # max_schedulesは生成するスケジュールの最大数。枠数と一致する
     # NOTE: 枠数を設定する場合、枠数だけスケジュールを重ねがけする
     #       すべてきれいに敷き詰めるように書いているので、単純に複数のスケジュール分SQL生成すればよい
-    parser.add_argument('-n', type=int, default=1, help='生成スケジュール数(=同一時間帯の枠数)')
-    # Goコードを生成する
-    parser.add_argument('--go', action='store_true', help='season2,3,4のスケジュールパターンのGoコードを生成')
+    parser.add_argument('-n', type=int, default=5, help='生成スケジュール数(=同一時間帯の枠数)')
+    parser.add_argument('--gopath', type=str, default='/tmp/livestream.go')
 
     return parser.parse_args()
 
 
+# NOTE: 実行時間は2, 3秒程度
 def main():
     args = get_args()
     assert(args.users > 0)
-    # NOTE: 枠数は10000ぐらいが生成限度.
-    assert(args.n < 10000)
+    # NOTE: 枠数は4000ぐらいが生成限度.
+    assert(args.n <= 4000)
+
+    available_days = 365
+    available_hours = (24*available_days)-1
 
     # スケジュール生成
-    if not args.go:
-        print("# Season1")
-        generate_season1(args.n, args.users)
-    else:
-        # FIXME: goコードを生成する実装
-        generate_season2(args.n, args.users)
-        generate_season3(args.n, args.users)
-        generate_season4(args.n, args.users)
+    schedules = solve(available_hours, defaultdict(int), [], [])
+
+    # スケジュール選択
+    # 生成されたスケジュールを一定条件でソートし、好ましいものの上位n件を結果として出力
+    schedules = schedules[:args.n]
+    for schedule in schedules:
+        assert(sum(schedule) == 24*available_days-1)
+
+    base_time = datetime(2024, 4, 1, 1)
+    dump(base_time, schedules, args.gopath)
 
 
 if __name__ == '__main__':

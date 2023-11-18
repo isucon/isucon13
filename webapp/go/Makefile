@@ -11,16 +11,17 @@ DOCKER_RMI=sudo docker rmi -f
 DESTDIR=.
 TAG=isupipe:latest
 
+.PHONY: build
 build:
 	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/isupipe_darwin -ldflags "-s -w"
 	CGO_ENABLED=0 $(LINUX_TARGET_ENV)  $(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
+  CGO_ENABLED=0 $(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
 	tar -zcvf ../../provisioning/ansible/roles/webapp/files/webapp.tar.gz ./
-.PHONY: build
 
+.PHONY: docker_image
 docker_image: clean build
 	$(DOCKER_BUILD) -t $(TAG) . $(DOCKER_BUILD_OPTS)
-.PHONY: build
 
+.PHONY: clean
 clean:
 	$(DOCKER_RMI) -f $(TAG)
-.PHONY: clean

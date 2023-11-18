@@ -70,7 +70,7 @@ isucon/isucon13/webapp/go$ file /tmp/isupipe
 ```
 
 コンパイルできたバイナリを実行すると、Echoサーバが立ち上がります。
-一旦、他と衝突しにくそうな 12345/tcpでリッスンするようにしています。
+一旦、他と衝突しにくそうな 8080/tcpでリッスンするようにしています。
 
 ```
 /isucon/isucon13/webapp/go$ make && /tmp/isupipe
@@ -84,7 +84,7 @@ High performance, minimalist Go web framework
 https://echo.labstack.com
 ____________________________________O/_______
                                     O\
-⇨ http server started on [::]:12345
+⇨ http server started on [::]:8080
 ```
 
 sqlxパッケージを用いた基本的なCRUDはlivestream_handler.goに書きましたので、ご参考まで。

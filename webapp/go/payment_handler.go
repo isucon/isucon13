@@ -2,46 +2,29 @@ package main
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/labstack/echo/v4"
 )
 
-// webappに課金サーバを兼任させる
-// とりあえずfinalcheck等を実装する上で必要なので用意
-type Payment struct {
-	ReservationId int `json:"reservation_id"`
-	Tip           int `json:"tip"`
-}
-
 type PaymentResult struct {
-	Total    int        `json:"total"`
-	Payments []*Payment `json:"payments"`
-}
-
-var (
-	total     int
-	payments  []*Payment
-	paymentMu sync.RWMutex
-)
-
-func AddPayment(reservationId, tip int) {
-	paymentMu.Lock()
-	defer paymentMu.Unlock()
-
-	payments = append(payments, &Payment{
-		ReservationId: reservationId,
-		Tip:           tip,
-	})
-	total += tip
+	TotalTip int64 `json:"total_tip"`
 }
 
 func GetPaymentResult(c echo.Context) error {
-	paymentMu.RLock()
-	defer paymentMu.RUnlock()
+	ctx := c.Request().Context()
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	var totalTip int64
+	if err := tx.GetContext(ctx, &totalTip, "SELECT IFNULL(SUM(tip), 0) FROM livecomments"); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to count total tip: "+err.Error())
+	}
 
 	return c.JSON(http.StatusOK, &PaymentResult{
-		Total:    total,
-		Payments: payments,
+		TotalTip: totalTip,
 	})
 }

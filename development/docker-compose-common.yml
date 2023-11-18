@@ -1,0 +1,56 @@
+version: '3.0'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./etc/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - 127.0.0.1:8443:80
+    depends_on:
+      - webapp
+  mysql:
+    image: mysql/mysql-server:8.0.31
+    container_name: mysql
+    environment:
+      - "MYSQL_ROOT_HOST=%"
+      - "MYSQL_ROOT_PASSWORD=root"
+    volumes:
+      - ../webapp/sql/initdb.d:/docker-entrypoint-initdb.d
+      - ./pdns/20_powerdns_schema.sql:/docker-entrypoint-initdb.d/20_powerdns_schema.sql
+      - mysql_volume:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306"
+    restart: always
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -uisucon -pisucon
+      interval: 1s
+      timeout: 3s
+      retries: 40
+      start_period: 10s
+
+  powerdns:
+    image: powerdns/pdns-auth-master
+    container_name: powerdns
+    environment:
+      - "PDNS_AUTH_API_KEY=isudns"
+    ports:
+      - "127.0.0.1:1053:53"
+      - "127.0.0.1:1053:53/udp"
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - powerdns_volume:/var/lib/powerdns
+      # NOTE: gsqlite3バックエンドを読み込もうとするので、これを上書きしてしまう
+      # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/Dockerfile-auth#L88 
+      # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/dockerdata/pdns.conf#L3
+      - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf:ro
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_volume:
+  powerdns_volume:

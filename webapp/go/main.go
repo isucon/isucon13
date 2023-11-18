@@ -23,17 +23,14 @@ import (
 )
 
 const (
-	listenPort                     = 12345
+	listenPort                     = 8080
 	powerDNSSubdomainAddressEnvKey = "ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS"
-	// FIXME: ISUCON当日までに削除する
-	powerDNSDisableEnvKey = "ISUCON13_POWERDNS_DISABLED"
 )
 
 var (
-	disablePowerDNS          bool = false
 	powerDNSSubdomainAddress string
 	dbConn                   *sqlx.DB
-	secret                   = []byte("defaultsecret")
+	secret                   = []byte("isucon13_session_cookiestore_defaultsecret")
 )
 
 func init() {
@@ -45,16 +42,11 @@ func init() {
 
 // FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
-	AdvertiseLevel int    `json:"advertise_level"`
+	AdvertiseLevel int64  `json:"advertise_level"`
 	Language       string `json:"language"`
 }
 
-func loadDBDialConfigFromOSEnv() (*mysql.Config, error) {
-	conf := mysql.NewConfig()
-	return conf, nil
-}
-
-func connectDB() (*sqlx.DB, error) {
+func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 	const (
 		networkTypeEnvKey = "ISUCON13_MYSQL_DIALCONFIG_NET"
 		addrEnvKey        = "ISUCON13_MYSQL_DIALCONFIG_ADDRESS"
@@ -103,18 +95,28 @@ func connectDB() (*sqlx.DB, error) {
 		conf.ParseTime = parseTime
 	}
 
-	return sqlx.Open("mysql", conf.FormatDSN())
+	db, err := sqlx.Open("mysql", conf.FormatDSN())
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(10)
+
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func initializeHandler(c echo.Context) error {
-	if out, err := exec.Command("./init.sh").CombinedOutput(); err != nil {
+	if out, err := exec.Command("../sql/init.sh").CombinedOutput(); err != nil {
 		c.Logger().Warnf("init.sh failed with err=%s", string(out))
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize: "+err.Error())
 	}
 
-	c.Request().Header.Add("Content-Type", "application/json;chatset=utf-8")
+	c.Request().Header.Add("Content-Type", "application/json;charset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
-		AdvertiseLevel: 5,
+		AdvertiseLevel: 10,
 		Language:       "golang",
 	})
 }
@@ -125,87 +127,104 @@ func main() {
 	e.Logger.SetLevel(echolog.DEBUG)
 	e.Use(middleware.Logger())
 	cookieStore := sessions.NewCookieStore(secret)
-	// cookieStore.Options.Domain = "*.u.isucon.dev"
+	cookieStore.Options.Domain = "*.u.isucon.dev"
 	e.Use(session.Middleware(cookieStore))
 	// e.Use(middleware.Recover())
 
 	// 初期化
-	e.POST("/initialize", initializeHandler)
+	e.POST("/api/initialize", initializeHandler)
 
 	// top
-	e.GET("/tag", getTagHandler)
-	e.GET("/theme", getStreamerThemeHandler)
+	e.GET("/api/tag", getTagHandler)
+	e.GET("/api/user/:username/theme", getStreamerThemeHandler)
 
 	// livestream
 	// reserve livestream
-	e.POST("/livestream/reservation", reserveLivestreamHandler)
+	e.POST("/api/livestream/reservation", reserveLivestreamHandler)
 	// list livestream
-	e.GET("/livestream", getLivestreamsHandler)
+	e.GET("/api/livestream/search", searchLivestreamsHandler)
+	e.GET("/api/livestream", getMyLivestreamsHandler)
+	e.GET("/api/user/:username/livestream", getUserLivestreamsHandler)
 	// get livestream
-	e.GET("/livestream/:livestream_id", getLivestreamHandler)
+	e.GET("/api/livestream/:livestream_id", getLivestreamHandler)
 	// get polling livecomment timeline
-	e.GET("/livestream/:livestream_id/livecomment", getLivecommentsHandler)
+	e.GET("/api/livestream/:livestream_id/livecomment", getLivecommentsHandler)
 	// ライブコメント投稿
-	e.POST("/livestream/:livestream_id/livecomment", postLivecommentHandler)
-	e.POST("/livestream/:livestream_id/reaction", postReactionHandler)
-	e.GET("/livestream/:livestream_id/reaction", getReactionsHandler)
+	e.POST("/api/livestream/:livestream_id/livecomment", postLivecommentHandler)
+	e.POST("/api/livestream/:livestream_id/reaction", postReactionHandler)
+	e.GET("/api/livestream/:livestream_id/reaction", getReactionsHandler)
 
 	// (配信者向け)ライブコメントの報告一覧取得API
-	e.GET("/livestream/:livestream_id/report", getLivecommentReportsHandler)
+	e.GET("/api/livestream/:livestream_id/report", getLivecommentReportsHandler)
+	e.GET("/api/livestream/:livestream_id/ngwords", getNgwords)
 	// ライブコメント報告
-	e.POST("/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
+	e.POST("/api/livestream/:livestream_id/livecomment/:livecomment_id/report", reportLivecommentHandler)
 	// 配信者によるモデレーション (NGワード登録)
-	e.POST("/livestream/:livestream_id/moderate", moderateNGWordHandler)
+	e.POST("/api/livestream/:livestream_id/moderate", moderateHandler)
 
 	// livestream_viewersにINSERTするため必要
 	// ユーザ視聴開始 (viewer)
-	e.POST("/livestream/:livestream_id/enter", enterLivestreamHandler)
+	e.POST("/api/livestream/:livestream_id/enter", enterLivestreamHandler)
 	// ユーザ視聴終了 (viewer)
-	e.DELETE("/livestream/:livestream_id/enter", leaveLivestreamHandler)
+	e.DELETE("/api/livestream/:livestream_id/exit", exitLivestreamHandler)
 
 	// user
-	e.POST("/user", postUserHandler)
-	e.POST("/login", loginHandler)
-	e.GET("/user", getUsersHandler)
-	e.GET("/user/me", getUserSessionHandler)
-	// FIXME: ユーザ一覧を返すAPI
+	e.POST("/api/register", registerHandler)
+	e.POST("/api/login", loginHandler)
+	e.GET("/api/user/me", getMeHandler)
 	// フロントエンドで、配信予約のコラボレーターを指定する際に必要
-	e.GET("/user/:user_id", getUserHandler)
-	e.GET("/user/:user_id/statistics", getUserStatisticsHandler)
+	e.GET("/api/user/:username", getUserHandler)
+	e.GET("/api/user/:username/statistics", getUserStatisticsHandler)
+	e.GET("/api/user/:username/icon", getIconHandler)
+	e.POST("/api/icon", postIconHandler)
 
 	// stats
 	// ライブコメント統計情報
-	e.GET("/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
+	e.GET("/api/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
 
 	// 課金情報
-	e.GET("/payment", GetPaymentResult)
+	e.GET("/api/payment", GetPaymentResult)
+
+	e.HTTPErrorHandler = errorResponseHandler
 
 	// DB接続
-	conn, err := connectDB()
+	conn, err := connectDB(e.Logger)
 	if err != nil {
-		e.Logger.Fatalf("failed to connect db: %v", err)
-		return
+		e.Logger.Errorf("failed to connect db: %v", err)
+		os.Exit(1)
 	}
-	conn.SetMaxOpenConns(10)
 	defer conn.Close()
 	dbConn = conn
 
 	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
 	if !ok {
-		e.Logger.Fatalf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		e.Logger.Errorf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		os.Exit(1)
 	}
 	powerDNSSubdomainAddress = subdomainAddr
-
-	disabledEnv, _ := os.LookupEnv(powerDNSDisableEnvKey)
-	disabled, err := strconv.ParseBool(disabledEnv)
-	if err != nil {
-		disablePowerDNS = false
-	}
-	disablePowerDNS = disabled
 
 	// HTTPサーバ起動
 	listenAddr := net.JoinHostPort("", strconv.Itoa(listenPort))
 	if err := e.Start(listenAddr); err != nil {
-		e.Logger.Fatal(err)
+		e.Logger.Errorf("failed to start HTTP server: %v", err)
+		os.Exit(1)
+	}
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+func errorResponseHandler(err error, c echo.Context) {
+	c.Logger().Errorf("error at %s: %+v", c.Path(), err)
+	if he, ok := err.(*echo.HTTPError); ok {
+		if e := c.JSON(he.Code, &ErrorResponse{Error: err.Error()}); e != nil {
+			c.Logger().Errorf("%+v", e)
+		}
+		return
+	}
+
+	if e := c.JSON(http.StatusInternalServerError, &ErrorResponse{Error: err.Error()}); e != nil {
+		c.Logger().Errorf("%+v", e)
 	}
 }

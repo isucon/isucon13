@@ -1,9 +1,11 @@
 import argparse
+from collections import defaultdict
 from enum import Enum
 from faker import Faker
 import sys
 import subprocess
 import pprint
+import random
 
 # NOTE: bcrypt-toolを使ったパスワードハッシュ生成が非常に遅いので、事前に不足しない程度に生成してある
 passwords = [('wd44Ivk041', '$2a$10$gjaotHZoumKefYz8oUlqCefwbx4IrsUzZ10RDyIWFGtbGkWAHV0xi'),
@@ -109,16 +111,25 @@ passwords = [('wd44Ivk041', '$2a$10$gjaotHZoumKefYz8oUlqCefwbx4IrsUzZ10RDyIWFGtb
 
 
 # SQL
-SQL_FORMAT="INSERT INTO users (id, name, display_name, description, password) VALUES ({user_id}, '{name}', '{display_name}', '{description}', '{password}');"
-INSERT_THEME_FORMAT="INSERT INTO themes (user_id, dark_mode) VALUES ({user_id}, {dark_mode});"
+#SQL_FORMAT="INSERT INTO users (id, name, display_name, description, password) VALUES ({user_id}, '{name}', '{display_name}', '{description}', '{password}');"
+#INSERT_THEME_FORMAT="INSERT INTO themes (user_id, dark_mode) VALUES ({user_id}, {dark_mode});"
 
 # Go
-GO_CONSTRUCTOR_FORMAT="&User{{ UserId: {user_id}, Name: \"{name}\", DisplayName: \"{display_name}\", Description: \"{description}\", RawPassword: \"{raw_password}\", HashedPassword: \"{hashed_password}\"}},"
+GO_CONSTRUCTOR_FORMAT="&User{{ Name: \"{name}\", DisplayName: \"{display_name}\", Description: \"{description}\", RawPassword: \"{raw_password}\", HashedPassword: \"{hashed_password}\", DarkMode: {dark_mode} }},"
 
 #
 DESCRIPTION_FORMAT="普段{job}をしています。\\nよろしくおねがいします！\\n\\n連絡は以下からお願いします。\\n\\nウェブサイト: {website}\\nメールアドレス: {mail}\\n"
 
 fake = Faker('ja-JP')
+
+
+with open("./initial-data/display_names.txt", "r") as f:
+    display_names = f.readlines()
+    display_names = list(display_name.rstrip() for display_name in display_names)
+
+
+def get_display_name():
+    return random.choice(display_names)
 
 
 def hash_password(raw_password):
@@ -129,23 +140,23 @@ def hash_password(raw_password):
     return hashed_password
 
 
-def format_sql(users):
-    output = ""
-    for user in users:
-        hashed_password = user['hashed_password']
-        sql = SQL_FORMAT.format(
-            user_id=user['user_id'],
-            name=user['name'],
-            display_name=user['display_name'],
-            description=user['description'],
-            password=hashed_password,
-        )
-        output += f'{sql}\n'
-
-        theme_sql = gen_user_theme_sql(user['user_id'])
-        output += f'{theme_sql}\n'
-
-    return output
+#def format_sql(users):
+#    output = ""
+#    for user in users:
+#        hashed_password = user['hashed_password']
+#        sql = SQL_FORMAT.format(
+#            user_id=user['user_id'],
+#            name=user['name'],
+#            display_name=user['display_name'],
+#            description=user['description'],
+#            password=hashed_password,
+#        )
+#        output += f'{sql}\n'
+#
+#        theme_sql = gen_user_theme_sql(user['user_id'])
+#        output += f'{theme_sql}\n'
+#
+#    return output
 
 
 def format_go(users):
@@ -154,7 +165,7 @@ def format_go(users):
     output = "package scheduler\n"
 
     # 配信者
-    output += "var vtuberPool = []*User{\n"
+    output += "var streamerPool = []*User{\n"
     for user in users[:mid]:
         ctor = GO_CONSTRUCTOR_FORMAT.format(
             user_id = user['user_id'],
@@ -163,6 +174,7 @@ def format_go(users):
             description = user['description'],
             raw_password = user['raw_password'],
             hashed_password = user['hashed_password'],
+            dark_mode = user['dark_mode'],
         )
         output += f'\t{ctor}\n'
     output += "}\n"
@@ -177,45 +189,58 @@ def format_go(users):
             description = user['description'],
             raw_password = user['raw_password'],
             hashed_password = user['hashed_password'],
+            dark_mode = user['dark_mode'],
         )
         output += f'\t{ctor}\n'
     output += "}\n"
 
     return output
 
-def gen_user_theme_sql(user_id: int) -> str:
-    dark_mode = ['true', 'false'][user_id % 2]
-    return INSERT_THEME_FORMAT.format(**locals())
+#def gen_user_theme_sql(user_id: int) -> str:
+#    dark_mode = ['true', 'false'][user_id % 2]
+#    return INSERT_THEME_FORMAT.format(**locals())
 
 
 def gen_user(n: int) -> str:
     users = []
-    password_cache = dict()
+    username_indexes = defaultdict(int)
     for user_id in range(1, n+1):
         profile = fake.profile()
         name = profile['username']
-        if name in password_cache:
-            # 名前が再利用される場合、そのパスワードも再利用
-            raw_password, hashed_password = password_cache[name]
-        else:
-            # 名前が新規に振られる場合、パスワードを作ってキャッシュに入れておく
-            raw_password, hashed_password = passwords[(user_id-1)%100]
-            password_cache[name] = (raw_password, hashed_password,)
+        website = f'http://{name}.example.com/'
+        mail = f'{name}@example.com'
+        name_idx = username_indexes[name]
+        username = f"{name}{name_idx}"
+        raw_password, hashed_password = passwords[(user_id-1)%100]
+        dark_mode = str(fake.boolean()).lower()
 
         users.append(dict(
             user_id = user_id,
-            name = profile['username'],
-            display_name = profile['name'],
+            name = username,
+            display_name = get_display_name(),
             description = DESCRIPTION_FORMAT.format(
                 job=profile['job'],
-                website=profile['website'][0],
-                mail=profile['mail'],
+                website=website,
+                mail=mail,
             ),
             raw_password = raw_password,
             hashed_password = hashed_password,
+            dark_mode = dark_mode,
         ))
 
-    return format_sql(users) + '\n\n\n' + format_go(users)
+        username_indexes[name] += 1
+
+    #with open('/tmp/user.sql', 'w') as f:
+    #    f.write(format_sql(users) + '\n')
+
+    with open('./initial-data/autogenerated_usernames.txt', 'w') as f:
+        f.write('\n'.join(map(lambda u: u['name'], users)) + '\n')
+
+    with open('/tmp/user.go', 'w') as f:
+        f.write(format_go(users) + '\n')
+
+    # return format_sql(users) + '\n\n\n' + format_go(users)
+    return format_go(users)
 
 
 def dump_passwords():
@@ -229,7 +254,7 @@ def dump_passwords():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', type=int, default=10, help='生成数')
+    parser.add_argument('-n', type=int, default=1000, help='生成数')
     return parser.parse_args()
 
 

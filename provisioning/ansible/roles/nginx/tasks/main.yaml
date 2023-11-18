@@ -1,0 +1,66 @@
+---
+- name: "roles/nginx/tasks: Install package"
+  become: true
+  apt:
+    name:
+      - nginx
+    update_cache: yes
+
+- name: "roles/nginx/tasks: Mkdir for config files"
+  become: true
+  file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: 0755
+
+- name: "roles/nginx/tasks: Mkdir for tls certificates"
+  become: true
+  file:
+    path: /etc/nginx/tls
+    state: directory
+    mode: 0755
+
+- name: "roles/nginx/tasks: Deploy nginx configs"
+  become: true
+  copy:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  with_items:
+    - etc/nginx/conf.d/nginx.conf
+
+- name: "roles/nginx/tasks: Deploy tls certificates"
+  become: true
+  copy:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  with_items:
+    - etc/nginx/tls/_.u.isucon.dev.crt
+    - etc/nginx/tls/_.u.isucon.dev.issuer.crt
+    - etc/nginx/tls/_.u.isucon.dev.key
+    - etc/nginx/tls/_.t.isucon.dev.crt
+    - etc/nginx/tls/_.t.isucon.dev.key
+
+- name: "roles/nginx/tasks: Delete default config"
+  become: true
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: "roles/nginx/tasks: check nginx config"
+  become: true
+  shell: |
+    nginx -t
+
+- name: "roles/nginx/tasks: Start nginx"
+  become: true
+  systemd:
+    daemon_reload: "yes"
+    name: "nginx"
+    state: "reloaded"
+    enabled: "yes"

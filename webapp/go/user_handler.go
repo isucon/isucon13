@@ -2,51 +2,56 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os/exec"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	defaultSessionIdKey      = "SESSIONId"
+	defaultSessionIDKey      = "SESSIONID"
 	defaultSessionExpiresKey = "EXPIRES"
-	defaultUserIdKey         = "USERId"
-	bcryptDefaultCost        = 10
+	defaultUserIDKey         = "USERID"
+	defaultUsernameKey       = "USERNAME"
+	bcryptDefaultCost        = bcrypt.MinCost
 )
 
-type User struct {
-	Id          int    `json:"id" db:"id"`
-	Name        string `json:"name" db:"name"`
-	DisplayName string `json:"display_name" db:"display_name"`
-	Description string `json:"description" db:"description"`
-	// HashedPassword is hashed password.
-	HashedPassword string `json:"hashed_password" db:"password"`
-	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+var fallbackImage = "../img/NoImage.jpg"
 
-	IsPopular bool `json:"is_popular"`
+type UserModel struct {
+	ID             int64  `db:"id"`
+	Name           string `db:"name"`
+	DisplayName    string `db:"display_name"`
+	Description    string `db:"description"`
+	HashedPassword string `db:"password"`
+}
+
+type User struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Theme       Theme  `json:"theme,omitempty"`
 }
 
 type Theme struct {
-	UserId   int  `json:"user_id" db:"user_id"`
-	DarkMode bool `json:"dark_mode" db:"dark_mode"`
+	ID       int64 `json:"id"`
+	DarkMode bool  `json:"dark_mode"`
 }
 
-type Session struct {
-	// Id is an identifier that forms an UUIdv4.
-	Id     string `json:"id" db:"id"`
-	UserId int    `json:"user_id" db:"user_id"`
-	// Expires is the UNIX timestamp that the sesison will be expired.
-	Expires int `json:"expires" db:"expires"`
+type ThemeModel struct {
+	ID       int64 `db:"id"`
+	UserID   int64 `db:"user_id"`
+	DarkMode bool  `db:"dark_mode"`
 }
 
 type PostUserRequest struct {
@@ -54,17 +59,65 @@ type PostUserRequest struct {
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	// Password is non-hashed password.
-	Password string `json:"password"`
-	Theme    Theme  `json:"theme"`
+	Password string               `json:"password"`
+	Theme    PostUserRequestTheme `json:"theme"`
+}
+
+type PostUserRequestTheme struct {
+	DarkMode bool `json:"dark_mode"`
 }
 
 type LoginRequest struct {
-	UserName string `json:"username"`
+	Username string `json:"username"`
 	// Password is non-hashed password.
 	Password string `json:"password"`
 }
 
-func getUserSessionHandler(c echo.Context) error {
+type PostIconRequest struct {
+	Image []byte `json:"image"`
+}
+
+type PostIconResponse struct {
+	ID int64 `json:"id"`
+}
+
+func getIconHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	username := c.Param("username")
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	var user UserModel
+	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", username); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "not found user that has the given username")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
+	}
+
+	var image []byte
+	if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", user.ID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.File(fallbackImage)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user icon: "+err.Error())
+		}
+	}
+
+	return c.Blob(http.StatusOK, "image/jpeg", image)
+}
+
+func postIconHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	if err := verifyUserSession(c); err != nil {
@@ -72,33 +125,90 @@ func getUserSessionHandler(c echo.Context) error {
 		return err
 	}
 
-	sess, err := session.Get(defaultSessionIdKey, c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-	userId, ok := sess.Values[defaultUserIdKey].(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
+
+	var req *PostIconRequest
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
-	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM icons WHERE user_id = ?", userID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete old user icon: "+err.Error())
 	}
 
-	popular, err := userIsPopular(ctx, userId)
+	rs, err := tx.ExecContext(ctx, "INSERT INTO icons (user_id, image) VALUES (?, ?)", userID, req.Image)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert new user icon: "+err.Error())
 	}
-	user.IsPopular = popular
+
+	iconID, err := rs.LastInsertId()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get last inserted icon id: "+err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, &PostIconResponse{
+		ID: iconID,
+	})
+}
+
+func getMeHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if err := verifyUserSession(c); err != nil {
+		// echo.NewHTTPErrorが返っているのでそのまま出力
+		return err
+	}
+
+	// error already checked
+	sess, _ := session.Get(defaultSessionIDKey, c)
+	// existence already checked
+	userID := sess.Values[defaultUserIDKey].(int64)
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	userModel := UserModel{}
+	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE id = ?", userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusNotFound, "not found user that has the userid in session")
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
+	}
+
+	user, err := fillUserResponse(ctx, tx, userModel)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user: "+err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
 
 	return c.JSON(http.StatusOK, user)
 }
 
 // ユーザ登録API
-// POST /user
-func postUserHandler(c echo.Context) error {
+// POST /api/register
+func registerHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	req := PostUserRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
@@ -111,120 +221,126 @@ func postUserHandler(c echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptDefaultCost)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate hashed password: "+err.Error())
 	}
 
-	user := User{
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	userModel := UserModel{
 		Name:           req.Name,
 		DisplayName:    req.DisplayName,
 		Description:    req.Description,
 		HashedPassword: string(hashedPassword),
 	}
 
-	tx, err := dbConn.BeginTxx(ctx, nil)
+	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "begin tx failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user: "+err.Error())
 	}
 
-	result, err := tx.NamedExecContext(ctx, "INSERT INTO users (name, display_name, description, password) VALUES(:name, :display_name, :description, :password)", user)
+	userID, err := result.LastInsertId()
 	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, "user insertion failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get last inserted user id: "+err.Error())
 	}
 
-	userId, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, "last insert id failed")
-	}
+	userModel.ID = userID
 
-	user.Id = int(userId)
-
-	theme := Theme{
-		UserId:   int(userId),
+	themeModel := ThemeModel{
+		UserID:   userID,
 		DarkMode: req.Theme.DarkMode,
 	}
-	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", theme); err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, "theme insertion failed")
+	if _, err := tx.NamedExecContext(ctx, "INSERT INTO themes (user_id, dark_mode) VALUES(:user_id, :dark_mode)", themeModel); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user theme: "+err.Error())
+	}
+
+	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "30", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, string(out)+": "+err.Error())
+	}
+
+	user, err := fillUserResponse(ctx, tx, userModel)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user: "+err.Error())
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "commit failed")
-	}
-
-	if disablePowerDNS {
-		c.Logger().Info("disbale dns")
-		return c.JSON(http.StatusCreated, user)
-	}
-
-	if err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "a", "30", powerDNSSubdomainAddress).Run(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
 	}
 
 	return c.JSON(http.StatusCreated, user)
 }
 
 // ユーザログインAPI
-// POST /login
+// POST /api/login
 func loginHandler(c echo.Context) error {
 	ctx := c.Request().Context()
+	defer c.Request().Body.Close()
 
 	req := LoginRequest{}
 	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to decode the request body as json")
 	}
 
-	user := User{}
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	userModel := UserModel{}
 	// usernameはUNIQUEなので、whereで一意に特定できる
-	if err := dbConn.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", req.UserName); err != nil {
-		c.Logger().Printf("failed to get: username='%s', err=%+v", req.UserName, err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	err = tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", req.Username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(req.Password))
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(userModel.HashedPassword), []byte(req.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
-		// return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid username or password")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to compare hash and password: "+err.Error())
 	}
 
-	sessionEndAt := time.Now().Add(10 * time.Minute)
+	sessionEndAt := time.Now().Add(1 * time.Hour)
 
-	sessionId := uuid.NewString()
-	userSession := Session{
-		Id:      sessionId,
-		UserId:  user.Id,
-		Expires: int(sessionEndAt.Unix()),
-	}
+	sessionID := uuid.NewString()
 
-	sess, err := session.Get(defaultSessionIdKey, c)
+	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to get session")
 	}
 
 	sess.Options = &sessions.Options{
+		Domain: "u.isucon.dev",
 		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
 		Path:   "/",
 	}
-	sess.Values[defaultSessionIdKey] = userSession.Id
-	c.Logger().Infof("userSession.Id = %s", userSession.Id)
-	sess.Values[defaultUserIdKey] = userSession.UserId
-	c.Logger().Infof("userSession.UserId = %d", userSession.UserId)
-	sess.Values[defaultSessionExpiresKey] = int(sessionEndAt.Unix())
-	c.Logger().Infof("sessionEndAt = %s", sessionEndAt.String())
+	sess.Values[defaultSessionIDKey] = sessionID
+	// FIXME: ユーザ名
+	sess.Values[defaultUserIDKey] = userModel.ID
+	sess.Values[defaultUsernameKey] = userModel.Name
+	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
 
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save session: "+err.Error())
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
 // ユーザ詳細API
-// GET /user/:userid
+// GET /api/user/:username
 func getUserHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := verifyUserSession(c); err != nil {
@@ -232,103 +348,74 @@ func getUserHandler(c echo.Context) error {
 		return err
 	}
 
-	userId, err := strconv.Atoi(c.Param("user_id"))
+	username := c.Param("username")
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
 	}
-	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT name, display_name, description, created_at, updated_at FROM users WHERE id = ?", userId); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	defer tx.Rollback()
+
+	userModel := UserModel{}
+	if err := tx.GetContext(ctx, &userModel, "SELECT * FROM users WHERE name = ?", username); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "not found user that has the given username")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
 	}
 
-	popular, err := userIsPopular(ctx, userId)
+	user, err := fillUserResponse(ctx, tx, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fill user: "+err.Error())
 	}
-	user.IsPopular = popular
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
 
 	return c.JSON(http.StatusOK, user)
 }
 
-func getUsersHandler(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	if err := verifyUserSession(c); err != nil {
-		return err
-	}
-
-	var users []*User
-	if err := dbConn.SelectContext(ctx, &users, "SELECT id, name, display_name, description, created_at, updated_at FROM users"); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	// FIXME: IsFamousのアルゴリズムを作る
-	for i := range users {
-		userIsPopular(ctx, users[i].Id)
-		users[i].IsPopular = true
-	}
-	return c.JSON(http.StatusOK, users)
-}
-
 func verifyUserSession(c echo.Context) error {
-	sess, err := session.Get(defaultSessionIdKey, c)
+	sess, err := session.Get(defaultSessionIDKey, c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to get session")
 	}
 
 	sessionExpires, ok := sess.Values[defaultSessionExpiresKey]
 	if !ok {
-		// FIXME: エラーメッセージを検討する
-		return echo.NewHTTPError(http.StatusForbidden, "")
+		return echo.NewHTTPError(http.StatusForbidden, "failed to get EXPIRES value from session")
+	}
+
+	_, ok = sess.Values[defaultUserIDKey].(int64)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to get USERID value from session")
 	}
 
 	now := time.Now()
-	if now.Unix() > int64(sessionExpires.(int)) {
+	if now.Unix() > sessionExpires.(int64) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "session has expired")
 	}
 
 	return nil
 }
 
-func userIsPopular(ctx context.Context, userId int) (bool, error) {
-	var livestreams []*Livestream
-	if err := dbConn.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", userId); err != nil {
-		return false, err
+func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (User, error) {
+	themeModel := ThemeModel{}
+	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
+		return User{}, err
 	}
 
-	totalSpamReports := 0
-	totalTips := 0
-	totalLivecomments := 0
-	for _, ls := range livestreams {
-		spamReports := 0
-		if err := dbConn.SelectContext(ctx, &spamReports, "SELECT COUNT(*) FROM livecomment_reports WHERE livestream_id = ? ", ls.Id); err != nil {
-			return false, err
-		}
-
-		var livecomments []*Livecomment
-		if err := dbConn.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", ls.Id); err != nil {
-			return false, err
-		}
-
-		for _, lc := range livecomments {
-			totalTips += lc.Tip
-		}
-
-		totalSpamReports += spamReports
-		totalLivecomments += len(livecomments)
+	user := User{
+		ID:          userModel.ID,
+		Name:        userModel.Name,
+		DisplayName: userModel.DisplayName,
+		Description: userModel.Description,
+		Theme: Theme{
+			ID:       themeModel.ID,
+			DarkMode: themeModel.DarkMode,
+		},
 	}
 
-	if totalSpamReports >= 10 {
-		return false, nil
-	}
-
-	if totalTips < 1000 {
-		return false, nil
-	}
-
-	if totalLivecomments < 50 {
-		return false, nil
-	}
-
-	return true, nil
+	return user, nil
 }

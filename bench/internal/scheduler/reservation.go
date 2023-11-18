@@ -26,17 +26,18 @@ func ConvertFromIntInterface(i []interval.IntInterface) ([]*Reservation, error) 
 }
 
 type Reservation struct {
-	// Idは、ReservationSchedulerが識別するためのId.
-	// 簡単のため連番としている
-	Id          int
-	UserId      int
-	Title       string
-	Description string
-	StartAt     int64
-	EndAt       int64
+	// NOTE: id は、webappで割り振られるIDではなく、ReservationSchedulerが管理する上で利用するもの
+	id           int
+	Title        string
+	Description  string
+	StartAt      int64
+	EndAt        int64
+	PlaylistUrl  string
+	ThumbnailUrl string
 }
 
-func mustNewReservation(id int, userId int, title string, description string, startAtStr string, endAtStr string) *Reservation {
+// 初期データ生成スクリプト側修正後実施
+func mustNewReservation(id int, title string, description string, startAtStr string, endAtStr string, playlistUrl, thumbnailUrl string) *Reservation {
 	startAt, err := time.Parse("2006-01-02 15:04:05", startAtStr)
 	if err != nil {
 		log.Fatalln(err)
@@ -46,14 +47,17 @@ func mustNewReservation(id int, userId int, title string, description string, st
 		log.Fatalln(err)
 	}
 
-	return &Reservation{
-		Id:          id,
-		UserId:      userId,
-		Title:       title,
-		Description: description,
-		StartAt:     startAt.Unix(),
-		EndAt:       endAt.Unix(),
+	reservation := &Reservation{
+		id:           id,
+		Title:        title,
+		Description:  description,
+		StartAt:      startAt.Unix(),
+		EndAt:        endAt.Unix(),
+		PlaylistUrl:  playlistUrl,
+		ThumbnailUrl: thumbnailUrl,
 	}
+
+	return reservation
 }
 
 func (r *Reservation) Overlap(interval interval.IntRange) bool {
@@ -68,12 +72,16 @@ func (r *Reservation) Overlap(interval interval.IntRange) bool {
 		return false
 	}
 	if r.EndAt <= int64(interval.Start) {
-		// 予約開始が指定区間の開始以下である場合は含めない
+		// 予約終了が指定区間の開始以下である場合は含めない
 		return false
 	}
 	return r.EndAt >= int64(interval.Start) && r.StartAt <= int64(interval.End)
 }
-func (r *Reservation) ID() uintptr { return uintptr(r.Id) }
+func (r *Reservation) ID() uintptr { return uintptr(r.id) }
 func (r *Reservation) Range() interval.IntRange {
 	return interval.IntRange{Start: int(r.StartAt), End: int(r.EndAt)}
+}
+
+func (r *Reservation) Hours() int {
+	return int(time.Unix(r.EndAt, 0).Sub(time.Unix(r.StartAt, 0)) / time.Hour)
 }

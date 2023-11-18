@@ -1,18 +1,21 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 type Tag struct {
-	Id   int    `json:"id" db:"id"`
-	Name string `json:"name" db:"name"`
-	// CreatedAt is the created timestamp that forms an UNIX time.
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+type TagModel struct {
+	ID   int64  `db:"id"`
+	Name string `db:"name"`
 }
 
 type TagsResponse struct {
@@ -22,18 +25,35 @@ type TagsResponse struct {
 func getTagHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	var tags []*Tag
-	if err := dbConn.SelectContext(ctx, &tags, "SELECT * FROM tags"); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin new transaction: : "+err.Error()+err.Error())
+	}
+	defer tx.Rollback()
+
+	var tagModels []*TagModel
+	if err := tx.SelectContext(ctx, &tagModels, "SELECT * FROM tags"); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags: "+err.Error())
 	}
 
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
+
+	tags := make([]*Tag, len(tagModels))
+	for i := range tagModels {
+		tags[i] = &Tag{
+			ID:   tagModels[i].ID,
+			Name: tagModels[i].Name,
+		}
+	}
 	return c.JSON(http.StatusOK, &TagsResponse{
 		Tags: tags,
 	})
 }
 
 // 配信者のテーマ取得API
-// GET /theme
+// GET /api/user/:username/theme
 func getStreamerThemeHandler(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -43,23 +63,35 @@ func getStreamerThemeHandler(c echo.Context) error {
 		return err
 	}
 
-	hostHeaders := c.Request().Header["Host"]
-	if len(hostHeaders) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Host header must be specified")
+	username := c.Param("username")
+
+	tx, err := dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
+	}
+	defer tx.Rollback()
+
+	userModel := UserModel{}
+	err = tx.GetContext(ctx, &userModel, "SELECT id FROM users WHERE name = ?", username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusNotFound, "not found user that has the given username")
+	}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
 	}
 
-	host := hostHeaders[0]
-
-	username := strings.Split(host, ".")[0]
-
-	user := User{}
-	if err := dbConn.GetContext(ctx, &user, "SELECT id FROM users WHERE name = ?", username); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	themeModel := ThemeModel{}
+	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user theme: "+err.Error())
 	}
 
-	theme := Theme{}
-	if err := dbConn.GetContext(ctx, &theme, "SELECT dark_mode FROM themes WHERE user_id = ?", user.Id); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
+
+	theme := Theme{
+		ID:       themeModel.ID,
+		DarkMode: themeModel.DarkMode,
 	}
 
 	return c.JSON(http.StatusOK, theme)

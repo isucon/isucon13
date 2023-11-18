@@ -36,11 +36,14 @@ type IntervalTemperatures struct {
 }
 
 func newIntervalTemperture(baseAt int64, maxTemperature int64, length int) (*IntervalTemperatures, error) {
-	if maxTemperature < 1 {
-		return nil, fmt.Errorf("maxTemperture must be larger than 1")
+	// NOTE: webappの予約数がこれより少なくなることが無くなったのでチェックを入れておく
+	// findColdShortInterval, findColdLongInterval, findHotIntervalなどがこの数を前提に組まれてる
+	//
+	if maxTemperature < 2 {
+		return nil, fmt.Errorf("maxTemperture must be larger than 2")
 	}
 
-	// 1h単位のアトミックなカウンタを初期化
+	// 1h単位のカウンタを初期化
 	tempertures := make([]uint64, length)
 	return &IntervalTemperatures{
 		baseAt:               baseAt,
@@ -98,9 +101,16 @@ func (t *IntervalTemperatures) findIntervals(fn func(uint64) bool) Intervals {
 
 		if turn%2 == 1 {
 			// 右を進め終わったら、[left, right)の半開区間確定
+			leftHour := time.Duration(left) * time.Hour
+			var rightHour time.Duration
+			if left == 0 && right-left == 1 {
+				rightHour = time.Duration(right) * time.Hour
+			} else {
+				rightHour = time.Duration(right-1) * time.Hour
+			}
 			var (
-				startAt = time.Unix(t.baseAt, 0).Add(time.Duration(left) * time.Hour)
-				endAt   = time.Unix(t.baseAt, 0).Add(time.Duration(right-1) * time.Hour)
+				startAt = time.Unix(t.baseAt, 0).Add(leftHour)
+				endAt   = time.Unix(t.baseAt, 0).Add(rightHour)
 			)
 			intervals = append(intervals, &Interval{
 				startAt: startAt,
@@ -149,15 +159,11 @@ func (t *IntervalTemperatures) findColdIntervals() ([]*Interval, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	var intervals []*Interval
-	// 同時配信枠が１の場合、何もしない
-	// 同時配信枠が２以上の場合、予約が２つ以上可能なものを選ぶ
-	upto := int(t.maxTemperature - 1)
-	for i := 0; i < upto; i++ {
-		intervals = append(intervals, t.findIntervals(func(temperature uint64) bool {
-			return temperature == uint64(i)
-		})...)
-	}
+	// NOTE: 同時配信枠が１の場合何もしない考慮を入れた実装
+	// ref. https://github.com/isucon/isucon13/blob/18609cfa37c978cb3b6499a20d211cc28f5e7097/bench/internal/scheduler/interval_temperature.go#L155
+	intervals := t.findIntervals(func(temperature uint64) bool {
+		return temperature < uint64(t.maxTemperature-1)
+	})
 	if len(intervals) == 0 {
 		return nil, fmt.Errorf("no cold interval")
 	}

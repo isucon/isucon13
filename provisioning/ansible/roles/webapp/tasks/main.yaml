@@ -7,18 +7,73 @@
     owner: isucon
     group: isucon
     mode: '0755'
-- name: Extract webapp.tar.gz into /home/isucon
-  become: yes
-  ansible.builtin.unarchive:
+- name: Send webapp tarball
+  become: true
+  ansible.builtin.copy:
     src: webapp.tar.gz
-    dest: /home/isucon/webapp
+    dest: /home/isucon/webapp.tar.gz
+
+- name: Mkdir webapp
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp
+    state: directory
+
+- name: Get stats of webapp/sql
+  ansible.builtin.stat:
+    path: /home/isucon/webapp/sql
+  register: st
+
+- name: Extract webapp.tar.gz into /home/isucon
+  become: true
+  become_user: isucon
+  ansible.builtin.unarchive:
+    remote_src: true
+    src: /home/isucon/webapp.tar.gz
+    dest: /home/isucon/
+  when: not st.stat.exists
+
+# TODO: 一旦削除しない
+#- name: Remove webapp.tar.gz
+#  become: true
+#   ansible.builtin.file:
+#     path: /home/isucon/webapp.tar.gz
+#     state: absent
+
+- name: initilize database
+  become: true
+  shell: |
+    mysql -uroot -e "
+      DROP DATABASE IF EXISTS isupipe;
+      CREATE DATABASE IF NOT EXISTS isupipe;
+    "
+- name: initialize tables
+  become: true
+  shell: |
+    cat /home/isucon/webapp/sql/initdb.d/10_schema.sql | mysql -uisucon -pisucon
+
+- name: Tasks for isupipe-go
+  include_tasks: go.yaml
+
 - name: Put systemd service
-  become: yes
+  become: true
   ansible.builtin.copy:
     src: isupipe-go.service
     dest: /etc/systemd/system/
+
 - name: Put systemd service env file
-  become: yes
+  become: true
   ansible.builtin.template:
     src: env.sh
     dest: /home/isucon/
+    owner: isucon
+    group: isucon
+    mode: 0755
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-go
+    enabled: true
+    state: restarted
