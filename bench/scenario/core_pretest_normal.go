@@ -95,6 +95,9 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 		tagStartIdx = rand.Intn(len(tagResponse.Tags))
 		tagEndIdx   = min(tagStartIdx+tagCount, len(tagResponse.Tags))
 	)
+	if len(tagResponse.Tags) < tagEndIdx {
+		return fmt.Errorf("タグの数が足りません")
+	}
 	tags := []int64{}
 	for _, tag := range tagResponse.Tags[tagStartIdx:tagEndIdx] {
 		tags = append(tags, int64(tag.ID))
