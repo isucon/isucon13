@@ -11,8 +11,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class Handler extends AbstractHandler
 {
-    const DEFAULT_SESSION_EXPIRES_KEY = 'EXPIRES';
-    const DEFAULT_USER_ID_KEY = 'USERID';
     const DEFAULT_USERNAME_KEY = 'USERNAME';
     const BCRYPT_DEFAULT_COST = 4;
     const FALLBACK_IMAGE = __DIR__ . '/../../../img/NoImage.jpg';
