@@ -6,7 +6,7 @@ NUM_SLOTS = 5
 SQL_FORMAT="({slot}, {start_at}, {end_at}),"
 
 # delta = timedelta(hours=1)
-base_time = datetime(2024, 4, 1, 1)
+base_time = datetime(2024, 11, 25, 10)
 total_hours = (24*365)-1
 
 with open('/tmp/reservation_slot.sql', 'w') as f:
