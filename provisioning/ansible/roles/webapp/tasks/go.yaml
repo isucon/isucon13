@@ -1,7 +1,14 @@
 ---
+- name: Mkdir webapp for go
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/go
+    state: directory
+
 - name: Build isupipe-go
   become: yes
   shell: >
-    /home/isucon/local/golang/bin/go build -o isupipe -ldflags "-s -w"
+    /home/isucon/local/golang/bin/go build -o /home/isucon/webapp/go/isupipe -ldflags "-s -w"
   args:
-    chdir: /home/isucon/webapp/go/
+    chdir: /home/isucon

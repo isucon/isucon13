@@ -1,12 +1,4 @@
 ---
-- name: Create /home/isucon
-  become: yes
-  ansible.builtin.file:
-    path: /home/isucon/webapp
-    state: directory
-    owner: isucon
-    group: isucon
-    mode: '0755'
 - name: Send webapp tarball
   become: true
   ansible.builtin.copy:
