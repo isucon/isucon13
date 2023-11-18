@@ -8,6 +8,7 @@ class Isupipe::Entity::Theme {
 
     use Isupipe::Assert;
     use Types::Standard -types;
+    use JSON::Types;
 
     ADJUST {
         assert_field(Int, $id, 'id');
@@ -26,7 +27,7 @@ class Isupipe::Entity::Theme {
     method TO_JSON() {
         return {
             id        => $id,
-            dark_mode => $dark_mode,
+            dark_mode => bool $dark_mode,
         }
     }
 

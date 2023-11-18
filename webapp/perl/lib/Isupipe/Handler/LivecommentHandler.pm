@@ -198,7 +198,7 @@ sub moderate_handler($app, $c) {
     }
 
     my $txn = $app->dbh->txn_scope;
-    # 配信者自身の廃止に対するmoderateなのかを検証
+    # 配信者自身の配信に対するmoderateなのかを検証
     my $owned_livestreams = $app->dbh->select_all(
         'SELECT * FROM livestreams WHERE id = ? AND user_id = ?',
         $livestream_id,
@@ -211,10 +211,10 @@ sub moderate_handler($app, $c) {
     $app->dbh->query(
         'INSERT INTO ng_words(user_id, livestream_id, word, created_at) VALUES (:user_id, :livestream_id, :word, :created_at)',
         {
-            user_id => $user_id,
+            user_id       => $user_id,
             livestream_id => $livestream_id,
-            word => $params->{ng_word},
-            created_at => time,
+            word          => $params->{ng_word},
+            created_at    => time,
         },
     );
 
@@ -225,6 +225,7 @@ sub moderate_handler($app, $c) {
         'SELECT * FROM ng_words',
     );
 
+    # NGワードにヒットする過去の投稿も全削除する
     for my $ng_word ($ng_words->@*) {
         # ライブコメント一覧取得
         my $livecomments = $app->dbh->select_all_as(
@@ -236,6 +237,7 @@ sub moderate_handler($app, $c) {
             my $query = <<~ 'SQL';
                 DELETE FROM livecomments
                 WHERE
+                id = ? AND
                 (SELECT COUNT(*)
                 FROM
                 (SELECT ? AS text) AS texts
@@ -244,7 +246,7 @@ sub moderate_handler($app, $c) {
                 ON texts.text LIKE patterns.pattern) >= 1;
             SQL
 
-            $app->dbh->query($query, $livecomment->comment, $ng_word->word);
+            $app->dbh->query($query, $livecomment->id, $livecomment->comment, $ng_word->word);
         }
     }
 

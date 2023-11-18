@@ -5,13 +5,16 @@ use utf8;
 use HTTP::Status qw(:constants);
 use Types::Standard -types;
 use Plack::Session;;
+use MIME::Base64 qw(decode_base64);
 
 use Isupipe::Log;
 use Isupipe::Entity::User;
 use Isupipe::Entity::Theme;
 use Isupipe::Util qw(
     verify_user_session
+    DEFAULT_SESSION_EXPIRES_KEY
     DEFAULT_USER_ID_KEY
+    DEFAULT_USER_NAME_KEY
     encrypt_password
     check_password
     check_params
@@ -44,7 +47,7 @@ use constant LoginRequest => Dict[
 ];
 
 use constant PostIconRequest => Dict[
-    image => Str, # []byte
+    image => Str, # 画像データをBase64した値
 ];
 
 # ユーザ登録API
@@ -119,7 +122,7 @@ sub login_handler($app, $c) {
         { name => $params->{username} }
     );
     unless ($user) {
-        $c->halt(HTTP_NOT_FOUND, 'invalid username or password');
+        $c->halt(HTTP_UNAUTHORIZED, 'invalid username or password');
     }
 
     $txn->commit;
@@ -129,9 +132,10 @@ sub login_handler($app, $c) {
     }
 
     my $session = Plack::Session->new($c->env);
-    $session->set(DEFAULT_USER_ID_KEY, $user->id);
 
-    debugf('login success: %s', $user->name);
+    $session->set(DEFAULT_USER_ID_KEY, $user->id);
+    $session->set(DEFAULT_USER_NAME_KEY, $user->name);
+    $session->set(DEFAULT_SESSION_EXPIRES_KEY, time + 3600);
 
     $c->halt_no_content(HTTP_OK);
 }
@@ -226,17 +230,10 @@ sub post_icon_handler($app, $c) {
     # existence already checked
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
-    # TODO: ベンチマーカーが実際にどんなリクエストを送っているか確認する
-    my $params = $c->req->uploads;
+    my $params = $c->req->json_parameters;
     unless (check_params($params, PostIconRequest)) {
         $c->halt(HTTP_BAD_REQUEST, 'failed to decode the quest body as json');
     }
-
-    my $image = do {
-        open my $fh, '<:raw', $params->{image} or die "Cannot open $params->{image}: $!";
-        local $/;
-        <$fh>;
-    };
 
     my $txn = $app->dbh->txn_scope;
     $app->dbh->query(
@@ -246,7 +243,7 @@ sub post_icon_handler($app, $c) {
     $app->dbh->query(
         'INSERT INTO icons (user_id, image) VALUES(?, ?)',
         $user_id,
-        $image,
+        decode_base64($params->{image}),
     );
 
     my $icon_id = $app->dbh->last_insert_id;

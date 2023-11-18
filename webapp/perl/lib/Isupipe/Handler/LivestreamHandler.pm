@@ -31,9 +31,8 @@ use constant ReserveLivestreamRequest => Dict[
     tags          => ArrayRef[Int],
     title         => Str,
     description   => Str,
-    # NOTE: コラボ配信の際に便利な自動スケジュールチェック機能
-    # DBに記録しないが、コラボレーターがスケジュール的に問題ないか調べて、エラーを返す
-    collaborators => ArrayRef[Int],
+    playlist_url  => Str,
+    thumbnail_url => Str,
     start_at      => Int,
     end_at        => Int,
 ];
@@ -56,23 +55,6 @@ sub reserve_livestream_handler($app, $c) {
     infof('check term');
     if (!($params->{end_at} == TERM_END_AT || $params->{end_at} < TERM_END_AT) && (TERM_START_AT == $params->{start_at} || $params->{start_at} > TERM_START_AT)) {
         $c->halt(HTTP_BAD_REQUEST, "bad reservation time range");
-    }
-
-    infof('check collaborators');
-    # 各ユーザについて、予約時間帯とかぶるような予約が存在しないか調べる (ある人は同時に複数の配信に物理的に出れない)
-    my $user_ids = [];
-    push @$user_ids, $user_id;
-    push @$user_ids, $params->{collaborators}->@*;
-    for my $user_id ($user_ids->@*) {
-        my $founds = $app->dbh->select_one(
-            'SELECT COUNT(*) FROM livestreams WHERE user_id = ? AND  ? >= start_at && ? <= end_at',
-            $user_id,
-            $params->{start_at},
-            $params->{end_at},
-        );
-        if ($founds >= NUM_RESERVATION_SLOT) {
-            $c->halt(HTTP_BAD_REQUEST, sprintf('ユーザ%dが予約できません', $user_id));
-        }
     }
 
     # 予約枠をみて、予約が可能か調べる

@@ -1,12 +1,15 @@
 package Isupipe::Util;
 use v5.38;
 use utf8;
+use experimental qw(try);
 
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
     verify_user_session
+    DEFAULT_SESSION_EXPIRES_KEY
     DEFAULT_USER_ID_KEY
+    DEFAULT_USER_NAME_KEY
 
     encrypt_password
     check_password
@@ -20,17 +23,31 @@ use Crypt::OpenSSL::Random ();
 use Type::Params qw(compile);
 use Data::Lock qw(dlock);
 use Scalar::Util qw(refaddr);
+use Plack::Session;
 
+use Isupipe::Log;
 use Isupipe::Assert qw(ASSERT);
 
+use constant DEFAULT_SESSION_EXPIRES_KEY => 'EXPIRES';
 use constant DEFAULT_USER_ID_KEY => 'USERID';
+use constant DEFAULT_USER_NAME_KEY => 'USERNAME';
 use constant BCRYPT_DEFAULT_COST => 4;
 
 sub verify_user_session($app, $c) {
-    my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
+    my $session = Plack::Session->new($c->env);
 
+    my $expires = $session->get(DEFAULT_SESSION_EXPIRES_KEY);
+    unless ($expires) {
+        $c->halt(HTTP_FORBIDDEN, 'failed to get EXPIRES value from session');
+    }
+
+    my $user_id = $session->get(DEFAULT_USER_ID_KEY);
     unless ($user_id) {
-        $c->halt(HTTP_FORBIDDEN, 'failed to get USERID value from session');
+        $c->halt(HTTP_UNAUTHORIZED, 'failed to get USERID value from session');
+    }
+
+    if (time > $expires) {
+        $c->halt(HTTP_UNAUTHORIZED, 'session has expired');
     }
 
     return;
@@ -56,13 +73,22 @@ sub check_password {
 
     sub check_params($params, $type) {
         my $check = $compiled_checks->{refaddr($type)} //= compile($type);
-        my $flag = $check->($params);
 
-        # 開発環境では、存在しないキーにアクセスした時にエラーになるようにしておく
-        if (ASSERT && $flag) {
-            dlock($params);
+        try {
+            my $flag = $check->($params);
+
+            # 開発環境では、存在しないキーにアクセスした時にエラーになるようにしておく
+            if (ASSERT && $flag) {
+                dlock($params);
+            }
+
+            return 1;
         }
+        catch ($e) {
+            debugf("Failed to check params: %s", $type->get_message($params));
+            debugf("Checked params: %s", ddf($params));
 
-        return $flag
+            return 0;
+        }
     }
 }
