@@ -96,8 +96,8 @@ func newBenchmarker(ctx context.Context) *benchmarker {
 		moderatorSem:           semaphore.NewWeighted(weight),
 		viewerSem:              semaphore.NewWeighted(weight * 1), // 配信者の10倍視聴者トラフィックがある
 		spammerSem:             semaphore.NewWeighted(weight * 2), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:              semaphore.NewWeighted(512),        // 視聴者と同程度、攻撃を仕掛ける輩がいる
-		attackParallelis:       config.BaseParallelism,
+		attackSem:              semaphore.NewWeighted(512),        // 攻撃を段階的に大きくする最大値
+		attackParallelis:       2,
 		longStreamerClientPool: longStreamerClientPool,
 		streamerClientPool:     streamerClientPool,
 		viewerClientPool:       viewerClientPool,
@@ -152,8 +152,6 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
 }
 
-var loadAttackPerSecond int64 = 10000
-
 // dns水責め攻撃につかうhttp client
 func (b *benchmarker) loadAttackHTTPClient() *http.Client {
 	dialer := &net.Dialer{Timeout: 5 * time.Second}
@@ -180,20 +178,19 @@ func (b *benchmarker) loadAttackHTTPClient() *http.Client {
 	}
 }
 
-func (b *benchmarker) loadAttack(ctx context.Context, asize int64, httpClient *http.Client) error {
+func (b *benchmarker) loadAttack(ctx context.Context, asize int64, httpClient *http.Client, loadLimiter *rate.Limiter) error {
 	defer b.attackSem.Release(asize)
 
-	factor := float64(loadAttackPerSecond) / float64(b.attackParallelis)
 	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
 	if failRate < 0.01 {
 		now := time.Now()
 		d := now.Sub(b.startAt) / time.Second
-		b.attackParallelis = int(float64(config.BaseParallelism) * (1.0 + float64(d)/16.0))
-		if b.attackParallelis > 32 {
-			b.attackParallelis = 32
+		b.attackParallelis = int(float64(config.BaseParallelism) * (1.0 + float64(d)/12.0))
+		if b.attackParallelis > 8 {
+			b.attackParallelis = 8
 		}
 	}
-	loadLimiter := rate.NewLimiter(rate.Limit(factor), 1)
+
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
 	if err := scenario.DnsWaterTortureAttackScenario(ctx, httpClient, loadLimiter); err != nil {
 		return err
@@ -305,6 +302,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 	violateCh := bencherror.RunViolationChecker(ctx)
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
+	loadAttackLimiter := rate.NewLimiter(rate.Limit(900), 1)
 
 	for {
 		select {
@@ -357,7 +355,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 				asize := asize
 				go func() {
 					defer wg.Done()
-					b.loadAttack(childCtx, asize, loadAttackHTTPClient)
+					b.loadAttack(childCtx, asize, loadAttackHTTPClient, loadAttackLimiter)
 				}()
 			}
 		}
