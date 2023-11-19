@@ -28,8 +28,11 @@ class LivestreamTagModel
                 livestreamId: $row['livestream_id'] ?? null,
                 tagId: $row['tag_id'] ?? null,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

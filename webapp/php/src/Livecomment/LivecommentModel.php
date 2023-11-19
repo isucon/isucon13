@@ -34,8 +34,11 @@ class LivecommentModel
                 tip: $row['tip'] ?? null,
                 createdAt: $row['created_at'] ?? null,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

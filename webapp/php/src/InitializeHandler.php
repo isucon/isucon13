@@ -26,7 +26,7 @@ class InitializeHandler extends AbstractHandler
             $this->logger->warning('init.sh failed with err=' . $e->getMessage());
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to initialize',
+                message: 'failed to initialize: ' . $e->getMessage(),
                 previous: $e,
             );
         }

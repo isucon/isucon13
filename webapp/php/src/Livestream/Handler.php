@@ -45,7 +45,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -79,7 +79,7 @@ class Handler extends AbstractHandler
             $this->logger->warning('予約枠一覧取得でエラー発生: ' . $e->getMessage());
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get reservation_slots',
+                message: 'failed to get reservation_slots: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -101,7 +101,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get reservation_slots',
+                    message: 'failed to get reservation_slots: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -125,7 +125,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to update reservation_slots',
+                message: 'failed to update reservation_slots: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -143,7 +143,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert livestream',
+                message: 'failed to insert livestream: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -161,7 +161,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to insert livestream tag',
+                    message: 'failed to insert livestream tag: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -172,7 +172,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill livestream',
+                message: 'failed to fill livestream: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -201,7 +201,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get tags',
+                    message: 'failed to get tags: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -223,7 +223,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get keyTaggedLivestreams',
+                    message: 'failed to get keyTaggedLivestreams: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -237,7 +237,7 @@ class Handler extends AbstractHandler
                 } catch (PDOException $e) {
                     throw new HttpInternalServerErrorException(
                         request: $request,
-                        message: 'failed to get livestreams',
+                        message: 'failed to get livestreams: ' . $e->getMessage(),
                         previous: $e,
                     );
                 }
@@ -270,7 +270,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get livestreams',
+                    message: 'failed to get livestreams: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -284,7 +284,7 @@ class Handler extends AbstractHandler
             } catch (RuntimeException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to fill livestream',
+                    message: 'failed to fill livestream: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -316,7 +316,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestreams',
+                message: 'failed to get livestreams: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -329,7 +329,7 @@ class Handler extends AbstractHandler
             } catch (RuntimeException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to fill livestream',
+                    message: 'failed to fill livestream: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -359,7 +359,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -383,7 +383,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestreams',
+                message: 'failed to get livestreams: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -396,7 +396,7 @@ class Handler extends AbstractHandler
             } catch (RuntimeException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to fill livestream',
+                    message: 'failed to fill livestream: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -444,7 +444,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert livestream_view_history',
+                message: 'failed to insert livestream_view_history: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -482,7 +482,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert livestream_view_history',
+                message: 'failed to insert livestream_view_history: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -517,7 +517,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestream',
+                message: 'failed to get livestream: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -534,7 +534,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill livestream',
+                message: 'failed to fill livestream: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -569,7 +569,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestream',
+                message: 'failed to get livestream: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -603,7 +603,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livecomment reports',
+                message: 'failed to get livecomment reports: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -616,7 +616,7 @@ class Handler extends AbstractHandler
             } catch (RuntimeException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to fill livecomment report',
+                    message: 'failed to fill livecomment report: ' . $e->getMessage(),
                     previous: $e,
                 );
             }

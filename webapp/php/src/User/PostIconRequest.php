@@ -22,29 +22,35 @@ class PostIconRequest
     {
         try {
             $data = json_decode($json, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new UnexpectedValueException();
+        } catch (JsonException $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
 
         if (!isset($data->image)) {
-            throw new UnexpectedValueException();
+            throw new UnexpectedValueException('required fields are missing');
         }
 
         if (!is_string($data->image)) {
-            throw new UnexpectedValueException();
+            throw new UnexpectedValueException('failed to decode image');
         }
 
         $image = base64_decode($data->image);
         if ($image === false) {
-            throw new UnexpectedValueException();
+            throw new UnexpectedValueException('failed to decode image');
         }
 
         try {
             return new PostIconRequest(
                 image: $image,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

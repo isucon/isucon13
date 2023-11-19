@@ -26,8 +26,11 @@ class TagModel
                 id: $row['id'] ?? null,
                 name: $row['name'] ?? null,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

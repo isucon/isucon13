@@ -67,7 +67,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get reactions',
+                message: 'failed to get reactions: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -80,7 +80,7 @@ class Handler extends AbstractHandler
             } catch (RuntimeException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to fill reaction',
+                    message: 'failed to fill reaction: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -114,7 +114,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -138,7 +138,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert reaction',
+                message: 'failed to insert reaction: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -151,7 +151,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill reaction',
+                message: 'failed to fill reaction: ' . $e->getMessage(),
                 previous: $e,
             );
         }

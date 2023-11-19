@@ -19,7 +19,7 @@ trait FillUserResponse
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException();
+            throw new RuntimeException('not found theme that has the given user id');
         }
         $themeModel = ThemeModel::fromRow($row);
 

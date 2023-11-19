@@ -27,8 +27,11 @@ class PostUserRequest
     {
         try {
             $data = json_decode($json, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new UnexpectedValueException();
+        } catch (JsonException $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
 
         if (
@@ -41,7 +44,7 @@ class PostUserRequest
                 $data->theme->dark_mode,
             )
         ) {
-            throw new UnexpectedValueException();
+            throw new UnexpectedValueException('required fields are missing');
         }
 
         try {
@@ -54,8 +57,11 @@ class PostUserRequest
                     darkMode:  $data->theme->dark_mode,
                 ),
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

@@ -23,7 +23,7 @@ trait FillLivestreamResponse
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException();
+            throw new RuntimeException('not found user that has the given id');
         }
 
         $ownerModel = UserModel::fromRow($row);
@@ -46,7 +46,7 @@ trait FillLivestreamResponse
             $stmt->execute();
             $row = $stmt->fetch();
             if ($row === false) {
-                throw new RuntimeException();
+                throw new RuntimeException('not found tag that has the given id');
             }
 
             $tagModel = TagModel::fromRow($row);

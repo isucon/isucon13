@@ -28,8 +28,11 @@ class ThemeModel
                 userId: $row['user_id'] ?? null,
                 darkMode: is_null($row['dark_mode']) ? null : (bool) $row['dark_mode'],
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

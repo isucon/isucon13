@@ -55,7 +55,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -75,7 +75,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user icon',
+                message: 'failed to get user icon: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -104,7 +104,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -118,7 +118,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to delete old user icon',
+                message: 'failed to delete old user icon: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -131,7 +131,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert new user icon',
+                message: 'failed to insert new user icon: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -162,7 +162,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -179,7 +179,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill user',
+                message: 'failed to fill user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -200,7 +200,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -232,7 +232,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert user',
+                message: 'failed to insert user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -252,7 +252,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert user theme',
+                message: 'failed to insert user theme: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -272,7 +272,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill user',
+                message: 'failed to fill user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -293,7 +293,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -309,7 +309,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -364,7 +364,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -381,7 +381,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill user',
+                message: 'failed to fill user: ' . $e->getMessage(),
                 previous: $e,
             );
         }

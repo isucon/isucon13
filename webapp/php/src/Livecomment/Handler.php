@@ -69,7 +69,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livecomments',
+                message: 'failed to get livecomments: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -82,7 +82,7 @@ class Handler extends AbstractHandler
             } catch (RuntimeException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to fil livecomments',
+                    message: 'failed to fil livecomments: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -126,7 +126,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get NG words',
+                message: 'failed to get NG words: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -159,7 +159,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -180,7 +180,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get NG words',
+                message: 'failed to get NG words: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -204,7 +204,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get hitspam',
+                    message: 'failed to get hitspam: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -236,7 +236,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert livecomment',
+                message: 'failed to insert livecomment: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -249,7 +249,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill livecomment',
+                message: 'failed to fill livecomment: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -304,7 +304,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert livecomment report',
+                message: 'failed to insert livecomment report: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -317,7 +317,7 @@ class Handler extends AbstractHandler
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to fill livecomment report',
+                message: 'failed to fill livecomment report: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -352,7 +352,7 @@ class Handler extends AbstractHandler
         } catch (UnexpectedValueException $e) {
             throw new HttpBadRequestException(
                 request: $request,
-                message: 'failed to decode the request body as json',
+                message: 'failed to decode the request body as json: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -373,7 +373,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestreams',
+                message: 'failed to get livestreams: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -394,7 +394,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert new NG word',
+                message: 'failed to insert new NG word: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -412,7 +412,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get NG words',
+                message: 'failed to get NG words: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -431,7 +431,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get livecomments',
+                    message: 'failed to get livecomments: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -459,7 +459,7 @@ class Handler extends AbstractHandler
                 } catch (PDOException $e) {
                     throw new HttpInternalServerErrorException(
                         request: $request,
-                        message: 'failed to delete old livecomments that hit spams',
+                        message: 'failed to delete old livecomments that hit spams: ' . $e->getMessage(),
                         previous: $e,
                     );
                 }

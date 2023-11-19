@@ -24,20 +24,26 @@ class PostReactionRequest
     {
         try {
             $data = json_decode($json, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new UnexpectedValueException();
+        } catch (JsonException $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
 
         if (!isset($data->emoji_name)) {
-            throw new UnexpectedValueException();
+            throw new UnexpectedValueException('required fields are missing');
         }
 
         try {
             return new PostReactionRequest(
                 emojiName: $data->emoji_name,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

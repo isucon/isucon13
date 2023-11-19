@@ -27,9 +27,7 @@ class Livestream implements JsonSerializable
         public int $endAt,
     ) {
         foreach ($tags as $tag) {
-            if (!($tag instanceof Tag)) {
-                throw new UnexpectedValueException();
-            }
+            assert($tag instanceof Tag);
         }
     }
 

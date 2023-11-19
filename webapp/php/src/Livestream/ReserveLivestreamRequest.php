@@ -26,7 +26,7 @@ class ReserveLivestreamRequest
     ) {
         foreach ($tags as $tag) {
             if (!is_int($tag)) {
-                throw new UnexpectedValueException();
+                throw new UnexpectedValueException('parameter $tags must be list of int');
             }
         }
     }
@@ -38,8 +38,11 @@ class ReserveLivestreamRequest
     {
         try {
             $data = json_decode($json, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new UnexpectedValueException();
+        } catch (JsonException $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
 
         if (
@@ -53,7 +56,7 @@ class ReserveLivestreamRequest
                 $data->end_at,
             )
         ) {
-            throw new UnexpectedValueException();
+            throw new UnexpectedValueException('required fields are missing');
         }
 
         try {
@@ -66,8 +69,11 @@ class ReserveLivestreamRequest
                 startAt: $data->start_at,
                 endAt: $data->end_at,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

@@ -23,7 +23,7 @@ trait FillLivecommentResponse
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException();
+            throw new RuntimeException('not found user that has the given id');
         }
         $commentOwnerModel = UserModel::fromRow($row);
         $commentOwner = $this->fillUserResponse($commentOwnerModel, $db);
@@ -33,7 +33,7 @@ trait FillLivecommentResponse
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException();
+            throw new RuntimeException('not found livestream that has the given id');
         }
         $livestreamModel = LivestreamModel::fromRow($row);
         $livestream = $this->fillLivestreamResponse($livestreamModel, $db);

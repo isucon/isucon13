@@ -50,7 +50,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -73,7 +73,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get users',
+                message: 'failed to get users: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -98,7 +98,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to count reactions',
+                    message: 'failed to count reactions: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -117,7 +117,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to count tips',
+                    message: 'failed to count tips: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -154,7 +154,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to count total reactions',
+                message: 'failed to count total reactions: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -175,7 +175,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get livestreams',
+                    message: 'failed to get livestreams: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -193,7 +193,7 @@ class Handler extends AbstractHandler
                 } catch (PDOException $e) {
                     throw new HttpInternalServerErrorException(
                         request: $request,
-                        message: 'failed to get livecomments',
+                        message: 'failed to get livecomments: ' . $e->getMessage(),
                         previous: $e,
                     );
                 }
@@ -220,7 +220,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get livestreams',
+                    message: 'failed to get livestreams: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -235,7 +235,7 @@ class Handler extends AbstractHandler
                 } catch (PDOException $e) {
                     throw new HttpInternalServerErrorException(
                         request: $request,
-                        message: 'failed to get livestream_view_history',
+                        message: 'failed to get livestream_view_history: ' . $e->getMessage(),
                         previous: $e,
                     );
                 }
@@ -262,7 +262,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to find favorite emoji',
+                message: 'failed to find favorite emoji: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -308,7 +308,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestream',
+                message: 'failed to get livestream: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -330,7 +330,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get livestreams',
+                message: 'failed to get livestreams: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -348,7 +348,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to count reactions',
+                    message: 'failed to count reactions: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -361,7 +361,7 @@ class Handler extends AbstractHandler
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to count tips',
+                    message: 'failed to count tips: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
@@ -393,7 +393,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to count livestream viewers',
+                message: 'failed to count livestream viewers: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -407,7 +407,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to find maximum tip livecomment',
+                message: 'failed to find maximum tip livecomment: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -422,7 +422,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to count total reactions',
+                message: 'failed to count total reactions: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -437,7 +437,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to count total spam reports',
+                message: 'failed to count total spam reports: ' . $e->getMessage(),
                 previous: $e,
             );
         }

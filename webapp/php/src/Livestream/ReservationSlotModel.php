@@ -30,8 +30,11 @@ class ReservationSlotModel
                 startAt: $row['start_at'] ?? null,
                 endAt: $row['end_at'] ?? null,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

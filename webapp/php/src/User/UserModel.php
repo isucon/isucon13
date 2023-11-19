@@ -32,8 +32,11 @@ class UserModel
                 description: $row['description'] ?? null,
                 hashedPassword: $row['password'] ?? null,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

@@ -32,8 +32,11 @@ class LivecommentReportModel
                 livecommentId: $row['livecomment_id'] ?? null,
                 createdAt: $row['created_at'] ?? null,
             );
-        } catch (TypeError) {
-            throw new UnexpectedValueException();
+        } catch (TypeError $e) {
+            throw new UnexpectedValueException(
+                message: $e->getMessage(),
+                previous: $e,
+            );
         }
     }
 }

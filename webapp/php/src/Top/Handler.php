@@ -37,7 +37,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get tags',
+                message: 'failed to get tags: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -80,7 +80,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'failed to get user: ' . $e->getMessage(),
                 previous: $e,
             );
         }
@@ -100,7 +100,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to get user theme',
+                message: 'failed to get user theme: ' . $e->getMessage(),
                 previous: $e,
             );
         }
