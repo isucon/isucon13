@@ -16,6 +16,10 @@ const BaseParallelism = 10
 // スコアに直結する視聴者シナリオなどのセマフォの重みに使われます
 const ChangableParallelism = 100
 
+// この数値だけは、最初のRegister, Login処理が保証されます
+// NOTE: このような保証がないと、登録が一切できず、ベンチ走行までシナリオが全く実行されないケースが出てしまいます
+const NumMustTryLogins = 10
+
 // HTTPクライアント(isucandar/agent) のタイムアウト
 const DefaultAgentTimeout = 20 * time.Second
 

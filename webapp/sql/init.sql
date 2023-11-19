@@ -1,4 +1,3 @@
-SET FOREIGN_KEY_CHECKS=0;
 TRUNCATE TABLE themes;
 TRUNCATE TABLE icons;
 TRUNCATE TABLE reservation_slots;
@@ -11,7 +10,6 @@ TRUNCATE TABLE livestream_tags;
 TRUNCATE TABLE livecomments;
 TRUNCATE TABLE livestreams;
 TRUNCATE TABLE users;
-SET FOREIGN_KEY_CHECKS=1;
 
 ALTER TABLE `themes` auto_increment = 1;
 ALTER TABLE `icons` auto_increment = 1;

@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
@@ -33,16 +34,19 @@ func BasicStreamerColdReserveScenario(
 
 	username, err := client.Username()
 	if err != nil {
+		log.Printf("reserve: failed to get username: %s\n", err.Error())
 		return err
 	}
 
 	reservation, err := scheduler.ReservationSched.GetColdShortReservation()
 	if err != nil {
+		log.Printf("reserve: failed to get cold short reservation: %s\n", err.Error())
 		return err
 	}
 
 	tags, err := client.GetRandomLivestreamTags(ctx, 5)
 	if err != nil {
+		log.Printf("reserve: failed to get random livestream tags: %s\n", err.Error())
 		return err
 	}
 
@@ -57,6 +61,7 @@ func BasicStreamerColdReserveScenario(
 	})
 	if err != nil {
 		scheduler.ReservationSched.AbortReservation(reservation)
+		log.Printf("reserve: failed to reserve: %s\n", err.Error())
 		return err
 	}
 	scheduler.ReservationSched.CommitReservation(reservation)
