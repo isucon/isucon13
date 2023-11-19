@@ -44,15 +44,8 @@ func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	initialGrp.Go(func() error {
 		return normalInitialPaymentPretest(initialCtx, dnsResolver)
 	})
-	initialGrp.Go(func() error {
-		return normalInitialLivecommentPretest(initialCtx, dnsResolver)
-	})
-	initialGrp.Go(func() error {
-		return normalInitialReactionPretest(initialCtx, dnsResolver)
-	})
-	initialGrp.Go(func() error {
-		return normalInitialTagPretest(ctx, dnsResolver)
-	})
+	// FIXME: reactions, livecommentsは統計情報をもとにチェックする
+	// FIXME: ngwordsはライブ配信のIDをいくつか問い合わせ、存在することをチェックする
 	if err := initialGrp.Wait(); err != nil {
 		return err
 	}
