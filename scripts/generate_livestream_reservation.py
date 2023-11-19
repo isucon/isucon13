@@ -262,7 +262,7 @@ def main():
     assert(len(schedules) == args.n)
     assert(all(sum(schedule) == available_hours for schedule in schedules))
 
-    base_time = datetime(2024, 11, 25, 10)
+    base_time = datetime(2023, 11, 25, 10)
     dump(base_time, schedules, args.gopath)
 
     generate_initial()
