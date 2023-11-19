@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"sync"
@@ -184,13 +183,10 @@ func (s *livecommentScheduler) generateTip(level int, totalHours, currentHour in
 }
 
 func (s *livecommentScheduler) GetTipsForStream(totalHours, currentHour int) (*Tip, error) {
-	log.Println("GetTipsForStream")
 	if currentHour > totalHours {
-		log.Printf("total=%d, current=%d. invalid. tip=0\n", totalHours, currentHour)
 		return &Tip{Level: 0, Tip: 0}, bencherror.NewInternalError(fmt.Errorf("GetTipsForStreamの引数が不正です: current=%d, total=%d", currentHour, totalHours))
 	}
 	if totalHours < 1 || currentHour < 1 {
-		log.Printf("total=%d, current=%d. negative hours cannot be acceptable. tip=0\n", totalHours, currentHour)
 		return &Tip{Level: 0, Tip: 0}, bencherror.NewInternalError(fmt.Errorf("GetTipsForStreamの引数が不正です: current=%d, total=%d", currentHour, totalHours))
 	}
 
@@ -211,7 +207,6 @@ func (s *livecommentScheduler) GetTipsForStream(totalHours, currentHour int) (*T
 	}
 
 	tip := s.generateTip(1, totalHours, currentHour)
-	log.Printf("generate tip totalhours=%d, level=%d, tip=%d\n", totalHours, level, tip)
 	return &Tip{
 		Level: level,
 		Tip:   tip,
