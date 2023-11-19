@@ -8,6 +8,7 @@ use App\Application\Settings\SettingsInterface as Settings;
 use IsuPipe\AbstractHandler;
 use PDO;
 use PDOException;
+use Ramsey\Uuid\Uuid;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use RuntimeException;
@@ -22,7 +23,6 @@ class Handler extends AbstractHandler
 {
     use FillUserResponse, VerifyUserSession;
 
-    const DEFAULT_USERNAME_KEY = 'USERNAME';
     const BCRYPT_DEFAULT_COST = 4;
     const FALLBACK_IMAGE = __DIR__ . '/../../../img/NoImage.jpg';
 
@@ -331,6 +331,36 @@ class Handler extends AbstractHandler
         }
 
         $sessionEndAt = strtotime('+1 hour');
+        $sessioinId = Uuid::uuid4()->toString();
+
+        if (session_set_cookie_params([
+            'domain' => 'u.isucon.dev',
+            'lifetime' => 60000 /* 10 seconds */, // FIXME: 600
+            'path' => '/',
+        ]) === false) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to set cookie params',
+            );
+        }
+        if (session_name($this::DEFAULT_SESSION_ID_KEY) === false) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to set session name',
+            );
+        }
+        if (session_id($sessioinId) === false) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to set session id',
+            );
+        }
+        if (session_start() === false) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to start session',
+            );
+        }
 
         $this->session->id(true);
 

@@ -9,7 +9,6 @@ use Monolog\Logger;
 use Monolog\Processor\UidProcessor;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use Slim\Middleware\Session;
 
 return function (ContainerBuilder $containerBuilder) {
     $containerBuilder->addDefinitions([
@@ -26,13 +25,6 @@ return function (ContainerBuilder $containerBuilder) {
             $logger->pushHandler($handler);
 
             return $logger;
-        },
-        Session::class => function (ContainerInterface $c): Session {
-            $settings = $c->get(SettingsInterface::class);
-
-            $sessionSettings = $settings->get('session');
-
-            return new Session($sessionSettings);
         },
         PDO::class => function (ContainerInterface $c): PDO {
             $databaseSettings = $c->get(SettingsInterface::class)->get('database');

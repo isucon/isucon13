@@ -21,11 +21,6 @@ return function (ContainerBuilder $containerBuilder) {
                     'path' => 'php://stdout',
                     'level' => Logger::DEBUG,
                 ],
-                'session' => [
-                    'lifetime' => 60000 /* 10 seconds */, // FIXME: 600
-                    'name' => 'SESSIONID',
-                    'domain' => '*.u.isucon.dev',
-                ],
                 'database' => [
                     // 環境変数がセットされていなかった場合でも一旦動かせるように、デフォルト値を入れておく
                     // この挙動を変更して、エラーを出すようにしてもいいかもしれない
