@@ -252,10 +252,9 @@ class Handler extends AbstractHandler
         } else {
             // 検索条件なし
             $query = 'SELECT * FROM livestreams';
-            $limitStr = $request->getQueryParams()['limit'] ?? '';
-            if ($limitStr !== '') {
-                $limit = filter_var($limitStr, FILTER_VALIDATE_INT);
-                if (!is_int($limit)) {
+            if (isset($request->getQueryParams()['limit'])) {
+                $limit = $this->getAsInt($request->getQueryParams(), 'limit');
+                if ($limit === false) {
                     throw new HttpBadRequestException(
                         request: $request,
                         message: 'limit query parameter must be integer',
@@ -420,15 +419,8 @@ class Handler extends AbstractHandler
         // existence already checked
         $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
 
-        $livestreamIdStr = $params['livestream_id'] ?? '';
-        if ($livestreamIdStr === '') {
-            throw new HttpBadRequestException(
-                request: $request,
-                message: 'livestream_id must be integer',
-            );
-        }
-        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
-        if (!is_int($livestreamId)) {
+        $livestreamId = $this->getAsInt($params, 'livestream_id');
+        if ($livestreamId === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'livestream_id must be integer',
@@ -472,15 +464,8 @@ class Handler extends AbstractHandler
         // existence already checked
         $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
 
-        $livestreamIdStr = $params['livestream_id'] ?? '';
-        if ($livestreamIdStr === '') {
-            throw new HttpBadRequestException(
-                request: $request,
-                message: 'livestream_id in path must be integer',
-            );
-        }
-        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
-        if (!is_int($livestreamId)) {
+        $livestreamId = $this->getAsInt($params, 'livestream_id');
+        if ($livestreamId === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'livestream_id in path must be integer',
@@ -514,15 +499,8 @@ class Handler extends AbstractHandler
     {
         $this->verifyUserSession($request, $this->session);
 
-        $livestreamIdStr = $params['livestream_id'] ?? '';
-        if ($livestreamIdStr === '') {
-            throw new HttpBadRequestException(
-                request: $request,
-                message: 'livestream_id in path must be integer',
-            );
-        }
-        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
-        if (!is_int($livestreamId)) {
+        $livestreamId = $this->getAsInt($params, 'livestream_id');
+        if ($livestreamId === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'livestream_id in path must be integer',
@@ -573,15 +551,8 @@ class Handler extends AbstractHandler
     {
         $this->verifyUserSession($request, $this->session);
 
-        $livestreamIdStr = $params['livestream_id'] ?? '';
-        if ($livestreamIdStr === '') {
-            throw new HttpBadRequestException(
-                request: $request,
-                message: 'livestream_id in path must be integer',
-            );
-        }
-        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
-        if (!is_int($livestreamId)) {
+        $livestreamId = $this->getAsInt($params, 'livestream_id');
+        if ($livestreamId === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'livestream_id in path must be integer',

@@ -19,6 +19,23 @@ abstract class AbstractHandler
     }
 
     /**
+     * @param array<string, mixed> $array
+     */
+    protected function getAsInt(array $array, string $key): int|false
+    {
+        if (!isset($array[$key])) {
+            return false;
+        }
+
+        $value = filter_var($array[$key], FILTER_VALIDATE_INT);
+        if (!is_int($value)) {
+            return false;
+        }
+
+        return $value;
+    }
+
+    /**
      * @param list<string> $command
      * @throws RuntimeException
      */

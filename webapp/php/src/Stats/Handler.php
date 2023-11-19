@@ -290,15 +290,8 @@ class Handler extends AbstractHandler
     {
         $this->verifyUserSession($request, $this->session);
 
-        $livestreamIdStr = $params['livestream_id'] ?? '';
-        if ($livestreamIdStr === '') {
-            throw new HttpBadRequestException(
-                request: $request,
-                message: 'livestream_id in path must be integer',
-            );
-        }
-        $livestreamId = filter_var($livestreamIdStr, FILTER_VALIDATE_INT);
-        if (!is_int($livestreamId)) {
+        $livestreamId = $this->getAsInt($params, 'livestream_id');
+        if ($livestreamId === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'livestream_id in path must be integer',
