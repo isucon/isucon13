@@ -3,6 +3,8 @@ package scenario
 import (
 	"context"
 	"errors"
+	"log"
+	"math/rand"
 	"net/http"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -11,58 +13,86 @@ import (
 	"go.uber.org/zap"
 )
 
+var basicViewerScenarioRandSource = rand.New(rand.NewSource(63877281473681))
+
 func BasicViewerScenario(
 	ctx context.Context,
 	viewerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
 	lgr := zap.S()
+	n := basicViewerScenarioRandSource.Int()
 
+	log.Println("basic viewer scenario")
 	client, err := viewerPool.Get(ctx)
 	if err != nil {
+		log.Printf("view: failed to get viewer from pool: %s\n", err.Error())
 		return err
 	}
 	defer viewerPool.Put(ctx, client)
 
-	if err := VisitTop(ctx, client); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
-		return err
+	// NOTE: 配信リンクを直に叩いて視聴開始する人が一定数いる
+	log.Println("visit top")
+	if n%10 == 0 {
+		if err := VisitTop(ctx, client); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("view: failed to visit top page: %s\n", err.Error())
+			return err
+		}
 	}
 
+	log.Println("get livestream")
 	livestream, err := livestreamPool.Get(ctx)
 	if err != nil {
+		log.Printf("view: failed to get livestream from pool: %s\n", err.Error())
 		return err
 	}
 	defer livestreamPool.Put(ctx, livestream)
 
-	if err := VisitUserProfile(ctx, client, &livestream.Owner); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
-		return err
-	}
-
-	if err := VisitLivestream(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
-		return err
-	}
-
-	for hour := 1; hour <= livestream.Hours(); hour++ {
-		if _, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
-			continue
+	// NOTE: 配信者のプロフィールが気になる人が一定数いる
+	if n%10 == 0 {
+		log.Println("visit user profile")
+		if err := VisitUserProfile(ctx, client, &livestream.Owner); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("view: failed to visit user profile: %s\n", err.Error())
+			return err
 		}
+	}
+
+	log.Println("visit livestream")
+	if err := VisitLivestream(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		log.Printf("view: failed to visit livestream: %s\n", err.Error())
+		return err
+	}
+
+	log.Println("get livestream stats")
+	if _, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		log.Printf("view: failed to get livestream stats: %s\n", err.Error())
+		return err
+	}
+
+	log.Println("start viewing ...")
+	log.Printf("view duration = %d\n", livestream.Hours())
+	for hour := 1; hour <= livestream.Hours(); hour++ {
 
 		if _, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("view: failed to get livecomments: %s\n", err.Error())
 			continue
 		}
 
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip, err := scheduler.LivecommentScheduler.GetTipsForStream(livestream.Hours(), hour)
 		if err != nil {
+			log.Printf("view: failed to get tips for stream: %s\n", err.Error())
 			return err
 		}
 		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, tip); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			// FIXME: 真面目にログを書く
 			lgr.Info("離脱: %s", err.Error())
+			log.Printf("view: failed to post livecomment: %s\n", err.Error())
 			return err
 		}
 
 		if _, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("view: failed to get reactions: %s\n", err.Error())
 			continue
 		}
 
@@ -70,6 +100,7 @@ func BasicViewerScenario(
 		if _, err := client.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
 			EmojiName: emojiName,
 		}); err != nil {
+			log.Printf("view: failed to post reactions: %s\n", err.Error())
 			continue
 		}
 	}

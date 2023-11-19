@@ -102,5 +102,3 @@ INSERT INTO tags(name) VALUES ('周年記念');
 INSERT INTO tags(name) VALUES ('サプライズ');
 INSERT INTO tags(name) VALUES ('椅子');
 
-
-INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (1, 103)
