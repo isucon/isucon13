@@ -95,14 +95,10 @@ sub reserve_livestream_handler($app, $c) {
     $livestream->id($livestream_id);
 
     # タグ追加
-    for my $tag_id ($params->{tags}->@*) {
-        $app->dbh->query(
-            'INSERT INTO livestream_tags (livestream_id, tag_id) VALUES (:livestream_id, :tag_id)',
-            {
-                livestream_id => $livestream_id,
-                tag_id        => $tag_id,
-            },
-        );
+    {
+        my $tags = [ map { { livestream_id => $livestream_id, tag_id => $_ } } $params->{tags}->@* ];
+        my ($sql, @binds) = $app->query_builder->insert_multi('livestream_tags', $tags);
+        $app->dbh->query($sql, @binds);
     }
 
     $livestream = fill_livestream_response($app, $livestream);

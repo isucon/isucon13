@@ -6,6 +6,9 @@ use experimental qw(try);
 use Kossy;
 use HTTP::Status qw(:constants);
 use DBIx::Sunny;
+use SQL::Maker;
+
+SQL::Maker->load_plugin('InsertMulti');
 
 $Kossy::JSON_SERIALIZER = Cpanel::JSON::XS->new()->ascii(0)->utf8->convert_blessed;
 
@@ -35,6 +38,13 @@ sub connect_db() {
 
 sub dbh($self) {
     $self->{_dbh} //= connect_db();
+}
+
+sub query_builder {
+    state $builder = do {
+        my $builder = SQL::Maker->new(driver => 'mysql');
+        $builder;
+    }
 }
 
 sub initialize_handler($self, $c) {
