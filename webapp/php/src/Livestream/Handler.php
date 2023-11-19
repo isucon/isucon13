@@ -55,8 +55,8 @@ class Handler extends AbstractHandler
         $this->db->beginTransaction();
 
         // 2024/04/01からの１年間の期間内であるかチェック
-        $termStartAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2024-04-01 00:00:00', new DateTimeZone('UTC'));
-        $termEndAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2025-04-01 00:00:00', new DateTimeZone('UTC'));
+        $termStartAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2023-11-25 10:00:00', new DateTimeZone('UTC'));
+        $termEndAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2024-11-25 10:00:00', new DateTimeZone('UTC'));
         $reserveStartAt = DateTimeImmutable::createFromFormat('U', (string) $req->startAt, new DateTimeZone('UTC'));
         $reserveEndAt = DateTimeImmutable::createFromFormat('U', (string) $req->endAt, new DateTimeZone('UTC'));
         if ($reserveStartAt >= $termEndAt || $reserveEndAt <= $termStartAt) {

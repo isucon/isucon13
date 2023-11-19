@@ -406,7 +406,8 @@ class Handler extends AbstractHandler
         /** @var list<NGWord> $ngwords */
         $ngwords = [];
         try {
-            $stmt = $this->db->query('SELECT * FROM ng_words');
+            $stmt = $this->db->prepare('SELECT * FROM ng_words WHERE livestream_id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
             $stmt->execute();
             while (($row = $stmt->fetch()) !== false) {
                 $ngwords[] = NGWord::fromRow($row);
