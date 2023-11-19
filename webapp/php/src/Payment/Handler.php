@@ -29,7 +29,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to count total tip: '. $e->getMessage(),
+                message: 'failed to count total tip: ' . $e->getMessage(),
                 previous: $e,
             );
         }

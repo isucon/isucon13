@@ -11,7 +11,8 @@ use RuntimeException;
 
 trait FillLivecommentResponse
 {
-    use FillLivestreamResponse, FillUserResponse;
+    use FillLivestreamResponse;
+    use FillUserResponse;
 
     /**
      * @throws RuntimeException

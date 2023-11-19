@@ -10,7 +10,8 @@ use RuntimeException;
 
 trait FillLivecommentReportResponse
 {
-    use FillLivecommentResponse, FillUserResponse;
+    use FillLivecommentResponse;
+    use FillUserResponse;
 
     /**
      * @throws RuntimeException

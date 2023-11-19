@@ -21,10 +21,11 @@ use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
-    use FillUserResponse, VerifyUserSession;
+    use FillUserResponse;
+    use VerifyUserSession;
 
-    const BCRYPT_DEFAULT_COST = 4;
-    const FALLBACK_IMAGE = __DIR__ . '/../../../img/NoImage.jpg';
+    protected const BCRYPT_DEFAULT_COST = 4;
+    protected const FALLBACK_IMAGE = __DIR__ . '/../../../img/NoImage.jpg';
 
     private readonly string $powerDNSSubdomainAddress;
 
@@ -333,11 +334,13 @@ class Handler extends AbstractHandler
         $sessionEndAt = strtotime('+1 hour');
         $sessioinId = Uuid::uuid4()->toString();
 
-        if (session_set_cookie_params([
+        if (
+            session_set_cookie_params([
             'domain' => 'u.isucon.dev',
             'lifetime' => 60000 /* 10 seconds */, // FIXME: 600
             'path' => '/',
-        ]) === false) {
+            ]) === false
+        ) {
             throw new HttpInternalServerErrorException(
                 request: $request,
                 message: 'failed to set cookie params',

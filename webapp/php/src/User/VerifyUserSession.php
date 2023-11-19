@@ -10,23 +10,26 @@ use SlimSession\Helper as Session;
 
 trait VerifyUserSession
 {
-    const DEFAULT_SESSION_ID_KEY = 'SESSIONID';
-    const DEFAULT_SESSION_EXPIRES_KEY = 'EXPIRES';
-    const DEFAULT_USER_ID_KEY = 'USERID';
-    const DEFAULT_USERNAME_KEY = 'USERNAME';
+    protected const DEFAULT_SESSION_ID_KEY = 'SESSIONID';
+    protected const DEFAULT_SESSION_EXPIRES_KEY = 'EXPIRES';
+    protected const DEFAULT_USER_ID_KEY = 'USERID';
+    protected const DEFAULT_USERNAME_KEY = 'USERNAME';
 
     /**
      * @throws HttpException
      */
     protected function verifyUserSession(Request $request, Session $session): void
     {
-        if (session_set_cookie_params([
+        if (
+            session_set_cookie_params([
             'domain' => '*.u.isucon.dev',
-        ]) === false) {
+            ]) === false
+        ) {
             throw new HttpInternalServerErrorException(
                 request: $request,
                 message: 'failed to set cookie params',
-            );};
+            );
+        }
         if (session_name($this::DEFAULT_SESSION_ID_KEY) === false) {
             throw new HttpInternalServerErrorException(
                 request: $request,

@@ -19,7 +19,9 @@ use UnexpectedValueException;
 
 class Handler extends AbstractHandler
 {
-    use FillLivecommentResponse, FillLivecommentReportResponse, VerifyUserSession;
+    use FillLivecommentResponse;
+    use FillLivecommentReportResponse;
+    use VerifyUserSession;
 
     public function __construct(
         private PDO $db,
