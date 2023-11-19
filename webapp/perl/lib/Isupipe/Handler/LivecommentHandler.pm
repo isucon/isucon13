@@ -220,7 +220,8 @@ sub moderate_handler($app, $c) {
 
     my $ng_words = $app->dbh->select_all_as(
         'Isupipe::Entity::NGWord',
-        'SELECT * FROM ng_words',
+        'SELECT * FROM ng_words WHERE livestream_id = ?',
+        $livestream_id,
     );
 
     # NGワードにヒットする過去の投稿も全削除する

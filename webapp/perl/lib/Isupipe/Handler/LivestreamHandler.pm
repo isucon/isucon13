@@ -24,8 +24,8 @@ use Isupipe::FillResponse qw(
 
 use constant NUM_RESERVATION_SLOT => $ENV{ISUCON13_NUM_RESERVATION_SLOT} // 2;
 
-use constant TERM_START_AT => 1711929600; # 2024/04/01 UTC
-use constant TERM_END_AT   => 1743465600; # 2025/04/01 UTC;
+use constant TERM_START_AT => 1700906400; # 2023-11-25 10:00:00 UTC
+use constant TERM_END_AT   => 1732528800; # 2024-11-25 10:00:00 UTC
 
 use constant ReserveLivestreamRequest => Dict[
     tags          => ArrayRef[Int],
@@ -50,7 +50,7 @@ sub reserve_livestream_handler($app, $c) {
 
     my $txn = $app->dbh->txn_scope;
 
-    # 2024/04/01からの１年間の期間内であるかチェック
+    # 2023/11/25 10:00からの１年間の期間内であるかチェック
     if (
         ($params->{start_at} == TERM_END_AT || $params->{start_at} > TERM_END_AT) ||
         ($params->{end_at} == TERM_START_AT || $params->{end_at} < TERM_START_AT)
