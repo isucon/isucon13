@@ -1,7 +1,7 @@
 import random
 import json
 
-N = 10000
+N = 1000
 
 SQL_FORMAT = "\t({user_id}, {livestream_id}, '{comment}', UNIX_TIMESTAMP()),\n"
 
