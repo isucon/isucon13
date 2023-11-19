@@ -53,9 +53,9 @@ func (s *userScheduler) RangePopularStreamer(fn func(streamer *User)) {
 }
 
 // 通常配信者
-func (s *userScheduler) RangeStreamer(fn func(streamer *User)) {
-	for _, streamer := range s.streamerPool {
-		fn(streamer)
+func (s *userScheduler) RangeStreamer(fn func(idx int, streamer *User)) {
+	for idx, streamer := range s.streamerPool {
+		fn(idx, streamer)
 	}
 }
 
@@ -66,9 +66,9 @@ func (s *userScheduler) GetRandomStreamer() *User {
 }
 
 // 視聴者 (様々な動きをする視聴者を用意するが、どれも同じ視聴者として扱えるようにする)
-func (s *userScheduler) RangeViewer(fn func(viewer *User)) {
-	for _, viewer := range viewerPool {
-		fn(viewer)
+func (s *userScheduler) RangeViewer(fn func(idx int, viewer *User)) {
+	for idx, viewer := range viewerPool {
+		fn(idx, viewer)
 	}
 }
 

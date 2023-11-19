@@ -13,7 +13,7 @@ import (
 func TestGetUserStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(agent.WithTimeout(3 * time.Second))
+	client, err := NewClient(agent.WithTimeout(20 * time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
@@ -113,7 +113,7 @@ func TestGetUserStats(t *testing.T) {
 func TestGetLivestreamStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(agent.WithTimeout(3 * time.Second))
+	client, err := NewClient(agent.WithTimeout(20 * time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{

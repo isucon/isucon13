@@ -227,6 +227,7 @@ var run = cli.Command{
 		scenarioCounter := benchmarker.ScenarioCounter()
 		for name, count := range scenarioCounter {
 			if strings.HasSuffix(string(name), "-fail") {
+				lgr.Infof("[失敗シナリオ %s] %d 回失敗", name, count)
 				continue
 			}
 

@@ -14,16 +14,14 @@ CREATE TABLE `users` (
 CREATE TABLE `icons` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` BIGINT NOT NULL,
-  `image` LONGBLOB NOT NULL,
-  CONSTRAINT FK_icons_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+  `image` LONGBLOB NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ユーザごとのカスタムテーマ
 CREATE TABLE `themes` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` BIGINT NOT NULL,
-  `dark_mode` BOOLEAN NOT NULL,
-  CONSTRAINT FK_themes_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+  `dark_mode` BOOLEAN NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信
@@ -35,8 +33,7 @@ CREATE TABLE `livestreams` (
   `playlist_url` VARCHAR(255) NOT NULL,
   `thumbnail_url` VARCHAR(255) NOT NULL,
   `start_at` BIGINT NOT NULL,
-  `end_at` BIGINT NOT NULL,
-  CONSTRAINT FK_livestreams_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+  `end_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信予約枠
@@ -58,9 +55,7 @@ CREATE TABLE `tags` (
 CREATE TABLE `livestream_tags` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `livestream_id` BIGINT NOT NULL,
-  `tag_id` BIGINT NOT NULL,
-  CONSTRAINT FK_livestream_tags_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`),
-  CONSTRAINT FK_livestream_tags_tag_id FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`)
+  `tag_id` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信視聴履歴
@@ -68,9 +63,7 @@ CREATE TABLE `livestream_viewers_history` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
-  `created_at` BIGINT NOT NULL,
-  CONSTRAINT FK_livestream_viewers_history_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT FK_livestream_viewers_history_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`)
+  `created_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ライブ配信に対するライブコメント
@@ -80,9 +73,7 @@ CREATE TABLE `livecomments` (
   `livestream_id` BIGINT NOT NULL,
   `comment` VARCHAR(255) NOT NULL,
   `tip` BIGINT NOT NULL DEFAULT 0,
-  `created_at` BIGINT NOT NULL,
-  CONSTRAINT FK_livecomments_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT FK_livecomments_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`)
+  `created_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- ユーザからのライブコメントのスパム報告
@@ -91,10 +82,7 @@ CREATE TABLE `livecomment_reports` (
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
   `livecomment_id` BIGINT NOT NULL,
-  `created_at` BIGINT NOT NULL,
-  CONSTRAINT FK_livecomment_reports_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT FK_livecomment_reports_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`),
-  CONSTRAINT FK_livecomment_reports_livecomment_id FOREIGN KEY (`livecomment_id`) REFERENCES `livecomments` (`id`) ON DELETE CASCADE
+  `created_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
 -- 配信者からのNGワード登録
@@ -103,9 +91,7 @@ CREATE TABLE `ng_words` (
   `user_id` BIGINT NOT NULL,
   `livestream_id` BIGINT NOT NULL,
   `word` VARCHAR(255) NOT NULL,
-  `created_at` BIGINT NOT NULL,
-  CONSTRAINT FK_ng_words_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT FK_ng_words_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`)
+  `created_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 CREATE INDEX ng_words_word ON ng_words(`word`);
 
@@ -116,7 +102,5 @@ CREATE TABLE `reactions` (
   `livestream_id` BIGINT NOT NULL,
   -- :innocent:, :tada:, etc...
   `emoji_name` VARCHAR(255) NOT NULL,
-  `created_at` BIGINT NOT NULL,
-  CONSTRAINT FK_reactions_user_id FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT FK_reactions_livestream_id FOREIGN KEY (`livestream_id`) REFERENCES `livestreams` (`id`)
+  `created_at` BIGINT NOT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
