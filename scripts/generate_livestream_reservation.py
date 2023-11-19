@@ -206,7 +206,8 @@ def generate_initial(num_slots=5, num_users=1000):
         end_unix = int(end_at.timestamp())
 
         for slot_idx in range(num_slots):
-            user_id = 1 + (livestream_id % num_users-1)
+            user_id = 1 + (livestream_id % (num_users-1))
+            assert user_id != 0, f"livestream_id = {livestream_id}, num_users={num_users}, value = {livestream_id % (num_users-1)}"
             title, description = livestream_texts[(user_id+slot_idx)%len(livestream_texts)]
             playlist_url, thumbnail_url = fetch_live((user_id+slot_idx))
             values.append(f'\t({user_id}, \"{title}\", \"{description}\", \"{playlist_url}\", \"{thumbnail_url}\", {start_unix}, {end_unix})')

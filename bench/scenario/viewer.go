@@ -3,7 +3,9 @@ package scenario
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
@@ -42,18 +44,24 @@ func BasicViewerScenario(
 		return err
 	}
 
+	log.Printf("livestream start=%s, end=%s\n", time.Unix(livestream.StartAt, 0).String(), time.Unix(livestream.EndAt, 0).String())
+	log.Printf("livestream hours = %d\n", livestream.Hours())
 	for hour := 1; hour <= livestream.Hours(); hour++ {
 		if _, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("basic viewer get livestream stats error: %s\n", err.Error())
 			continue
 		}
 
 		if _, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("basic viewer get livecomments error: %s\n", err.Error())
 			continue
 		}
 
+		log.Println("posting livecomment")
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
 		tip, err := scheduler.LivecommentScheduler.GetTipsForStream(livestream.Hours(), hour)
 		if err != nil {
+			log.Printf("error occured at get tips for livestream: %s\n", err.Error())
 			return err
 		}
 		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, tip); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
@@ -63,6 +71,7 @@ func BasicViewerScenario(
 		}
 
 		if _, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			log.Printf("basic viewer get reactions error: %s\n", err.Error())
 			continue
 		}
 
@@ -70,6 +79,7 @@ func BasicViewerScenario(
 		if _, err := client.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
 			EmojiName: emojiName,
 		}); err != nil {
+			log.Printf("basic viewer post reactions error: %s\n", err.Error())
 			continue
 		}
 	}

@@ -3,6 +3,8 @@ package scenario
 import (
 	"context"
 	"errors"
+	"log"
+	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
@@ -46,6 +48,7 @@ func BasicStreamerColdReserveScenario(
 		return err
 	}
 
+	log.Printf("before reserve livestream start=%s, end=%s\n", time.Unix(reservation.StartAt, 0).String(), time.Unix(reservation.EndAt, 0).String())
 	livestream, err := client.ReserveLivestream(ctx, username, &isupipe.ReserveLivestreamRequest{
 		Tags:         tags,
 		Title:        reservation.Title,
@@ -59,6 +62,7 @@ func BasicStreamerColdReserveScenario(
 		scheduler.ReservationSched.AbortReservation(reservation)
 		return err
 	}
+	log.Printf("after reserve livestream start=%s, end=%s\n", time.Unix(livestream.StartAt, 0).String(), time.Unix(livestream.EndAt, 0).String())
 	scheduler.ReservationSched.CommitReservation(reservation)
 
 	if scheduler.UserScheduler.IsPopularStreamer(username) {

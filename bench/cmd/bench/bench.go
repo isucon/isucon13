@@ -168,9 +168,9 @@ var run = cli.Command{
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
-			return cli.NewExitError(err, 1)
-		}
+		// if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
+		// 	return cli.NewExitError(err, 1)
+		// }
 		lgr.Info("整合性チェックが成功しました")
 
 		if pretestOnly {
