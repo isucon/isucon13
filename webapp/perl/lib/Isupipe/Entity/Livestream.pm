@@ -53,8 +53,8 @@ class Isupipe::Entity::Livestream {
             playlist_url  => $playlist_url,
             thumbnail_url => $thumbnail_url,
             tags          => $tags,
-            startAt       => $start_at,
-            endAt         => $end_at,
+            start_at      => $start_at,
+            end_at        => $end_at,
         };
     }
 
