@@ -3,9 +3,10 @@ package scheduler
 import (
 	"crypto/sha256"
 	"embed"
-	"log"
 	"math/rand"
 	"path/filepath"
+
+	"go.uber.org/zap"
 )
 
 //go:embed images/*
@@ -23,12 +24,14 @@ type IconScheduler struct {
 }
 
 func mustNewIconScheduler() *IconScheduler {
+	lgr := zap.S()
+
 	sched := new(IconScheduler)
 	const dir = "images"
 
 	entries, err := images.ReadDir(dir)
 	if err != nil {
-		log.Fatalln(err)
+		lgr.Fatalf("画像をgo embedから読みだせませんでした: %s\n", err.Error())
 	}
 
 	for _, entry := range entries {
@@ -44,7 +47,7 @@ func mustNewIconScheduler() *IconScheduler {
 		path := filepath.Join(dir, filename)
 		b, err := images.ReadFile(path)
 		if err != nil {
-			log.Fatalln(err)
+			lgr.Fatalf("画像を読みだせませんでした: %s\n", err.Error())
 		}
 
 		sched.images = append(sched.images, &Image{
