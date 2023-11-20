@@ -13,7 +13,7 @@ USER bench
 RUN mkdir -p /home/bench/bench
 WORKDIR /home/bench/bench
 COPY --chown=bench:bench ./ /home/bench/bench/
-RUN go build -o bench .
+RUN go build -o bench ./cmd/bench
 
 ENV GOPATH=/home/bench/tmp/go
 ENV GOCACHE=/home/bench/tmp/go/.cache
@@ -23,4 +23,4 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
 ENTRYPOINT ["/home/bench/bench/bench"]
-CMD ["supervise"]
+CMD ["supervise", "--enable-ssl"]
