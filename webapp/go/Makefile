@@ -15,7 +15,6 @@ TAG=isupipe:latest
 build:
 	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/isupipe_darwin -ldflags "-s -w"
 	CGO_ENABLED=0 $(LINUX_TARGET_ENV)  $(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
-	tar -zcvf ../../provisioning/ansible/roles/webapp/files/webapp.tar.gz ./
 
 .PHONY: docker_image
 docker_image: clean build

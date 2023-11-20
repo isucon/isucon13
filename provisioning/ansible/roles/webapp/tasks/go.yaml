@@ -7,8 +7,8 @@
     state: directory
 
 - name: Build isupipe-go
-  become: yes
-  shell: >
+  become: true
+  shell: |
     /home/isucon/local/golang/bin/go build -o /home/isucon/webapp/go/isupipe -ldflags "-s -w"
   args:
-    chdir: /home/isucon
+    chdir: /home/isucon/webapp/go
