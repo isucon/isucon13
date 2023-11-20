@@ -35,6 +35,7 @@
 
 - name: Start envcheck
   become: true
-  service:
+  ansible.builtin.systemd:
     name: envcheck
     enabled: true
+    daemon_reload: true
