@@ -8,6 +8,7 @@ require (
 	github.com/eapache/go-resiliency v1.4.0
 	github.com/isucon/isucandar v0.0.0-20220322062028-6dd56dc57d72
 	github.com/miekg/dns v1.1.56
+	github.com/najeira/randstr v0.1.1
 	github.com/nlopes/slack v0.6.0
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.1
@@ -26,7 +27,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
-	github.com/najeira/randstr v0.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
