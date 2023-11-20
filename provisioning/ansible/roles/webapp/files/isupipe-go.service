@@ -7,7 +7,6 @@ Requires=mysql.service
 [Service]
 WorkingDirectory=/home/isucon/webapp/go
 EnvironmentFile=/home/isucon/env.sh
-EnvironmentFile=/home/isucon/env-isucon-subdomain-address.sh
 
 User=isucon
 Group=isucon

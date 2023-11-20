@@ -6,9 +6,8 @@ cd $(dirname $0)
 if test -f /home/isucon/env.sh; then
 	. /home/isucon/env.sh
 fi
-if test -f /home/isucon/env-isucon-subdomain-address.sh; then
-	. /home/isucon/env-isucon-subdomain-address.sh
-fi
+
+ISUCON_SUBDOMAIN_ADDRESS=${ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS:-127.0.0.1}
 
 temp_dir=$(mktemp -d)
 trap 'rm -rf $temp_dir' EXIT
