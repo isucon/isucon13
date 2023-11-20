@@ -54,14 +54,6 @@ jobs:
         run: |
           go get -v -t -d ./...
 
-      - name: "[bench] Test"
-        working-directory: ./bench
-        env:
-          TZ: Asia/Tokyo
-        run: |
-          go clean -testcache
-          go test -p=1 -v ./...
-
       - name: "run bench"
         working-directory: ./bench
         run: |
@@ -71,3 +63,12 @@ jobs:
         if: ${{ always() }}
         working-directory: ./development
         run: sudo docker compose -f docker-compose-common.yml -f docker-compose-perl.yml logs webapp
+
+      - name: "[bench] Test"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go clean -testcache
+          go test -p=1 -v ./...
+
