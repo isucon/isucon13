@@ -113,10 +113,12 @@ func (b *benchmarker) ScenarioCounter() score.ScoreTable {
 	return b.scenarioCounter.Breakdown()
 }
 
-func (b *benchmarker) runClientProviders(ctx context.Context) {
-	loginFn := func(p *isupipe.ClientPool) func(u *scheduler.User) {
-		return func(u *scheduler.User) {
+func (b *benchmarker) runClientProviders(ctx context.Context) (chan struct{}, chan struct{}) {
+	loginFn := func(p *isupipe.ClientPool, readyCh chan struct{}) func(idx int, u *scheduler.User) {
+		var closeOnce sync.Once
+		return func(idx int, u *scheduler.User) {
 			go func() {
+
 				client, err := isupipe.NewClient(
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
@@ -144,12 +146,24 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 				}
 
 				p.Put(ctx, client)
+
+				if idx > config.NumMustTryLogins {
+					closeOnce.Do(func() {
+						close(readyCh)
+					})
+				}
 			}()
 		}
 	}
 
-	scheduler.UserScheduler.RangeStreamer(loginFn(b.streamerClientPool))
-	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool))
+	var (
+		streamerReadyCh = make(chan struct{})
+		viewerReadyCh   = make(chan struct{})
+	)
+	scheduler.UserScheduler.RangeStreamer(loginFn(b.streamerClientPool, streamerReadyCh))
+	scheduler.UserScheduler.RangeViewer(loginFn(b.viewerClientPool, viewerReadyCh))
+
+	return streamerReadyCh, viewerReadyCh
 }
 
 // dns水責め攻撃につかうhttp client
@@ -297,7 +311,11 @@ func (b *benchmarker) run(ctx context.Context) error {
 	childCtx, cancelChildCtx := context.WithCancel(ctx)
 	defer cancelChildCtx()
 
-	b.runClientProviders(ctx)
+	streamerReadyCh, viewerReadyCh := b.runClientProviders(ctx)
+	<-streamerReadyCh
+	<-viewerReadyCh
+	lgr.Info("ベンチ走行準備が成功しました")
+
 	violateCh := bencherror.RunViolationChecker(ctx)
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
@@ -320,6 +338,13 @@ func (b *benchmarker) run(ctx context.Context) error {
 					b.loadStreamer(childCtx)
 				}()
 			}
+			if ok := b.viewerSem.TryAcquire(1); ok {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadViewer(childCtx)
+				}()
+			}
 			if ok := b.longStreamerSem.TryAcquire(1); ok {
 				wg.Add(1)
 				go func() {
@@ -332,13 +357,6 @@ func (b *benchmarker) run(ctx context.Context) error {
 				go func() {
 					defer wg.Done()
 					b.loadModerator(childCtx)
-				}()
-			}
-			if ok := b.viewerSem.TryAcquire(1); ok {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					b.loadViewer(childCtx)
 				}()
 			}
 			if ok := b.spammerSem.TryAcquire(1); ok {
