@@ -10,7 +10,7 @@ all:
 
 .PHONY: app-build
 app-build: 
-	make -C ../../webapp/go build
+	cd ../../provisioning/ansible/ && ./make_latest_files.sh
 
 .PHONY: envcheck-build
 envcheck-build:
