@@ -110,22 +110,26 @@
     enabled: true
     state: restarted
 
+- name: mkdir systemd.d/pdns.service.d
+  become: true
+  file:
+    dest: /etc/systemd/system/pdns.service.d/
+    state: directory
+
+- name: copy pdns.service.d/wants.conf
+  become: true
+  copy:
+    dest: /etc/systemd/system/pdns.service.d/isudns.conf
+    content: |
+      [Unit]
+      After=network-online.target mysql.service mysqld.service postgresql.service slapd.service mariadb.service time-sync.target
+      [Service]
+      ExecStartPost=/home/isucon/webapp/pdns/init_once_zone.sh
+  notify: systemd daemon-reload
+
 - name: Start pdns
   become: true
   service:
     name: pdns
     enabled: true
     state: restarted
-
-- name: initialize zone
-  become: true
-  shell: |
-    pdnsutil delete-zone u.isucon.dev
-    pdnsutil create-zone u.isucon.dev
-
-- name: create A records for u.isucon.dev
-  become: true
-  shell: |
-    pdnsutil add-record u.isucon.dev "." A 30 {{ ansible_default_ipv4.address }}
-    pdnsutil add-record u.isucon.dev "pipe" A 30 {{ ansible_default_ipv4.address }}
-    pdnsutil add-record u.isucon.dev "test001" A 30 {{ ansible_default_ipv4.address }}

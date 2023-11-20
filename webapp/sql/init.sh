@@ -3,8 +3,11 @@
 set -eux
 cd $(dirname $0)
 
-if test -f $HOME/env.sh; then
-	. $HOME/env.sh
+if test -f /home/isucon/env.sh; then
+	. /home/isucon/env.sh
+fi
+if test -f /home/isucon/env-isucon-subdomain-address.sh; then
+	. /home/isucon/env-isucon-subdomain-address.sh
 fi
 
 ISUCON_DB_HOST=${ISUCON13_MYSQL_DIALCONFIG_ADDRESS:-127.0.0.1}
@@ -57,8 +60,12 @@ mysql -u"$ISUCON_DB_USER" \
 		--port "$ISUCON_DB_PORT" \
 		"$ISUCON_DB_NAME" < initial_ngwords.sql
 
-temp_dir=$(mktemp -d)
-trap 'rm -rf $temp_dir' EXIT
-sed 's/<ISUCON_SUBDOMAIN_ADDRESS>/'$ISUCON_SUBDOMAIN_ADDRESS'/g' u.isucon.dev.zone > ${temp_dir}/u.isucon.dev.zone
-pdnsutil load-zone u.isucon.dev ${temp_dir}/u.isucon.dev.zone
+mysql -u"$ISUCON_DB_USER" \
+		-p"$ISUCON_DB_PASSWORD" \
+		--host "$ISUCON_DB_HOST" \
+		--port "$ISUCON_DB_PORT" \
+		"$ISUCON_DB_NAME" < initial_livecomments.sql
+
+bash ../pdns/init_zone.sh
+
 

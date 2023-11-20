@@ -1,0 +1,25 @@
+- name: ISUCON_SUBDOMAIN_ADDRESS file
+  become: true
+  copy:
+    content: "ISUCON_SUBDOMAIN_ADDRESS={{ ansible_default_ipv4.address }}\n"
+    dest: /home/isucon/env-isucon-subdomain-address.sh
+    owner: isucon
+    group: isucon
+    mode: 0755
+
+- name: set ISUCON_SUBDOMAIN_ADDRESS on 
+  become: true
+  copy:
+    content: |
+      #!/usr/bin/env bash
+      set -eux
+      instance_ip=$(curl -m 10 -s curl http://169.254.169.254/latest/meta-data/public-ipv4)
+      if [ -z $instance_ip ]; then
+        echo "ISUCON_SUBDOMAIN_ADDRESS=${instance_ip}" > /home/isucon/env-isucon-subdomain-address.sh
+      fi
+      chmod 0755 /home/isucon/env-isucon-subdomain-address.sh
+      chown isucon:isucon /home/isucon/env-isucon-subdomain-address.sh
+    dest: /var/lib/cloud/scripts/per-once/fetch-env-isucon-subdomain-address.sh
+    owner: root
+    group: root
+    mode: 0755
