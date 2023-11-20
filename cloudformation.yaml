@@ -147,11 +147,6 @@ Resources:
       Roles:
         - !Ref InstanceRole
 
-  MyKeyPair:
-    Type: "AWS::EC2::KeyPair"
-    Properties:
-      KeyName: isucon13-quarify-cfn
-
   FinalInstance1:
     Type: AWS::EC2::Instance
     Properties:
@@ -160,7 +155,6 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroup
       SubnetId: !Ref Subnet
-      KeyName: !Ref MyKeyPair
       PrivateIpAddress: "192.168.0.11"
       IamInstanceProfile: !Ref InstanceProfile
       BlockDeviceMappings:
@@ -171,6 +165,20 @@ Resources:
       Tags:
         - Key: Name
           Value: isucon13-final-1
+      UserData:
+        Fn::Base64: |
+          #cloud-config
+          write_files:
+          - path: /home/isucon/.ssh/authorized_keys
+            owner: isucon:isucon
+            permissions: '0600'
+            encoding: b64
+            content: "{{ authorized_keys }}"
+          - path: /opt/isucon-env-checker/portal_credentials.json
+            owner: root:root
+            permissions: '0644'
+            encoding: b64
+            content: "{{ portal_credentials }}"
   FinalInstanceIP1:
     Type: AWS::EC2::EIP
     Properties:
@@ -184,7 +192,6 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroup
       SubnetId: !Ref Subnet
-      KeyName: !Ref MyKeyPair
       PrivateIpAddress: "192.168.0.12"
       IamInstanceProfile: !Ref InstanceProfile
       BlockDeviceMappings:
@@ -195,6 +202,20 @@ Resources:
       Tags:
         - Key: Name
           Value: isucon13-final-2
+      UserData:
+        Fn::Base64: |
+          #cloud-config
+          write_files:
+          - path: /home/isucon/.ssh/authorized_keys
+            owner: isucon:isucon
+            permissions: '0600'
+            encoding: b64
+            content: "{{ authorized_keys }}"
+          - path: /opt/isucon-env-checker/portal_credentials.json
+            owner: root:root
+            permissions: '0644'
+            encoding: b64
+            content: "{{ portal_credentials }}"
   FinalInstanceIP2:
     Type: AWS::EC2::EIP
     Properties:
@@ -208,7 +229,6 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroup
       SubnetId: !Ref Subnet
-      KeyName: !Ref MyKeyPair
       PrivateIpAddress: "192.168.0.13"
       IamInstanceProfile: !Ref InstanceProfile
       BlockDeviceMappings:
@@ -219,6 +239,20 @@ Resources:
       Tags:
         - Key: Name
           Value: isucon13-final-3
+      UserData:
+        Fn::Base64: |
+          #cloud-config
+          write_files:
+          - path: /home/isucon/.ssh/authorized_keys
+            owner: isucon:isucon
+            permissions: '0600'
+            encoding: b64
+            content: "{{ authorized_keys }}"
+          - path: /opt/isucon-env-checker/portal_credentials.json
+            owner: root:root
+            permissions: '0644'
+            encoding: b64
+            content: "{{ portal_credentials }}"
   FinalInstanceIP3:
     Type: AWS::EC2::EIP
     Properties:
