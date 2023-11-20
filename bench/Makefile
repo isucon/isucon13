@@ -26,6 +26,9 @@ test: clean
 bench: build
 	./bin/bench_$(shell go env GOOS)_$(shell go env GOARCH) run --dns-port=1053
 
+pretest: build
+	./bin/bench_$(shell go env GOOS)_$(shell go env GOARCH) run --dns-port=1053 --pretest-only
+
 docker_image:
 	sudo aws ecr get-login-password --region ap-northeast-1 | sudo docker login --username AWS --password-stdin 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com
 	sudo docker build -t isucon13-benchmarker . --no-cache
