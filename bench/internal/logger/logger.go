@@ -9,14 +9,14 @@ import (
 const loggerName = "isupipe-benchmarker"
 
 // InitZapLogger はzapロガーを初期化します
-func InitZapLogger() (*zap.SugaredLogger, error) {
+func InitStaffLogger() (*zap.SugaredLogger, error) {
 	c := zap.NewProductionConfig()
 	c.Encoding = "console"
-	c.DisableCaller = true
+	c.DisableCaller = false
 	c.DisableStacktrace = true
 	c.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	c.OutputPaths = []string{config.LogPath, "stderr"}
+	c.OutputPaths = []string{config.StaffLogPath, "stderr"}
 	c.ErrorOutputPaths = []string{"stderr"}
 
 	l, err := c.Build()
@@ -24,7 +24,25 @@ func InitZapLogger() (*zap.SugaredLogger, error) {
 		return nil, err
 	}
 
-	zap.ReplaceGlobals(l.Named(loggerName))
+	zap.ReplaceGlobals(l.Named("staff-logger"))
 
 	return zap.S(), nil
+}
+
+func InitContestantLogger() (*zap.Logger, error) {
+	c := zap.NewProductionConfig()
+	c.Encoding = "console"
+	c.DisableCaller = true
+	c.DisableStacktrace = true
+	c.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	c.OutputPaths = []string{config.ContestantLogPath, "stdout"}
+	c.ErrorOutputPaths = []string{"stdout"}
+
+	l, err := c.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return l.Named(loggerName), nil
 }
