@@ -1,0 +1,4 @@
+[Service]
+ExecStart=/home/isucon/envcheck/envcheck boot
+Type=oneshot
+RemainAfterExit=yes

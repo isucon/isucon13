@@ -3,11 +3,11 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/biogo/store/interval"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"go.uber.org/zap"
 )
 
 var ErrNoReservation = errors.New("条件を満たす予約がみつかりませんでした")
@@ -48,9 +48,11 @@ type ReservationScheduler struct {
 }
 
 func mustNewReservationScheduler(baseAt int64, numSlots int64, hours int) *ReservationScheduler {
+	lgr := zap.S()
+
 	intervalTempertures, err := newIntervalTemperture(baseAt, numSlots, hours)
 	if err != nil {
-		log.Fatalln(err)
+		lgr.Fatalf("failed to initiate interval temperture: %s\n", err.Error())
 	}
 	return &ReservationScheduler{
 		reservationPool:     []*Reservation{},
@@ -103,8 +105,11 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
+	lgr := zap.S()
+
 	intervals, err := r.intervalTempertures.findHotIntervals()
 	if err != nil {
+		lgr.Warnf("GetHotShortReservation: failed to find hot intervals: %s\n", err.Error())
 		return nil, ErrNoReservation
 	}
 
@@ -115,11 +120,13 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(founds) == 0 {
+			lgr.Warnf("GetHotShortReservation: failed to get reservation from interval tree (founds=0)")
 			continue
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
+			lgr.Fatalf("GetHotShortReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -135,6 +142,7 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 		}
 	}
 
+	lgr.Fatal("GetHotShortReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
@@ -142,8 +150,11 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
+	lgr := zap.S()
+
 	intervals, err := r.intervalTempertures.findHotIntervals()
 	if err != nil {
+		lgr.Warnf("GetHotLongReservation: failed to find hot intervals: %s\n", err.Error())
 		return nil, ErrNoReservation
 	}
 
@@ -154,11 +165,13 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(founds) == 0 {
+			lgr.Warnf("GetHotLongReservation: failed to get reservation from interval tree (founds=0)")
 			continue
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
+			lgr.Fatalf("GetHotLongReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -174,6 +187,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 		}
 	}
 
+	lgr.Fatal("GetHotLongReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
@@ -181,8 +195,11 @@ func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
+	lgr := zap.S()
+
 	intervals, err := r.intervalTempertures.findColdIntervals()
 	if err != nil {
+		lgr.Warnf("GetColdShortReservation: failed to find hot intervals: %s\n", err.Error())
 		return nil, ErrNoReservation
 	}
 
@@ -193,11 +210,13 @@ func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(intervals) == 0 {
+			lgr.Warnf("GetColdShortReservation: failed to get reservation from interval tree (founds=0)")
 			return nil, fmt.Errorf("no cold short reservation")
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
+			lgr.Fatalf("GetColdShortReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -214,6 +233,7 @@ func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 		}
 	}
 
+	lgr.Fatal("GetColdShortReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
@@ -221,8 +241,11 @@ func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
 	r.intTreeMu.Lock()
 	defer r.intTreeMu.Unlock()
 
+	lgr := zap.S()
+
 	intervals, err := r.intervalTempertures.findColdIntervals()
 	if err != nil {
+		lgr.Warnf("GetColdLongReservation: failed to find hot intervals: %s\n", err.Error())
 		return nil, ErrNoReservation
 	}
 
@@ -233,11 +256,13 @@ func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
 			EndAt:   interval.endAt.Unix(),
 		})
 		if len(intervals) == 0 {
+			lgr.Warnf("GetColdLongReservation: failed to get reservation from interval tree (founds=0)")
 			return nil, fmt.Errorf("no cold long reservation")
 		}
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
+			lgr.Fatalf("GetColdLongReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -254,6 +279,7 @@ func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
 		}
 	}
 
+	lgr.Fatal("GetColdLongReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 

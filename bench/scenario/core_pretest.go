@@ -22,8 +22,10 @@ func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isu
 	}
 
 	user, err := client.Register(ctx, &isupipe.RegisterRequest{
-		Name:     "pretestuser",
-		Password: "test",
+		Name:        "pretestuser",
+		Password:    "test",
+		DisplayName: "pretest user",
+		Description: "this is a pre test user",
 	})
 	if err != nil {
 		return nil, err
@@ -44,15 +46,8 @@ func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 	initialGrp.Go(func() error {
 		return normalInitialPaymentPretest(initialCtx, dnsResolver)
 	})
-	initialGrp.Go(func() error {
-		return normalInitialLivecommentPretest(initialCtx, dnsResolver)
-	})
-	initialGrp.Go(func() error {
-		return normalInitialReactionPretest(initialCtx, dnsResolver)
-	})
-	initialGrp.Go(func() error {
-		return normalInitialTagPretest(ctx, dnsResolver)
-	})
+	// FIXME: reactions, livecommentsは統計情報をもとにチェックする
+	// FIXME: ngwordsはライブ配信のIDをいくつか問い合わせ、存在することをチェックする
 	if err := initialGrp.Wait(); err != nil {
 		return err
 	}

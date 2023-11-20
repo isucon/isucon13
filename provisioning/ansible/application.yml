@@ -9,4 +9,5 @@
     - mysql
     - powerdns
     - nginx
+    - envcheck
     - webapp

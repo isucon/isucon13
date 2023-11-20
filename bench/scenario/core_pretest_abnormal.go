@@ -198,8 +198,8 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 	}
 
 	var (
-		startAt2 = time.Date(2023, 4, 1, 0, 0, 0, 0, time.Local)
-		endAt2   = time.Date(2023, 4, 1, 1, 0, 0, 0, time.Local)
+		startAt2 = time.Date(2022, 4, 1, 0, 0, 0, 0, time.Local)
+		endAt2   = time.Date(2022, 4, 1, 1, 0, 0, 0, time.Local)
 	)
 	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
