@@ -8,6 +8,12 @@ make linux_amd64
 mkdir -p ../provisioning/ansible/roles/bench/files
 mv bin/bench_linux_amd64 ../provisioning/ansible/roles/bench/files
 cd ..
+
+cd ./frontend
+make
+cp -r ./dist/ ../webapp/public/
+cd ..
+
 tar -zcvf webapp.tar.gz webapp
 mv webapp.tar.gz provisioning/ansible/roles/webapp/files
 
