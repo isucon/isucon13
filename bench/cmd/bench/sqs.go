@@ -77,13 +77,6 @@ func (s *Portal) SendResult(ctx context.Context, job *Job, result *Result) error
 		return err
 	}
 
-	if _, err := s.client.DeleteMessage(&sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(s.recvQueueUrl),
-		ReceiptHandle: job.receiptHandle,
-	}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -117,6 +110,14 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 					continue loop
 				}
 				job.receiptHandle = msg.ReceiptHandle
+
+				// NOTE: ジョブを取れたらすぐに削除 (可視性タイムアウト)
+				if _, err := s.client.DeleteMessage(&sqs.DeleteMessageInput{
+					QueueUrl:      aws.String(s.recvQueueUrl),
+					ReceiptHandle: job.receiptHandle,
+				}); err != nil {
+					continue loop
+				}
 
 				ch <- job
 			}
