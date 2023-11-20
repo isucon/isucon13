@@ -80,6 +80,7 @@ build {
       # Remove authorized_keys for packer
       "sudo truncate -s 0 /home/ubuntu/.ssh/authorized_keys",
       "sudo truncate -s 0 /etc/machine-id",
+      "sudo rm -f /opt/gen-env-isucon-subdomain-address.sh.lock",
     ]
   }
 }
