@@ -1,11 +1,14 @@
 package assets
 
 import (
-	"crypto/sha256"
-	"os"
-	"path/filepath"
+	"bytes"
+	_ "embed"
+	"encoding/hex"
 	"strings"
 )
+
+//go:embed data/hash.txt
+var hashList string
 
 type Asset struct {
 	Path string
@@ -13,33 +16,44 @@ type Asset struct {
 }
 
 // Load は静的ファイルのハッシュ値などをローカルファイルから読み出します
-func Load(assetDir string) ([]*Asset, error) {
-	assetDir = filepath.Clean(assetDir)
+func Load() ([]*Asset, error) {
+	return load(hashList)
+}
+
+func load(hashList string) ([]*Asset, error) {
+	buff := bytes.NewBufferString(hashList)
+
 	var assets []*Asset
-
-	err := filepath.Walk(assetDir, func(path string, info os.FileInfo, err error) error {
+	for {
+		line, err := buff.ReadString('\n')
 		if err != nil {
-			return err
+			break
 		}
 
-		if info.IsDir() {
-			return nil
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
 
-		b, err := os.ReadFile(path)
+		parts := strings.SplitN(line, "  ", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		pathname := strings.TrimPrefix(parts[1], ".")
+
+		// hex to byte
+		hash, err := hex.DecodeString(parts[0])
 		if err != nil {
-			return err
+			continue
 		}
+		fixed := [32]byte{}
+		copy(fixed[:], hash)
 
 		assets = append(assets, &Asset{
-			Path: strings.TrimPrefix(path, assetDir),
-			Hash: sha256.Sum256(b),
+			Path: pathname,
+			Hash: fixed,
 		})
-
-		return nil
-	})
-	if err != nil {
-		return []*Asset{}, err
 	}
 
 	return assets, nil
