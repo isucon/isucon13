@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
@@ -47,24 +48,24 @@ func (c *Client) GetLivestream(
 	livestreamID int64,
 	streamerName string,
 	opts ...ClientOption,
-) error {
+) (*Livestream, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
 	if err := c.setStreamerURL(streamerName); err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -72,10 +73,17 @@ func (c *Client) GetLivestream(
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	return nil
+	var livestream *Livestream
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+	}
+
+	return livestream, nil
 }
 
 func (c *Client) SearchLivestreams(
@@ -94,6 +102,12 @@ func (c *Client) SearchLivestreams(
 	if o.searchTag != nil {
 		query := req.URL.Query()
 		query.Add("tag", o.searchTag.Tag)
+		req.URL.RawQuery = query.Encode()
+	}
+
+	if o.limitParam != nil {
+		query := req.URL.Query()
+		query.Add("limit", strconv.Itoa(o.limitParam.Limit))
 		req.URL.RawQuery = query.Encode()
 	}
 
