@@ -21,5 +21,5 @@ init:
 	packer init -upgrade isucon13.pkr.hcl
 
 .PHONY: build
-build: app-build init
+build:
 	packer build isucon13.pkr.hcl
