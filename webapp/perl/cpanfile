@@ -17,5 +17,3 @@ requires 'Crypt::Eksblowfish::Bcrypt', '0.009';
 requires 'Crypt::OpenSSL::Random', '0.15';
 requires 'Data::Lock', '1.03';
 requires 'JSON::Types', '0.05';
-
-requires 'Test2::V0';
