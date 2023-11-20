@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -128,6 +129,21 @@ var run = cli.Command{
 			config.TargetPort = 443
 			config.InsecureSkipVerify = false
 			lgr.Info("SSL接続が有効になっています")
+			u, err := url.Parse(config.TargetBaseURL)
+			if err != nil {
+				return fmt.Errorf("不正なtaget URLです %w", err)
+			}
+			u.Scheme = "https"
+			if strings.Contains(u.Host, ":") {
+				if h, _, err := net.SplitHostPort(u.Host); err != nil {
+					return fmt.Errorf("不正なtaget URLです %w", err)
+				} else {
+					u.Host = h + ":443"
+				}
+			} else {
+				u.Host = u.Host + ":443"
+			}
+			config.TargetBaseURL = u.String()
 		} else {
 			lgr.Info("SSL接続が無効になっています")
 		}
