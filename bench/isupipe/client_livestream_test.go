@@ -126,7 +126,7 @@ func TestLivestream(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotZero(t, livestream.ID)
 
-			err = loopClient.GetLivestream(ctx, livestream.ID, loopClientName)
+			_, err = loopClient.GetLivestream(ctx, livestream.ID, loopClientName)
 			assert.NoError(t, err)
 
 			myLivestreams, err := loopClient.GetMyLivestreams(ctx)
