@@ -26,6 +26,10 @@ test: clean
 bench: build
 	./bin/bench_$(shell go env GOOS)_$(shell go env GOARCH) run --dns-port=1053
 
+# FIXME: impl
+docker_image:
+	:	
+
 clean:
 	$(RM) ./bin/bench_darwin_amd64
 	$(RM) ./bin/bench_linux_amd64

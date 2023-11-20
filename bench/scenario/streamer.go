@@ -3,16 +3,17 @@ package scenario
 import (
 	"context"
 	"errors"
-	"log"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 // 枠数1のタイミングで、複数クライアントから一斉に書き込み、１個だけ成立しない場合は失格判定
 func BasicLongStreamerScenario(
 	ctx context.Context,
+	contestantLogger *zap.Logger,
 	popularStreamerPool *isupipe.ClientPool,
 ) error {
 	// FIXME: impl
@@ -21,10 +22,11 @@ func BasicLongStreamerScenario(
 
 func BasicStreamerColdReserveScenario(
 	ctx context.Context,
+	contestantLogger *zap.Logger,
 	streamerPool *isupipe.ClientPool,
-	popularLivestreamPool *isupipe.LivestreamPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
+	lgr := zap.S()
 
 	client, err := streamerPool.Get(ctx)
 	if err != nil {
@@ -34,19 +36,19 @@ func BasicStreamerColdReserveScenario(
 
 	username, err := client.Username()
 	if err != nil {
-		log.Printf("reserve: failed to get username: %s\n", err.Error())
+		lgr.Warnf("reserve: failed to get username: %s\n", err.Error())
 		return err
 	}
 
 	reservation, err := scheduler.ReservationSched.GetColdShortReservation()
 	if err != nil {
-		log.Printf("reserve: failed to get cold short reservation: %s\n", err.Error())
+		lgr.Warnf("reserve: failed to get cold short reservation: %s\n", err.Error())
 		return err
 	}
 
 	tags, err := client.GetRandomLivestreamTags(ctx, 5)
 	if err != nil {
-		log.Printf("reserve: failed to get random livestream tags: %s\n", err.Error())
+		lgr.Warnf("reserve: failed to get random livestream tags: %s\n", err.Error())
 		return err
 	}
 
@@ -61,16 +63,13 @@ func BasicStreamerColdReserveScenario(
 	})
 	if err != nil {
 		scheduler.ReservationSched.AbortReservation(reservation)
-		log.Printf("reserve: failed to reserve: %s\n", err.Error())
+		lgr.Warnf("reserve: failed to reserve: %s\n", err.Error())
 		return err
 	}
 	scheduler.ReservationSched.CommitReservation(reservation)
 
-	if scheduler.UserScheduler.IsPopularStreamer(username) {
-		popularLivestreamPool.Put(ctx, livestream)
-	} else {
-		livestreamPool.Put(ctx, livestream)
-	}
+	livestreamPool.Put(ctx, livestream)
+	contestantLogger.Info("配信を予約しました", zap.String("streamer", livestream.Owner.Name), zap.String("title", livestream.Title), zap.Int("duration_hours", livestream.Hours()))
 
 	return nil
 }
@@ -78,6 +77,7 @@ func BasicStreamerColdReserveScenario(
 // 人気VTuber同士を衝突させる？
 func BasicLongStreamerHotScenario(
 	ctx context.Context,
+	contestantLogger *zap.Logger,
 	streamerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
@@ -87,8 +87,11 @@ func BasicLongStreamerHotScenario(
 
 func BasicStreamerModerateScenario(
 	ctx context.Context,
+	contestantLogger *zap.Logger,
 	streamerPool *isupipe.ClientPool,
 ) error {
+	lgr := zap.S()
+
 	client, err := streamerPool.Get(ctx)
 	if err != nil {
 		return err
@@ -98,16 +101,19 @@ func BasicStreamerModerateScenario(
 	// 自分のライブ配信一覧取得
 	livestreams, err := client.GetMyLivestreams(ctx)
 	if err != nil {
+		lgr.Warnf("streamer_moderate: failed to get my livestream: %s\n", err.Error())
 		return err
 	}
 
 	for _, livestream := range livestreams {
-		if err := VisitLivestreamAdmin(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		if err := VisitLivestreamAdmin(ctx, contestantLogger, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			lgr.Warnf("streamer_moderate: failed to visit livestream admin: %s\n", err.Error())
 			return err
 		}
 
 		reports, err := client.GetLivecommentReports(ctx, livestream.ID)
 		if err != nil {
+			lgr.Warnf("streamer_moderate: failed to get livecomment reports: %s\n", err.Error())
 			continue
 		}
 
@@ -115,9 +121,11 @@ func BasicStreamerModerateScenario(
 			livestreamID := report.Livecomment.Livestream.ID
 			ngword, err := scheduler.LivecommentScheduler.GetNgWord(report.Livecomment.Comment)
 			if err != nil {
+				lgr.Warnf("streamer_moderate: failed to get ngwords: %s\n", err.Error())
 				return err
 			}
 			if err := client.Moderate(ctx, livestreamID, ngword); err != nil {
+				lgr.Warnf("streamer_moderate: failed to moderate: %s\n", err.Error())
 				continue
 			}
 			scheduler.LivecommentScheduler.Moderate(report.Livecomment.Comment)
@@ -134,10 +142,14 @@ func BasicStreamerModerateScenario(
 // 対策を打ってもらう想定
 func AggressiveStreamerModerateScenario(
 	ctx context.Context,
+	contestantLogger *zap.Logger,
 	streamerPool *isupipe.ClientPool,
 ) error {
+	lgr := zap.S()
+
 	client, err := streamerPool.Get(ctx)
 	if err != nil {
+		lgr.Warnf("aggressive streamer moderate: failed to get streamer from pool: %s\n", err.Error())
 		return err
 	}
 	defer streamerPool.Put(ctx, client)
@@ -145,16 +157,19 @@ func AggressiveStreamerModerateScenario(
 	// 自分のライブ配信一覧取得
 	livestreams, err := client.GetMyLivestreams(ctx)
 	if err != nil {
+		lgr.Warnf("aggressive streamer moderate: failed to get my livestream: %s\n", err.Error())
 		return err
 	}
 
 	for _, livestream := range livestreams {
-		if err := VisitLivestreamAdmin(ctx, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		if err := VisitLivestreamAdmin(ctx, contestantLogger, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			lgr.Warnf("aggressive streamer moderate: failed to visit livestream admin: %s\n", err.Error())
 			return err
 		}
 
 		ngWord := scheduler.LivecommentScheduler.GetDummyNgWord()
 		if err := client.Moderate(ctx, livestream.ID, ngWord.Word); err != nil {
+			lgr.Warnf("aggressive streamer moderate: failed to moderate: %s\n", err.Error())
 			continue
 		}
 		scheduler.LivecommentScheduler.ModerateNgWord(ngWord.Word)
