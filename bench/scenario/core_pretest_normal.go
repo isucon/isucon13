@@ -135,20 +135,16 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 		pretestTags[tag.ID] = 0
 	}
 
-	tagStartIdx := rand.Intn(len(tagResponse.Tags) - 10)
 	tags := []int64{1, 103}
-	pretestTags[1]++
-	pretestTags[103]++
-
-	i := 0
-	for len(tags) <= 5 {
-		if tagResponse.Tags[tagStartIdx+i].ID > 2 {
-			tags = append(tags, tagResponse.Tags[tagStartIdx+i].ID)
-			pretestTags[tagResponse.Tags[tagStartIdx+i].ID]++
-		}
+	for len(tags) <= 10 {
+		t := rand.Intn(len(tagResponse.Tags))
+		tags = append(tags, tagResponse.Tags[t].ID)
+		slices.Sort(tags)
+		tags = slices.Compact(tags)
 	}
-	slices.Sort(tags)
-	tags = slices.Compact(tags)
+	for _, t := range tags {
+		pretestTags[t]++
+	}
 
 	var (
 		startAt = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)

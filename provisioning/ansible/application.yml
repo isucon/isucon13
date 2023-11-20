@@ -4,6 +4,7 @@
     - base
     - apt
     - isucon-user
+    - globalip
     - xbuild
     - mysql
     - powerdns
