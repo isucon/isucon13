@@ -12,6 +12,6 @@ js_build:
 	yarn build
 
 hash:
-	cd $(ROOT_DIR)/dist && sha256sum `find -type f ` > $(ROOT_DIR)/../bench/assets/data/hash.txt
+	cd $(ROOT_DIR)/dist && sha256sum `find . -type f ` > $(ROOT_DIR)/../bench/assets/data/hash.txt
 
 build: js_build hash
