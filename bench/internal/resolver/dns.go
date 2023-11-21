@@ -98,6 +98,16 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 		return nil, fmt.Errorf("failed to resolve %s with rcode=%d", addr, in.Rcode)
 	}
 
+	// webappsに含まれるかどうか
+	for _, ans := range in.Answer {
+		if record, ok := ans.(*dns.A); ok {
+			if !config.IsWebappIP(record.A) {
+				// webappsにないものが返ってきた
+				return nil, fmt.Errorf("failed to resolve %s. %s is not the server list", addr, record.A.String())
+			}
+		}
+	}
+
 	for _, ans := range in.Answer {
 		if record, ok := ans.(*dns.A); ok {
 			// TODO: IPアドレスが競技者のものか確認

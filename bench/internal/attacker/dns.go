@@ -162,8 +162,9 @@ func (a *DnsWaterTortureAttacker) lookup(ctx context.Context, name string) net.I
 
 	for _, ans := range in.Answer {
 		if record, ok := ans.(*dns.A); ok {
-			// TODO: IPアドレスが競技者のものか確認
-			return record.A
+			if config.IsWebappIP(record.A) {
+				return record.A
+			}
 		}
 	}
 	return nil

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +86,9 @@ var run = cli.Command{
 			Destination: &config.TargetNameserver,
 			EnvVar:      "BENCH_NAMESERVER",
 		},
+		cli.StringSliceFlag{
+			Name: "webapp",
+		},
 		cli.IntFlag{
 			Name:        "dns-port",
 			Value:       53,
@@ -138,6 +142,13 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 
+		// Target Webserv
+		webapps := []string{}
+		webapps = append(webapps, config.TargetNameserver)
+		webapps = append(webapps, cliCtx.StringSlice("webapp")...)
+		slices.Sort(webapps)
+		config.TargetWebapps = slices.Compact(webapps)
+
 		if enableSSL {
 			config.HTTPScheme = "https"
 			config.TargetPort = 443
@@ -180,6 +191,13 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 
+		pretestDNSResolver := resolver.NewDNSResolver()
+		pretestDNSResolver.ResolveAttempts = 10
+		if err != nil {
+			dumpFailedResult([]string{"整合性チェックDNSリゾルバ生成に失敗しました"})
+			return cli.NewExitError(err, 1)
+		}
+
 		// FIXME: initialize以後のdumpFailedResult、ポータル報告への書き出しを実装
 		// Actionsの結果にも乗ってしまうが、サイズ的に問題ないか
 		// ベンチの出力変動が落ち着いてから実装する
@@ -192,12 +210,6 @@ var run = cli.Command{
 		config.Language = initializeResp.Language
 
 		contestantLogger.Info("ベンチマーク走行前のデータ整合性チェックを行います")
-		pretestDNSResolver := resolver.NewDNSResolver()
-		pretestDNSResolver.ResolveAttempts = 10
-		if err != nil {
-			dumpFailedResult([]string{"整合性チェックDNSリゾルバ生成に失敗しました"})
-			return cli.NewExitError(err, 1)
-		}
 
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
