@@ -420,7 +420,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s actual:%s", testUser.Name, livestream.Owner.Name)
 	}
 
-	if _, err = client.GetLivecommentReports(ctx, livestream.ID); err != nil {
+	if _, err = client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
 	}
 
@@ -541,7 +541,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 
 	livestream := livestreams[0]
 
-	reports, err := client.GetLivecommentReports(ctx, livestream.ID)
+	reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
@@ -592,7 +592,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 		return err
 	}
 
-	reports2, err := client.GetLivecommentReports(ctx, livestream.ID)
+	reports2, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
@@ -636,7 +636,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	livestream := livestreams[rand.Intn(len(livestreams))] // ランダムに選ぶ
 
-	ngwords, err := client.GetNgwords(ctx, livestream.ID)
+	ngwords, err := client.GetNgwords(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
@@ -715,7 +715,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 
 	// 粛清
-	if err := client.Moderate(ctx, livestream.ID, spamComment.NgWord); err != nil {
+	if err := client.Moderate(ctx, livestream.ID, livestream.Owner.Name, spamComment.NgWord); err != nil {
 		return err
 	}
 	scheduler.LivecommentScheduler.Moderate(spamComment.Comment)
