@@ -626,8 +626,15 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	if err != nil {
 		return err
 	}
-
-	livestream := livestreams[0]
+	if len(livestreams) == 0 {
+		return fmt.Errorf("自分のライブ配信が存在しません")
+	}
+	for _, livestream := range livestreams {
+		if livestream.Owner.ID != testUser.ID {
+			return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s got:%s", testUser.Name, livestream.Owner.Name)
+		}
+	}
+	livestream := livestreams[rand.Intn(len(livestreams))] // ランダムに選ぶ
 
 	ngwords, err := client.GetNgwords(ctx, livestream.ID)
 	if err != nil {
@@ -673,10 +680,20 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	added := 0
 	for i := 0; i <= rand.Intn(5)+1; i++ {
 		// spamではない普通のコメントをする
+		tip := rand.Intn(100)
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
-		_, _, err = spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{})
+		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{})
 		if err != nil {
 			return err
+		}
+		if r.Livestream.ID != livestream.ID {
+			return fmt.Errorf("投稿されたライブコメントのlivestream.IDが正しくありません")
+		}
+		if r.Livestream.Owner.Name != livestream.Owner.Name {
+			return fmt.Errorf("投稿されたライブコメントのOwnerが正しくありません")
+		}
+		if r.Tip != int64(tip) {
+			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません")
 		}
 		added++
 	}
