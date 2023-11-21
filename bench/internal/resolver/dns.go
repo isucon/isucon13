@@ -103,7 +103,7 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 		if record, ok := ans.(*dns.A); ok {
 			if !config.IsWebappIP(record.A) {
 				// webappsにないものが返ってきた
-				return nil, fmt.Errorf("failed to resolve %s. %s is not the server list", addr, record.A.String())
+				return nil, fmt.Errorf("failed to resolve %s. %s is not in the server list", addr, record.A.String())
 			}
 		}
 	}
