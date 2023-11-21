@@ -22,8 +22,9 @@ type checker struct {
 	ExpectedAMI string
 	ExpectedAZ  string
 
-	InstanceIP    string
-	InstanceVPCID string
+	InstanceIP      string
+	InstanceLocalIP string
+	InstanceVPCID   string
 
 	DescribeInstances         []*ec2.DescribeInstancesOutput
 	DescribeVolumes           []*ec2.DescribeVolumesOutput
@@ -39,12 +40,13 @@ type checker struct {
 }
 
 type Result struct {
-	Name         string
-	Passed       bool
-	IPAddress    string
-	Message      string
-	AdminMessage string
-	RawData      string
+	Name           string
+	Passed         bool
+	IPAddress      string
+	LocalIPAddress string
+	Message        string
+	AdminMessage   string
+	RawData        string
 }
 
 func Check(cfg CheckConfig) (Result, error) {
@@ -73,12 +75,13 @@ func Check(cfg CheckConfig) (Result, error) {
 
 	raw, _ := json.Marshal(c)
 	return Result{
-		Name:         cfg.Name,
-		Passed:       len(c.failures) == 0,
-		IPAddress:    c.InstanceIP,
-		Message:      c.message(),
-		AdminMessage: c.adminLog.String(),
-		RawData:      string(raw),
+		Name:           cfg.Name,
+		Passed:         len(c.failures) == 0,
+		IPAddress:      c.InstanceIP,
+		LocalIPAddress: c.InstanceLocalIP,
+		Message:        c.message(),
+		AdminMessage:   c.adminLog.String(),
+		RawData:        string(raw),
 	}, nil
 }
 
@@ -93,6 +96,10 @@ func (c *checker) loadAWS() error {
 	c.InstanceIP, err = GetPublicIP(ec2md)
 	if err != nil {
 		return fmt.Errorf("GetPublicIP: %w", err)
+	}
+	c.InstanceLocalIP, err = GetLocalIP(ec2md)
+	if err != nil {
+		return fmt.Errorf("GetLocalIP: %w", err)
 	}
 	c.InstanceVPCID, err = GetVPC(ec2md)
 	if err != nil {
