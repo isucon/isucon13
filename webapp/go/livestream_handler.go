@@ -94,8 +94,8 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	// 2024/04/01からの１年間の期間内であるかチェック
 	var (
-		termStartAt    = time.Date(2023, 11, 25, 10, 0, 0, 0, time.UTC)
-		termEndAt      = time.Date(2024, 11, 25, 10, 0, 0, 0, time.UTC)
+		termStartAt    = time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC)
+		termEndAt      = time.Date(2024, 11, 25, 1, 0, 0, 0, time.UTC)
 		reserveStartAt = time.Unix(req.StartAt, 0)
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
@@ -116,7 +116,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 		c.Logger().Infof("%d ~ %d予約枠の残数 = %d\n", slot.StartAt, slot.EndAt, slot.Slot)
 		if count < 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("予約区間 %d ~ %dが予約できません", req.StartAt, req.EndAt))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("予約期間 %d ~ %dに対して、予約区間 %d ~ %dが予約できません", termStartAt.Unix(), termEndAt.Unix(), req.StartAt, req.EndAt))
 		}
 	}
 

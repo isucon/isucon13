@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # 予約枠生成
 
@@ -6,7 +6,7 @@ NUM_SLOTS = 5
 SQL_FORMAT="\t({slot}, {start_at}, {end_at})"
 
 # delta = timedelta(hours=1)
-base_time = datetime(2023, 11, 25, 10)
+base_time = datetime(2023, 11, 25, 1, tzinfo=timezone.utc)
 total_hours = (24*365)-1
 
 with open('/tmp/reservation_slot.sql', 'w') as f:
