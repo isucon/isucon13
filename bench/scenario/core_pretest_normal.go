@@ -713,5 +713,11 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		}
 	}
 
+	// ngwordに登録されたので投稿できないはず
+	_, _, err = spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, spamComment.Comment, notip)
+	if err == nil {
+		return fmt.Errorf("ngwordに登録されたはずのライブコメントが投稿できています")
+	}
+
 	return nil
 }
