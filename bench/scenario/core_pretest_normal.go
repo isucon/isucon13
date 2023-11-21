@@ -665,6 +665,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return err
 	}
 
+	added := 0
 	for i := 0; i <= rand.Intn(5)+1; i++ {
 		// spamではない普通のコメントをする
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
@@ -672,6 +673,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		if err != nil {
 			return err
 		}
+		added++
 	}
 
 	spamComment, _ := scheduler.LivecommentScheduler.GetNegativeComment()
@@ -680,13 +682,14 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	if err != nil {
 		return err
 	}
+	added++
 
 	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
-	if len(livecomments2)-len(livecomments1) != 1 {
-		return fmt.Errorf("１件ライブコメント(spam)が追加されたはずですが、件数が不正です")
+	if len(livecomments2)-len(livecomments1) != added  {
+		return fmt.Errorf("%d件ライブコメントが追加されたはずですが、件数が不正です", added)
 	}
 
 	// 粛清
