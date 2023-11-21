@@ -71,7 +71,6 @@ func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 	return nil
 }
 
-// FIXME PlaylistUrlとThumbnailUrlの確認
 func checkPretestLivestream(subject string, livestream *isupipe.Livestream, title, description string, tags []int64, tagNames map[int64]string, startAt, endAt time.Time) error {
 	// Check livestream
 	if livestream.ID == 0 {
