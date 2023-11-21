@@ -52,7 +52,6 @@ func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 		return err
 	}
 
-	// 独立動作可能なテスト
 	testUser, err := setupTestUser(ctx, dnsResolver)
 	if err != nil {
 		return err
@@ -61,50 +60,42 @@ func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
 		return err
 	}
 
-	logicGrp, childCtx := errgroup.WithContext(ctx)
 	// 正常系
-	logicGrp.Go(func() error {
-		return NormalUserPretest(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return NormalIconPretest(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return NormalReactionPretest(childCtx, testUser, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		if err := NormalPostLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
-			return err
-		}
-		if err := NormalModerateLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
-			return err
-		}
-		return nil
-	})
-	// 異常系
-	logicGrp.Go(func() error {
-		return assertBadLogin(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertPipeUserRegistration(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertUserUniqueConstraint(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertReserveOverflowPretest(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertReserveOutOfTerm(childCtx, testUser, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertMultipleEnterLivestream(childCtx, dnsResolver)
-	})
-	if err := logicGrp.Wait(); err != nil {
+	if err := NormalUserPretest(ctx, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalIconPretest(ctx, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalReactionPretest(ctx, testUser, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalPostLivecommentPretest(ctx, testUser, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalModerateLivecommentPretest(ctx, testUser, dnsResolver); err != nil {
 		return err
 	}
 
-	// FIXME: 統計情報、Paymentなど、前後比較するものは他のシナリオが割り込まないようにする
+	// 異常系
+	if err := assertBadLogin(ctx, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertPipeUserRegistration(ctx, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertUserUniqueConstraint(ctx, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertReserveOverflowPretest(ctx, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertReserveOutOfTerm(ctx, testUser, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertMultipleEnterLivestream(ctx, dnsResolver); err != nil {
+		return err
+	}
 
 	return nil
 }
