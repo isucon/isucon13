@@ -207,8 +207,12 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 		if searchedStream[0].Owner.ID != 143 {
 			return fmt.Errorf("「椅子」検索結果1個目のlivestreamのuser.IDが異なります (expected:%d actual:%d)", 143, searchedStream[0].Owner.ID)
 		}
-		if searchedStream[0].Owner.DisplayName != "ちゅうりっぷちゅるん" {
-			return fmt.Errorf("「椅子」検索結果1個目のlivestreamのuser.Nameが異なります (expected:%s actual:%s)", "ちゅうりっぷちゅるん", searchedStream[0].Owner.DisplayName)
+		wantSearchedStreamOwner, err := scheduler.UserScheduler.GetInitialUserForPretest(searchedStream[0].Owner.ID)
+		if err != nil {
+			return err
+		}
+		if searchedStream[0].Owner.DisplayName != wantSearchedStreamOwner.DisplayName {
+			return fmt.Errorf("「椅子」検索結果1個目のlivestreamのuser.Nameが異なります (expected:%s actual:%s)", wantSearchedStreamOwner.DisplayName, searchedStream[0].Owner.DisplayName)
 		}
 
 		if err := checkPretestLivestream("「椅子」検索結果最後の", searchedStream[len(searchedStream)-1], title, description, tags, tagNames, startAt, endAt); err != nil {
