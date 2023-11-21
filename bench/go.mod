@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.48.0
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f
 	github.com/eapache/go-resiliency v1.4.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/isucon/isucandar v0.0.0-20220322062028-6dd56dc57d72
 	github.com/miekg/dns v1.1.56
 	github.com/najeira/randstr v0.1.1
