@@ -492,23 +492,42 @@ func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResol
 	if err != nil {
 		return err
 	}
-
-	livestream := livestreams[0]
-
-	if _, err := client.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
-		EmojiName: "chair",
-	}); err != nil {
-		return err
+	if len(livestreams) == 0 {
+		return fmt.Errorf("自分のライブ配信が存在しません")
 	}
+	for _, livestream := range livestreams {
+		reactions1, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name)
+		if err != nil {
+			return err
+		}
 
-	reactions, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name)
-	if err != nil {
-		return err
-	}
-	if len(reactions) != 1 {
-		return fmt.Errorf("リアクション件数が不正です")
-	}
+		if r, err := client.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
+			EmojiName: "chair",
+		}); err != nil {
+			return err
+		} else {
+			if r.Livestream.ID != livestream.ID {
+				return fmt.Errorf("投稿されたリアクションのlivestream.IDが正しくありません expected:%d actual:%d", livestream.ID, r.Livestream.ID)
+			}
+			if r.Livestream.Owner.Name != livestream.Owner.Name {
+				return fmt.Errorf("投稿されたリアクションのOwnerが正しくありません expected:%s actual:%s", livestream.Owner.Name, r.Livestream.Owner.Name)
+			}
+			if r.EmojiName != "chair" {
+				return fmt.Errorf("投稿されたリアクションのEmojiNameが正しくありません expected:%s actual:%s", "chair", r.EmojiName)
+			}
+			if r.User.Name != testUser.Name {
+				return fmt.Errorf("投稿されたリアクションのUserが正しくありません expected:%s actual:%s", testUser.Name, r.User.Name)
+			}
+		}
 
+		reactions2, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name)
+		if err != nil {
+			return err
+		}
+		if len(reactions2)-len(reactions1) != 1 {
+			return fmt.Errorf("リアクション件数が不正です")
+		}
+	}
 	return nil
 }
 
