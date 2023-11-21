@@ -45,19 +45,14 @@ func TestLivestream(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotZero(t, len(livestreams))
 
-	// FIXME: 予約
-	// * 期間チェック
-	// * コラボレーター
-	// * 予約枠
-
 	// 期間外の予約がきちんとエラーで弾かれるかチェック
 	_, err = client.ReserveLivestream(ctx, user.Name, &ReserveLivestreamRequest{
 		Title:        "livestream-test",
 		Description:  "livestream-test",
 		PlaylistUrl:  "https://example.com",
 		ThumbnailUrl: "https://example.com",
-		StartAt:      time.Date(2023, 11, 25, 9, 0, 0, 0, time.UTC).Unix(),
-		EndAt:        time.Date(2023, 11, 25, 10, 0, 0, 0, time.UTC).Unix(),
+		StartAt:      time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC).Unix(),
+		EndAt:        time.Date(2023, 11, 25, 2, 0, 0, 0, time.UTC).Unix(),
 		Tags:         []int64{},
 	}, WithStatusCode(http.StatusBadRequest))
 	assert.NoError(t, err)
@@ -66,8 +61,8 @@ func TestLivestream(t *testing.T) {
 		Description:  "livestream-test",
 		PlaylistUrl:  "https://example.com",
 		ThumbnailUrl: "https://example.com",
-		StartAt:      time.Date(2024, 11, 25, 10, 0, 0, 0, time.UTC).Unix(),
-		EndAt:        time.Date(2024, 11, 25, 11, 0, 0, 0, time.UTC).Unix(),
+		StartAt:      time.Date(2024, 11, 25, 1, 0, 0, 0, time.UTC).Unix(),
+		EndAt:        time.Date(2024, 11, 25, 2, 0, 0, 0, time.UTC).Unix(),
 		Tags:         []int64{},
 	}, WithStatusCode(http.StatusBadRequest))
 	assert.NoError(t, err)
