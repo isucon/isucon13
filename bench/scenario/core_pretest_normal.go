@@ -412,7 +412,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 
 	livestream := livestreams[rand.Intn(len(livestreams))] // ランダムに選ぶ
 	if livestream.Owner.ID != testUser.ID {
-		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s got:%s", testUser.Name, livestream.Owner.Name)
+		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s actual:%s", testUser.Name, livestream.Owner.Name)
 	}
 
 	if _, err = client.GetLivecommentReports(ctx, livestream.ID); err != nil {
@@ -626,7 +626,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	for _, livestream := range livestreams {
 		if livestream.Owner.ID != testUser.ID {
-			return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s got:%s", testUser.Name, livestream.Owner.Name)
+			return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s actual:%s", testUser.Name, livestream.Owner.Name)
 		}
 	}
 	livestream := livestreams[rand.Intn(len(livestreams))] // ランダムに選ぶ
