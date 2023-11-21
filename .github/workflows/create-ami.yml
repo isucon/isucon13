@@ -5,31 +5,47 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - '*'
+  workflow_dispatch:
 
 jobs:
   build-ami:
-    runs-on: isucon13-ci
+    runs-on: [isucon13-ci]
+    name: Build
+    strategy:
+      matrix:
+        go:
+          - 1.21.1
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Packer
-      uses: hashicorp/setup-packer@v1
-      with:
-        version: "1.9.4"
+      - name: Set up Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: "1.9.4"
 
-    - name: Set up node
-      uses: actions/setup-node@v3
-      with:
-        node-version: "lts/*"
-      - run: corepack enable pnpm
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+        id: go
 
-    - name: Build
-      run: |
-        cd provisioning/packer
-        make
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ap-northeast-1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Setup corepack
+        run: corepack enable yarn
+
+      - name: Build
+        run: |
+          cd provisioning/packer
+          make
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-northeast-1
