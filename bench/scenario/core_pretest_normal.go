@@ -21,6 +21,9 @@ import (
 //go:embed testdata/NoImage.jpg
 var fallbackImage []byte
 
+// icon_hashが反映されるまでに許される猶予
+const IconHashAppliedDelay = 2 * time.Second
+
 // 基本機能のロジックpretest
 
 func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
@@ -342,12 +345,31 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("アイコン未設定の場合は、NoImage.jpgを返さなければなりません")
 	}
 
+	// アイコンを投稿する前、No Imageの画像のハッシュが返されているか
+	me, err := client.GetMe(ctx)
+	if err != nil {
+		return err
+	}
+	if me.IconHash != fmt.Sprintf("%x", sha256.Sum256(fallbackImage)) {
+		return fmt.Errorf("アイコン未設定の場合は、icon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
+	}
+
 	// アイコンを投稿後、期待するアイコンが設定されているか
 	randomIcon := scheduler.IconSched.GetRandomIcon()
 	if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
 		Image: randomIcon.Image,
 	}); err != nil {
 		return err
+	}
+
+	// 反映されるまでに許される猶予
+	time.Sleep(IconHashAppliedDelay)
+	me2, err := client.GetMe(ctx)
+	if err != nil {
+		return err
+	}
+	if me2.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
+		return fmt.Errorf("新たに設定したアイコンのハッシュ値がicon_hashに反映されていません")
 	}
 
 	icon2, err := client.GetIcon(ctx, "test001")

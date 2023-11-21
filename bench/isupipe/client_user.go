@@ -18,6 +18,7 @@ type User struct {
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
 	Theme       Theme  `json:"theme"`
+	IconHash    string `json:"icon_hash"`
 }
 
 type (
