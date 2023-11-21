@@ -18,19 +18,19 @@ import (
 )
 
 type Livecomment struct {
-	ID         int64      `json:"id"`
-	User       User       `json:"user"`
-	Livestream Livestream `json:"livestream"`
-	Comment    string     `json:"comment"`
-	Tip        int        `json:"tip"`
-	CreatedAt  int        `json:"created_at"`
+	ID         int64      `json:"id" validate:"required"`
+	User       User       `json:"user" validate:"required"`
+	Livestream Livestream `json:"livestream" validate:"required"`
+	Comment    string     `json:"comment" validate:"required"`
+	Tip        int        `json:"tip" validate:"required"`
+	CreatedAt  int        `json:"created_at" validate:"required"`
 }
 
 type LivecommentReport struct {
-	ID          int64       `json:"id"`
-	Reporter    User        `json:"reporter"`
-	Livecomment Livecomment `json:"livecomment"`
-	CreatedAt   int64       `json:"created_at"`
+	ID          int64       `json:"id" validate:"required"`
+	Reporter    User        `json:"reporter" validate:"required"`
+	Livecomment Livecomment `json:"livecomment" validate:"required"`
+	CreatedAt   int64       `json:"created_at" validate:"required"`
 }
 
 type (
@@ -39,12 +39,12 @@ type (
 		Tip     int64  `json:"tip"`
 	}
 	PostLivecommentResponse struct {
-		ID         int64      `json:"id"`
-		User       User       `json:"user"`
-		Livestream Livestream `json:"livestream"`
-		Comment    string     `json:"comment"`
-		Tip        int64      `json:"tip"`
-		CreatedAt  int64      `json:"created_at"`
+		ID         int64      `json:"id" validate:"required"`
+		User       User       `json:"user" validate:"required"`
+		Livestream Livestream `json:"livestream" validate:"required"`
+		Comment    string     `json:"comment" validate:"required"`
+		Tip        int64      `json:"tip" validate:"required"`
+		CreatedAt  int64      `json:"created_at" validate:"required"`
 	}
 )
 
@@ -53,11 +53,11 @@ type ModerateRequest struct {
 }
 
 type NGWord struct {
-	ID           int64  `json:"id"`
-	UserID       int64  `json:"user_id"`
-	LivestreamID int64  `json:"livestream_id"`
-	Word         string `json:"word"`
-	CreatedAt    int64  `json:"created_at"`
+	ID           int64  `json:"id" validate:"required"`
+	UserID       int64  `json:"user_id" validate:"required"`
+	LivestreamID int64  `json:"livestream_id" validate:"required"`
+	Word         string `json:"word" validate:"required"`
+	CreatedAt    int64  `json:"created_at" validate:"required"`
 }
 
 func isTooManySpam(livecomments []*Livecomment) bool {

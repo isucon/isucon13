@@ -272,8 +272,11 @@ var run = cli.Command{
 		var systemErrorFound bool
 		for _, msgs := range bencherror.GetFinalSystemErrors() {
 			for _, msg := range msgs {
+				if len(msg) == 0 {
+					continue
+				}
+				lgr.Warnf("内部エラー: %s\n", msg)
 				systemErrorFound = true
-				lgr.Warn(msg)
 			}
 		}
 		if systemErrorFound {
