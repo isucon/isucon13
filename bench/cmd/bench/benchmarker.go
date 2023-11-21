@@ -243,8 +243,8 @@ loop:
 				now := time.Now()
 				d := now.Sub(b.startAt) / time.Second
 				new := int(2.0 * (1.0 + float64(d)/8.0))
-				if new > 12 {
-					new = 12
+				if new > 16 {
+					new = 16
 				}
 				if new != b.attackParallelis {
 					b.contestantLogger.Info("DNS水責め負荷が上昇します")
