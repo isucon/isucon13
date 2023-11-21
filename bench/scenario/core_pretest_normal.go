@@ -530,7 +530,7 @@ func NormalPostLivecommentPretest(ctx context.Context, contestantLogger *zap.Log
 	// icon反映されるまでに許される猶予
 	time.Sleep(IconHashAppliedDelay)
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1), isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -660,7 +660,7 @@ func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.L
 		return fmt.Errorf("初期のtest001ユーザのライブ配信におけるスパム報告は0件でなければなりません")
 	}
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10), isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -757,7 +757,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 		return fmt.Errorf("初期状態ではngwordはないはずです")
 	}
 
-	livecomments1, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments1, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -820,7 +820,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 	}
 	added++
 
-	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -834,7 +834,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 	}
 	scheduler.LivecommentScheduler.Moderate(spamComment.Comment)
 
-	livecomments3, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments3, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
