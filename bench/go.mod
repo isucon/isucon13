@@ -4,8 +4,10 @@ go 1.21.0
 
 require (
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/isucon/isucandar v0.0.0-20220322062028-6dd56dc57d72
 	github.com/miekg/dns v1.1.56
+	github.com/najeira/randstr v0.1.1
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.1
 	github.com/valyala/bytebufferpool v1.0.0
@@ -20,7 +22,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
-	github.com/najeira/randstr v0.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
