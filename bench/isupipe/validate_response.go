@@ -9,6 +9,10 @@ import (
 
 var validate *validator.Validate
 
+func init() {
+	validate = validator.New(validator.WithRequiredStructEnabled())
+}
+
 func ValidateResponse(req *http.Request, response interface{}) error {
 	if err := validate.Struct(response); err != nil {
 		_, ok := err.(*validator.InvalidValidationError)
