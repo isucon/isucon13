@@ -257,7 +257,7 @@ func registerHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user theme: "+err.Error())
 	}
 
-	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "30", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
+	if out, err := exec.Command("pdnsutil", "add-record", "u.isucon.dev", req.Name, "A", "0", powerDNSSubdomainAddress).CombinedOutput(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, string(out)+": "+err.Error())
 	}
 
