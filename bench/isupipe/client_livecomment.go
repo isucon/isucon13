@@ -146,7 +146,7 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, 
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return nil, err
 	}
