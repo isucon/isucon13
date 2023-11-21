@@ -187,7 +187,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags: "+err.Error())
 		}
 
-		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE tag_id IN (?)", tagIDList)
+		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE tag_id IN (?) ORDER BY livestream_id DESC", tagIDList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to construct IN query: "+err.Error())
 		}
@@ -206,7 +206,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 		}
 	} else {
 		// 検索条件なし
-		query := `SELECT * FROM livestreams`
+		query := `SELECT * FROM livestreams ORDER BY id DESC`
 		if c.QueryParam("limit") != "" {
 			limit, err := strconv.Atoi(c.QueryParam("limit"))
 			if err != nil {
