@@ -447,7 +447,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 			return fmt.Errorf("投稿したライブコメントのuser.IDが正しくありません")
 		}
 		if livecomment.User.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
-			return fmt.Errorf("新たに設定したアイコンのハッシュ値がlivecommentのicon_hashに反映されていません")
+			return fmt.Errorf("新たに設定したアイコンのハッシュ値がicon_hashに反映されていません")
 		}
 		found = true
 		break
