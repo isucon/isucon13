@@ -290,6 +290,15 @@ func reportLivecommentHandler(c echo.Context) error {
 		}
 	}
 
+	var livecommentModel LivecommentModel
+	if err := tx.GetContext(ctx, &livecommentModel, "SELECT * FROM livecomments WHERE id = ?", livecommentID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "livecomment not found")
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livecomment: "+err.Error())
+		}
+	}
+
 	now := time.Now().Unix()
 	reportModel := LivecommentReportModel{
 		UserID:        int64(userID),
