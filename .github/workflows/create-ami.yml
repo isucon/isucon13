@@ -1,0 +1,35 @@
+name: Build AMI with Packer
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-ami:
+    runs-on: isucon13-ci
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Packer
+      uses: hashicorp/setup-packer@v1
+      with:
+        version: "1.9.4"
+
+    - name: Set up node
+      uses: actions/setup-node@v3
+      with:
+        node-version: "lts/*"
+      - run: corepack enable pnpm
+
+    - name: Build
+      run: |
+        cd provisioning/packer
+        make
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ap-northeast-1
