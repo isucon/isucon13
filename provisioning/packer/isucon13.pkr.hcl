@@ -13,16 +13,17 @@ variable "revision" {
 }
 
 locals {
-  name = "isucon13-${formatdate("YYYYMMDD-hhmm", timestamp())}"
+  commit_hash = substr(shell("git rev-parse HEAD"), 0, 7)
+  name = "${local.commit_hash}-${formatdate("YYYYMMDD-hhmm", timestamp())}"
   ami_tags = {
-    Project  = "isucon13"
-    Family   = "isucon13"
+    Project  = "13"
+    Family   = "13"
     Name     = "${local.name}"
     Revision = "${var.revision}"
     Packer   = "1"
   }
   run_tags = {
-    Project = "isucon13"
+    Project = "13"
     Name    = "packer-${local.name}"
     Packer  = "1"
     Ignore  = "1"
