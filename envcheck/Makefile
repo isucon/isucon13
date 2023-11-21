@@ -10,4 +10,4 @@ TAG=envcheck:latest
 build:
 	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/envcheck_darwin -ldflags "-s -w"
 	CGO_ENABLED=0 $(LINUX_TARGET_ENV)  $(BUILD) -o $(DESTDIR)/envcheck -ldflags "-s -w"
-	tar -zcvf ../provisioning/ansible/roles/envcheck/files/envcheck.tar.gz ./
+	cp -a envcheck ../provisioning/ansible/roles/envcheck/files/
