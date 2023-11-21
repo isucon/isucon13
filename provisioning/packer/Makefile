@@ -27,4 +27,4 @@ init:
 
 .PHONY: build
 build:
-	packer build -var "commit_hash=$(git rev-parse HEAD)" isucon13.pkr.hcl
+	packer build -var "commit_hash=$$(git rev-parse HEAD)" isucon13.pkr.hcl
