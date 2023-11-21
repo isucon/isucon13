@@ -29,7 +29,7 @@ func (r LivestreamRanking) Len() int      { return len(r) }
 func (r LivestreamRanking) Swap(i, j int) { r[i], r[j] = r[j], r[i] }
 func (r LivestreamRanking) Less(i, j int) bool {
 	if r[i].Score == r[j].Score {
-		return r[i].Title < r[j].Title
+		return r[i].LivestreamID < r[j].LivestreamID
 	} else {
 		return r[i].Score < r[j].Score
 	}
