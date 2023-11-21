@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -41,6 +44,7 @@ type User struct {
 	DisplayName string `json:"display_name,omitempty"`
 	Description string `json:"description,omitempty"`
 	Theme       Theme  `json:"theme,omitempty"`
+	IconHash    string `json:"icon_hash,omitempty"`
 }
 
 type Theme struct {
@@ -406,6 +410,21 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 		return User{}, err
 	}
 
+	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
+		return User{}, err
+	}
+
+	var image []byte
+	if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", userModel.ID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			image, err = os.ReadFile(fallbackImage)
+			if err != nil {
+				return User{}, err
+			}
+		}
+	}
+	iconHash := sha256.Sum256(image)
+
 	user := User{
 		ID:          userModel.ID,
 		Name:        userModel.Name,
@@ -415,6 +434,7 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 			ID:       themeModel.ID,
 			DarkMode: themeModel.DarkMode,
 		},
+		IconHash: fmt.Sprintf("%x", iconHash),
 	}
 
 	return user, nil
