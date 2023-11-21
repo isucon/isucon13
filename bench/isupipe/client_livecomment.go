@@ -130,14 +130,18 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, stream
 	return livecomments, nil
 }
 
-func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]LivecommentReport, error) {
+func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]LivecommentReport, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
 	urlPath := fmt.Sprintf("/api/livestream/%d/report", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
+	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}

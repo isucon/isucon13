@@ -111,7 +111,7 @@ func BasicStreamerModerateScenario(
 			return err
 		}
 
-		reports, err := client.GetLivecommentReports(ctx, livestream.ID)
+		reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 		if err != nil {
 			lgr.Warnf("streamer_moderate: failed to get livecomment reports: %s\n", err.Error())
 			continue

@@ -420,7 +420,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s got:%s", testUser.Name, livestream.Owner.Name)
 	}
 
-	if _, err = client.GetLivecommentReports(ctx, livestream.ID); err != nil {
+	if _, err = client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
 	}
 
@@ -541,7 +541,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 
 	livestream := livestreams[0]
 
-	reports, err := client.GetLivecommentReports(ctx, livestream.ID)
+	reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
@@ -592,7 +592,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 		return err
 	}
 
-	reports2, err := client.GetLivecommentReports(ctx, livestream.ID)
+	reports2, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
