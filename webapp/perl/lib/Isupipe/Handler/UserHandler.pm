@@ -92,7 +92,7 @@ sub register_handler($app, $c) {
     );
 
 
-    my $err = system("pdnsutil", "add-record", "u.isucon.dev", $params->{name}, "A", "30", POWER_DNS_SUBDMAIN_ADDRESS);
+    my $err = system("pdnsutil", "add-record", "u.isucon.dev", $params->{name}, "A", "0", POWER_DNS_SUBDMAIN_ADDRESS);
     if ($err) {
         $c->halt(HTTP_INTERNAL_SERVER_ERROR, $err);
     }
