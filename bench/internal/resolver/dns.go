@@ -9,10 +9,26 @@ import (
 	"sync/atomic"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/miekg/dns"
 )
+
+var cache *lru.Cache[string, cacheEntry]
+
+func init() {
+	var err error
+	cache, err = lru.New[string, cacheEntry](10000)
+	if err != nil {
+		panic(err)
+	}
+}
+
+type cacheEntry struct {
+	IP      net.IP
+	Expires time.Time
+}
 
 var atomicId = uint64(1)
 var msgPool = sync.Pool{
@@ -31,6 +47,7 @@ type DNSResolver struct {
 	Nameserver      string
 	Timeout         time.Duration
 	ResolveAttempts uint
+	UseCache        bool
 }
 
 func NewDNSResolver() *DNSResolver {
@@ -38,10 +55,19 @@ func NewDNSResolver() *DNSResolver {
 		Nameserver:      net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)),
 		Timeout:         2 * time.Second,
 		ResolveAttempts: 1,
+		UseCache:        true,
 	}
 }
 
 func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP, error) {
+	if r.UseCache {
+		if entry, ok := cache.Get(addr); ok {
+			if entry.Expires.After(time.Now()) {
+				return entry.IP, nil
+			}
+		}
+	}
+
 	msg := msgPool.Get().(*dns.Msg)
 	defer msgPool.Put(msg)
 	msg.Id = uint16(atomic.AddUint64(&atomicId, 1))
@@ -72,9 +98,25 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 		return nil, fmt.Errorf("failed to resolve %s with rcode=%d", addr, in.Rcode)
 	}
 
+	// webappsに含まれるかどうか
+	for _, ans := range in.Answer {
+		if record, ok := ans.(*dns.A); ok {
+			if !config.IsWebappIP(record.A) {
+				// webappsにないものが返ってきた
+				return nil, fmt.Errorf("failed to resolve %s. %s is not in the server list", addr, record.A.String())
+			}
+		}
+	}
+
 	for _, ans := range in.Answer {
 		if record, ok := ans.(*dns.A); ok {
 			// TODO: IPアドレスが競技者のものか確認
+			if r.UseCache && ans.Header().Ttl > 0 {
+				cache.Add(addr, cacheEntry{
+					IP:      record.A,
+					Expires: time.Now().Add(time.Duration(ans.Header().Ttl) * time.Second),
+				})
+			}
 			return record.A, nil
 		}
 	}

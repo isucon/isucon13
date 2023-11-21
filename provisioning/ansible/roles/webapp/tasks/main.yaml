@@ -12,6 +12,13 @@
     path: /home/isucon/webapp
     state: directory
 
+- name: Mkdir sql
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/sql
+    state: directory
+
 - name: Get stats of webapp/sql
   ansible.builtin.stat:
     path: /home/isucon/webapp/sql
@@ -24,7 +31,7 @@
     remote_src: true
     src: /home/isucon/webapp.tar.gz
     dest: /home/isucon/
-  when: not st.stat.exists
+  # when: not st.stat.exists
 
 # TODO: 一旦削除しない
 #- name: Remove webapp.tar.gz
@@ -54,14 +61,6 @@
     src: isupipe-go.service
     dest: /etc/systemd/system/
 
-- name: Put systemd service env file
-  become: true
-  ansible.builtin.template:
-    src: env.sh
-    dest: /home/isucon/
-    owner: isucon
-    group: isucon
-    mode: 0755
 
 - name: Start webapp
   become: true

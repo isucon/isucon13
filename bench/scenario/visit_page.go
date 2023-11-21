@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 // 訪問時に行うGET操作をまとめた関数郡
 
-func VisitTop(ctx context.Context, client *isupipe.Client) error {
+func VisitTop(ctx context.Context, contestantLogger *zap.Logger, client *isupipe.Client) error {
 	if _, err := client.GetMyIcon(ctx); err != nil {
 		return err
 	}
@@ -31,7 +32,7 @@ func VisitTop(ctx context.Context, client *isupipe.Client) error {
 }
 
 // ライブ配信画面訪問
-func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
+func VisitLivestream(ctx context.Context, contestantLogger *zap.Logger, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
 	if err := client.EnterLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
@@ -55,7 +56,7 @@ func VisitLivestream(ctx context.Context, client *isupipe.Client, livestream *is
 	return nil
 }
 
-func LeaveFromLivestream(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
+func LeaveFromLivestream(ctx context.Context, contestantLogger *zap.Logger, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
 	if err := client.ExitLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
@@ -65,7 +66,7 @@ func LeaveFromLivestream(ctx context.Context, client *isupipe.Client, livestream
 }
 
 // ライブ配信管理画面訪問
-func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client, livestream *isupipe.Livestream) error {
+func VisitLivestreamAdmin(ctx context.Context, contestantLogger *zap.Logger, client *isupipe.Client, livestream *isupipe.Livestream) error {
 
 	// ライブコメント一覧取得
 	// FIXME: 自分のライブストリーム一覧を取ってくる必要がある
@@ -87,7 +88,7 @@ func VisitLivestreamAdmin(ctx context.Context, client *isupipe.Client, livestrea
 	return nil
 }
 
-func VisitUserProfile(ctx context.Context, client *isupipe.Client, user *isupipe.User) error {
+func VisitUserProfile(ctx context.Context, contestantLogger *zap.Logger, client *isupipe.Client, user *isupipe.User) error {
 	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
 		return err
 	}

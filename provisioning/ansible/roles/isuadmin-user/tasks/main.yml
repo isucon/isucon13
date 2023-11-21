@@ -1,0 +1,53 @@
+---
+- name: Create isuadmin group
+  become: true
+  group:
+    name: isuadmin
+    gid: 1110
+    state: present
+    system: no
+
+- name: Create isuadmin user
+  become: true
+  user:
+    name: isuadmin
+    uid: 1110
+    group: isuadmin
+    password: isuadmin
+    home: /home/isuadmin
+    shell: /bin/bash
+    state: present
+    system: no
+
+- name: Chmod isuadmin home directory
+  become: true
+  file:
+    path: /home/isuadmin
+    mode: 0755
+
+- name: Create .ssh directory for isuadmin
+  become: true
+  file:
+    path: /home/isuadmin/.ssh
+    state: directory
+    mode: 0700
+    owner: isuadmin
+    group: isuadmin
+
+- name: Put authorized_keys
+  become: true
+  copy:
+    dest: /home/isuadmin/.ssh/authorized_keys
+    src: authorized_keys
+    mode: 0600
+    owner: isuadmin
+    group: isuadmin
+
+- name: Add isuadmin to sudoers
+  become: true
+  copy:
+    content: "isuadmin  ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/99-isuadmin-user
+    owner: root
+    group: root
+    mode: 0440

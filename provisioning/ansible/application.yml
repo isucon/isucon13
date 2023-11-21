@@ -3,9 +3,12 @@
   roles:
     - base
     - apt
+    - isuadmin-user
     - isucon-user
+    - globalip
     - xbuild
     - mysql
     - powerdns
     - nginx
+    - envcheck
     - webapp

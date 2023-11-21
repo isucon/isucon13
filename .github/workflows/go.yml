@@ -6,6 +6,7 @@ on:
       - bench/**/*
       - webapp/go/**/*
       - webapp/sql/**/*
+      - webapp/pdns/**/*
       - development/docker-compose-common.yml
       - development/docker-compose-go.yml
       - development/Makefile
@@ -15,6 +16,7 @@ on:
       - bench/**/*
       - webapp/go/**/*
       - webapp/sql/**/*
+      - webapp/pdns/**/*
       - development/docker-compose-common.yml
       - development/docker-compose-go.yml
       - development/Makefile
@@ -34,6 +36,12 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
         id: go
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup corepack
+        run: corepack enable yarn
 
       # to avoid error: Deleting the contents of '/home/ubuntu/actions-runner/_work/isucon13/isucon13'
       #                 Error: File was unable to be removed Error: EACCES: permission denied, rmdir
@@ -51,6 +59,11 @@ jobs:
         run: |
           make down/go
           make up/go
+      
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: |
+          make
 
       # bench
       - name: "[bench] Get deps"

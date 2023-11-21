@@ -1,0 +1,46 @@
+---
+- name: mkdir for envcheck
+  become: true
+  ansible.builtin.file:
+    path: /opt/isucon-env-checker
+    state: directory
+
+- name: Send envcheck binary
+  become: true
+  ansible.builtin.copy:
+    src: envcheck
+    dest: /opt/isucon-env-checker/envcheck
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Put run script
+  become: true
+  ansible.builtin.copy:
+    src: run-isucon-env-checker.sh
+    dest: /opt/isucon-env-checker/run-isucon-env-checker.sh
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Put warmup script
+  become: true
+  ansible.builtin.copy:
+    src: warmup.sh
+    dest: /opt/isucon-env-checker/warmup.sh
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: envcheck.service
+    dest: /etc/systemd/system/
+
+- name: Start envcheck
+  become: true
+  ansible.builtin.systemd:
+    name: envcheck
+    enabled: true
+    daemon_reload: true
