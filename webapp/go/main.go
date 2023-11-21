@@ -179,7 +179,7 @@ func main() {
 	e.POST("/api/icon", postIconHandler)
 
 	// stats
-	// ライブコメント統計情報
+	// ライブ配信統計情報
 	e.GET("/api/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
 
 	// 課金情報
