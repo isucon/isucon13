@@ -94,8 +94,8 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	// 2024/04/01からの１年間の期間内であるかチェック
 	var (
-		termStartAt    = time.Date(2023, 11, 25, 10, 0, 0, 0, time.UTC)
-		termEndAt      = time.Date(2024, 11, 25, 10, 0, 0, 0, time.UTC)
+		termStartAt    = time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC)
+		termEndAt      = time.Date(2024, 11, 25, 1, 0, 0, 0, time.UTC)
 		reserveStartAt = time.Unix(req.StartAt, 0)
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
