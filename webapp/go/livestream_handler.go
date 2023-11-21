@@ -289,7 +289,11 @@ func getUserLivestreamsHandler(c echo.Context) error {
 
 	var user UserModel
 	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", username); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "failed to get user")
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "user not found")
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
+		}
 	}
 
 	var livestreamModels []*LivestreamModel
