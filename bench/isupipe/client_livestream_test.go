@@ -51,8 +51,8 @@ func TestLivestream(t *testing.T) {
 		Description:  "livestream-test",
 		PlaylistUrl:  "https://example.com",
 		ThumbnailUrl: "https://example.com",
-		StartAt:      time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC).Unix(),
-		EndAt:        time.Date(2023, 11, 25, 2, 0, 0, 0, time.UTC).Unix(),
+		StartAt:      time.Date(2023, 11, 25, 0, 0, 0, 0, time.UTC).Unix(),
+		EndAt:        time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC).Unix(),
 		Tags:         []int64{},
 	}, WithStatusCode(http.StatusBadRequest))
 	assert.NoError(t, err)
