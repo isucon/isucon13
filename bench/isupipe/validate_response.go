@@ -15,8 +15,7 @@ func init() {
 
 func ValidateResponse(req *http.Request, response interface{}) error {
 	if err := validate.Struct(response); err != nil {
-		_, ok := err.(*validator.InvalidValidationError)
-		if !ok {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
 			return bencherror.NewInternalError(err)
 		}
 
