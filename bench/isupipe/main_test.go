@@ -10,11 +10,17 @@ import (
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
-	"go.uber.org/zap"
+	"github.com/isucon/isucon13/bench/internal/logger"
 )
 
 func TestMain(m *testing.M) {
-	client, err := NewClient(zap.NewNop(),
+	testLogger, err := logger.InitTestLogger()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client, err := NewClient(
+		testLogger,
 		agent.WithTimeout(1*time.Minute),
 	)
 	if err != nil {

@@ -7,15 +7,19 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/logger"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 // FIXME: 変動をテスト
 func TestPayment(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(zap.NewNop(),
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
+	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(3*time.Second),
 	)

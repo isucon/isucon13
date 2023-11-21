@@ -9,9 +9,9 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/logger"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 // FIXME: 予約期間、枠数などテスト
@@ -19,7 +19,10 @@ import (
 func TestLivestream(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(zap.NewNop(),
+	testLogger, err := logger.InitTestLogger()
+
+	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(1*time.Minute),
 	)
@@ -76,7 +79,8 @@ func TestLivestream(t *testing.T) {
 		endAt   = time.Date(2024, 9, 1, 9, 0, 0, 0, time.UTC).Unix()
 	)
 	for i := 1; i <= config.NumSlots*2; i++ {
-		loopClient, err := NewClient(zap.NewNop(),
+		loopClient, err := NewClient(
+			testLogger,
 			agent.WithBaseURL(config.TargetBaseURL),
 			agent.WithTimeout(3*time.Second),
 		)

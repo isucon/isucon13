@@ -6,15 +6,18 @@ import (
 	"time"
 
 	"github.com/isucon/isucandar/agent"
+	"github.com/isucon/isucon13/bench/internal/logger"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestGetUserStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(zap.NewNop(), agent.WithTimeout(20*time.Second))
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
+	client, err := NewClient(testLogger, agent.WithTimeout(20*time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
@@ -114,7 +117,10 @@ func TestGetUserStats(t *testing.T) {
 func TestGetLivestreamStats(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(zap.NewNop(), agent.WithTimeout(20*time.Second))
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
+	client, err := NewClient(testLogger, agent.WithTimeout(20*time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
