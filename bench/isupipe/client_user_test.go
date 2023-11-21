@@ -13,12 +13,13 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestClientUser_Login(t *testing.T) {
 	ctx := context.Background()
 
-	client, err := NewClient(
+	client, err := NewClient(zap.NewNop(),
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(1*time.Minute),
 	)

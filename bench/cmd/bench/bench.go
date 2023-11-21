@@ -182,7 +182,7 @@ var run = cli.Command{
 		contestantLogger.Info("静的ファイルチェックが完了しました")
 
 		contestantLogger.Info("webappの初期化を行います")
-		initClient, err := isupipe.NewClient(
+		initClient, err := isupipe.NewClient(contestantLogger,
 			agent.WithBaseURL(config.TargetBaseURL),
 			agent.WithTimeout(1*time.Minute),
 		)
@@ -214,7 +214,7 @@ var run = cli.Command{
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
+		if err := scenario.Pretest(ctx, contestantLogger, pretestDNSResolver); err != nil {
 			// FIXME: pretestのエラーを収集
 			dumpFailedResult([]string{"整合性チェックに失敗しました"})
 			return cli.NewExitError(err, 1)
@@ -253,24 +253,35 @@ var run = cli.Command{
 		contestantLogger.Info("最終チェックを実施します")
 		finalcheckDNSResolver := resolver.NewDNSResolver()
 		finalcheckDNSResolver.ResolveAttempts = 10
-		if err := scenario.FinalcheckScenario(ctx, finalcheckDNSResolver); err != nil {
+		if err := scenario.FinalcheckScenario(ctx, contestantLogger, finalcheckDNSResolver); err != nil {
 			dumpFailedResult([]string{})
 			return cli.NewExitError(err, 1)
 		}
 		contestantLogger.Info("最終チェックが成功しました")
 		contestantLogger.Info("重複排除したログを以下に出力します")
 
-		lgr.Info("===== ベンチ走行中エラー (重複排除済み) =====")
+		// ベンチマーク処理のエラー収集
+		lgr.Info("ベンチエラーを収集します")
 		var benchErrors []string
-		for _, msgs := range bencherror.GetFinalErrorMessages() {
+		for _, msgs := range bencherror.GetFinalBenchErrors() {
 			benchErrors = append(benchErrors, msgs...)
 		}
 		benchErrors = uniqueMsgs(benchErrors)
 
-		lgr.Info("===== ベンチ走行結果 =====")
-		var msgs []string
+		// ベンチマーカー内部エラー
+		var systemErrorFound bool
+		for _, msgs := range bencherror.GetFinalSystemErrors() {
+			for _, msg := range msgs {
+				systemErrorFound = true
+				lgr.Warn(msg)
+			}
+		}
+		if systemErrorFound {
+			contestantLogger.Warn("システム内部エラーが発生しました。運営にジョブIDとともに連絡お願いいたします")
+		}
 
-		lgr.Info("シナリオカウンタ")
+		var msgs []string
+		lgr.Info("シナリオカウンタを出力します")
 		scenarioCounter := benchmarker.ScenarioCounter()
 
 		var scenarioLogs []string

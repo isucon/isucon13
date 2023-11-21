@@ -27,8 +27,9 @@ var (
 )
 
 var (
-	benchErrors *failure.Errors
-	doneOnce    sync.Once
+	benchErrors  *failure.Errors
+	systemErrors *failure.Errors
+	doneOnce     sync.Once
 )
 
 func InitErrors(ctx context.Context) {
@@ -40,12 +41,13 @@ func WrapError(code failure.StringCode, err error) error {
 	return fmt.Errorf("%s: %w", code, err)
 }
 
-func GetFinalErrorMessages() map[string][]string {
-	lgr := zap.S()
+func WrapInternalError(code failure.StringCode, err error) error {
+	systemErrors.Add(failure.NewError(code, err))
+	return fmt.Errorf("%s: %w", code, err)
+}
 
-	doneOnce.Do(func() {
-		benchErrors.Done()
-	})
+func extractErrors(errs *failure.Errors) map[string][]string {
+	lgr := zap.S()
 
 	// メッセージを整形した上でコード種別ごと詰め直して返す
 	m := make(map[string][]string)
@@ -71,6 +73,14 @@ func GetFinalErrorMessages() map[string][]string {
 	}
 
 	return m
+}
+
+func GetFinalBenchErrors() map[string][]string {
+	return extractErrors(benchErrors)
+}
+
+func GetFinalSystemErrors() map[string][]string {
+	return extractErrors(systemErrors)
 }
 
 func Done() {

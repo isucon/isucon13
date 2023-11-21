@@ -11,12 +11,14 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 // 異常系
 
-func assertPipeUserRegistration(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertPipeUserRegistration(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -40,9 +42,10 @@ func assertPipeUserRegistration(ctx context.Context, dnsResolver *resolver.DNSRe
 	return nil
 }
 
-func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertBadLogin(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// 存在しないユーザでログインされた場合はエラー
 	client1, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(3*time.Second),
 	)
@@ -60,6 +63,7 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 
 	// パスワードが間違っている場合はエラー
 	client2, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(3*time.Second),
 	)
@@ -77,8 +81,9 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 	return nil
 }
 
-func assertUserUniqueConstraint(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertUserUniqueConstraint(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -106,11 +111,12 @@ func assertUserUniqueConstraint(ctx context.Context, dnsResolver *resolver.DNSRe
 	return nil
 }
 
-func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// NumSlotを超えて予約しようとするとエラーになる
 	var overflow bool
 	for idx := 0; idx < config.NumSlots; idx++ {
 		overflowClient, err := isupipe.NewCustomResolverClient(
+			contestantLogger,
 			dnsResolver,
 			agent.WithTimeout(config.PretestTimeout),
 		)
@@ -164,9 +170,10 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 	return nil
 }
 
-func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func assertReserveOutOfTerm(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 期間外の予約をするとエラーになる
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
