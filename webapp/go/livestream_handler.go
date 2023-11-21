@@ -377,7 +377,7 @@ func exitLivestreamHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?", userID, livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert livestream_view_history: "+err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete livestream_view_history: "+err.Error())
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -24,6 +24,10 @@ func GetPaymentResult(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to count total tip: "+err.Error())
 	}
 
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
+	}
+
 	return c.JSON(http.StatusOK, &PaymentResult{
 		TotalTip: totalTip,
 	})
