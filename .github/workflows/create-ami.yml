@@ -22,6 +22,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install unzip
+        run: |
+          sudo apt-get update
+          sudo apt-get install unzip
+
       - name: Set up Packer
         uses: hashicorp/setup-packer@main
         with:
