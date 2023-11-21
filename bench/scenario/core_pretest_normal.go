@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/isucon/isucandar/agent"
@@ -664,6 +665,15 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return err
 	}
 
+	for i := 0; i <= rand.Intn(5)+1; i++ {
+		// spamではない普通のコメントをする
+		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
+		_, _, err = spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{})
+		if err != nil {
+			return err
+		}
+	}
+
 	spamComment, _ := scheduler.LivecommentScheduler.GetNegativeComment()
 	notip := &scheduler.Tip{}
 	_, _, err = spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, spamComment.Comment, notip)
@@ -690,7 +700,12 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return err
 	}
 	if len(livecomments3)-len(livecomments1) != 0 {
-		return fmt.Errorf("１件ライブコメントが粛清されたはずですが、件数が不正です")
+		return fmt.Errorf("１件ライブコメントが削除されたはずですが、件数が不正です")
+	}
+	for _, comment := range livecomments3 {
+		if strings.Contains(comment.Comment, spamComment.NgWord) {
+			return fmt.Errorf("削除されたはずのライブコメントが残っています")
+		}
 	}
 
 	return nil
