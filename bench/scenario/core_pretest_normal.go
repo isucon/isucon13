@@ -21,6 +21,9 @@ import (
 //go:embed testdata/NoImage.jpg
 var fallbackImage []byte
 
+// icon_hashが反映されるまでに許される猶予
+const IconHashAppliedDelay = 2 * time.Second
+
 // 基本機能のロジックpretest
 
 func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
@@ -342,12 +345,31 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("アイコン未設定の場合は、NoImage.jpgを返さなければなりません")
 	}
 
+	// アイコンを投稿する前、No Imageの画像のハッシュが返されているか
+	me, err := client.GetMe(ctx)
+	if err != nil {
+		return err
+	}
+	if me.IconHash != fmt.Sprintf("%x", sha256.Sum256(fallbackImage)) {
+		return fmt.Errorf("アイコン未設定の場合は、icon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
+	}
+
 	// アイコンを投稿後、期待するアイコンが設定されているか
 	randomIcon := scheduler.IconSched.GetRandomIcon()
 	if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
 		Image: randomIcon.Image,
 	}); err != nil {
 		return err
+	}
+
+	// 反映されるまでに許される猶予
+	time.Sleep(IconHashAppliedDelay)
+	me2, err := client.GetMe(ctx)
+	if err != nil {
+		return err
+	}
+	if me2.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
+		return fmt.Errorf("新たに設定したアイコンのハッシュ値がicon_hashに反映されていません")
 	}
 
 	icon2, err := client.GetIcon(ctx, "test001")
@@ -383,28 +405,58 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return err
 	}
 
-	livestream := livestreams[0]
+	if len(livestreams) == 0 {
+		return fmt.Errorf("自分のライブ配信が存在しません")
+	}
 
-	//
+	livestream := livestreams[rand.Intn(len(livestreams))] // ランダムに選ぶ
+	if livestream.Owner.ID != testUser.ID {
+		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s got:%s", testUser.Name, livestream.Owner.Name)
+	}
 
 	if _, err = client.GetLivecommentReports(ctx, livestream.ID); err != nil {
 		return err
 	}
 
 	notip := &scheduler.Tip{}
-	_, _, err = client.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, "test", notip)
+	postedLiveComment, _, err := client.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, "test", notip)
 	if err != nil {
 		return err
 	}
+
+	// アイコンを投稿してLivecommentの中のicon_hashが更新されているかをみる
+	randomIcon := scheduler.IconSched.GetRandomIcon()
+	if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
+		Image: randomIcon.Image,
+	}); err != nil {
+		return err
+	}
+	// icon反映されるまでに許される猶予
+	time.Sleep(IconHashAppliedDelay)
 
 	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1))
 	if err != nil {
 		return err
 	}
+	var found bool
+	for _, livecomment := range livecomments {
+		if livecomment.ID != postedLiveComment.ID {
+			continue
+		}
+		if livecomment.User.ID != testUser.ID {
+			return fmt.Errorf("投稿したライブコメントのuser.IDが正しくありません")
+		}
+		if livecomment.User.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
+			return fmt.Errorf("新たに設定したアイコンのハッシュ値がicon_hashに反映されていません")
+		}
+		found = true
+		break
+	}
+	if !found {
+		return fmt.Errorf("投稿したライブコメントが見つかりません")
+	}
 
-	livecomment := livecomments[0]
-
-	if err := client.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.ID); err != nil {
+	if err := client.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomments[0].ID); err != nil {
 		return err
 	}
 
