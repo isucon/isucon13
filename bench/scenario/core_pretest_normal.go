@@ -636,7 +636,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	livestream := livestreams[rand.Intn(len(livestreams))] // ランダムに選ぶ
 
-	ngwords, err := client.GetNgwords(ctx, livestream.ID)
+	ngwords, err := client.GetNgwords(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}

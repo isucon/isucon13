@@ -165,7 +165,7 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, 
 	return reports, nil
 }
 
-func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]*NGWord, error) {
+func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]*NGWord, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -174,6 +174,10 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, opts ...Cli
 	urlPath := fmt.Sprintf("/api/livestream/%d/ngwords", livestreamID)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	if err := c.setStreamerURL(streamerName); err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
