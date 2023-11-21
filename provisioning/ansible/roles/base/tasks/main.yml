@@ -1,7 +1,7 @@
-- name: "roles/common/tasks/timezone: Set timezone to Asia/Tokyo"
+- name: "roles/common/tasks/timezone: Set timezone to UTC"
   become: true
   timezone:
-    name: Asia/Tokyo
+    name: UTC
 
 - name: Copy sshd_config.d/pubkey.conf
   become: true
