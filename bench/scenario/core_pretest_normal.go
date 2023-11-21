@@ -688,7 +688,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	if err != nil {
 		return err
 	}
-	if len(livecomments2)-len(livecomments1) != added  {
+	if len(livecomments2)-len(livecomments1) != added {
 		return fmt.Errorf("%d件ライブコメントが追加されたはずですが、件数が不正です", added)
 	}
 
@@ -702,7 +702,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	if err != nil {
 		return err
 	}
-	if len(livecomments3)-len(livecomments1) != 0 {
+	if len(livecomments3)-len(livecomments2) != -1 {
 		return fmt.Errorf("１件ライブコメントが削除されたはずですが、件数が不正です")
 	}
 	for _, comment := range livecomments3 {
