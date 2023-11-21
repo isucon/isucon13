@@ -8,6 +8,7 @@ class Isupipe::Entity::User {
     field $description :param = undef;
     field $password :param = undef;  # $password is hashed password
     field $theme :param = undef;
+    field $icon_hash :param = undef;
 
     use Isupipe::Assert;
     use Types::Standard -types;
@@ -19,6 +20,7 @@ class Isupipe::Entity::User {
         assert_field(Str, $description, 'description');
         assert_field(Str, $password, 'password');
         assert_field(InstanceOf['Isupipe::Entity::Theme'], $theme, 'theme');
+        assert_field(Str, $icon_hash, 'icon_hash');
     }
 
     method as_hashref() {
@@ -38,6 +40,7 @@ class Isupipe::Entity::User {
             defined $display_name ? (display_name => $display_name) : (),
             defined $description ? (description => $description) : (),
             defined $theme ? (theme => $theme) : (),
+            defined $icon_hash ? (icon_hash => $icon_hash) : (),
         }
     }
 
