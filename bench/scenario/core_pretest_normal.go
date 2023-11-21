@@ -56,16 +56,33 @@ func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return err
 	}
 
-	if _, err := client.GetMe(ctx); err != nil {
+	if u, err := client.GetMe(ctx); err != nil {
 		return err
+	} else {
+		if u.ID != user.ID {
+			return fmt.Errorf("ログインしたユーザのIDが正しくありません (expected:%d actual:%d)", user.ID, u.ID)
+		}
+		if u.Name != user.Name {
+			return fmt.Errorf("ログインしたユーザのNameが正しくありません (expected:%s actual:%s)", user.Name, u.Name)
+		}
+		if u.DisplayName != user.DisplayName {
+			return fmt.Errorf("ログインしたユーザのDisplayNameが正しくありません (expected:%s actual:%s)", user.DisplayName, u.DisplayName)
+		}
+		if u.Theme.DarkMode != user.Theme.DarkMode {
+			return fmt.Errorf("ログインしたユーザのThemeが正しくありません (expected:%v actual:%v)", user.Theme, u.Theme)
+		}
 	}
 
 	if err := client.GetUser(ctx, user.Name); err != nil {
 		return err
 	}
 
-	if _, err := client.GetStreamerTheme(ctx, user); err != nil {
+	if t, err := client.GetStreamerTheme(ctx, user); err != nil {
 		return err
+	} else {
+		if t.DarkMode != user.Theme.DarkMode {
+			return fmt.Errorf("ユーザのThemeが正しくありません (expected:%v actual:%v)", user.Theme, t)
+		}
 	}
 
 	return nil
