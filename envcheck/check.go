@@ -113,7 +113,7 @@ func (c *checker) checkSecurityGroup(sg *ec2.SecurityGroup) {
 	for _, p := range sg.IpPermissions {
 		if c.isIngressSSH(p) {
 			hasIngressSSH = true
-			break
+			continue
 		}
 		if c.isIngressHTTPS(p) {
 			hasIngressHTTPS = true
