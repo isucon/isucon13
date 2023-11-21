@@ -224,22 +224,38 @@ func (b *benchmarker) loadAttackHTTPClient() *http.Client {
 func (b *benchmarker) loadAttack(ctx context.Context, asize int64, httpClient *http.Client, loadLimiter *rate.Limiter) error {
 	defer b.attackSem.Release(asize)
 
-	failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed())
-	if failRate < 0.01 {
-		b.contestantLogger.Info("DNS水責め負荷が上昇します")
-		now := time.Now()
-		d := now.Sub(b.startAt) / time.Second
-		b.attackParallelis = int(2.0 * (1.0 + float64(d)/12.0))
-		if b.attackParallelis > 10 {
-			b.attackParallelis = 10
-		}
-	}
-
 	defer b.scenarioCounter.Add(DnsWaterTortureAttackScenario)
 	if err := scenario.DnsWaterTortureAttackScenario(ctx, httpClient, loadLimiter); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (b *benchmarker) loadAttackCoordinator(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+loop:
+	for {
+		select {
+		case <-ticker.C:
+			failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed()+1)
+			if failRate < 0.01 {
+				now := time.Now()
+				d := now.Sub(b.startAt) / time.Second
+				new := int(2.0 * (1.0 + float64(d)/8.0))
+				if new > 12 {
+					new = 12
+				}
+				if new != b.attackParallelis {
+					b.contestantLogger.Info("DNS水責め負荷が上昇します")
+					b.attackParallelis = new
+				}
+			}
+		case <-ctx.Done():
+			break loop
+		}
+	}
+	b.contestantLogger.Info("DNS水責め負荷が上昇します ///")
 }
 
 func (b *benchmarker) loadStreamer(ctx context.Context) error {
@@ -348,6 +364,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
 	loadAttackLimiter := rate.NewLimiter(rate.Limit(900), 1)
+	go func() { b.loadAttackCoordinator(ctx) }()
 
 	for {
 		select {
