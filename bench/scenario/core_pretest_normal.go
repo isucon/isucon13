@@ -715,7 +715,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 
 	// 粛清
-	if err := client.Moderate(ctx, livestream.ID, spamComment.NgWord); err != nil {
+	if err := client.Moderate(ctx, livestream.ID, livestream.Owner.Name, spamComment.NgWord); err != nil {
 		return err
 	}
 	scheduler.LivecommentScheduler.Moderate(spamComment.Comment)

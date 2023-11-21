@@ -185,7 +185,7 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, streamerNam
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return nil, err
 	}
@@ -290,11 +290,15 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID int64, stre
 	return nil
 }
 
-func (c *Client) Moderate(ctx context.Context, livestreamID int64, ngWord string, opts ...ClientOption) error {
+func (c *Client) Moderate(ctx context.Context, livestreamID int64, streamerName string, ngWord string, opts ...ClientOption) error {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
+
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return bencherror.NewInternalError(err)
+	}
 
 	urlPath := fmt.Sprintf("/api/livestream/%d/moderate", livestreamID)
 	payload, err := json.Marshal(&ModerateRequest{
@@ -304,13 +308,13 @@ func (c *Client) Moderate(ctx context.Context, livestreamID int64, ngWord string
 		return bencherror.NewInternalError(err)
 	}
 
-	req, err := c.agent.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(payload))
+	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(payload))
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
-	resp, err := sendRequest(ctx, c.agent, req)
+	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
 		return err
 	}
