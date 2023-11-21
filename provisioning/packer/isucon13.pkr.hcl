@@ -7,14 +7,18 @@ packer {
   }
 }
 
+variable "commit_hash" {
+  type    = string
+  default = "example-hash"
+}
+
 variable "revision" {
   type    = string
   default = "unknown"
 }
 
 locals {
-  commit_hash = substr(shell("git rev-parse HEAD"), 0, 7)
-  name = "${local.commit_hash}-${formatdate("YYYYMMDD-hhmm", timestamp())}"
+  name = "${var.commit_hash}-${formatdate("YYYYMMDD-hhmm", timestamp())}"
   ami_tags = {
     Project  = "13"
     Family   = "13"
