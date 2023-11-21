@@ -57,6 +57,14 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	}
 	log.Printf("executable = %s\n", executablePath)
 
+	// ベンチマーカー実行前に確実にresultファイルを削除する
+	// 他のチームに対する結果が含まれている可能性があるため
+	for _, name := range []string{resultPath, staffLogPath, contestantLogPath} {
+		if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
 	benchOptions := []string{
 		"run",
 		"--nameserver", target,
