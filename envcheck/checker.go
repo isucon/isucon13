@@ -69,7 +69,7 @@ func Check(cfg CheckConfig) (Result, error) {
 		}, err
 	}
 
-	// c.checkAll()
+	c.checkAll()
 
 	raw, _ := json.Marshal(c)
 	return Result{

@@ -1,31 +1,36 @@
 ---
-- name: Send envcheck tarball
-  become: true
-  ansible.builtin.copy:
-    src: envcheck.tar.gz
-    dest: /home/isucon/envcheck.tar.gz
-  
 - name: mkdir for envcheck
   become: true
-  become_user: isucon
   ansible.builtin.file:
-    path: /home/isucon/envcheck
+    path: /opt/isucon-env-checker
     state: directory
 
-- name: Extract envcheck.tar.gz into /home/isucon/envcheck
+- name: Send envcheck binary
   become: true
-  become_user: isucon
-  ansible.builtin.unarchive:
-    remote_src: true
-    src: /home/isucon/envcheck.tar.gz
-    dest: /home/isucon/envcheck/
+  ansible.builtin.copy:
+    src: envcheck
+    dest: /opt/isucon-env-checker/envcheck
+    mode: 0755
+    owner: root
+    group: root
 
-- name: Build envcheck
-  become: yes
-  shell: >
-    /home/isucon/local/golang/bin/go build -o /home/isucon/envcheck/envcheck -ldflags "-s -w"
-  args:
-    chdir: /home/isucon/envcheck
+- name: Put run script
+  become: true
+  ansible.builtin.copy:
+    src: run-isucon-env-checker.sh
+    dest: /opt/isucon-env-checker/run-isucon-env-checker.sh
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Put warmup script
+  become: true
+  ansible.builtin.copy:
+    src: warmup.sh
+    dest: /opt/isucon-env-checker/warmup.sh
+    mode: 0755
+    owner: root
+    group: root
 
 - name: Put systemd service
   become: true
