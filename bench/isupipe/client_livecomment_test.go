@@ -55,7 +55,7 @@ func TestModerate(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	err = client.Moderate(ctx, livestream.ID, "test")
+	err = client.Moderate(ctx, livestream.ID, livestream.Owner.Name, "test")
 	assert.NoError(t, err)
 }
 
@@ -98,7 +98,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	ngWords, err := client.GetNgwords(ctx, livestream.ID)
+	ngWords, err := client.GetNgwords(ctx, livestream.ID, livestream.Owner.Name)
 	assert.NoError(t, err)
 	for _, ngWord := range ngWords {
 		assert.NotZero(t, ngWord.CreatedAt)
