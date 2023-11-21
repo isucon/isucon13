@@ -48,3 +48,12 @@
     owner: root
     group: root
     mode: 0440
+
+- name: Put systemd service env file
+  become: true
+  ansible.builtin.template:
+    src: env.sh
+    dest: /home/isucon/
+    owner: isucon
+    group: isucon
+    mode: 0755

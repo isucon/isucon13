@@ -3,13 +3,42 @@ isucon13_testbed_bench0 ansible_host=163.43.188.183 ansible_user=ubuntu
 isucon13_testbed_bench1 ansible_host=163.43.188.184 ansible_user=ubuntu
 isucon13_testbed_bench2 ansible_host=163.43.188.185 ansible_user=ubuntu
 
+isucon13_testbed_bench3 ansible_host=163.43.188.186 ansible_user=ubuntu
+isucon13_testbed_bench4 ansible_host=163.43.188.187 ansible_user=ubuntu
+isucon13_testbed_bench5 ansible_host=163.43.188.188 ansible_user=ubuntu
+
+isucon13_testbed_bench2nd0 ansible_host=163.43.152.151 ansible_user=ubuntu
+isucon13_testbed_bench2nd1 ansible_host=163.43.152.152 ansible_user=ubuntu
+
 [application]
 isucon13_testbed_app0 ansible_host=163.43.188.164 ansible_user=ubuntu
 isucon13_testbed_app1 ansible_host=163.43.188.165 ansible_user=ubuntu
 isucon13_testbed_app2 ansible_host=163.43.188.166 ansible_user=ubuntu
+
 isucon13_testbed_app3 ansible_host=163.43.188.167 ansible_user=ubuntu
 isucon13_testbed_app4 ansible_host=163.43.188.168 ansible_user=ubuntu
 isucon13_testbed_app5 ansible_host=163.43.188.169 ansible_user=ubuntu
+
 isucon13_testbed_app6 ansible_host=163.43.188.170 ansible_user=ubuntu
 isucon13_testbed_app7 ansible_host=163.43.188.171 ansible_user=ubuntu
 isucon13_testbed_app8 ansible_host=163.43.188.172 ansible_user=ubuntu
+
+isucon13_testbed_app9 ansible_host=163.43.188.173 ansible_user=ubuntu
+isucon13_testbed_app10 ansible_host=163.43.188.174 ansible_user=ubuntu
+isucon13_testbed_app11 ansible_host=163.43.188.175 ansible_user=ubuntu
+
+isucon13_testbed_app12 ansible_host=163.43.188.176 ansible_user=ubuntu
+isucon13_testbed_app13 ansible_host=163.43.188.177 ansible_user=ubuntu
+isucon13_testbed_app14 ansible_host=163.43.188.178 ansible_user=ubuntu
+
+isucon13_testbed_app15 ansible_host=163.43.188.179 ansible_user=ubuntu
+isucon13_testbed_app16 ansible_host=163.43.188.180 ansible_user=ubuntu
+isucon13_testbed_app17 ansible_host=163.43.188.181 ansible_user=ubuntu
+
+isucon13_testbed_app2nd0 ansible_host=163.43.152.132 ansible_user=ubuntu
+isucon13_testbed_app2nd1 ansible_host=163.43.152.133 ansible_user=ubuntu
+isucon13_testbed_app2nd2 ansible_host=163.43.152.134 ansible_user=ubuntu
+
+isucon13_testbed_app2nd3 ansible_host=163.43.152.135 ansible_user=ubuntu
+isucon13_testbed_app2nd4 ansible_host=163.43.152.136 ansible_user=ubuntu
+isucon13_testbed_app2nd5 ansible_host=163.43.152.137 ansible_user=ubuntu
