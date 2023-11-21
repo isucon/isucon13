@@ -61,14 +61,6 @@
     src: isupipe-go.service
     dest: /etc/systemd/system/
 
-- name: Put systemd service env file
-  become: true
-  ansible.builtin.template:
-    src: env.sh
-    dest: /home/isucon/
-    owner: isucon
-    group: isucon
-    mode: 0755
 
 - name: Start webapp
   become: true
