@@ -20,7 +20,6 @@ type LivestreamStatistics struct {
 
 type LivestreamRankingEntry struct {
 	LivestreamID int64
-	Title        string
 	Score        int64
 }
 type LivestreamRanking []LivestreamRankingEntry
@@ -257,7 +256,6 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 		score := reactions + totalTips
 		ranking = append(ranking, LivestreamRankingEntry{
 			LivestreamID: livestream.ID,
-			Title:        livestream.Title,
 			Score:        score,
 		})
 	}
