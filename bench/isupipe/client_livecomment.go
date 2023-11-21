@@ -171,13 +171,13 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, streamerNam
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	urlPath := fmt.Sprintf("/api/livestream/%d/ngwords", livestreamID)
-	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
-	if err != nil {
+	if err := c.setStreamerURL(streamerName); err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
-	if err := c.setStreamerURL(streamerName); err != nil {
+	urlPath := fmt.Sprintf("/api/livestream/%d/ngwords", livestreamID)
+	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
 
