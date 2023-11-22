@@ -6,7 +6,7 @@ import "time"
 const DefaultBenchmarkTimeout = 60 * time.Second
 
 // スパム離脱割合
-const TooManySpamThresholdPercentage = 10.0
+const TooManySpamThresholdPercentage = 30.0
 
 // 基本となる並列性
 // セマフォの重みに使われます
@@ -22,6 +22,12 @@ const NumMustTryLogins = 10
 
 // HTTPクライアント(isucandar/agent) のタイムアウト
 const DefaultAgentTimeout = 20 * time.Second
+
+// POST /api/initialize 時のタイムアウト
+const InitializeAgentTimeout = 42 * time.Second
+
+// SearchLivestreamsのLIMITのデフォルト
+const NumSearchLivestreams = 50
 
 // NOTE: --enable-ssl オプションによって変更されます
 var (

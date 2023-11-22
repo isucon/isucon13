@@ -17,11 +17,11 @@ type PostReactionRequest struct {
 }
 
 type Reaction struct {
-	ID         int64      `json:"id"`
-	EmojiName  string     `json:"emoji_name"`
-	User       User       `json:"user"`
-	Livestream Livestream `json:"livestream"`
-	CreatedAt  int64      `json:"created_at"`
+	ID         int64      `json:"id" validate:"required"`
+	EmojiName  string     `json:"emoji_name" validate:"required"`
+	User       User       `json:"user" validate:"required"`
+	Livestream Livestream `json:"livestream" validate:"required"`
+	CreatedAt  int64      `json:"created_at" validate:"required"`
 }
 
 func (c *Client) GetReactions(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]Reaction, error) {
@@ -62,6 +62,10 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int64, streamerN
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateSlice(req, reactions); err != nil {
+			return nil, err
 		}
 	}
 
@@ -106,6 +110,10 @@ func (c *Client) PostReaction(ctx context.Context, livestreamID int64, streamerN
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, reaction); err != nil {
+			return nil, err
 		}
 	}
 

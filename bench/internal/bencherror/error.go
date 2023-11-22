@@ -27,12 +27,14 @@ var (
 )
 
 var (
-	benchErrors *failure.Errors
-	doneOnce    sync.Once
+	benchErrors  *failure.Errors
+	systemErrors *failure.Errors
+	doneOnce     sync.Once
 )
 
 func InitErrors(ctx context.Context) {
 	benchErrors = failure.NewErrors(ctx)
+	systemErrors = failure.NewErrors(ctx)
 }
 
 func WrapError(code failure.StringCode, err error) error {
@@ -40,12 +42,13 @@ func WrapError(code failure.StringCode, err error) error {
 	return fmt.Errorf("%s: %w", code, err)
 }
 
-func GetFinalErrorMessages() map[string][]string {
-	lgr := zap.S()
+func WrapInternalError(code failure.StringCode, err error) error {
+	systemErrors.Add(failure.NewError(code, err))
+	return fmt.Errorf("%s: %w", code, err)
+}
 
-	doneOnce.Do(func() {
-		benchErrors.Done()
-	})
+func extractErrors(errs *failure.Errors) map[string][]string {
+	lgr := zap.S()
 
 	// メッセージを整形した上でコード種別ごと詰め直して返す
 	m := make(map[string][]string)
@@ -73,16 +76,24 @@ func GetFinalErrorMessages() map[string][]string {
 	return m
 }
 
+func GetFinalBenchErrors() map[string][]string {
+	return extractErrors(benchErrors)
+}
+
+func GetFinalSystemErrors() map[string][]string {
+	return extractErrors(systemErrors)
+}
+
 func Done() {
 	doneOnce.Do(func() {
 		benchErrors.Close()
+		systemErrors.Close()
 	})
 }
 
 func CheckViolation() error {
-	counts := benchErrors.Count()
-
-	systemErrorCount, ok := counts[string(SystemError)]
+	systemCounts := systemErrors.Count()
+	systemErrorCount, ok := systemCounts[string(SystemError)]
 	if !ok {
 		systemErrorCount = 0
 	}
@@ -90,7 +101,8 @@ func CheckViolation() error {
 		return fmt.Errorf("%d件のシステムエラー: %w", systemErrorCount, ErrSystem)
 	}
 
-	violationCount, ok := counts[string(BenchmarkViolationError)]
+	benchCounts := benchErrors.Count()
+	violationCount, ok := benchCounts[string(BenchmarkViolationError)]
 	if !ok {
 		violationCount = 0
 	}

@@ -10,13 +10,15 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 // 計算処理のpretest
 
-func normalPaymentCalcPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func normalPaymentCalcPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// チップ投稿により正しく計算されるか
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -45,8 +47,9 @@ func normalPaymentCalcPretest(ctx context.Context, dnsResolver *resolver.DNSReso
 }
 
 // ユーザ統計の計算処理がきちんとできているか
-func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -83,6 +86,7 @@ func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSRe
 	count := 5 + rand.Intn(10)
 	for i := 0; i < count; i++ {
 		viewerClient, err := isupipe.NewCustomResolverClient(
+			contestantLogger,
 			dnsResolver,
 			agent.WithTimeout(config.PretestTimeout),
 		)
@@ -123,13 +127,14 @@ func normalUserStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSRe
 	return nil
 }
 
-func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// ライブストリーム統計の計算処理がきちんとできているか
 
 	// FIXME: 処理前、統計情報がすべて0になっていることをチェック
 	// FIXME: いくつかの処理後、統計情報がピタリ一致することをチェック
 	//        (処理数、処理データにランダム性をもたせる)
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -184,6 +189,7 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, dnsResolver *resolver
 	count := 5 + rand.Intn(10)
 	for i := 0; i < count; i++ {
 		viewer, err := isupipe.NewCustomResolverClient(
+			contestantLogger,
 			dnsResolver,
 			agent.WithTimeout(config.PretestTimeout),
 		)

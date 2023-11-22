@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/isucon/isucon13/bench/internal/config"
 )
@@ -14,8 +15,8 @@ var ErrTimeout = errors.New("タイムアウトによりリクエスト失敗")
 // ベンチマーカー本体由来のエラー
 
 func NewInternalError(err error) error {
-	err = fmt.Errorf("[ベンチ本体のエラー] 運営に連絡してください: %w", err)
-	return WrapError(SystemError, err)
+	err = fmt.Errorf("[ベンチ本体のエラー] スタッフにのみ表示されます: %w", err)
+	return WrapInternalError(SystemError, err)
 }
 
 // タイムアウト
@@ -65,6 +66,12 @@ func NewViolationError(err error, msg string, args ...interface{}) error {
 func NewAssertionError(err error, msg string, args ...interface{}) error {
 	message := fmt.Sprintf(msg, args...)
 	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
+	return WrapError(BenchmarkViolationError, err)
+}
+
+func NewEmptyHttpResponseError(errorFields []string, req *http.Request) error {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
+	err := fmt.Errorf("[仕様違反] %s へのリクエストに対して、レスポンスボディに必要なフィールドがありません: %s", endpoint, strings.Join(errorFields, ","))
 	return WrapError(BenchmarkViolationError, err)
 }
 

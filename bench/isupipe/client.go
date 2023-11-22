@@ -13,6 +13,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/resolver"
+	"go.uber.org/zap"
 )
 
 var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
@@ -35,16 +36,18 @@ type Client struct {
 	// キャッシュ可能
 	assetAgent   *agent.Agent
 	assetOptions []agent.AgentOption
+
+	contestantLogger *zap.Logger
 }
 
-func NewClient(customOpts ...agent.AgentOption) (*Client, error) {
-	return NewCustomResolverClient(resolver.NewDNSResolver(), customOpts...)
+func NewClient(contestantLogger *zap.Logger, customOpts ...agent.AgentOption) (*Client, error) {
+	return NewCustomResolverClient(contestantLogger, resolver.NewDNSResolver(), customOpts...)
 }
 
 // NewClient は、HTTPクライアント群を初期化します
 // NOTE: キャッシュ無効化オプションなどを指定すると、意図しない挙動をする可能性があります
 // タイムアウトやURLなどの振る舞いでないパラメータを指定するのにcustomOptsを用いてください
-func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
+func NewCustomResolverClient(contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver, customOpts ...agent.AgentOption) (*Client, error) {
 	opts := []agent.AgentOption{
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithCloneTransport(&http.Transport{
@@ -96,17 +99,25 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
 		agent.WithTimeout(config.DefaultAgentTimeout),
-		// NOTE: 画像はキャッシュできるようにする
+		// NOTE: 画像はキャッシュできるようにするので WithNoCache は指定しない
 	}
 	for _, customOpt := range customOpts {
 		assetOpts = append(assetOpts, customOpt)
 	}
 
-	return &Client{
-		agent:        baseAgent,
-		themeOptions: themeOpts,
-		assetOptions: assetOpts,
-	}, nil
+	client := &Client{
+		agent:            baseAgent,
+		themeOptions:     themeOpts,
+		assetOptions:     assetOpts,
+		contestantLogger: contestantLogger,
+	}
+	if contestantLogger != nil {
+		client.contestantLogger = contestantLogger
+	} else {
+		client.contestantLogger = zap.NewNop()
+	}
+
+	return client, nil
 }
 
 func (c *Client) Username() (string, error) {

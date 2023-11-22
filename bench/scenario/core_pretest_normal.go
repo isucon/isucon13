@@ -17,6 +17,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/najeira/randstr"
+	"go.uber.org/zap"
 )
 
 //go:embed testdata/NoImage.jpg
@@ -27,8 +28,9 @@ const IconHashAppliedDelay = 2 * time.Second
 
 // 基本機能のロジックpretest
 
-func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func NormalUserPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -73,7 +75,7 @@ func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		}
 	}
 
-	if err := client.GetUser(ctx, user.Name); err != nil {
+	if _, err := client.GetUser(ctx, user.Name); err != nil {
 		return err
 	}
 
@@ -131,12 +133,13 @@ func checkPretestLivestream(subject string, livestream *isupipe.Livestream, titl
 	return nil
 }
 
-func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 機能的なテスト
 	// 予約したライブ配信が一覧に見えるか、取得できるか、検索によって見つけられるか
 	// enter/exitできるか (other)
 
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -364,7 +367,7 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	}
 	{
 		// タグ指定なし検索
-		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(50))
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 		if err != nil {
 			return err
 		}
@@ -397,8 +400,9 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	return nil
 }
 
-func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func NormalIconPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -431,6 +435,17 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("アイコン未設定の場合は、icon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
 	}
 
+	// アイコンを投稿する前
+	if ls, err := client.GetMyLivestreams(ctx); err != nil {
+		return err
+	} else {
+		for _, l := range ls {
+			if l.Owner.IconHash != fmt.Sprintf("%x", sha256.Sum256(fallbackImage)) {
+				return fmt.Errorf("アイコン未設定の場合は、livestreamのicon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
+			}
+		}
+	}
+
 	// アイコンを投稿後、期待するアイコンが設定されているか
 	randomIcon := scheduler.IconSched.GetRandomIcon()
 	if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
@@ -449,7 +464,7 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("新たに設定したアイコンのハッシュ値がicon_hashに反映されていません")
 	}
 
-	icon2, err := client.GetIcon(ctx, "test001")
+	icon2, err := client.GetIcon(ctx, "test001") // etagなし
 	if err != nil {
 		return err
 	}
@@ -458,11 +473,39 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("新たに設定したアイコンが反映されていません")
 	}
 
+	// マッチするetag付きでリクエストする(レスポンスは200でも304でもどっちでもOK)
+	_, err = client.GetIcon(ctx, "test001", isupipe.WithETag(me2.IconHash))
+	if err != nil {
+		return err
+	}
+
+	// マッチしないetag付きでリクエストする(bodyが一致しないといけない)
+	icon3, err := client.GetIcon(ctx, "test001", isupipe.WithETag("abcdef0123456890"))
+	if err != nil {
+		return err
+	}
+	icon3Hash := sha256.Sum256(icon3)
+	if !bytes.Equal(icon3Hash[:], randomIcon.Hash[:]) {
+		return fmt.Errorf("設定したアイコンが反映されていません")
+	}
+
+	// アイコンを投稿後、期待するアイコンが設定されているか
+	if ls, err := client.GetMyLivestreams(ctx); err != nil {
+		return err
+	} else {
+		for _, l := range ls {
+			if l.Owner.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
+				return fmt.Errorf("設定したアイコンがlivestreamに反映されていません")
+			}
+		}
+	}
+
 	return nil
 }
 
-func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalPostLivecommentPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -491,8 +534,16 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s actual:%s", testUser.Name, livestream.Owner.Name)
 	}
 
-	if _, err = client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
+	if reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
+	} else {
+		for _, r := range reports {
+			if r.Livecomment.Livestream.Owner.ID != testUser.ID {
+				return fmt.Errorf("自分がownerではないlivestreamのスパム報告が返されました expected:%s actual:%s", testUser.Name, r.Livecomment.Livestream.Owner.Name)
+			}
+			client.GetIcon(ctx, r.Livecomment.User.Name, isupipe.WithETag(r.Livecomment.User.IconHash))
+			// icon取得のエラーは無視
+		}
 	}
 
 	notip := &scheduler.Tip{}
@@ -511,7 +562,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 	// icon反映されるまでに許される猶予
 	time.Sleep(IconHashAppliedDelay)
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1), isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -540,11 +591,12 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 	return nil
 }
 
-func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalReactionPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 投稿したリアクションがGETできるか
 	// limitをつけられるか
 	// 初期データが期待する件数あるか
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -602,7 +654,7 @@ func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResol
 	return nil
 }
 
-func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// ライブコメントを1件取得(limit=1)
 	// ライブコメントを報告できるか (other)
 	// 報告したものが確認できるか (owner)
@@ -610,6 +662,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	// 初期で報告が0件
 
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -639,7 +692,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 		return fmt.Errorf("初期のtest001ユーザのライブ配信におけるスパム報告は0件でなければなりません")
 	}
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10), isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -653,6 +706,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	livecomment := livecomments[0]
 
 	reporterClient, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -693,11 +747,12 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	return nil
 }
 
-func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// moderateしたngwordが、GET ngwordsに含まれるか
 	// 投稿済みのスパムライブコメントが、moderateによって粛清されているか
 	// ライブコメントを投稿してきちんとエラーを返せているか
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -734,13 +789,14 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return fmt.Errorf("初期状態ではngwordはないはずです")
 	}
 
-	livecomments1, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments1, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
 
 	// スパム投稿
 	spammerClient, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -768,11 +824,10 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 
 	added := 0
-	for i := 0; i <= rand.Intn(5)+1; i++ {
+	for i := 0; i <= 5; i++ {
 		// spamではない普通のコメントをする
-		tip := rand.Intn(100)
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
-		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{Tip: tip})
+		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{Tip: 100})
 		if err != nil {
 			return err
 		}
@@ -782,8 +837,8 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		if r.Livestream.Owner.Name != livestream.Owner.Name {
 			return fmt.Errorf("投稿されたライブコメントのOwnerが正しくありません expected:%s actual:%s", livestream.Owner.Name, r.Livestream.Owner.Name)
 		}
-		if r.Tip != int64(tip) {
-			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません expected:%d actual:%d", tip, r.Tip)
+		if r.Tip != int64(100) {
+			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません expected:%d actual:%d", 100, r.Tip)
 		}
 		added++
 	}
@@ -796,7 +851,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	added++
 
-	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -810,7 +865,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	scheduler.LivecommentScheduler.Moderate(spamComment.Comment)
 
-	livecomments3, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments3, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}

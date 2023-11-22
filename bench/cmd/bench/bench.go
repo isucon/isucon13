@@ -182,9 +182,9 @@ var run = cli.Command{
 		contestantLogger.Info("静的ファイルチェックが完了しました")
 
 		contestantLogger.Info("webappの初期化を行います")
-		initClient, err := isupipe.NewClient(
+		initClient, err := isupipe.NewClient(contestantLogger,
 			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(1*time.Minute),
+			agent.WithTimeout(config.InitializeAgentTimeout),
 		)
 		if err != nil {
 			dumpFailedResult([]string{"webapp初期化クライアント生成が失敗しました"})
@@ -214,7 +214,7 @@ var run = cli.Command{
 		// pretest, benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
+		if err := scenario.Pretest(ctx, contestantLogger, pretestDNSResolver); err != nil {
 			// FIXME: pretestのエラーを収集
 			dumpFailedResult([]string{"整合性チェックに失敗しました"})
 			return cli.NewExitError(err, 1)
@@ -253,37 +253,57 @@ var run = cli.Command{
 		contestantLogger.Info("最終チェックを実施します")
 		finalcheckDNSResolver := resolver.NewDNSResolver()
 		finalcheckDNSResolver.ResolveAttempts = 10
-		if err := scenario.FinalcheckScenario(ctx, finalcheckDNSResolver); err != nil {
+		if err := scenario.FinalcheckScenario(ctx, contestantLogger, finalcheckDNSResolver); err != nil {
 			dumpFailedResult([]string{})
 			return cli.NewExitError(err, 1)
 		}
 		contestantLogger.Info("最終チェックが成功しました")
 		contestantLogger.Info("重複排除したログを以下に出力します")
 
-		lgr.Info("===== ベンチ走行中エラー (重複排除済み) =====")
+		// ベンチマーク処理のエラー収集
+		lgr.Info("ベンチエラーを収集します")
 		var benchErrors []string
-		for _, msgs := range bencherror.GetFinalErrorMessages() {
+		for _, msgs := range bencherror.GetFinalBenchErrors() {
 			benchErrors = append(benchErrors, msgs...)
 		}
 		benchErrors = uniqueMsgs(benchErrors)
 
-		lgr.Info("===== ベンチ走行結果 =====")
-		var msgs []string
+		// ベンチマーカー内部エラー
+		var systemErrorFound bool
+		for _, msgs := range bencherror.GetFinalSystemErrors() {
+			for _, msg := range msgs {
+				if len(msg) == 0 {
+					continue
+				}
+				lgr.Warnf("内部エラー: %s\n", msg)
+				systemErrorFound = true
+			}
+		}
+		if systemErrorFound {
+			contestantLogger.Warn("システム内部エラーが発生しました。運営にジョブIDとともに連絡お願いいたします")
+		}
 
-		lgr.Info("シナリオカウンタ")
+		var msgs []string
+		lgr.Info("シナリオカウンタを出力します")
 		scenarioCounter := benchmarker.ScenarioCounter()
+
+		var scenarioLogs []string
 		for name, count := range scenarioCounter {
 			if strings.HasSuffix(string(name), "-fail") {
-				lgr.Infof("[失敗シナリオ %s] %d 回失敗", name, count)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[失敗シナリオ %s] %d 回失敗", name, count))
 				continue
 			}
 
 			failKey := score.ScoreTag(fmt.Sprintf("%s-fail", name))
 			if failCount, ok := scenarioCounter[failKey]; ok {
-				lgr.Infof("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount))
 			} else {
-				lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[シナリオ %s] %d 回成功", name, count))
 			}
+		}
+		slices.Sort(scenarioLogs)
+		for _, l := range scenarioLogs {
+			lgr.Info(l)
 		}
 
 		var (
