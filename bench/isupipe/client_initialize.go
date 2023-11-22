@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type InitializeResponse struct {
@@ -13,14 +15,18 @@ type InitializeResponse struct {
 }
 
 func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
+	lgr := zap.S()
+
 	req, err := c.agent.NewRequest(http.MethodPost, "/api/initialize", nil)
 	if err != nil {
+		lgr.Warnf("initializeのリクエスト初期化失敗: %s\n", err.Error())
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := c.agent.Do(ctx, req)
 	if err != nil {
+		c.contestantLogger.Warn("POST /api/initialize のリクエストが失敗しました", zap.Error(err))
 		return nil, fmt.Errorf("initializeのリクエストに失敗しました %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {

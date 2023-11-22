@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -25,10 +27,10 @@ const (
 )
 
 var (
-	sendQueueUrl, recvQueueUrl string
 	accessKey, secretAccessKey string
 	slackWebhookURL            string
 	messageLimit               int
+	production                 bool
 )
 
 const (
@@ -41,6 +43,36 @@ const (
 	StatusFailed  = "aborted"
 	StatusTimeout = "aborted"
 )
+
+type TaskMetadataV4 struct {
+	AvailabilityZone string `json:"AvailabilityZone"`
+}
+
+func fetchAZName(ctx context.Context) (string, error) {
+	metadataUrl := os.Getenv("ECS_CONTAINER_METADATA_URI_V4")
+	if metadataUrl == "" {
+		return "", fmt.Errorf("empty metadata url")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, metadataUrl, nil)
+	if err != nil {
+		return "", err
+	}
+	req = req.WithContext(ctx)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	taskMetadata := &TaskMetadataV4{}
+	if err := json.NewDecoder(resp.Body).Decode(&taskMetadata); err != nil {
+		return "", err
+	}
+
+	return taskMetadata.AvailabilityZone, nil
+}
 
 func joinN(messages []string, n int) string {
 	if len(messages) > n {
@@ -72,7 +104,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		"--contestant-log-path", contestantLogPath,
 		"--result-path", resultPath,
 	}
-	if enableSSL {
+	if production {
 		benchOptions = append(benchOptions, "--enable-ssl")
 		benchOptions = append(benchOptions, "--target", "https://pipe.u.isucon.dev:443")
 	} else {
@@ -190,18 +222,6 @@ var supervise = cli.Command{
 	Usage: "supervisor実行",
 	Flags: []cli.Flag{
 		cli.StringFlag{
-			Name:        "send-queue-url",
-			Value:       " https://sqs.ap-northeast-1.amazonaws.com/424484851194/develop-job-result",
-			Destination: &sendQueueUrl,
-			EnvVar:      "SUPERVISOR_SEND_QUEUE_URL",
-		},
-		cli.StringFlag{
-			Name:        "recv-queue-url",
-			Value:       "https://sqs.ap-northeast-1.amazonaws.com/424484851194/develop-job-queue.fifo",
-			Destination: &recvQueueUrl,
-			EnvVar:      "SUPERVISOR_RECV_QUEUE_URL",
-		},
-		cli.StringFlag{
 			Name:        "access-key",
 			Value:       "AKIAWFVKEZX5GDVVMWF7",
 			Destination: &accessKey,
@@ -221,26 +241,49 @@ var supervise = cli.Command{
 		},
 		cli.IntFlag{
 			Name:        "message-limit",
-			Value:       3000,
+			Value:       2000,
 			Destination: &messageLimit,
 			EnvVar:      "SUPERVISOR_MESSAGE_LIMIT",
 		},
 		cli.BoolFlag{
-			Name:        "enable-ssl",
-			Destination: &enableSSL,
-			EnvVar:      "SUPERVISOR_ENABLE_SSL",
+			Name:        "production",
+			Destination: &production,
+			EnvVar:      "SUPERVISOR_PRODUCTION",
 		},
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 		defer cancel()
 
-		portal := NewPortal(
-			sendQueueUrl,
-			recvQueueUrl,
-			accessKey,
-			secretAccessKey,
-		)
+		var portal *Portal
+		if production {
+			azName, err := fetchAZName(ctx)
+			if err != nil {
+				return cli.NewExitError(err, 1)
+			}
+
+			portal, err = NewPortal(
+				azName,
+				Production,
+				accessKey,
+				secretAccessKey,
+			)
+			if err != nil {
+				return cli.NewExitError(err, 1)
+			}
+		} else {
+			var err error
+			// az1, az2, az4
+			portal, err = NewPortal(
+				"apne1-az2",
+				Develop,
+				accessKey,
+				secretAccessKey,
+			)
+			if err != nil {
+				return cli.NewExitError(err, 1)
+			}
+		}
 		jobCh := portal.StartReceiveJob(ctx)
 
 		for {

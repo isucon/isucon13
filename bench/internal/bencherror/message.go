@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/isucon/isucon13/bench/internal/config"
 )
 
 // NOTE: Goのhttp.Clientがcontext.DeadlineExceededをラップして返してくれないので、暫定対応
@@ -73,11 +71,4 @@ func NewEmptyHttpResponseError(errorFields []string, req *http.Request) error {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
 	err := fmt.Errorf("[仕様違反] %s へのリクエストに対して、レスポンスボディに必要なフィールドがありません: %s", endpoint, strings.Join(errorFields, ","))
 	return WrapError(BenchmarkViolationError, err)
-}
-
-// ページ離脱
-
-func NewTooManySpamError(username string, req *http.Request) error {
-	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	return WrapError(BenchmarkApplicationError, fmt.Errorf("[機会損失] %s へのリクエストに対してスパム割合が%d%% を超過したため、ユーザ %s が離脱しました", endpoint, int64(config.TooManySpamThresholdPercentage), username))
 }
