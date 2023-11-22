@@ -1,0 +1,85 @@
+name: Perl CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - bench/**/*
+      - webapp/perl/**/*
+      - webapp/sql/**/*
+      - webapp/pdns/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-perl.yml
+      - development/Makefile
+      - .github/workflows/perl.yml
+  pull_request:
+    paths:
+      - bench/**/*
+      - webapp/perl/**/*
+      - webapp/sql/**/*
+      - webapp/pdns/**/*
+      - development/docker-compose-common.yml
+      - development/docker-compose-perl.yml
+      - development/Makefile
+      - .github/workflows/perl.yml
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: [isucon13-ci-03]
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable yarn
+
+      # to avoid error: Deleting the contents of '/home/ubuntu/actions-runner/_work/isucon13/isucon13'
+      #                 Error: File was unable to be removed Error: EACCES: permission denied, rmdir
+      # https://github.com/actions/checkout/issues/211
+      - name: chown workdir
+        run:
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+
+      # containers
+      - name: "setup containers"
+        working-directory: ./development
+        run: |
+          make down/perl
+          make up/perl
+
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: make
+
+      # bench
+      - name: "[bench] Get deps"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go get -v -t -d ./...
+
+      - name: "run bench"
+        working-directory: ./bench
+        run: |
+          make bench
+
+      - name: Show webapp logs
+        if: ${{ always() }}
+        working-directory: ./development
+        run: sudo docker compose -f docker-compose-common.yml -f docker-compose-perl.yml logs webapp
+
+      - name: "[bench] Test"
+        working-directory: ./bench
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          go clean -testcache
+          go test -p=1 -v ./...
+
