@@ -184,7 +184,7 @@ var run = cli.Command{
 		contestantLogger.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(contestantLogger,
 			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(1*time.Minute),
+			agent.WithTimeout(config.InitializeAgentTimeout),
 		)
 		if err != nil {
 			dumpFailedResult([]string{"webapp初期化クライアント生成が失敗しました"})

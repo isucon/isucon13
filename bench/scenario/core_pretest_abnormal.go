@@ -47,7 +47,7 @@ func assertBadLogin(ctx context.Context, contestantLogger *zap.Logger, dnsResolv
 	client1, err := isupipe.NewCustomResolverClient(
 		contestantLogger,
 		dnsResolver,
-		agent.WithTimeout(3*time.Second),
+		agent.WithTimeout(config.PretestTimeout),
 	)
 	if err != nil {
 		return bencherror.NewInternalError(err)
@@ -65,7 +65,7 @@ func assertBadLogin(ctx context.Context, contestantLogger *zap.Logger, dnsResolv
 	client2, err := isupipe.NewCustomResolverClient(
 		contestantLogger,
 		dnsResolver,
-		agent.WithTimeout(3*time.Second),
+		agent.WithTimeout(config.PretestTimeout),
 	)
 	if err != nil {
 		return bencherror.NewInternalError(err)
