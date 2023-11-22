@@ -44,7 +44,7 @@ type (
 		User       User       `json:"user" validate:"required"`
 		Livestream Livestream `json:"livestream" validate:"required"`
 		Comment    string     `json:"comment" validate:"required"`
-		Tip        int64      `json:"tip" validate:"required"`
+		Tip        int64      `json:"tip"`
 		CreatedAt  int64      `json:"created_at" validate:"required"`
 	}
 )
