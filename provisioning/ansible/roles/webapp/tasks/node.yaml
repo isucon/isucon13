@@ -25,4 +25,4 @@
   service:
     name: isupipe-node
     enabled: false
-    state: stoppped
+    state: stopped
