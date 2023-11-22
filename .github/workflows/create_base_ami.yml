@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-ami:
-    runs-on: [isucon13-ci]
+    runs-on: [isucon13-ci-packer]
     name: build isucon13 base image
 
     steps:
