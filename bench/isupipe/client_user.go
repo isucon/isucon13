@@ -89,12 +89,15 @@ func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOpt
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
-	// FIXME: 配信者のユーザ名を含めてリクエスト
 	endpoint := fmt.Sprintf("/api/user/%s/icon", username)
 	req, err := c.assetAgent.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, bencherror.NewInternalError(err)
 	}
+	if o.eTag != "" {
+		req.Header.Set("If-None-Match", `"`+o.eTag+`"`)
+	}
+
 	resp, err := sendRequest(ctx, c.assetAgent, req)
 	if err != nil {
 		return nil, err
@@ -109,7 +112,10 @@ func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOpt
 	}
 
 	var imageBytes []byte
-	if resp.StatusCode == http.StatusNotModified || resp.StatusCode == defaultStatusCode {
+	switch resp.StatusCode {
+	case http.StatusNotModified:
+		// 304の場合はbodyは見ない
+	case defaultStatusCode:
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)

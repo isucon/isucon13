@@ -458,6 +458,12 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("新たに設定したアイコンが反映されていません")
 	}
 
+	// etag付きでリクエストする(レスポンスは200でも304でもどっちでもOK)
+	_, err = client.GetIcon(ctx, "test001", isupipe.WithETag(me2.IconHash))
+	if err == nil {
+		return err
+	}
+
 	return nil
 }
 

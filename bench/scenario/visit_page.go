@@ -93,7 +93,7 @@ func VisitUserProfile(ctx context.Context, contestantLogger *zap.Logger, client 
 		return err
 	}
 
-	if _, err := client.GetIcon(ctx, user.Name); err != nil {
+	if _, err := client.GetIcon(ctx, user.Name, isupipe.WithETag(user.IconHash)); err != nil {
 		return err
 	}
 
