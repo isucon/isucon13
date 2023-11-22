@@ -77,9 +77,14 @@ func BasicViewerScenario(
 
 	contestantLogger.Info("視聴を開始しました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
 	for hour := 1; hour <= livestream.Hours(); hour++ {
-		if _, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+		if comments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			lgr.Warnf("view: failed to get livecomments: %s\n", err.Error())
 			continue
+		} else {
+			for _, comment := range comments {
+				client.GetIcon(ctx, comment.User.Name, isupipe.WithETag(comment.User.IconHash))
+				// icon取得はエラーになっても気にしない
+			}
 		}
 
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()

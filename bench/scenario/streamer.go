@@ -106,6 +106,9 @@ func BasicStreamerModerateScenario(
 	}
 
 	for _, livestream := range livestreams {
+		client.GetIcon(ctx, livestream.Owner.Name, isupipe.WithETag(livestream.Owner.IconHash))
+		// icon取得のエラーは無視
+
 		if err := VisitLivestreamAdmin(ctx, contestantLogger, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			lgr.Warnf("streamer_moderate: failed to visit livestream admin: %s\n", err.Error())
 			return err
@@ -118,6 +121,9 @@ func BasicStreamerModerateScenario(
 		}
 
 		for _, report := range reports {
+			client.GetIcon(ctx, report.Livecomment.User.Name, isupipe.WithETag(report.Livecomment.User.IconHash))
+			// icon取得のエラーは無視
+
 			livestreamID := report.Livecomment.Livestream.ID
 			ngword, err := scheduler.LivecommentScheduler.GetNgWord(report.Livecomment.Comment)
 			if err != nil {
