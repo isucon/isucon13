@@ -17,8 +17,9 @@ type User struct {
 	Name        string `json:"name" validate:"required"`
 	DisplayName string `json:"display_name" validate:"required"`
 	Description string `json:"description" validate:"required"`
-	Theme       Theme  `json:"theme" validate:"required"`
-	IconHash    string `json:"icon_hash" validate:"required"`
+	// NOTE: themeはboolのフィールドにアクセスすることしかないので、validate対象外
+	Theme    Theme  `json:"theme"`
+	IconHash string `json:"icon_hash" validate:"required"`
 }
 
 type (

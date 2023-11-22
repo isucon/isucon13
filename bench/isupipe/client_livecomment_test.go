@@ -44,7 +44,7 @@ func TestValidateLivecomment(t *testing.T) {
 		CreatedAt:  1,
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", "/test-validate-livecomment", nil)
 	assert.NoError(t, err)
 	err = ValidateResponse(req, livecomment)
 	assert.Error(t, err)
