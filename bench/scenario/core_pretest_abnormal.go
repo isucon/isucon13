@@ -152,8 +152,8 @@ func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Log
 			Title:       name,
 			Description: name,
 			// FIXME: フロントで困らないようにちゃんとしたのを設定
-			PlaylistUrl:  "",
-			ThumbnailUrl: "",
+			PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+			ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 			StartAt:      startAt.Unix(),
 			EndAt:        endAt.Unix(),
 			Tags:         []int64{},
@@ -195,8 +195,8 @@ func assertReserveOutOfTerm(ctx context.Context, contestantLogger *zap.Logger, t
 	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
-		PlaylistUrl:  "",
-		ThumbnailUrl: "",
+		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+		ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 		StartAt:      startAt.Unix(),
 		EndAt:        endAt.Unix(),
 		Tags:         []int64{},
@@ -211,8 +211,8 @@ func assertReserveOutOfTerm(ctx context.Context, contestantLogger *zap.Logger, t
 	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
-		PlaylistUrl:  "",
-		ThumbnailUrl: "",
+		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+		ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 		StartAt:      startAt2.Unix(),
 		EndAt:        endAt2.Unix(),
 		Tags:         []int64{},
