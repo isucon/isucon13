@@ -10,11 +10,18 @@ import (
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/logger"
 )
 
 func TestMain(m *testing.M) {
+	testLogger, err := logger.InitTestLogger()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	client, err := NewClient(
-		agent.WithTimeout(1 * time.Minute),
+		testLogger,
+		agent.WithTimeout(1*time.Minute),
 	)
 	if err != nil {
 		log.Fatalln(err)

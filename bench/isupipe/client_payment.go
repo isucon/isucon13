@@ -8,6 +8,7 @@ import (
 )
 
 type PaymentResult struct {
+	// NOTE: 売上0を許容
 	TotalTip int64 `json:"total_tip"`
 }
 
@@ -28,6 +29,10 @@ func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
 
 	var paymentResp *PaymentResult
 	if json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
+		return nil, err
+	}
+
+	if err := ValidateResponse(req, paymentResp); err != nil {
 		return nil, err
 	}
 

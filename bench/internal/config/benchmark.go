@@ -6,7 +6,7 @@ import "time"
 const DefaultBenchmarkTimeout = 60 * time.Second
 
 // スパム離脱割合
-const TooManySpamThresholdPercentage = 10.0
+const TooManySpamThresholdPercentage = 30.0
 
 // 基本となる並列性
 // セマフォの重みに使われます
