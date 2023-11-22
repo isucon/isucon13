@@ -458,6 +458,12 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("新たに設定したアイコンが反映されていません")
 	}
 
+	// etag付きでリクエストする(レスポンスは200でも304でもどっちでもOK)
+	_, err = client.GetIcon(ctx, "test001", isupipe.WithETag(me2.IconHash))
+	if err == nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -491,8 +497,16 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s actual:%s", testUser.Name, livestream.Owner.Name)
 	}
 
-	if _, err = client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
+	if reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
+	} else {
+		for _, r := range reports {
+			if r.Livecomment.Livestream.Owner.ID != testUser.ID {
+				return fmt.Errorf("自分がownerではないlivestreamのスパム報告が返されました expected:%s actual:%s", testUser.Name, r.Livecomment.Livestream.Owner.Name)
+			}
+			client.GetIcon(ctx, r.Livecomment.User.Name, isupipe.WithETag(r.Livecomment.User.IconHash))
+			// icon取得のエラーは無視
+		}
 	}
 
 	notip := &scheduler.Tip{}
