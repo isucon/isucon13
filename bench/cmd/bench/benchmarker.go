@@ -86,6 +86,8 @@ type benchmarker struct {
 	longStreamerClientPool *isupipe.ClientPool
 	streamerClientPool     *isupipe.ClientPool
 	viewerClientPool       *isupipe.ClientPool
+	spammerClientPool      *isupipe.ClientPool
+	extraClientPool        *isupipe.ClientPool
 
 	livestreamPool *isupipe.LivestreamPool
 
@@ -106,7 +108,9 @@ func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmar
 
 	longStreamerClientPool := isupipe.NewClientPool(ctx)
 	streamerClientPool := isupipe.NewClientPool(ctx)
-	viewerClientPool := isupipe.NewClientPool(ctx)
+	viewerClientPool := isupipe.NewClientPool(ctx, isupipe.WithoutPoolLimiter()) // 視聴者は全力
+	spammerClientPool := isupipe.NewClientPool(ctx)
+	extraClientPool := isupipe.NewClientPool(ctx)
 
 	livestreamPool := isupipe.NewLivestreamPool(ctx)
 
@@ -138,6 +142,8 @@ func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmar
 		streamerClientPool:     streamerClientPool,
 		viewerClientPool:       viewerClientPool,
 		livestreamPool:         livestreamPool,
+		spammerClientPool:      spammerClientPool,
+		extraClientPool:        extraClientPool,
 		spamPool:               spamPool,
 		startAt:                time.Now(),
 		scenarioCounter:        score.NewScore(ctx),
@@ -308,7 +314,7 @@ func (b *benchmarker) loadViewer(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		if err := scenario.BasicViewerReportScenario(childCtx, b.contestantLogger, b.viewerClientPool, b.spamPool); err != nil {
+		if err := scenario.BasicViewerReportScenario(childCtx, b.contestantLogger, b.extraClientPool, b.spamPool); err != nil {
 			b.scenarioCounter.Add(BasicViewerReportScenarioFail)
 			return err
 		}
@@ -327,7 +333,7 @@ func (b *benchmarker) loadSpammer(ctx context.Context) error {
 	spammerGrp.Add(1)
 	go func() {
 		defer spammerGrp.Done()
-		if err := scenario.ViewerSpamScenario(ctx, b.contestantLogger, b.viewerClientPool, b.livestreamPool, b.spamPool); err != nil {
+		if err := scenario.ViewerSpamScenario(ctx, b.contestantLogger, b.spammerClientPool, b.livestreamPool, b.spamPool); err != nil {
 			b.scenarioCounter.Add(ViewerSpamScenarioFail)
 			return
 		}
