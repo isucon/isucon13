@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/urfave/cli"
+	"golang.org/x/crypto/ssh"
 )
 
 // FIXME: SQSのメッセージサイズが最大で256KBなので、200KB程度までで打ち切るように
@@ -255,7 +256,10 @@ var supervise = cli.Command{
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 		defer cancel()
 
-		var portal *Portal
+		var (
+			portal *Portal
+			signer ssh.Signer
+		)
 		if production {
 			azName, err := fetchAZName(ctx)
 			if err != nil {
@@ -270,6 +274,15 @@ var supervise = cli.Command{
 			)
 			if err != nil {
 				return cli.NewExitError(err, 1)
+			}
+
+			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
+			if err != nil {
+				return err
+			}
+			signer, err = ssh.ParsePrivateKey(privateKey)
+			if err != nil {
+				return err
 			}
 		} else {
 			var err error
@@ -293,18 +306,30 @@ var supervise = cli.Command{
 			case job := <-jobCh:
 				log.Printf("job = %+v\n", job)
 
-				result, err := execBench(ctx, job)
-				if err != nil {
-					NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
-				}
+				if production && job.Action == "reboot" {
+					var errs []string
+					for _, server := range job.Servers {
+						if err := reboot(server, signer); err != nil {
+							errs = append(errs, err.Error())
+						}
+					}
+					if len(errs) > 0 {
+						NotifyWorkerErr(job, nil, "", "", strings.Join(errs, ","))
+					}
+				} else {
+					result, err := execBench(ctx, job)
+					if err != nil {
+						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
+					}
 
-				if err := portal.SendResult(ctx, job, result); err != nil {
-					NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
-				}
+					if err := portal.SendResult(ctx, job, result); err != nil {
+						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
+					}
 
-				os.Remove(staffLogPath)
-				os.Remove(contestantLogPath)
-				os.Remove(resultPath)
+					os.Remove(staffLogPath)
+					os.Remove(contestantLogPath)
+					os.Remove(resultPath)
+				}
 			}
 		}
 	},

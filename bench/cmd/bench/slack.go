@@ -29,8 +29,7 @@ func notifyErr(title string, err error, attachments []slack.Attachment) error {
 	postRetrier := retrier.New(retrier.ConstantBackoff(retryCnt, retryInterval), nil)
 	return postRetrier.Run(func() error {
 		return slack.PostWebhook(slackWebhookURL, &slack.WebhookMessage{
-			// Text:        fmt.Sprintf("<!channel> %s", title),
-			Text:        title,
+			Text:        fmt.Sprintf("<!channel> %s", title),
 			Attachments: attachments,
 		})
 	})
