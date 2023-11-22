@@ -114,7 +114,9 @@ func (c *Client) GetIcon(ctx context.Context, username string, opts ...ClientOpt
 	var imageBytes []byte
 	switch resp.StatusCode {
 	case http.StatusNotModified:
-		// 304の場合はbodyは見ない
+		if o.eTag == "" {
+			return nil, bencherror.NewInternalError(fmt.Errorf("If-None-Matchを指定していないのに304が返却されました"))
+		}
 	case defaultStatusCode:
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
