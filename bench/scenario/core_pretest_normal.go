@@ -431,6 +431,17 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("アイコン未設定の場合は、icon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
 	}
 
+	// アイコンを投稿する前
+	if ls, err := client.GetMyLivestreams(ctx); err != nil {
+		return err
+	} else {
+		for _, l := range ls {
+			if l.Owner.IconHash != fmt.Sprintf("%x", sha256.Sum256(fallbackImage)) {
+				return fmt.Errorf("アイコン未設定の場合は、livestreamのicon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
+			}
+		}
+	}
+
 	// アイコンを投稿後、期待するアイコンが設定されているか
 	randomIcon := scheduler.IconSched.GetRandomIcon()
 	if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
@@ -472,6 +483,17 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 	icon3Hash := sha256.Sum256(icon3)
 	if !bytes.Equal(icon3Hash[:], randomIcon.Hash[:]) {
 		return fmt.Errorf("設定したアイコンが反映されていません")
+	}
+
+	// アイコンを投稿後、期待するアイコンが設定されているか
+	if ls, err := client.GetMyLivestreams(ctx); err != nil {
+		return err
+	} else {
+		for _, l := range ls {
+			if l.Owner.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
+				return fmt.Errorf("設定したアイコンがlivestreamに反映されていません")
+			}
+		}
 	}
 
 	return nil
