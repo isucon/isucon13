@@ -24,8 +24,8 @@ use Isupipe::FillResponse qw(
 
 use constant NUM_RESERVATION_SLOT => $ENV{ISUCON13_NUM_RESERVATION_SLOT} // 2;
 
-use constant TERM_START_AT => 1700906400; # 2023-11-25 10:00:00 UTC
-use constant TERM_END_AT   => 1732528800; # 2024-11-25 10:00:00 UTC
+use constant TERM_START_AT => 1700874000; # 2023-11-25 10:00:00 JST
+use constant TERM_END_AT   => 1732496400; # 2024-11-25 10:00:00 JST
 
 use constant ReserveLivestreamRequest => Dict[
     tags          => ArrayRef[Int],
