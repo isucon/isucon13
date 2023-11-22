@@ -78,12 +78,21 @@ sub post_livecomment_handler($app, $c) {
 
     my $txn = $app->dbh->txn_scope;
 
+    my $livestream = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE id = ?',
+        $livestream_id,
+    );
+    unless ($livestream) {
+        $c->halt(HTTP_NOT_FOUND, "livestream not found");
+    }
+
     # スパム判定
     my $ng_words = $app->dbh->select_all_as(
         'Isupipe::Entity::NGWord',
         'SELECT id, user_id, livestream_id, word FROM ng_words WHERE user_id = ? AND livestream_id = ?',
-        $user_id,
-        $livestream_id,
+        $livestream->user_id,
+        $livestream->id,
     );
 
     my $hit_spam = 0;
