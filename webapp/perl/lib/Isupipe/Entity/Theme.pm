@@ -13,7 +13,7 @@ class Isupipe::Entity::Theme {
     ADJUST {
         assert_field(Int, $id, 'id');
         assert_field(Int, $user_id, 'user_id');
-        assert_field(Int, $dark_mode, 'dark_mode');
+        assert_field(Bool, $dark_mode, 'dark_mode');
     }
 
     method as_hashref() {

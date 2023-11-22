@@ -23,8 +23,11 @@ use Isupipe::FillResponse qw(
     fill_user_response
 );
 
+use Isupipe::Icon qw(
+    read_fallback_user_icon_image
+);
+
 use constant POWER_DNS_SUBDMAIN_ADDRESS => $ENV{ISUCON13_POWERDNS_SUBDOMAIN_ADDRESS};
-use constant FALLBACK_IMAGE => "../img/NoImage.jpg";
 
 use constant PostUserRequestTheme => Dict[
     dark_mode => Bool,
@@ -161,7 +164,8 @@ sub get_me_handler($app, $c) {
 
     $txn->commit;
 
-    return $c->render_json($user);
+    my $res = $c->render_json($user);
+    return $res;
 }
 
 # ユーザー詳細API
@@ -211,8 +215,7 @@ sub get_icon_handler($app, $c) {
     );
 
     if (!$image) {
-        open my $fh, '<:raw', FALLBACK_IMAGE or die "Cannot open FALLBACK_IMAGE: $!";
-        $image = do { local $/; <$fh> };
+        $image = read_fallback_user_icon_image();
     }
 
     $txn->commit;

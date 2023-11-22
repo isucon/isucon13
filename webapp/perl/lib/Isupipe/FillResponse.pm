@@ -22,6 +22,10 @@ use Isupipe::Entity::LivestreamTag;
 use Isupipe::Entity::Livecomment;
 use Isupipe::Entity::Reaction;
 
+use Isupipe::Icon qw(
+    read_fallback_user_icon_image
+);
+
 sub fill_user_response($app, $user) {
     my $theme = $app->dbh->select_row_as(
         'Isupipe::Entity::Theme',
@@ -35,7 +39,7 @@ sub fill_user_response($app, $user) {
     my $image = $app->dbh->select_one(
         'SELECT image FROM icons WHERE user_id = ?',
         $user->id,
-    );
+    ) // read_fallback_user_icon_image;
     my $icon_hash = sha256_hex($image);
 
     return Isupipe::Entity::User->new(
