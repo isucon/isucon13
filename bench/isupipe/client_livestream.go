@@ -80,6 +80,10 @@ func (c *Client) GetLivestream(
 		if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
 		}
+
+		if err := ValidateResponse(req, livestream); err != nil {
+			return nil, err
+		}
 	}
 
 	return livestream, nil
@@ -128,6 +132,10 @@ func (c *Client) SearchLivestreams(
 		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
 			return nil, err
 		}
+
+		if err := ValidateSlice(req, livestreams); err != nil {
+			return nil, err
+		}
 	}
 
 	return livestreams, nil
@@ -163,6 +171,10 @@ func (c *Client) GetMyLivestreams(ctx context.Context, opts ...ClientOption) ([]
 		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
 		}
+
+		if err := ValidateSlice(req, livestreams); err != nil {
+			return nil, err
+		}
 	}
 
 	return livestreams, nil
@@ -197,6 +209,10 @@ func (c *Client) GetUserLivestreams(ctx context.Context, username string, opts .
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateSlice(req, livestreams); err != nil {
+			return nil, err
 		}
 	}
 
@@ -240,6 +256,10 @@ func (c *Client) ReserveLivestream(ctx context.Context, streamerName string, r *
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, livestream); err != nil {
+			return nil, err
 		}
 	}
 

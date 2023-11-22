@@ -75,7 +75,7 @@ func NormalUserPretest(ctx context.Context, contestantLogger *zap.Logger, dnsRes
 		}
 	}
 
-	if err := client.GetUser(ctx, user.Name); err != nil {
+	if _, err := client.GetUser(ctx, user.Name); err != nil {
 		return err
 	}
 
