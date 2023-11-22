@@ -8,12 +8,9 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"sync"
-	"sync/atomic"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
-	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
@@ -67,29 +64,6 @@ type NGWord struct {
 	CreatedAt    int64  `json:"created_at" validate:"required"`
 }
 
-func isTooManySpam(livecomments []*Livecomment) bool {
-	total := uint64(len(livecomments))
-	if total == 0 {
-		return false
-	}
-
-	var spamCount uint64
-	var wg sync.WaitGroup
-	for _, livecomment := range livecomments {
-		wg.Add(1)
-		go func(livecomment *Livecomment) {
-			defer wg.Done()
-			if scheduler.LivecommentScheduler.IsNgLivecomment(livecomment.Comment) {
-				atomic.AddUint64(&spamCount, 1)
-			}
-		}(livecomment)
-	}
-	wg.Wait()
-
-	// ライブコメント全体のうち、スパムが占める割合で多すぎるか判断
-	return uint64(float64(spamCount)/float64(total)*100) >= config.TooManySpamThresholdPercentage
-}
-
 func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]*Livecomment, error) {
 	var (
 		defaultStatusCode = http.StatusOK
@@ -132,10 +106,6 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, stream
 
 		if err := ValidateSlice(req, livecomments); err != nil {
 			return nil, err
-		}
-
-		if o.spamCheck && isTooManySpam(livecomments) {
-			return nil, bencherror.NewTooManySpamError(c.username, req)
 		}
 	}
 

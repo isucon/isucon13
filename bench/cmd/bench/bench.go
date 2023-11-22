@@ -54,10 +54,16 @@ func uniqueMsgs(msgs []string) (uniqMsgs []string) {
 func dumpFailedResult(msgs []string) {
 	lgr := zap.S()
 
+	messages := []string{}
+	for _, errs := range bencherror.GetFinalBenchErrors() {
+		messages = append(messages, errs...)
+	}
+	messages = append(messages, msgs...)
+
 	b, err := json.Marshal(&BenchResult{
 		Pass:     false,
 		Score:    0,
-		Messages: msgs,
+		Messages: messages,
 		Language: config.Language,
 	})
 	if err != nil {
@@ -198,26 +204,21 @@ var run = cli.Command{
 			return cli.NewExitError(err, 1)
 		}
 
-		// FIXME: initialize以後のdumpFailedResult、ポータル報告への書き出しを実装
-		// Actionsの結果にも乗ってしまうが、サイズ的に問題ないか
-		// ベンチの出力変動が落ち着いてから実装する
-
 		initializeResp, err := initClient.Initialize(ctx)
 		if err != nil {
 			dumpFailedResult([]string{"初期化が失敗しました"})
-			return cli.NewExitError(fmt.Errorf("初期化が失敗しました: %w", err), 1)
+			return nil
 		}
 		config.Language = initializeResp.Language
 
 		contestantLogger.Info("ベンチマーク走行前のデータ整合性チェックを行います")
 
-		// pretest, benchmarkにはこれら初期化が必要
+		// NOTE: pretestにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, contestantLogger, pretestDNSResolver); err != nil {
-			// FIXME: pretestのエラーを収集
 			dumpFailedResult([]string{"整合性チェックに失敗しました"})
-			return cli.NewExitError(err, 1)
+			return nil
 		}
 		contestantLogger.Info("整合性チェックが成功しました")
 
@@ -229,7 +230,7 @@ var run = cli.Command{
 		contestantLogger.Info("ベンチマーク走行を開始します")
 		benchStartAt := time.Now()
 
-		// pretest, benchmarkにはこれら初期化が必要
+		// NOTE: benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
 
@@ -238,13 +239,13 @@ var run = cli.Command{
 
 		benchmarker := newBenchmarker(benchCtx, contestantLogger)
 		if err := benchmarker.run(benchCtx); err != nil {
-			lgr.Warnf("ベンチマーク走行エラー: %s", err.Error())
-			// FIXME: 失格相当エラーハンドリング
-			dumpFailedResult([]string{})
+			lgr.Warnf("ベンチマーク中断: %s", err.Error())
+			dumpFailedResult([]string{"ベンチマーク走行が中断されました"})
+			return nil
 		}
 
-		benchElapsedSec := time.Now().Sub(benchStartAt)
-		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
+		benchElapsed := time.Since(benchStartAt)
+		lgr.Infof("ベンチマーク走行時間: %s", benchElapsed.String())
 
 		benchscore.DoneCounter()
 		bencherror.Done()
@@ -269,6 +270,7 @@ var run = cli.Command{
 		benchErrors = uniqueMsgs(benchErrors)
 
 		// ベンチマーカー内部エラー
+		lgr.Info("内部エラーを収集します")
 		var systemErrorFound bool
 		for _, msgs := range bencherror.GetFinalSystemErrors() {
 			for _, msg := range msgs {
@@ -305,12 +307,6 @@ var run = cli.Command{
 		for _, l := range scenarioLogs {
 			lgr.Info(l)
 		}
-
-		var (
-			tooManySlows = benchscore.GetByTag(benchscore.TooSlow)
-			tooManySpams = benchscore.GetByTag(benchscore.TooManySpam)
-		)
-		lgr.Infof("遅延離脱=%d, スパム離脱=%d", tooManySlows, tooManySpams)
 
 		numResolves := benchscore.GetByTag(benchscore.DNSResolve)
 		numDNSFailed := benchscore.GetByTag(benchscore.DNSFailed)

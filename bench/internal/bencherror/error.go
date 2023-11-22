@@ -52,7 +52,7 @@ func extractErrors(errs *failure.Errors) map[string][]string {
 
 	// メッセージを整形した上でコード種別ごと詰め直して返す
 	m := make(map[string][]string)
-	for _, e := range benchErrors.All() {
+	for _, e := range errs.All() {
 		code := failure.GetErrorCode(e)
 
 		failureErr, ok := e.(*failure.Error)
