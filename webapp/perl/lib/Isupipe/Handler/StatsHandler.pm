@@ -91,8 +91,8 @@ sub get_user_statistics_handler($app, $c) {
     # リアクション数
     my $total_reactions = $app->dbh->select_one(
         q[
-            SELECT COUNT(*) FROM users u 
-            INNER JOIN livestreams l ON l.user_id = u.id 
+            SELECT COUNT(*) FROM users u
+            INNER JOIN livestreams l ON l.user_id = u.id
             INNER JOIN reactions r ON r.livestream_id = l.id
             WHERE u.name = ?
         ],
@@ -222,7 +222,7 @@ sub get_livestream_statistics_handler($app, $c) {
 
     my @sorted_ranking = sort {
         if ($a->score == $b->score) {
-            $a->title cmp $b->title;
+            $a->livestream_id <=> $b->livestream_id;
         }
         else {
             $a->score <=> $b->score;

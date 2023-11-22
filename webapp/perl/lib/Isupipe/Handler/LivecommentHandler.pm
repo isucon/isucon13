@@ -168,11 +168,30 @@ sub report_livecomment_handler($app, $c) {
     my $user_id = $c->req->session->{+DEFAULT_USER_ID_KEY};
 
     my $txn = $app->dbh->txn_scope;
+
+    my $livestream = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE id = ?',
+        $livestream_id,
+    );
+    unless ($livestream) {
+        $c->halt(HTTP_NOT_FOUND, "livestream not found");
+    }
+
+    my $livecomment = $app->dbh->select_row_as(
+        'Isupipe::Entity::Livecomment',
+        'SELECT * FROM livecomments WHERE id = ?',
+        $livecomment_id,
+    );
+    unless ($livecomment) {
+        $c->halt(HTTP_NOT_FOUND, "livecomment not found");
+    }
+
     my $report = Isupipe::Entity::LivecommentReport->new(
-        user_id       => $user_id,
-        livestream_id => $livestream_id,
+        user_id        => $user_id,
+        livestream_id  => $livestream_id,
         livecomment_id => $livecomment_id,
-        created_at    => time,
+        created_at     => time,
     );
     $app->dbh->query(
         'INSERT INTO livecomment_reports (user_id, livestream_id, livecomment_id, created_at) VALUES (:user_id, :livestream_id, :livecomment_id, :created_at)',

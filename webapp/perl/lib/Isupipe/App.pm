@@ -119,7 +119,7 @@ get '/api/user/:username/icon',  h(UserHandler => 'get_icon_handler');
 post '/api/icon',  h(UserHandler => 'post_icon_handler');
 
 # stats
-# ライブコメント統計情報
+# ライブ配信統計情報
 get '/api/livestream/{livestream_id:[0-9]+}/statistics', h(StatsHandler => 'get_livestream_statistics_handler');
 
 # 課金情報
