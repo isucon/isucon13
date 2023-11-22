@@ -12,12 +12,12 @@ import (
 )
 
 type Tag struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID   int64  `json:"id" validate:"required"`
+	Name string `json:"name" validate:"required"`
 }
 
 type TagsResponse struct {
-	Tags []*Tag `json:"tags"`
+	Tags []*Tag `json:"tags" validate:"required"`
 }
 
 func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsResponse, error) {

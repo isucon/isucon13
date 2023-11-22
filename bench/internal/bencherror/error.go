@@ -34,6 +34,7 @@ var (
 
 func InitErrors(ctx context.Context) {
 	benchErrors = failure.NewErrors(ctx)
+	systemErrors = failure.NewErrors(ctx)
 }
 
 func WrapError(code failure.StringCode, err error) error {
@@ -86,13 +87,13 @@ func GetFinalSystemErrors() map[string][]string {
 func Done() {
 	doneOnce.Do(func() {
 		benchErrors.Close()
+		systemErrors.Close()
 	})
 }
 
 func CheckViolation() error {
-	counts := benchErrors.Count()
-
-	systemErrorCount, ok := counts[string(SystemError)]
+	systemCounts := systemErrors.Count()
+	systemErrorCount, ok := systemCounts[string(SystemError)]
 	if !ok {
 		systemErrorCount = 0
 	}
@@ -100,7 +101,8 @@ func CheckViolation() error {
 		return fmt.Errorf("%d件のシステムエラー: %w", systemErrorCount, ErrSystem)
 	}
 
-	violationCount, ok := counts[string(BenchmarkViolationError)]
+	benchCounts := benchErrors.Count()
+	violationCount, ok := benchCounts[string(BenchmarkViolationError)]
 	if !ok {
 		violationCount = 0
 	}

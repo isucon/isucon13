@@ -55,12 +55,6 @@ func NewHttpResponseError(err error, req *http.Request) error {
 	return WrapError(BenchmarkApplicationError, err)
 }
 
-func NewEmptyHttpResponseError(errorFields []string, req *http.Request) error {
-	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	err := fmt.Errorf("[一般エラー] %s へのリクエストに対して、レスポンスボディに必要なフィールドがありません: %s", endpoint, strings.Join(errorFields, ","))
-	return WrapError(BenchmarkApplicationError, err)
-}
-
 // 仕様違反
 
 func NewViolationError(err error, msg string, args ...interface{}) error {
@@ -72,6 +66,12 @@ func NewViolationError(err error, msg string, args ...interface{}) error {
 func NewAssertionError(err error, msg string, args ...interface{}) error {
 	message := fmt.Sprintf(msg, args...)
 	err = fmt.Errorf("[仕様違反] %s: %w", message, err)
+	return WrapError(BenchmarkViolationError, err)
+}
+
+func NewEmptyHttpResponseError(errorFields []string, req *http.Request) error {
+	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
+	err := fmt.Errorf("[仕様違反] %s へのリクエストに対して、レスポンスボディに必要なフィールドがありません: %s", endpoint, strings.Join(errorFields, ","))
 	return WrapError(BenchmarkViolationError, err)
 }
 

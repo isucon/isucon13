@@ -22,8 +22,9 @@ type Livecomment struct {
 	User       User       `json:"user" validate:"required"`
 	Livestream Livestream `json:"livestream" validate:"required"`
 	Comment    string     `json:"comment" validate:"required"`
-	Tip        int        `json:"tip" validate:"required"`
-	CreatedAt  int        `json:"created_at" validate:"required"`
+	// NOTE: Tipがない場合が許容される(tip=0)
+	Tip       int `json:"tip"`
+	CreatedAt int `json:"created_at" validate:"required"`
 }
 
 type LivecommentReport struct {
@@ -48,9 +49,15 @@ type (
 	}
 )
 
-type ModerateRequest struct {
-	NGWord string `json:"ng_word"`
-}
+type (
+	ModerateRequest struct {
+		NGWord string `json:"ng_word"`
+	}
+
+	ModerateResponse struct {
+		WordID int64 `json:"word_id" validate:"required"`
+	}
+)
 
 type NGWord struct {
 	ID           int64  `json:"id" validate:"required"`
@@ -123,6 +130,10 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, stream
 			return livecomments, bencherror.NewHttpResponseError(err, req)
 		}
 
+		if err := ValidateSlice(req, livecomments); err != nil {
+			return nil, err
+		}
+
 		if o.spamCheck && isTooManySpam(livecomments) {
 			return nil, bencherror.NewTooManySpamError(c.username, req)
 		}
@@ -165,6 +176,10 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, 
 		if err := json.NewDecoder(resp.Body).Decode(&reports); err != nil {
 			return reports, bencherror.NewHttpResponseError(err, req)
 		}
+
+		if err := ValidateSlice(req, reports); err != nil {
+			return nil, err
+		}
 	}
 
 	return reports, nil
@@ -203,6 +218,10 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, streamerNam
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&ngwords); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateSlice(req, ngwords); err != nil {
+			return nil, err
 		}
 	}
 
@@ -253,6 +272,10 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, stream
 			return nil, 0, bencherror.NewHttpResponseError(err, req)
 		}
 
+		if err := ValidateResponse(req, livecommentResponse); err != nil {
+			return nil, 0, err
+		}
+
 		benchscore.AddTip(uint64(tip.Tip))
 	}
 
@@ -286,6 +309,17 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID int64, stre
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var livecommentReport *LivecommentReport
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livecommentReport); err != nil {
+			return bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, livecommentReport); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -326,6 +360,17 @@ func (c *Client) Moderate(ctx context.Context, livestreamID int64, streamerName 
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var moderateResp *ModerateResponse
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&moderateResp); err != nil {
+			return bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, moderateResp); err != nil {
+			return err
+		}
 	}
 
 	return nil

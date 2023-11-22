@@ -14,16 +14,16 @@ import (
 )
 
 type Livestream struct {
-	ID           int64  `json:"id"`
-	Owner        User   `json:"owner"`
-	Tags         []Tag  `json:"tags"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	PlaylistUrl  string `json:"playlist_url"`
-	ThumbnailUrl string `json:"thumbnail_url"`
-	StartAt      int64  `json:"start_at"`
-	EndAt        int64  `json:"end_at"`
-	CreatedAt    int64  `json:"created_at"`
+	ID           int64  `json:"id" validate:"required"`
+	Owner        User   `json:"owner" validate:"required"`
+	Tags         []Tag  `json:"tags" validate:"required,dive,required"`
+	Title        string `json:"title" validate:"required"`
+	Description  string `json:"description" validate:"required"`
+	PlaylistUrl  string `json:"playlist_url" validate:"required"`
+	ThumbnailUrl string `json:"thumbnail_url" validate:"required"`
+	StartAt      int64  `json:"start_at" validate:"required"`
+	EndAt        int64  `json:"end_at" validate:"required"`
+	CreatedAt    int64  `json:"created_at" validate:"required"`
 }
 
 func (l *Livestream) Hours() int {
