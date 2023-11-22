@@ -3,12 +3,15 @@ package scenario
 import (
 	"context"
 	"errors"
+	"math/rand"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"go.uber.org/zap"
 )
+
+var basicStreamerScenarioRandSource = rand.New(rand.NewSource(18637418277836))
 
 // 枠数1のタイミングで、複数クライアントから一斉に書き込み、１個だけ成立しない場合は失格判定
 func BasicLongStreamerScenario(
@@ -27,6 +30,7 @@ func BasicStreamerColdReserveScenario(
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
 	lgr := zap.S()
+	n := basicStreamerScenarioRandSource.Int()
 
 	client, err := streamerPool.Get(ctx)
 	if err != nil {
@@ -38,6 +42,16 @@ func BasicStreamerColdReserveScenario(
 	if err != nil {
 		lgr.Warnf("reserve: failed to get username: %s\n", err.Error())
 		return err
+	}
+
+	if n%10 == 0 { // NOTE: 一定数の配信者がアイコンを変更する
+		lgr.Info("change icon")
+		randomIcon := scheduler.IconSched.GetRandomIcon()
+		if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
+			Image: randomIcon.Image,
+		}); err != nil {
+			return err
+		}
 	}
 
 	reservation, err := scheduler.ReservationSched.GetColdShortReservation()
@@ -106,6 +120,9 @@ func BasicStreamerModerateScenario(
 	}
 
 	for _, livestream := range livestreams {
+		client.GetIcon(ctx, livestream.Owner.Name, isupipe.WithETag(livestream.Owner.IconHash))
+		// icon取得のエラーは無視
+
 		if err := VisitLivestreamAdmin(ctx, contestantLogger, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			lgr.Warnf("streamer_moderate: failed to visit livestream admin: %s\n", err.Error())
 			return err
@@ -118,6 +135,9 @@ func BasicStreamerModerateScenario(
 		}
 
 		for _, report := range reports {
+			client.GetIcon(ctx, report.Livecomment.User.Name, isupipe.WithETag(report.Livecomment.User.IconHash))
+			// icon取得のエラーは無視
+
 			livestreamID := report.Livecomment.Livestream.ID
 			ngword, err := scheduler.LivecommentScheduler.GetNgWord(report.Livecomment.Comment)
 			if err != nil {

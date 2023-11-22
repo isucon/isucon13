@@ -15,6 +15,7 @@ type ClientOptions struct {
 	spamCheck      bool
 	limitParam     *LimitParam
 	searchTag      *SearchTagParam
+	eTag           string
 }
 
 func newClientOptions(defaultStatusCode int, opts ...ClientOption) *ClientOptions {
@@ -56,5 +57,11 @@ func WithSearchTagQueryParam(tag string) ClientOption {
 		o.searchTag = &SearchTagParam{
 			Tag: tag,
 		}
+	}
+}
+
+func WithETag(eTag string) ClientOption {
+	return func(o *ClientOptions) {
+		o.eTag = eTag
 	}
 }

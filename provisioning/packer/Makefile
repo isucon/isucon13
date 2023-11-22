@@ -3,10 +3,15 @@ export BRANCH := $(shell git branch --contains | fgrep '*' | cut -d ' ' -f 2)
 
 .PHONY: all
 all:
+	make echo-commit_hash
 	make app-build
 	make envcheck-build
 	make init
 	make build
+
+.PHONY: echo-commit_hash
+echo-commit_hash:
+	git rev-parse HEAD
 
 .PHONY: app-build
 app-build: 
@@ -22,4 +27,4 @@ init:
 
 .PHONY: build
 build:
-	packer build isucon13.pkr.hcl
+	packer build -var "commit_hash=$$(git rev-parse HEAD)" isucon13.pkr.hcl

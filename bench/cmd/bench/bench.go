@@ -272,18 +272,24 @@ var run = cli.Command{
 
 		lgr.Info("シナリオカウンタ")
 		scenarioCounter := benchmarker.ScenarioCounter()
+
+		var scenarioLogs []string
 		for name, count := range scenarioCounter {
 			if strings.HasSuffix(string(name), "-fail") {
-				lgr.Infof("[失敗シナリオ %s] %d 回失敗", name, count)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[失敗シナリオ %s] %d 回失敗", name, count))
 				continue
 			}
 
 			failKey := score.ScoreTag(fmt.Sprintf("%s-fail", name))
 			if failCount, ok := scenarioCounter[failKey]; ok {
-				lgr.Infof("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount))
 			} else {
-				lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[シナリオ %s] %d 回成功", name, count))
 			}
+		}
+		slices.Sort(scenarioLogs)
+		for _, l := range scenarioLogs {
+			lgr.Info(l)
 		}
 
 		var (

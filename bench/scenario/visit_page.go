@@ -14,9 +14,13 @@ func VisitTop(ctx context.Context, contestantLogger *zap.Logger, client *isupipe
 		return err
 	}
 
-	_, err := client.SearchLivestreams(ctx)
+	livestreams, err := client.SearchLivestreams(ctx)
 	if err != nil {
 		return err
+	}
+	for _, livestream := range livestreams {
+		client.GetIcon(ctx, livestream.Owner.Name, isupipe.WithETag(livestream.Owner.IconHash))
+		// iconの取得失敗は無視
 	}
 
 	tags, err := client.GetRandomSearchTags(ctx, 1)
@@ -24,8 +28,13 @@ func VisitTop(ctx context.Context, contestantLogger *zap.Logger, client *isupipe
 		return err
 	}
 
-	if _, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam(tags[0])); err != nil {
+	if livestreams, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam(tags[0])); err != nil {
 		return err
+	} else {
+		for _, livestream := range livestreams {
+			client.GetIcon(ctx, livestream.Owner.Name, isupipe.WithETag(livestream.Owner.IconHash))
+			// iconの取得失敗は無視
+		}
 	}
 
 	return nil
@@ -43,9 +52,13 @@ func VisitLivestream(ctx context.Context, contestantLogger *zap.Logger, client *
 		return err
 	}
 
-	_, err = client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
 	if err != nil {
 		return err
+	}
+	for _, livecomment := range livecomments {
+		client.GetIcon(ctx, livecomment.User.Name, isupipe.WithETag(livecomment.User.IconHash))
+		// iconの取得失敗は無視
 	}
 
 	_, err = client.GetReactions(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
@@ -93,7 +106,7 @@ func VisitUserProfile(ctx context.Context, contestantLogger *zap.Logger, client 
 		return err
 	}
 
-	if _, err := client.GetIcon(ctx, user.Name); err != nil {
+	if _, err := client.GetIcon(ctx, user.Name, isupipe.WithETag(user.IconHash)); err != nil {
 		return err
 	}
 

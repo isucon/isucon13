@@ -1,15 +1,11 @@
 ---
+# ランタイムのインストールまでを行う
+# packerのビルドをわける場合につかう
 - hosts: application
   roles:
     - base
     - apt
     - isuadmin-user
     - isucon-user
-    - globalip
     - xbuild
     - xbuildwebapp
-    - mysql
-    - powerdns
-    - nginx
-    - envcheck
-    - webapp

@@ -449,13 +449,29 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		return fmt.Errorf("新たに設定したアイコンのハッシュ値がicon_hashに反映されていません")
 	}
 
-	icon2, err := client.GetIcon(ctx, "test001")
+	icon2, err := client.GetIcon(ctx, "test001") // etagなし
 	if err != nil {
 		return err
 	}
 	icon2Hash := sha256.Sum256(icon2)
 	if !bytes.Equal(icon2Hash[:], randomIcon.Hash[:]) {
 		return fmt.Errorf("新たに設定したアイコンが反映されていません")
+	}
+
+	// マッチするetag付きでリクエストする(レスポンスは200でも304でもどっちでもOK)
+	_, err = client.GetIcon(ctx, "test001", isupipe.WithETag(me2.IconHash))
+	if err != nil {
+		return err
+	}
+
+	// マッチしないetag付きでリクエストする(bodyが一致しないといけない)
+	icon3, err := client.GetIcon(ctx, "test001", isupipe.WithETag("abcdef0123456890"))
+	if err != nil {
+		return err
+	}
+	icon3Hash := sha256.Sum256(icon3)
+	if !bytes.Equal(icon3Hash[:], randomIcon.Hash[:]) {
+		return fmt.Errorf("設定したアイコンが反映されていません")
 	}
 
 	return nil
@@ -491,8 +507,16 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 		return fmt.Errorf("自分がownerではないlivestreamが返されました expected:%s actual:%s", testUser.Name, livestream.Owner.Name)
 	}
 
-	if _, err = client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
+	if reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name); err != nil {
 		return err
+	} else {
+		for _, r := range reports {
+			if r.Livecomment.Livestream.Owner.ID != testUser.ID {
+				return fmt.Errorf("自分がownerではないlivestreamのスパム報告が返されました expected:%s actual:%s", testUser.Name, r.Livecomment.Livestream.Owner.Name)
+			}
+			client.GetIcon(ctx, r.Livecomment.User.Name, isupipe.WithETag(r.Livecomment.User.IconHash))
+			// icon取得のエラーは無視
+		}
 	}
 
 	notip := &scheduler.Tip{}
