@@ -10,9 +10,12 @@ import (
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 var basicViewerScenarioRandSource = rand.New(rand.NewSource(63877281473681))
+
+var viewerLimiter = rate.NewLimiter(1, 1)
 
 func BasicViewerScenario(
 	ctx context.Context,
@@ -138,6 +141,7 @@ func ViewerSpamScenario(
 	livestreamPool *isupipe.LivestreamPool,
 	livecommentPool *isupipe.LivecommentPool,
 ) error {
+	viewerLimiter.Wait(ctx)
 	lgr := zap.S()
 
 	// ここがmoderate数を左右する
