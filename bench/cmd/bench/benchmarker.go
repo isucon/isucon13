@@ -183,6 +183,13 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 					return
 				}
 
+				icon := scheduler.IconSched.GetRandomIcon()
+				if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
+					Image: icon.Image,
+				}); err != nil {
+					return
+				}
+
 				p.Put(ctx, client)
 				cnt.Inc()
 			}()
