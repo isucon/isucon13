@@ -151,7 +151,7 @@ func TestGetLivestreamStats(t *testing.T) {
 
 	// リアクション投稿
 	_, err = client.PostReaction(ctx, 1, "test001", &PostReactionRequest{
-		EmojiName: "",
+		EmojiName: "isu",
 	})
 	assert.NoError(t, err)
 	stats3, err := client.GetLivestreamStatistics(ctx, 1, "test001")
