@@ -8,7 +8,8 @@ import (
 )
 
 type PaymentResult struct {
-	TotalTip int64 `json:"total_tip" validate:"required"`
+	// NOTE: 売上0を許容
+	TotalTip int64 `json:"total_tip"`
 }
 
 func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {

@@ -12,19 +12,20 @@ import (
 
 type LivestreamStatistics struct {
 	Rank           int64 `json:"rank" validate:"required"`
-	ViewersCount   int64 `json:"viewers_count" validate:"required"`
-	TotalReactions int64 `json:"total_reactions" validate:"required"`
-	TotalReports   int64 `json:"total_reports" validate:"required"`
-	MaxTip         int64 `json:"max_tip" validate:"required"`
+	ViewersCount   int64 `json:"viewers_count"`
+	TotalReactions int64 `json:"total_reactions"`
+	TotalReports   int64 `json:"total_reports"`
+	MaxTip         int64 `json:"max_tip"`
 }
 
 type UserStatistics struct {
-	Rank              int64  `json:"rank" validate:"required"`
-	ViewersCount      int64  `json:"viewers_count" validate:"required"`
-	TotalReactions    int64  `json:"total_reactions" validate:"required"`
-	TotalLivecomments int64  `json:"total_livecomments" validate:"required"`
-	TotalTip          int64  `json:"total_tip" validate:"required"`
-	FavoriteEmoji     string `json:"favorite_emoji" validate:"required"`
+	Rank              int64 `json:"rank" validate:"required"`
+	ViewersCount      int64 `json:"viewers_count"`
+	TotalReactions    int64 `json:"total_reactions"`
+	TotalLivecomments int64 `json:"total_livecomments"`
+	TotalTip          int64 `json:"total_tip"`
+	// NOTE: リアクション投稿がない場合、空文字になるのでvalidate対象外
+	FavoriteEmoji string `json:"favorite_emoji"`
 }
 
 func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ...ClientOption) (*UserStatistics, error) {
