@@ -7,6 +7,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/logger"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,11 @@ import (
 func TestModerate(t *testing.T) {
 	ctx := context.Background()
 
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
 	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(10*time.Minute),
 	)
@@ -55,7 +60,7 @@ func TestModerate(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	err = client.Moderate(ctx, livestream.ID, "test")
+	err = client.Moderate(ctx, livestream.ID, livestream.Owner.Name, "test")
 	assert.NoError(t, err)
 }
 
@@ -63,7 +68,11 @@ func TestModerate(t *testing.T) {
 func TestGetNgWordsBug(t *testing.T) {
 	ctx := context.Background()
 
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
 	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		// FIXME: moderateが遅い
 		agent.WithTimeout(1*time.Minute),
@@ -98,7 +107,7 @@ func TestGetNgWordsBug(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	ngWords, err := client.GetNgwords(ctx, livestream.ID)
+	ngWords, err := client.GetNgwords(ctx, livestream.ID, livestream.Owner.Name)
 	assert.NoError(t, err)
 	for _, ngWord := range ngWords {
 		assert.NotZero(t, ngWord.CreatedAt)

@@ -1,0 +1,18 @@
+[Unit]
+Description=isupipe-ruby
+After=syslog.target
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/ruby
+Environment=RUBY_YJIT_ENABLE=1
+EnvironmentFile=/home/isucon/env.sh
+
+User=isucon
+Group=isucon
+ExecStart=/home/isucon/.x bundle exec puma --bind tcp://0.0.0.0:8080 --workers 8 --threads 0:8 --environment production
+ExecStop=/bin/kill -s QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target

@@ -29,7 +29,8 @@
     group: "root"
     mode: "0644"
   with_items:
-    - etc/nginx/conf.d/nginx.conf
+    - etc/nginx/sites-enabled/isupipe.conf
+    - etc/nginx/sites-available/isupipe-php.conf
 
 - name: "roles/nginx/tasks: Deploy tls certificates"
   become: true
@@ -45,6 +46,12 @@
     - etc/nginx/tls/_.u.isucon.dev.key
     - etc/nginx/tls/_.t.isucon.dev.crt
     - etc/nginx/tls/_.t.isucon.dev.key
+
+- name: "roles/nginx/tasks: Delete old config"
+  become: true
+  file:
+    path: /etc/nginx/conf.d/nginx.conf
+    state: absent
 
 - name: "roles/nginx/tasks: Delete default config"
   become: true

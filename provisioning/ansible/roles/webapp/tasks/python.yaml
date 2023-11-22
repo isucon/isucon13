@@ -1,0 +1,34 @@
+---
+- name: Mkdir webapp for python
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/python
+    state: directory
+
+- name: install pipenv
+  become: true
+  become_user: isucon
+  shell: |
+    /home/isucon/.x pip install pipenv
+
+- name: Build isupipe-python
+  become: true
+  become_user: isucon
+  shell: |
+    /home/isucon/.x pipenv install
+  args:
+    chdir: /home/isucon/webapp/python
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: isupipe-python.service
+    dest: /etc/systemd/system/
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-python
+    enabled: false
+    state: stopped

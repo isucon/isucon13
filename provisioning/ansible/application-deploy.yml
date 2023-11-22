@@ -1,0 +1,11 @@
+---
+# webappのデプロイ
+# 古いwebappディレクトリを消して作り直す
+- hosts: application
+  pre_tasks:
+    - name: remove webapp
+      become: true
+      shell: |
+        rm -rf /home/isucon/webapp/
+  roles:
+    - webapp

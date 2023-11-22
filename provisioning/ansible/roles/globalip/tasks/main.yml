@@ -1,0 +1,24 @@
+---
+- name: generator ISUCON_SUBDOMAIN_ADDRESS
+  become: true
+  copy:
+    src: aws-env-isucon-subdomain-address.sh
+    dest: /opt/aws-env-isucon-subdomain-address.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: generator ISUCON_SUBDOMAIN_ADDRESS service
+  become: true
+  copy:
+    src: aws-env-isucon-subdomain-address.service
+    dest: /etc/systemd/system/aws-env-isucon-subdomain-address.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable test service
+  become: true
+  service:
+    name: aws-env-isucon-subdomain-address
+    enabled: true

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/biogo/store/interval"
+	"go.uber.org/zap"
 )
 
 // FIXME: 同時配信枠数は、少なくとも２は想定しておいたほうがいい
@@ -62,6 +63,8 @@ func mustNewReservation(id int, title string, description string, startAtStr str
 
 func (r *Reservation) Overlap(interval interval.IntRange) bool {
 	if interval.Start == interval.End {
+		lgr := zap.S()
+		lgr.Infof("same interval found: %s ~ %s\n", time.Unix(int64(interval.Start), 0).String(), time.Unix(int64(interval.End), 0).String())
 		// 区間の開始と終了が同じである場合、予約の中に含まれるならオーバーラップと判定させる
 		return r.StartAt <= int64(interval.Start) && r.EndAt >= int64(interval.Start)
 	}

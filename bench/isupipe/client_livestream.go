@@ -7,22 +7,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 )
 
 type Livestream struct {
-	ID           int64  `json:"id"`
-	Owner        User   `json:"owner"`
-	Tags         []Tag  `json:"tags"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	PlaylistUrl  string `json:"playlist_url"`
-	ThumbnailUrl string `json:"thumbnail_url"`
-	StartAt      int64  `json:"start_at"`
-	EndAt        int64  `json:"end_at"`
-	CreatedAt    int64  `json:"created_at"`
+	ID           int64  `json:"id" validate:"required"`
+	Owner        User   `json:"owner" validate:"required"`
+	Tags         []Tag  `json:"tags" validate:"required,dive,required"`
+	Title        string `json:"title" validate:"required"`
+	Description  string `json:"description" validate:"required"`
+	PlaylistUrl  string `json:"playlist_url" validate:"required"`
+	ThumbnailUrl string `json:"thumbnail_url" validate:"required"`
+	StartAt      int64  `json:"start_at" validate:"required"`
+	EndAt        int64  `json:"end_at" validate:"required"`
 }
 
 func (l *Livestream) Hours() int {
@@ -47,24 +47,24 @@ func (c *Client) GetLivestream(
 	livestreamID int64,
 	streamerName string,
 	opts ...ClientOption,
-) error {
+) (*Livestream, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
 	if err := c.setStreamerURL(streamerName); err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 	urlPath := fmt.Sprintf("/api/livestream/%d", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := sendRequest(ctx, c.themeAgent, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -72,10 +72,21 @@ func (c *Client) GetLivestream(
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	return nil
+	var livestream *Livestream
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, livestream); err != nil {
+			return nil, err
+		}
+	}
+
+	return livestream, nil
 }
 
 func (c *Client) SearchLivestreams(
@@ -97,6 +108,12 @@ func (c *Client) SearchLivestreams(
 		req.URL.RawQuery = query.Encode()
 	}
 
+	if o.limitParam != nil {
+		query := req.URL.Query()
+		query.Add("limit", strconv.Itoa(o.limitParam.Limit))
+		req.URL.RawQuery = query.Encode()
+	}
+
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
 		return nil, err
@@ -113,6 +130,10 @@ func (c *Client) SearchLivestreams(
 	var livestreams []*Livestream
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
+			return nil, err
+		}
+
+		if err := ValidateSlice(req, livestreams); err != nil {
 			return nil, err
 		}
 	}
@@ -150,6 +171,10 @@ func (c *Client) GetMyLivestreams(ctx context.Context, opts ...ClientOption) ([]
 		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
 		}
+
+		if err := ValidateSlice(req, livestreams); err != nil {
+			return nil, err
+		}
 	}
 
 	return livestreams, nil
@@ -184,6 +209,10 @@ func (c *Client) GetUserLivestreams(ctx context.Context, username string, opts .
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livestreams); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateSlice(req, livestreams); err != nil {
+			return nil, err
 		}
 	}
 
@@ -227,6 +256,10 @@ func (c *Client) ReserveLivestream(ctx context.Context, streamerName string, r *
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&livestream); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, livestream); err != nil {
+			return nil, err
 		}
 	}
 

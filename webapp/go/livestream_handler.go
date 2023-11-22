@@ -94,8 +94,8 @@ func reserveLivestreamHandler(c echo.Context) error {
 
 	// 2024/04/01からの１年間の期間内であるかチェック
 	var (
-		termStartAt    = time.Date(2023, 11, 25, 10, 0, 0, 0, time.UTC)
-		termEndAt      = time.Date(2024, 11, 25, 10, 0, 0, 0, time.UTC)
+		termStartAt    = time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC)
+		termEndAt      = time.Date(2024, 11, 25, 1, 0, 0, 0, time.UTC)
 		reserveStartAt = time.Unix(req.StartAt, 0)
 		reserveEndAt   = time.Unix(req.EndAt, 0)
 	)
@@ -116,7 +116,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 		}
 		c.Logger().Infof("%d ~ %d予約枠の残数 = %d\n", slot.StartAt, slot.EndAt, slot.Slot)
 		if count < 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("予約区間 %d ~ %dが予約できません", req.StartAt, req.EndAt))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("予約期間 %d ~ %dに対して、予約区間 %d ~ %dが予約できません", termStartAt.Unix(), termEndAt.Unix(), req.StartAt, req.EndAt))
 		}
 	}
 
@@ -187,7 +187,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags: "+err.Error())
 		}
 
-		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE tag_id IN (?)", tagIDList)
+		query, params, err := sqlx.In("SELECT * FROM livestream_tags WHERE tag_id IN (?) ORDER BY livestream_id DESC", tagIDList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to construct IN query: "+err.Error())
 		}
@@ -206,7 +206,7 @@ func searchLivestreamsHandler(c echo.Context) error {
 		}
 	} else {
 		// 検索条件なし
-		query := `SELECT * FROM livestreams`
+		query := `SELECT * FROM livestreams ORDER BY id DESC`
 		if c.QueryParam("limit") != "" {
 			limit, err := strconv.Atoi(c.QueryParam("limit"))
 			if err != nil {
@@ -289,7 +289,11 @@ func getUserLivestreamsHandler(c echo.Context) error {
 
 	var user UserModel
 	if err := tx.GetContext(ctx, &user, "SELECT * FROM users WHERE name = ?", username); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "failed to get user")
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusNotFound, "user not found")
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
+		}
 	}
 
 	var livestreamModels []*LivestreamModel
@@ -377,7 +381,7 @@ func exitLivestreamHandler(c echo.Context) error {
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, "DELETE FROM livestream_viewers_history WHERE user_id = ? AND livestream_id = ?", userID, livestreamID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert livestream_view_history: "+err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete livestream_view_history: "+err.Error())
 	}
 
 	if err := tx.Commit(); err != nil {

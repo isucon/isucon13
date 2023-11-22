@@ -34,12 +34,11 @@
     owner: isucon
     group: isucon
 
-# TODO 一旦コメントアウト
-#- name: Remove authorized_keys
-#  become: true
-#  file:
-#    state: absent
-#    path: /home/isucon/.ssh/authorized_keys
+- name: Remove authorized_keys
+  become: true
+  file:
+    state: absent
+    path: /home/isucon/.ssh/authorized_keys
 
 - name: Add isucon to sudoers
   become: true
@@ -49,3 +48,12 @@
     owner: root
     group: root
     mode: 0440
+
+- name: Put systemd service env file
+  become: true
+  ansible.builtin.template:
+    src: env.sh
+    dest: /home/isucon/
+    owner: isucon
+    group: isucon
+    mode: 0755

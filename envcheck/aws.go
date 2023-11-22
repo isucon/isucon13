@@ -36,6 +36,10 @@ func GetPublicIP(svc *ec2metadata.EC2Metadata) (string, error) {
 	return svc.GetMetadata("public-ipv4")
 }
 
+func GetLocalIP(svc *ec2metadata.EC2Metadata) (string, error) {
+	return svc.GetMetadata("local-ipv4")
+}
+
 func GetVPC(svc *ec2metadata.EC2Metadata) (string, error) {
 	s, err := net.Interfaces()
 	if err != nil {

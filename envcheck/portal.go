@@ -87,7 +87,7 @@ func (p *Portal) SendResult(r Result) error {
 	}{
 		Name:         r.Name,
 		Passed:       r.Passed,
-		IPAddress:    r.IPAddress,
+		IPAddress:    r.LocalIPAddress,
 		Message:      r.Message,
 		AdminMessage: r.AdminMessage,
 		RawData:      r.RawData,

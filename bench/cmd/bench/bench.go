@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/url"
+	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -51,15 +54,22 @@ func uniqueMsgs(msgs []string) (uniqMsgs []string) {
 func dumpFailedResult(msgs []string) {
 	lgr := zap.S()
 
+	messages := []string{}
+	for _, errs := range bencherror.GetFinalBenchErrors() {
+		messages = append(messages, errs...)
+	}
+	messages = append(messages, msgs...)
+
 	b, err := json.Marshal(&BenchResult{
 		Pass:     false,
 		Score:    0,
-		Messages: msgs,
+		Messages: messages,
 		Language: config.Language,
 	})
 	if err != nil {
 		lgr.Warnf("失格判定結果書き出しに失敗. 運営に連絡してください: messages=%+v, err=%+v", msgs, err)
-		fmt.Println(fmt.Sprintf(`{"pass": false, "score": 0, "messages": ["%s"]}`, string(b)))
+		fmt.Printf(`{"pass": false, "score": 0, "messages": ["%s"]}`, string(b))
+		fmt.Println("")
 		return
 	}
 
@@ -82,6 +92,9 @@ var run = cli.Command{
 			Destination: &config.TargetNameserver,
 			EnvVar:      "BENCH_NAMESERVER",
 		},
+		cli.StringSliceFlag{
+			Name: "webapp",
+		},
 		cli.IntFlag{
 			Name:        "dns-port",
 			Value:       53,
@@ -95,15 +108,22 @@ var run = cli.Command{
 			EnvVar:      "BENCH_ASSETDIR",
 		},
 		cli.StringFlag{
-			Name:        "webhookurl",
-			Destination: &config.SlackWebhookURL,
-			EnvVar:      "BENCH_SLACK_WEBHOOK_URL",
+			Name:        "staff-log-path",
+			Destination: &config.StaffLogPath,
+			EnvVar:      "BENCH_STAFF_LOG_PATH",
+			Value:       "/tmp/staff.log",
 		},
 		cli.StringFlag{
-			Name:        "logpath",
-			Destination: &config.LogPath,
-			EnvVar:      "BENCH_LOG_PATH",
-			Value:       "/tmp/isupipe-benchmarker.log",
+			Name:        "contestant-log-path",
+			Destination: &config.ContestantLogPath,
+			EnvVar:      "BENCH_CONTESTANT_LOG_PATH",
+			Value:       "/tmp/contestant.log",
+		},
+		cli.StringFlag{
+			Name:        "result-path",
+			Destination: &config.ResultPath,
+			EnvVar:      "BENCH_RESULT_PATH",
+			Value:       "/tmp/result.json",
 		},
 		cli.BoolFlag{
 			Name:        "enable-ssl",
@@ -118,145 +138,201 @@ var run = cli.Command{
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
-		lgr, err := logger.InitZapLogger()
+		benchscore.InitCounter(ctx)
+		bencherror.InitErrors(ctx)
+		lgr, err := logger.InitStaffLogger()
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
+
+		contestantLogger, err := logger.InitContestantLogger()
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		// Target Webserv
+		webapps := []string{}
+		webapps = append(webapps, config.TargetNameserver)
+		webapps = append(webapps, cliCtx.StringSlice("webapp")...)
+		slices.Sort(webapps)
+		config.TargetWebapps = slices.Compact(webapps)
 
 		if enableSSL {
 			config.HTTPScheme = "https"
 			config.TargetPort = 443
 			config.InsecureSkipVerify = false
 			lgr.Info("SSL接続が有効になっています")
+			u, err := url.Parse(config.TargetBaseURL)
+			if err != nil {
+				return fmt.Errorf("不正なtaget URLです %w", err)
+			}
+			u.Scheme = "https"
+			if strings.Contains(u.Host, ":") {
+				if h, _, err := net.SplitHostPort(u.Host); err != nil {
+					return fmt.Errorf("不正なtaget URLです %w", err)
+				} else {
+					u.Host = h + ":443"
+				}
+			} else {
+				u.Host = u.Host + ":443"
+			}
+			config.TargetBaseURL = u.String()
+			contestantLogger.Info("SSL接続が有効になっています")
 		} else {
-			lgr.Info("SSL接続が無効になっています")
+			contestantLogger.Info("SSL接続が無効になっています")
 		}
 
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
 		lgr.Infof("nameserver: %s", net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)))
 
-		lgr.Info("===== Prepare benchmarker =====")
 		// FIXME: アセット読み込み
+		contestantLogger.Info("静的ファイルチェックを行います")
+		contestantLogger.Info("静的ファイルチェックが完了しました")
 
-		lgr.Info("webappの初期化を行います")
-		initClient, err := isupipe.NewClient(
+		contestantLogger.Info("webappの初期化を行います")
+		initClient, err := isupipe.NewClient(contestantLogger,
 			agent.WithBaseURL(config.TargetBaseURL),
-			agent.WithTimeout(1*time.Minute),
+			agent.WithTimeout(config.InitializeAgentTimeout),
 		)
 		if err != nil {
-			dumpFailedResult([]string{})
+			dumpFailedResult([]string{"webapp初期化クライアント生成が失敗しました"})
 			return cli.NewExitError(err, 1)
 		}
 
-		// FIXME: initialize以後のdumpFailedResult、ポータル報告への書き出しを実装
-		// Actionsの結果にも乗ってしまうが、サイズ的に問題ないか
-		// ベンチの出力変動が落ち着いてから実装する
-
-		initializeResp, err := initClient.Initialize(ctx)
-		if err != nil {
-			return cli.NewExitError(fmt.Errorf("初期化が失敗しました: %w", err), 1)
-		}
-		config.Language = initializeResp.Language
-
-		lgr.Info("ベンチマーク走行前のデータ整合性チェックを行います")
 		pretestDNSResolver := resolver.NewDNSResolver()
 		pretestDNSResolver.ResolveAttempts = 10
 		if err != nil {
+			dumpFailedResult([]string{"整合性チェックDNSリゾルバ生成に失敗しました"})
 			return cli.NewExitError(err, 1)
 		}
 
-		// pretest, benchmarkにはこれら初期化が必要
+		initializeResp, err := initClient.Initialize(ctx)
+		if err != nil {
+			dumpFailedResult([]string{"初期化が失敗しました"})
+			return nil
+		}
+		config.Language = initializeResp.Language
+
+		contestantLogger.Info("ベンチマーク走行前のデータ整合性チェックを行います")
+
+		// NOTE: pretestにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
-		if err := scenario.Pretest(ctx, pretestDNSResolver); err != nil {
-			return cli.NewExitError(err, 1)
+		if err := scenario.Pretest(ctx, contestantLogger, pretestDNSResolver); err != nil {
+			dumpFailedResult([]string{"整合性チェックに失敗しました"})
+			return nil
 		}
-		lgr.Info("整合性チェックが成功しました")
+		contestantLogger.Info("整合性チェックが成功しました")
 
 		if pretestOnly {
 			lgr.Info("--pretest-onlyが指定されているため、ベンチマーク走行をスキップします")
 			return nil
 		}
 
-		lgr.Info("ベンチマーク走行を開始します")
+		contestantLogger.Info("ベンチマーク走行を開始します")
 		benchStartAt := time.Now()
 
-		// pretest, benchmarkにはこれら初期化が必要
+		// NOTE: benchmarkにはこれら初期化が必要
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
 
 		benchCtx, cancelBench := context.WithTimeout(ctx, config.DefaultBenchmarkTimeout)
 		defer cancelBench()
 
-		benchmarker := newBenchmarker(benchCtx)
+		benchmarker := newBenchmarker(benchCtx, contestantLogger)
 		if err := benchmarker.run(benchCtx); err != nil {
-			lgr.Warnf("ベンチマーク走行エラー: %s", err.Error())
-			// FIXME: 失格相当エラーハンドリング
+			lgr.Warnf("ベンチマーク中断: %s", err.Error())
+			dumpFailedResult([]string{"ベンチマーク走行が中断されました"})
+			return nil
 		}
 
-		benchElapsedSec := time.Now().Sub(benchStartAt)
-		lgr.Infof("ベンチマーク走行時間: %s", benchElapsedSec.String())
+		benchElapsed := time.Since(benchStartAt)
+		lgr.Infof("ベンチマーク走行時間: %s", benchElapsed.String())
 
 		benchscore.DoneCounter()
 		bencherror.Done()
-		lgr.Info("ベンチマーク走行終了")
+		contestantLogger.Info("ベンチマーク走行終了")
 
-		lgr.Info("===== 最終チェック =====")
+		contestantLogger.Info("最終チェックを実施します")
 		finalcheckDNSResolver := resolver.NewDNSResolver()
 		finalcheckDNSResolver.ResolveAttempts = 10
-		if err := scenario.FinalcheckScenario(ctx, finalcheckDNSResolver); err != nil {
+		if err := scenario.FinalcheckScenario(ctx, contestantLogger, finalcheckDNSResolver); err != nil {
+			dumpFailedResult([]string{})
 			return cli.NewExitError(err, 1)
 		}
+		contestantLogger.Info("最終チェックが成功しました")
+		contestantLogger.Info("重複排除したログを以下に出力します")
 
-		lgr.Info("===== ベンチ走行中エラー (重複排除済み) =====")
-		var systemErrors []string
-		for _, msgs := range bencherror.GetFinalErrorMessages() {
+		// ベンチマーク処理のエラー収集
+		lgr.Info("ベンチエラーを収集します")
+		var benchErrors []string
+		for _, msgs := range bencherror.GetFinalBenchErrors() {
+			benchErrors = append(benchErrors, msgs...)
+		}
+		benchErrors = uniqueMsgs(benchErrors)
+
+		// ベンチマーカー内部エラー
+		lgr.Info("内部エラーを収集します")
+		var systemErrorFound bool
+		for _, msgs := range bencherror.GetFinalSystemErrors() {
 			for _, msg := range msgs {
-				systemErrors = append(systemErrors, msg)
+				if len(msg) == 0 {
+					continue
+				}
+				lgr.Warnf("内部エラー: %s\n", msg)
+				systemErrorFound = true
 			}
 		}
-		systemErrors = uniqueMsgs(systemErrors)
-		for _, systemError := range systemErrors {
-			lgr.Warn(systemError)
+		if systemErrorFound {
+			contestantLogger.Warn("システム内部エラーが発生しました。運営にジョブIDとともに連絡お願いいたします")
 		}
 
-		lgr.Info("===== ベンチ走行結果 =====")
 		var msgs []string
-
-		lgr.Info("シナリオカウンタ")
+		lgr.Info("シナリオカウンタを出力します")
 		scenarioCounter := benchmarker.ScenarioCounter()
+
+		var scenarioLogs []string
 		for name, count := range scenarioCounter {
 			if strings.HasSuffix(string(name), "-fail") {
-				lgr.Infof("[失敗シナリオ %s] %d 回失敗", name, count)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[失敗シナリオ %s] %d 回失敗", name, count))
 				continue
 			}
 
 			failKey := score.ScoreTag(fmt.Sprintf("%s-fail", name))
 			if failCount, ok := scenarioCounter[failKey]; ok {
-				lgr.Infof("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[シナリオ %s] %d 回成功, %d 回失敗", name, count, failCount))
 			} else {
-				lgr.Infof("[シナリオ %s] %d 回実行", name, count)
+				scenarioLogs = append(scenarioLogs, fmt.Sprintf("[シナリオ %s] %d 回成功", name, count))
 			}
 		}
-
-		var (
-			tooManySlows = benchscore.GetByTag(benchscore.TooSlow)
-			tooManySpams = benchscore.GetByTag(benchscore.TooManySpam)
-		)
-		msgs = append(msgs, fmt.Sprintf("遅延による離脱: %d", tooManySlows))
-		msgs = append(msgs, fmt.Sprintf("スパムによる離脱: %d", tooManySpams))
-		lgr.Infof("遅延離脱=%d, スパム離脱=%d", tooManySlows, tooManySpams)
+		slices.Sort(scenarioLogs)
+		for _, l := range scenarioLogs {
+			lgr.Info(l)
+		}
 
 		numResolves := benchscore.GetByTag(benchscore.DNSResolve)
 		numDNSFailed := benchscore.GetByTag(benchscore.DNSFailed)
 		msgs = append(msgs, fmt.Sprintf("名前解決成功数 %d", numResolves))
-		msgs = append(msgs, fmt.Sprintf("名前解決失敗数 %d", numDNSFailed))
 		lgr.Infof("名前解決成功数: %d", numResolves)
 		lgr.Infof("名前解決失敗数: %d", numDNSFailed)
 
 		profit := benchscore.GetTotalProfit()
 		msgs = append(msgs, fmt.Sprintf("売上: %d", profit))
 		lgr.Infof("スコア: %d", profit)
+
+		b, err := json.Marshal(&BenchResult{
+			Pass:     true,
+			Score:    int64(profit),
+			Messages: append(benchErrors, msgs...),
+			Language: config.Language,
+		})
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		if err := os.WriteFile(config.ResultPath, b, os.ModePerm); err != nil {
+			return cli.NewExitError(err, 1)
+		}
 
 		return nil
 	},
