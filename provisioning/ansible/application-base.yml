@@ -1,0 +1,11 @@
+---
+# ランタイムのインストールまでを行う
+# packerのビルドをわける場合につかう
+- hosts: application
+  roles:
+    - base
+    - apt
+    - isuadmin-user
+    - isucon-user
+    - xbuild
+    - xbuildwebapp
