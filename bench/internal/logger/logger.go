@@ -29,6 +29,25 @@ func InitStaffLogger() (*zap.SugaredLogger, error) {
 	return zap.S(), nil
 }
 
+// InitZapLogger はzapロガーを初期化します
+func InitTestLogger() (*zap.Logger, error) {
+	c := zap.NewProductionConfig()
+	c.Encoding = "console"
+	c.DisableCaller = false
+	c.DisableStacktrace = true
+	c.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	c.OutputPaths = []string{"stderr"}
+	c.ErrorOutputPaths = []string{"stderr"}
+
+	l, err := c.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return l.Named("test-logger"), nil
+}
+
 func InitContestantLogger() (*zap.Logger, error) {
 	c := zap.NewProductionConfig()
 	c.Encoding = "console"

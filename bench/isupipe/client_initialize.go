@@ -9,7 +9,7 @@ import (
 )
 
 type InitializeResponse struct {
-	Language string `json:"language"`
+	Language string `json:"language" validate:"required"`
 }
 
 func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
@@ -34,6 +34,10 @@ func (c *Client) Initialize(ctx context.Context) (*InitializeResponse, error) {
 	var initializeResp *InitializeResponse
 	if json.NewDecoder(resp.Body).Decode(&initializeResp); err != nil {
 		return nil, fmt.Errorf("initializeのJSONのdecodeに失敗しました %v", err)
+	}
+	if err := ValidateResponse(req, initializeResp); err != nil {
+		c.contestantLogger.Warn(err.Error())
+		return nil, err
 	}
 
 	return initializeResp, nil

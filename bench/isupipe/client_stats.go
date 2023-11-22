@@ -11,7 +11,7 @@ import (
 )
 
 type LivestreamStatistics struct {
-	Rank           int64 `json:"rank"`
+	Rank           int64 `json:"rank" validate:"required"`
 	ViewersCount   int64 `json:"viewers_count"`
 	TotalReactions int64 `json:"total_reactions"`
 	TotalReports   int64 `json:"total_reports"`
@@ -19,12 +19,13 @@ type LivestreamStatistics struct {
 }
 
 type UserStatistics struct {
-	Rank              int64  `json:"rank"`
-	ViewersCount      int64  `json:"viewers_count"`
-	TotalReactions    int64  `json:"total_reactions"`
-	TotalLivecomments int64  `json:"total_livecomments"`
-	TotalTip          int64  `json:"total_tip"`
-	FavoriteEmoji     string `json:"favorite_emoji"`
+	Rank              int64 `json:"rank" validate:"required"`
+	ViewersCount      int64 `json:"viewers_count"`
+	TotalReactions    int64 `json:"total_reactions"`
+	TotalLivecomments int64 `json:"total_livecomments"`
+	TotalTip          int64 `json:"total_tip"`
+	// NOTE: リアクション投稿がない場合、空文字になるのでvalidate対象外
+	FavoriteEmoji string `json:"favorite_emoji"`
 }
 
 func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ...ClientOption) (*UserStatistics, error) {
@@ -55,6 +56,10 @@ func (c *Client) GetUserStatistics(ctx context.Context, username string, opts ..
 	var stats *UserStatistics
 	if resp.StatusCode == defaultStatusCode {
 		if json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+			return nil, err
+		}
+
+		if err := ValidateResponse(req, stats); err != nil {
 			return nil, err
 		}
 	}
@@ -93,6 +98,10 @@ func (c *Client) GetLivestreamStatistics(ctx context.Context, livestreamID int64
 	var stats *LivestreamStatistics
 	if resp.StatusCode == defaultStatusCode {
 		if json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+			return nil, err
+		}
+
+		if err := ValidateResponse(req, stats); err != nil {
 			return nil, err
 		}
 	}

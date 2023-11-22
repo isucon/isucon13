@@ -157,7 +157,7 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 				}
 				defer sem.Release(1)
 
-				client, err := isupipe.NewClient(
+				client, err := isupipe.NewClient(b.contestantLogger,
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
 				if err != nil {

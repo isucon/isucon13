@@ -17,6 +17,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/najeira/randstr"
+	"go.uber.org/zap"
 )
 
 //go:embed testdata/NoImage.jpg
@@ -27,8 +28,9 @@ const IconHashAppliedDelay = 2 * time.Second
 
 // 基本機能のロジックpretest
 
-func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func NormalUserPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -73,7 +75,7 @@ func NormalUserPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 		}
 	}
 
-	if err := client.GetUser(ctx, user.Name); err != nil {
+	if _, err := client.GetUser(ctx, user.Name); err != nil {
 		return err
 	}
 
@@ -131,12 +133,13 @@ func checkPretestLivestream(subject string, livestream *isupipe.Livestream, titl
 	return nil
 }
 
-func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 機能的なテスト
 	// 予約したライブ配信が一覧に見えるか、取得できるか、検索によって見つけられるか
 	// enter/exitできるか (other)
 
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -364,7 +367,7 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	}
 	{
 		// タグ指定なし検索
-		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(50))
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 		if err != nil {
 			return err
 		}
@@ -397,8 +400,9 @@ func NormalLivestreamPretest(ctx context.Context, testUser *isupipe.User, dnsRes
 	return nil
 }
 
-func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func NormalIconPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -499,8 +503,9 @@ func NormalIconPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) e
 	return nil
 }
 
-func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalPostLivecommentPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -557,7 +562,7 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 	// icon反映されるまでに許される猶予
 	time.Sleep(IconHashAppliedDelay)
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(1), isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -586,11 +591,12 @@ func NormalPostLivecommentPretest(ctx context.Context, testUser *isupipe.User, d
 	return nil
 }
 
-func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalReactionPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 投稿したリアクションがGETできるか
 	// limitをつけられるか
 	// 初期データが期待する件数あるか
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -648,7 +654,7 @@ func NormalReactionPretest(ctx context.Context, testUser *isupipe.User, dnsResol
 	return nil
 }
 
-func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// ライブコメントを1件取得(limit=1)
 	// ライブコメントを報告できるか (other)
 	// 報告したものが確認できるか (owner)
@@ -656,6 +662,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	// 初期で報告が0件
 
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -685,7 +692,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 		return fmt.Errorf("初期のtest001ユーザのライブ配信におけるスパム報告は0件でなければなりません")
 	}
 
-	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10), isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -699,6 +706,7 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	livecomment := livecomments[0]
 
 	reporterClient, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -739,11 +747,12 @@ func NormalReportLivecommentPretest(ctx context.Context, dnsResolver *resolver.D
 	return nil
 }
 
-func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// moderateしたngwordが、GET ngwordsに含まれるか
 	// 投稿済みのスパムライブコメントが、moderateによって粛清されているか
 	// ライブコメントを投稿してきちんとエラーを返せているか
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -780,13 +789,14 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		return fmt.Errorf("初期状態ではngwordはないはずです")
 	}
 
-	livecomments1, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments1, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
 
 	// スパム投稿
 	spammerClient, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -841,7 +851,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	added++
 
-	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments2, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}
@@ -855,7 +865,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 	scheduler.LivecommentScheduler.Moderate(spamComment.Comment)
 
-	livecomments3, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name)
+	livecomments3, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithNoSpamCheck())
 	if err != nil {
 		return err
 	}

@@ -13,12 +13,13 @@ import (
 )
 
 type User struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	Description string `json:"description"`
-	Theme       Theme  `json:"theme"`
-	IconHash    string `json:"icon_hash"`
+	ID          int64  `json:"id" validate:"required"`
+	Name        string `json:"name" validate:"required"`
+	DisplayName string `json:"display_name" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	// NOTE: themeはboolのフィールドにアクセスすることしかないので、validate対象外
+	Theme    Theme  `json:"theme"`
+	IconHash string `json:"icon_hash" validate:"required"`
 }
 
 type (
@@ -46,7 +47,7 @@ type PostIconRequest struct {
 }
 
 type PostIconResponse struct {
-	ID int64 `json:"id"`
+	ID int64 `json:"id" validate:"required"`
 }
 
 func (c *Client) GetStreamerTheme(ctx context.Context, streamer *User, opts ...ClientOption) (*Theme, error) {
@@ -167,6 +168,10 @@ func (c *Client) PostIcon(ctx context.Context, r *PostIconRequest, opts ...Clien
 	var iconResp *PostIconResponse
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&iconResp); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, iconResp); err != nil {
 			return nil, err
 		}
 	}
@@ -174,7 +179,7 @@ func (c *Client) PostIcon(ctx context.Context, r *PostIconRequest, opts ...Clien
 	return iconResp, nil
 }
 
-func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOption) error {
+func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOption) (*User, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -183,12 +188,12 @@ func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOpt
 	urlPath := fmt.Sprintf("/api/user/%s", username)
 	req, err := c.agent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
-		return bencherror.NewInternalError(err)
+		return nil, bencherror.NewInternalError(err)
 	}
 
 	resp, err := sendRequest(ctx, c.agent, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
@@ -196,10 +201,21 @@ func (c *Client) GetUser(ctx context.Context, username string, opts ...ClientOpt
 	}()
 
 	if resp.StatusCode != o.wantStatusCode {
-		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
 	}
 
-	return nil
+	var user *User
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, user); err != nil {
+			return nil, err
+		}
+	}
+
+	return user, nil
 }
 
 func (c *Client) GetMe(ctx context.Context, opts ...ClientOption) (*User, error) {
@@ -230,6 +246,10 @@ func (c *Client) GetMe(ctx context.Context, opts ...ClientOption) (*User, error)
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, user); err != nil {
+			return nil, err
 		}
 	}
 
@@ -271,6 +291,10 @@ func (c *Client) Register(ctx context.Context, r *RegisterRequest, opts ...Clien
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, user); err != nil {
+			return nil, err
 		}
 	}
 
@@ -315,6 +339,7 @@ func (c *Client) Login(ctx context.Context, r *LoginRequest, opts ...ClientOptio
 
 	c.username = r.Username
 
+	// FIXME: appendに何も入れてない。原因調査
 	c.themeOptions = append(c.themeOptions)
 	c.themeAgent, err = agent.NewAgent(c.themeOptions...)
 	if err != nil {
