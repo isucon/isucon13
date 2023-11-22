@@ -36,7 +36,7 @@ func BasicViewerScenario(
 		lgr.Warnf("view: failed to get client username: %s\n", err.Error())
 	}
 
-	if n%10 == 0 { // NOTE: 一定数の視聴者がアイコンを変える
+	if n%100 == 0 { // NOTE: 一定数の視聴者がアイコンを変える
 		lgr.Info("change icon")
 		randomIcon := scheduler.IconSched.GetRandomIcon()
 		if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
