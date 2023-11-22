@@ -1,4 +1,4 @@
-name: Build AMI with Packer
+name: Build Base Image with Packer
 
 on:
   workflow_dispatch:
