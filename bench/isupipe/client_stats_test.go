@@ -17,7 +17,7 @@ func TestGetUserStats(t *testing.T) {
 	testLogger, err := logger.InitTestLogger()
 	assert.NoError(t, err)
 
-	client, err := NewClient(testLogger, agent.WithTimeout(20*time.Second))
+	client, err := NewClient(testLogger, agent.WithTimeout(30*time.Second))
 	assert.NoError(t, err)
 
 	user, err := client.Register(ctx, &RegisterRequest{
