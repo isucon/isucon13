@@ -74,7 +74,7 @@ sub reserve_livestream_handler($app, $c) {
         );
         infof('%d ~ %d予約枠の残数 = %d', $slot->start_at, $slot->end_at, $slot->slot);
         if ($count < 1) {
-            $c->halt(HTTP_BAD_REQUEST, sprintf('予約区間 %d ~ %dが予約できません', $params->{start_at}, $params->{end_at}));
+            $c->halt(HTTP_BAD_REQUEST, sprintf("予約期間 %d ~ %dに対して、予約区間 %d ~ %dが予約できません", TERM_START_AT, TERM_END_AT, $params->{start_at}, $params->{end_at}));
         }
     }
 
