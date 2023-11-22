@@ -35,7 +35,6 @@ func TestValidateLivecomment(t *testing.T) {
 		ThumbnailUrl: "",
 		StartAt:      0,
 		EndAt:        2,
-		CreatedAt:    3,
 	}
 	livecomment := &Livecomment{
 		// ID:         1,
