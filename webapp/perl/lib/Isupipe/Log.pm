@@ -9,14 +9,14 @@ use Exporter 'import';
 our @EXPORT = @Log::Minimal::EXPORT;
 
 # warn する時のログフォーマット
-#  encode してから warnする
+#  Log::Minimalと違い、encode してから warnする
 $Log::Minimal::PRINT = sub {
     my ( $time, $type, $message, $trace, $raw_message) = @_;
     warn Encode::encode_utf8("$time [$type] $message at $trace\n");
 };
 
 # die する時のログフォーマット
-#  encode してから die する
+#  Log::Minimalと違い、encode してから dieする
 $Log::Minimal::DIE = sub {
     my ( $time, $type, $message, $trace, $raw_message) = @_;
     die Encode::encode_utf8("$time [$type] $message at $trace\n");
