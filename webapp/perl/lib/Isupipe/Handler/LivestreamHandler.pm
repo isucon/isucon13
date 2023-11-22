@@ -136,7 +136,7 @@ sub search_livestreams_handler($app, $c) {
 
         my $livestream_tags = $app->dbh->select_all_as(
             'Isupipe::Entity::LivestreamTag',
-            'SELECT * FROM livestream_tags WHERE tag_id IN (?)',
+            'SELECT * FROM livestream_tags WHERE tag_id IN (?) ORDER BY livestream_id DESC',
             [map { $_->id } $tags->@*]
         );
 
@@ -151,7 +151,7 @@ sub search_livestreams_handler($app, $c) {
     }
     else {
         # 検索条件なし
-        my $query = 'SELECT * FROM livestreams';
+        my $query = 'SELECT * FROM livestreams ORDER BY id DESC';
         if (my $limit = $c->req->query_parameters->{limit}) {
             unless ($limit =~ /^\d+$/) {
                 $c->halt(HTTP_BAD_REQUEST, "limit query parameter must be integer");
