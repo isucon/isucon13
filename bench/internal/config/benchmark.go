@@ -23,6 +23,12 @@ const NumMustTryLogins = 10
 // HTTPクライアント(isucandar/agent) のタイムアウト
 const DefaultAgentTimeout = 20 * time.Second
 
+// POST /api/initialize 時のタイムアウト
+const InitializeAgentTimeout = 42 * time.Second
+
+// SearchLivestreamsのLIMITのデフォルト
+const NumSearchLivestreams = 50
+
 // NOTE: --enable-ssl オプションによって変更されます
 var (
 	HTTPScheme         = "http"
