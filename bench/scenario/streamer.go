@@ -9,7 +9,10 @@ import (
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
+
+var streamerLimiter = rate.NewLimiter(1, 1)
 
 var basicStreamerScenarioRandSource = rand.New(rand.NewSource(18637418277836))
 
@@ -29,6 +32,8 @@ func BasicStreamerColdReserveScenario(
 	streamerPool *isupipe.ClientPool,
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
+	streamerLimiter.Wait(ctx)
+
 	lgr := zap.S()
 	n := basicStreamerScenarioRandSource.Int()
 
@@ -104,6 +109,7 @@ func BasicStreamerModerateScenario(
 	contestantLogger *zap.Logger,
 	streamerPool *isupipe.ClientPool,
 ) error {
+	streamerLimiter.Wait(ctx)
 	lgr := zap.S()
 
 	client, err := streamerPool.Get(ctx)
@@ -165,6 +171,7 @@ func AggressiveStreamerModerateScenario(
 	contestantLogger *zap.Logger,
 	streamerPool *isupipe.ClientPool,
 ) error {
+	streamerLimiter.Wait(ctx)
 	lgr := zap.S()
 
 	client, err := streamerPool.Get(ctx)
