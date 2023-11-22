@@ -8,7 +8,21 @@
 
 - name: Build isupipe-go
   become: true
+  become_user: isucon
   shell: |
     /home/isucon/local/golang/bin/go build -o /home/isucon/webapp/go/isupipe -ldflags "-s -w"
   args:
     chdir: /home/isucon/webapp/go
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: isupipe-go.service
+    dest: /etc/systemd/system/
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-go
+    enabled: true
+    state: restarted

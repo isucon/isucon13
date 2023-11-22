@@ -1,0 +1,17 @@
+[Unit]
+Description=isupipe-python
+After=syslog.target
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/python
+EnvironmentFile=/home/isucon/env.sh
+
+User=isucon
+Group=isucon
+ExecStart=/home/isucon/.x pipenv run python app.py
+ExecStop=/bin/kill -s QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
