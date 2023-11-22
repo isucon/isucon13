@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -48,4 +49,13 @@ func (s *userScheduler) RangeViewer(fn func(viewer *User)) {
 	for _, viewer := range viewerPool {
 		fn(viewer)
 	}
+}
+
+func (s *userScheduler) GetInitialUserForPretest(id int64) (*User, error) {
+	idx := max(id-1, 1)
+	if idx > int64(len(initialUserPool)-1) {
+		return nil, fmt.Errorf("想定しない初期ユーザが利用されました (idx=%d)", idx)
+	}
+
+	return initialUserPool[idx], nil
 }

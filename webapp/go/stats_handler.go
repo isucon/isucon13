@@ -20,7 +20,6 @@ type LivestreamStatistics struct {
 
 type LivestreamRankingEntry struct {
 	LivestreamID int64
-	Title        string
 	Score        int64
 }
 type LivestreamRanking []LivestreamRankingEntry
@@ -29,7 +28,7 @@ func (r LivestreamRanking) Len() int      { return len(r) }
 func (r LivestreamRanking) Swap(i, j int) { r[i], r[j] = r[j], r[i] }
 func (r LivestreamRanking) Less(i, j int) bool {
 	if r[i].Score == r[j].Score {
-		return r[i].Title < r[j].Title
+		return r[i].LivestreamID < r[j].LivestreamID
 	} else {
 		return r[i].Score < r[j].Score
 	}
@@ -257,7 +256,6 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 		score := reactions + totalTips
 		ranking = append(ranking, LivestreamRankingEntry{
 			LivestreamID: livestream.ID,
-			Title:        livestream.Title,
 			Score:        score,
 		})
 	}
@@ -294,6 +292,10 @@ func getLivestreamStatisticsHandler(c echo.Context) error {
 	var totalReports int64
 	if err := tx.GetContext(ctx, &totalReports, `SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = ?`, livestreamID); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to count total spam reports: "+err.Error())
+	}
+
+	if err := tx.Commit(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
 	}
 
 	return c.JSON(http.StatusOK, LivestreamStatistics{

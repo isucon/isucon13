@@ -75,12 +75,12 @@ func VisitLivestreamAdmin(ctx context.Context, contestantLogger *zap.Logger, cli
 		return err
 	}
 
-	_, err = client.GetNgwords(ctx, livestream.ID)
+	_, err = client.GetNgwords(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.GetLivecommentReports(ctx, livestream.ID)
+	_, err = client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}

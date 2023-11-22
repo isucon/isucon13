@@ -111,7 +111,7 @@ func BasicStreamerModerateScenario(
 			return err
 		}
 
-		reports, err := client.GetLivecommentReports(ctx, livestream.ID)
+		reports, err := client.GetLivecommentReports(ctx, livestream.ID, livestream.Owner.Name)
 		if err != nil {
 			lgr.Warnf("streamer_moderate: failed to get livecomment reports: %s\n", err.Error())
 			continue
@@ -124,7 +124,7 @@ func BasicStreamerModerateScenario(
 				lgr.Warnf("streamer_moderate: failed to get ngwords: %s\n", err.Error())
 				return err
 			}
-			if err := client.Moderate(ctx, livestreamID, ngword); err != nil {
+			if err := client.Moderate(ctx, livestreamID, livestream.Owner.Name, ngword); err != nil {
 				lgr.Warnf("streamer_moderate: failed to moderate: %s\n", err.Error())
 				continue
 			}
@@ -168,7 +168,7 @@ func AggressiveStreamerModerateScenario(
 		}
 
 		ngWord := scheduler.LivecommentScheduler.GetDummyNgWord()
-		if err := client.Moderate(ctx, livestream.ID, ngWord.Word); err != nil {
+		if err := client.Moderate(ctx, livestream.ID, livestream.Owner.Name, ngWord.Word); err != nil {
 			lgr.Warnf("aggressive streamer moderate: failed to moderate: %s\n", err.Error())
 			continue
 		}
