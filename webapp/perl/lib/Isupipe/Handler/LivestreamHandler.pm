@@ -208,7 +208,7 @@ sub get_user_livestreams_handler($app, $c) {
         $username,
     );
     unless ($user) {
-        $c->halt(HTTP_NOT_FOUND, "failed to get user");
+        $c->halt(HTTP_NOT_FOUND, "user not found");
     }
 
     my $livestreams = $app->dbh->select_all_as(
