@@ -44,6 +44,7 @@ func NewAbortResult(id int) *Result {
 
 type Job struct {
 	ID       int      `json:"id"`
+	Action   string   `json:"action,omitempty"`
 	Team     int      `json:"team"`
 	TargetIP string   `json:"target_ip"`
 	Servers  []string `json:"servers"`
