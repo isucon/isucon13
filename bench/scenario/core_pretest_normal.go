@@ -814,11 +814,10 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 	}
 
 	added := 0
-	for i := 0; i <= rand.Intn(5)+1; i++ {
+	for i := 0; i <= 5; i++ {
 		// spamではない普通のコメントをする
-		tip := rand.Intn(100)
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
-		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{Tip: tip})
+		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{Tip: 100})
 		if err != nil {
 			return err
 		}
@@ -828,8 +827,8 @@ func NormalModerateLivecommentPretest(ctx context.Context, testUser *isupipe.Use
 		if r.Livestream.Owner.Name != livestream.Owner.Name {
 			return fmt.Errorf("投稿されたライブコメントのOwnerが正しくありません expected:%s actual:%s", livestream.Owner.Name, r.Livestream.Owner.Name)
 		}
-		if r.Tip != int64(tip) {
-			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません expected:%d actual:%d", tip, r.Tip)
+		if r.Tip != int64(100) {
+			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません expected:%d actual:%d", 100, r.Tip)
 		}
 		added++
 	}
