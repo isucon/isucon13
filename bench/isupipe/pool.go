@@ -5,19 +5,41 @@ import (
 	"fmt"
 
 	"github.com/isucon/isucon13/bench/internal/pubsub"
+	"golang.org/x/time/rate"
 )
 
 // ClientPool は、ログイン後のクライアントプールです
 type ClientPool struct {
-	pool *pubsub.PubSub
+	pool    *pubsub.PubSub
+	limiter *rate.Limiter
 }
 
-func NewClientPool(ctx context.Context) *ClientPool {
+type ClientPoolOptions struct {
+	WithoutLimitter bool
+}
+
+type ClientPoolOption func(o *ClientPoolOptions)
+
+func WithoutPoolLimiter() ClientPoolOption {
+	return func(o *ClientPoolOptions) {
+		o.WithoutLimitter = true
+	}
+}
+
+func NewClientPool(ctx context.Context, opts ...ClientPoolOption) *ClientPool {
+	o := &ClientPoolOptions{}
+	for _, setOpt := range opts {
+		setOpt(o)
+	}
 	pool := pubsub.NewPubSub(2000)
 	pool.Run(ctx)
-	return &ClientPool{
+	cp := &ClientPool{
 		pool: pool,
 	}
+	if !o.WithoutLimitter {
+		cp.limiter = rate.NewLimiter(1, 1) // 1秒間に1回
+	}
+	return cp
 }
 
 func (p *ClientPool) Get(ctx context.Context) (*Client, error) {
