@@ -367,7 +367,7 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 	}
 	{
 		// タグ指定なし検索
-		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(50))
+		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 		if err != nil {
 			return err
 		}

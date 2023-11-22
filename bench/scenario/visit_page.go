@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"go.uber.org/zap"
 )
@@ -14,7 +15,7 @@ func VisitTop(ctx context.Context, contestantLogger *zap.Logger, client *isupipe
 		return err
 	}
 
-	livestreams, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(10))
+	livestreams, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func VisitLivestreamAdmin(ctx context.Context, contestantLogger *zap.Logger, cli
 
 	// ライブコメント一覧取得
 	// FIXME: 自分のライブストリーム一覧を取ってくる必要がある
-	_, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(10))
+	_, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 	if err != nil {
 		return err
 	}
