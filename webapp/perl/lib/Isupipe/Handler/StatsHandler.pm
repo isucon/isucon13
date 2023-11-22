@@ -215,7 +215,6 @@ sub get_livestream_statistics_handler($app, $c) {
         my $score = $reactions + $total_tips;
         push $ranking->@* => Isupipe::Entity::LivestreamRankingEntry->new(
             livestream_id => $livestream->id,
-            title => $livestream->title,
             score => $score,
         );
     }

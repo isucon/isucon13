@@ -13,14 +13,6 @@ class Isupipe::Entity::UserRankingEntry {
         assert_field(Int, $score, 'score');
     }
 
-    method as_hashref() {
-        ...
-    }
-
-    method TO_JSON() {
-        ...
-    }
-
     method user_name($new=undef) {
         if (defined $new) { assert_field(Str, $new, 'user_name'); $user_name = $new };
         $user_name
