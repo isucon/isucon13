@@ -7,6 +7,7 @@
     - isucon-user
     - globalip
     - xbuild
+    - xbuildwebapp
     - mysql
     - powerdns
     - nginx
