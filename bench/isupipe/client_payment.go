@@ -8,7 +8,7 @@ import (
 )
 
 type PaymentResult struct {
-	TotalTip int64 `json:"total_tip"`
+	TotalTip int64 `json:"total_tip" validate:"required"`
 }
 
 func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
@@ -28,6 +28,10 @@ func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
 
 	var paymentResp *PaymentResult
 	if json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
+		return nil, err
+	}
+
+	if err := ValidateResponse(req, paymentResp); err != nil {
 		return nil, err
 	}
 

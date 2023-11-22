@@ -17,7 +17,7 @@ type Tag struct {
 }
 
 type TagsResponse struct {
-	Tags []*Tag `json:"tags" validate:"required"`
+	Tags []*Tag `json:"tags" validate:"required,dive,required"`
 }
 
 func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsResponse, error) {
@@ -47,6 +47,10 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 	var tags *TagsResponse
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+			return nil, err
+		}
+
+		if err := ValidateResponse(req, tags); err != nil {
 			return nil, err
 		}
 	}
