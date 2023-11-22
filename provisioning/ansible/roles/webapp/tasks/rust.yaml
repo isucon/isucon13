@@ -10,7 +10,7 @@
   become: true
   become_user: isucon
   shell: |
-    /home/isucon/.x cargo build --release --locked --frozen
+    /home/isucon/.x cargo build --release --locked
   args:
     chdir: /home/isucon/webapp/rust
 
@@ -25,4 +25,4 @@
   service:
     name: isupipe-rust
     enabled: false
-    state: stoppped
+    state: stopped

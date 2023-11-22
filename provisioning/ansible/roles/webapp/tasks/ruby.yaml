@@ -10,7 +10,7 @@
   become: true
   become_user: isucon
   shell: |
-    BUNDLE_DEPLOYMENT=1 BUNDLE_JOBS=8 /home/isucon/.x bundle install
+    /home/isucon/.x bundle install
   args:
     chdir: /home/isucon/webapp/ruby
 
@@ -25,4 +25,4 @@
   service:
     name: isupipe-ruby
     enabled: false
-    state: stoppped
+    state: stopped

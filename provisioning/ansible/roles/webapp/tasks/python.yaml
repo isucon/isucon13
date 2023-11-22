@@ -31,4 +31,4 @@
   service:
     name: isupipe-python
     enabled: false
-    state: stoppped
+    state: stopped
