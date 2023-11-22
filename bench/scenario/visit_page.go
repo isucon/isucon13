@@ -43,14 +43,22 @@ func VisitLivestream(ctx context.Context, contestantLogger *zap.Logger, client *
 		return err
 	}
 
-	_, err = client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
 	if err != nil {
 		return err
 	}
+	for _, livecomment := range livecomments {
+		client.GetIcon(ctx, livecomment.User.Name, isupipe.WithETag(livecomment.User.IconHash))
+		// iconの取得失敗は無視
+	}
 
-	_, err = client.GetReactions(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
+	reactions, err := client.GetReactions(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
 	if err != nil {
 		return err
+	}
+	for _, reaction := range reactions {
+		client.GetIcon(ctx, reaction.User.Name, isupipe.WithETag(reaction.User.IconHash))
+		// iconの取得失敗は無視
 	}
 
 	return nil

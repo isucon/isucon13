@@ -96,7 +96,7 @@ func NewCustomResolverClient(dnsResolver *resolver.DNSResolver, customOpts ...ag
 			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
 		agent.WithTimeout(config.DefaultAgentTimeout),
-		// NOTE: 画像はキャッシュできるようにする
+		// NOTE: 画像はキャッシュできるようにするので WithNoCache は指定しない
 	}
 	for _, customOpt := range customOpts {
 		assetOpts = append(assetOpts, customOpt)
