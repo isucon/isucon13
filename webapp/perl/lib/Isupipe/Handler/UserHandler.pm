@@ -100,6 +100,8 @@ sub register_handler($app, $c) {
         $c->halt(HTTP_INTERNAL_SERVER_ERROR, $err);
     }
 
+    $user = fill_user_response($app, $user);
+
     $txn->commit;
 
     my $res = $c->render_json($user);
