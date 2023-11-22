@@ -23,7 +23,6 @@ type Livestream struct {
 	ThumbnailUrl string `json:"thumbnail_url" validate:"required"`
 	StartAt      int64  `json:"start_at" validate:"required"`
 	EndAt        int64  `json:"end_at" validate:"required"`
-	CreatedAt    int64  `json:"created_at" validate:"required"`
 }
 
 func (l *Livestream) Hours() int {

@@ -35,7 +35,7 @@ func ValidateResponse(req *http.Request, response interface{}) error {
 
 func ValidateSlice(req *http.Request, slice interface{}) error {
 	lgr := zap.S()
-	if err := validate.Var(slice, "required,dive,required"); err != nil {
+	if err := validate.Var(slice, "dive,required"); err != nil {
 		if _, ok := err.(*validator.InvalidValidationError); ok {
 			lgr.Warnf("ValidateSlice: invalid validation error発生: %s\n", err.Error())
 			return bencherror.NewInternalError(err)
