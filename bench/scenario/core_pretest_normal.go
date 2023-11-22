@@ -435,6 +435,17 @@ func NormalIconPretest(ctx context.Context, contestantLogger *zap.Logger, dnsRes
 		return fmt.Errorf("アイコン未設定の場合は、icon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
 	}
 
+	// アイコンを投稿する前
+	if ls, err := client.GetMyLivestreams(ctx); err != nil {
+		return err
+	} else {
+		for _, l := range ls {
+			if l.Owner.IconHash != fmt.Sprintf("%x", sha256.Sum256(fallbackImage)) {
+				return fmt.Errorf("アイコン未設定の場合は、livestreamのicon_hashはNoImage.jpgのハッシュ値を返さなければなりません")
+			}
+		}
+	}
+
 	// アイコンを投稿後、期待するアイコンが設定されているか
 	randomIcon := scheduler.IconSched.GetRandomIcon()
 	if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
@@ -476,6 +487,17 @@ func NormalIconPretest(ctx context.Context, contestantLogger *zap.Logger, dnsRes
 	icon3Hash := sha256.Sum256(icon3)
 	if !bytes.Equal(icon3Hash[:], randomIcon.Hash[:]) {
 		return fmt.Errorf("設定したアイコンが反映されていません")
+	}
+
+	// アイコンを投稿後、期待するアイコンが設定されているか
+	if ls, err := client.GetMyLivestreams(ctx); err != nil {
+		return err
+	} else {
+		for _, l := range ls {
+			if l.Owner.IconHash != fmt.Sprintf("%x", randomIcon.Hash) {
+				return fmt.Errorf("設定したアイコンがlivestreamに反映されていません")
+			}
+		}
 	}
 
 	return nil
@@ -802,11 +824,10 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 	}
 
 	added := 0
-	for i := 0; i <= rand.Intn(5)+1; i++ {
+	for i := 0; i <= 5; i++ {
 		// spamではない普通のコメントをする
-		tip := rand.Intn(100)
 		livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
-		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{Tip: tip})
+		r, _, err := spammerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, &scheduler.Tip{Tip: 100})
 		if err != nil {
 			return err
 		}
@@ -816,8 +837,8 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 		if r.Livestream.Owner.Name != livestream.Owner.Name {
 			return fmt.Errorf("投稿されたライブコメントのOwnerが正しくありません expected:%s actual:%s", livestream.Owner.Name, r.Livestream.Owner.Name)
 		}
-		if r.Tip != int64(tip) {
-			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません expected:%d actual:%d", tip, r.Tip)
+		if r.Tip != int64(100) {
+			return fmt.Errorf("投稿されたライブコメントのTipが正しくありません expected:%d actual:%d", 100, r.Tip)
 		}
 		added++
 	}
