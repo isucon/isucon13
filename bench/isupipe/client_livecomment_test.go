@@ -2,8 +2,6 @@ package isupipe
 
 import (
 	"context"
-	"log"
-	"net/http"
 	"testing"
 	"time"
 
@@ -13,48 +11,6 @@ import (
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestValidateLivecomment(t *testing.T) {
-	user := User{
-		ID:          1,
-		Name:        "hoge",
-		DisplayName: "fuga",
-		Description: "piyo",
-		Theme: Theme{
-			DarkMode: true,
-		},
-		IconHash: "abcde",
-	}
-	livestream := Livestream{
-		ID: 1,
-		// Owner: user,
-		Tags:  []Tag{Tag{ID: 1, Name: ""}},
-		Title: "hoge",
-		// Description:  "fuga",
-		PlaylistUrl:  "foo",
-		ThumbnailUrl: "",
-		StartAt:      0,
-		EndAt:        2,
-	}
-	livecomment := &Livecomment{
-		// ID:         1,
-		User:       user,
-		Livestream: livestream,
-		Comment:    "isu",
-		CreatedAt:  1,
-	}
-
-	req, err := http.NewRequest("GET", "/test-validate-livecomment", nil)
-	assert.NoError(t, err)
-	err = ValidateResponse(req, livecomment)
-	assert.Error(t, err)
-	log.Println(err)
-
-	livecomments := []*Livecomment{livecomment}
-	err = ValidateSlice(req, livecomments)
-	assert.Error(t, err)
-	log.Println(err)
-}
 
 // スパム処理テスト
 

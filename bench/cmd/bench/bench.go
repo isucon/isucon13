@@ -138,6 +138,8 @@ var run = cli.Command{
 	},
 	Action: func(cliCtx *cli.Context) error {
 		ctx := context.Background()
+		benchscore.InitCounter(ctx)
+		bencherror.InitErrors(ctx)
 		lgr, err := logger.InitStaffLogger()
 		if err != nil {
 			return cli.NewExitError(err, 1)
