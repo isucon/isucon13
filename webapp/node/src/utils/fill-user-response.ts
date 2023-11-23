@@ -13,7 +13,7 @@ export interface UserResponse {
   }
 }
 
-export const makeUserResponse = async (
+export const fillUserResponse = async (
   conn: PoolConnection,
   user: Omit<UserModel, 'password'>,
 ) => {
