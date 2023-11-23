@@ -54,7 +54,7 @@ source "amazon-ebs" "isucon13" {
 
   source_ami    = "ami-03bd3273f34a1f122"
   region        = "ap-northeast-1"
-  instance_type = "t3.xlarge"
+  instance_type = "c5.4xlarge"
 
   run_tags        = local.run_tags
   run_volume_tags = local.run_tags
