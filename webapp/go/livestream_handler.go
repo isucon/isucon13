@@ -104,6 +104,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 
 	// 予約枠をみて、予約が可能か調べる
+	// NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
 	var slots []*ReservationSlotModel
 	if err := tx.SelectContext(ctx, &slots, "SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE", req.StartAt, req.EndAt); err != nil {
 		c.Logger().Warnf("予約枠一覧取得でエラー発生: %+v", err)
