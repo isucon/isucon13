@@ -79,3 +79,8 @@ jobs:
         working-directory: ./bench
         run: |
           make bench
+
+      - name: Show webapp logs
+        if: ${{ always() }}
+        working-directory: ./development
+        run: sudo docker compose -f docker-compose-common.yml -f docker-compose-perl.yml logs webapp
