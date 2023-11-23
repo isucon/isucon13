@@ -292,6 +292,8 @@ var supervise = cli.Command{
 			signer ssh.Signer
 		)
 		if production {
+			accessKey = "AKIAWFVKEZX5AUP2AK6O"
+			secretAccessKey = "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"
 			log.Println("Running on production")
 			azName, err := fetchAZName(ctx)
 			if err != nil {
@@ -319,8 +321,6 @@ var supervise = cli.Command{
 				return err
 			}
 
-			accessKey = "AKIAWFVKEZX5AUP2AK6O"
-			secretAccessKey = "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"
 		} else {
 			log.Println("Running on development")
 			azName, err := fetchAZName(ctx)
@@ -352,6 +352,7 @@ var supervise = cli.Command{
 		}
 		jobCh := portal.StartReceiveJob(ctx)
 
+		log.Printf("AccessKey = ...%s\n", accessKey[len(accessKey)-1-3:len(accessKey)-1])
 		for {
 			select {
 			case <-ctx.Done():
