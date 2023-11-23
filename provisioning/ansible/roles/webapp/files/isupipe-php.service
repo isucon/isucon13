@@ -1,0 +1,17 @@
+[Unit]
+Description=isupipe-php
+After=syslog.target
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/php
+EnvironmentFile=/home/isucon/env.sh
+
+User=isucon
+Group=isucon
+ExecStart=/home/isucon/.x php-fpm --fpm-config /home/isucon/local/php/etc/isupipe.php-fpm.conf
+ExecStop=/bin/kill -s QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target

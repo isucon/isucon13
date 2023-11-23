@@ -7,6 +7,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/logger"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,11 @@ import (
 func TestModerate(t *testing.T) {
 	ctx := context.Background()
 
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
 	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(10*time.Minute),
 	)
@@ -63,7 +68,11 @@ func TestModerate(t *testing.T) {
 func TestGetNgWordsBug(t *testing.T) {
 	ctx := context.Background()
 
+	testLogger, err := logger.InitTestLogger()
+	assert.NoError(t, err)
+
 	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		// FIXME: moderateが遅い
 		agent.WithTimeout(1*time.Minute),

@@ -8,29 +8,27 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"sync"
-	"sync/atomic"
 
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
-	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 )
 
 type Livecomment struct {
-	ID         int64      `json:"id"`
-	User       User       `json:"user"`
-	Livestream Livestream `json:"livestream"`
-	Comment    string     `json:"comment"`
-	Tip        int        `json:"tip"`
-	CreatedAt  int        `json:"created_at"`
+	ID         int64      `json:"id" validate:"required"`
+	User       User       `json:"user" validate:"required"`
+	Livestream Livestream `json:"livestream" validate:"required"`
+	Comment    string     `json:"comment" validate:"required"`
+	// NOTE: Tipがない場合が許容される(tip=0)
+	Tip       int `json:"tip"`
+	CreatedAt int `json:"created_at" validate:"required"`
 }
 
 type LivecommentReport struct {
-	ID          int64       `json:"id"`
-	Reporter    User        `json:"reporter"`
-	Livecomment Livecomment `json:"livecomment"`
-	CreatedAt   int64       `json:"created_at"`
+	ID          int64       `json:"id" validate:"required"`
+	Reporter    User        `json:"reporter" validate:"required"`
+	Livecomment Livecomment `json:"livecomment" validate:"required"`
+	CreatedAt   int64       `json:"created_at" validate:"required"`
 }
 
 type (
@@ -39,47 +37,31 @@ type (
 		Tip     int64  `json:"tip"`
 	}
 	PostLivecommentResponse struct {
-		ID         int64      `json:"id"`
-		User       User       `json:"user"`
-		Livestream Livestream `json:"livestream"`
-		Comment    string     `json:"comment"`
+		ID         int64      `json:"id" validate:"required"`
+		User       User       `json:"user" validate:"required"`
+		Livestream Livestream `json:"livestream" validate:"required"`
+		Comment    string     `json:"comment" validate:"required"`
 		Tip        int64      `json:"tip"`
-		CreatedAt  int64      `json:"created_at"`
+		CreatedAt  int64      `json:"created_at" validate:"required"`
 	}
 )
 
-type ModerateRequest struct {
-	NGWord string `json:"ng_word"`
-}
+type (
+	ModerateRequest struct {
+		NGWord string `json:"ng_word"`
+	}
+
+	ModerateResponse struct {
+		WordID int64 `json:"word_id" validate:"required"`
+	}
+)
 
 type NGWord struct {
-	ID           int64  `json:"id"`
-	UserID       int64  `json:"user_id"`
-	LivestreamID int64  `json:"livestream_id"`
-	Word         string `json:"word"`
-	CreatedAt    int64  `json:"created_at"`
-}
-
-func isTooManySpam(livecomments []*Livecomment) bool {
-	total := uint64(len(livecomments))
-	if total == 0 {
-		return false
-	}
-
-	var spamCount uint64
-	var wg sync.WaitGroup
-	for _, livecomment := range livecomments {
-		wg.Add(1)
-		go func(livecomment *Livecomment) {
-			defer wg.Done()
-			if scheduler.LivecommentScheduler.IsNgLivecomment(livecomment.Comment) {
-				atomic.AddUint64(&spamCount, 1)
-			}
-		}(livecomment)
-	}
-
-	// ライブコメント全体のうち、スパムが占める割合で多すぎるか判断
-	return uint64(float64(spamCount)/float64(total))*100 >= config.TooManySpamThresholdPercentage
+	ID           int64  `json:"id" validate:"required"`
+	UserID       int64  `json:"user_id" validate:"required"`
+	LivestreamID int64  `json:"livestream_id" validate:"required"`
+	Word         string `json:"word" validate:"required"`
+	CreatedAt    int64  `json:"created_at" validate:"required"`
 }
 
 func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]*Livecomment, error) {
@@ -122,8 +104,8 @@ func (c *Client) GetLivecomments(ctx context.Context, livestreamID int64, stream
 			return livecomments, bencherror.NewHttpResponseError(err, req)
 		}
 
-		if o.spamCheck && isTooManySpam(livecomments) {
-			return nil, bencherror.NewTooManySpamError(c.username, req)
+		if err := ValidateSlice(req, livecomments); err != nil {
+			return nil, err
 		}
 	}
 
@@ -164,6 +146,10 @@ func (c *Client) GetLivecommentReports(ctx context.Context, livestreamID int64, 
 		if err := json.NewDecoder(resp.Body).Decode(&reports); err != nil {
 			return reports, bencherror.NewHttpResponseError(err, req)
 		}
+
+		if err := ValidateSlice(req, reports); err != nil {
+			return nil, err
+		}
 	}
 
 	return reports, nil
@@ -202,6 +188,10 @@ func (c *Client) GetNgwords(ctx context.Context, livestreamID int64, streamerNam
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&ngwords); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateSlice(req, ngwords); err != nil {
+			return nil, err
 		}
 	}
 
@@ -252,6 +242,10 @@ func (c *Client) PostLivecomment(ctx context.Context, livestreamID int64, stream
 			return nil, 0, bencherror.NewHttpResponseError(err, req)
 		}
 
+		if err := ValidateResponse(req, livecommentResponse); err != nil {
+			return nil, 0, err
+		}
+
 		benchscore.AddTip(uint64(tip.Tip))
 	}
 
@@ -285,6 +279,17 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID int64, stre
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var livecommentReport *LivecommentReport
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&livecommentReport); err != nil {
+			return bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, livecommentReport); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -325,6 +330,17 @@ func (c *Client) Moderate(ctx context.Context, livestreamID int64, streamerName 
 
 	if resp.StatusCode != o.wantStatusCode {
 		return bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var moderateResp *ModerateResponse
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&moderateResp); err != nil {
+			return bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, moderateResp); err != nil {
+			return err
+		}
 	}
 
 	return nil

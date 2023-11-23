@@ -1,0 +1,28 @@
+---
+- name: Mkdir webapp for ruby
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/ruby
+    state: directory
+
+- name: Build isupipe-ruby
+  become: true
+  become_user: isucon
+  shell: |
+    /home/isucon/.x bundle install
+  args:
+    chdir: /home/isucon/webapp/ruby
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: isupipe-ruby.service
+    dest: /etc/systemd/system/
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-ruby
+    enabled: false
+    state: stopped

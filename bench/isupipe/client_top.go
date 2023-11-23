@@ -12,12 +12,12 @@ import (
 )
 
 type Tag struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID   int64  `json:"id" validate:"required"`
+	Name string `json:"name" validate:"required"`
 }
 
 type TagsResponse struct {
-	Tags []*Tag `json:"tags"`
+	Tags []*Tag `json:"tags" validate:"required,dive,required"`
 }
 
 func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsResponse, error) {
@@ -47,6 +47,10 @@ func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsRespon
 	var tags *TagsResponse
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+			return nil, err
+		}
+
+		if err := ValidateResponse(req, tags); err != nil {
 			return nil, err
 		}
 	}

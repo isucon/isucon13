@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -11,6 +13,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+)
+
+const queueBaseUrl = "https://sqs.ap-northeast-1.amazonaws.com/424484851194"
+
+type Environment string
+
+var (
+	Develop    Environment = "develop"
+	Production Environment = "prod"
 )
 
 type Result struct {
@@ -33,11 +44,10 @@ func NewAbortResult(id int) *Result {
 
 type Job struct {
 	ID       int      `json:"id"`
+	Action   string   `json:"action,omitempty"`
 	Team     int      `json:"team"`
 	TargetIP string   `json:"target_ip"`
 	Servers  []string `json:"servers"`
-
-	receiptHandle *string
 }
 
 type Portal struct {
@@ -48,20 +58,37 @@ type Portal struct {
 }
 
 func NewPortal(
-	sendQueueUrl string,
-	recvQueueUrl string,
+	azID string,
+	environment Environment,
 	accessKey, secretAccessKey string,
-) *Portal {
+) (*Portal, error) {
+	if !strings.HasPrefix(azID, "apne1-az") {
+		return nil, fmt.Errorf("invalid availability zone: %s", azID)
+	}
+
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region:      aws.String("ap-northeast-1"),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, ""),
 	}))
 	client := sqs.New(sess)
+
+	// NOTE: ポータルへの送信キューはAZ分散しない
+	sendQueueName := fmt.Sprintf("%s-job-queue.fifo", environment)
+	sendQueueUrl, err := url.JoinPath(queueBaseUrl, sendQueueName)
+	if err != nil {
+		return nil, err
+	}
+	// NOTE: ポータルからの受信キューはAZ分散する
+	recvQueueName := fmt.Sprintf("%s-job-queue-%s.fifo", environment, azID)
+	recvQueueUrl, err := url.JoinPath(queueBaseUrl, recvQueueName)
+	if err != nil {
+		return nil, err
+	}
 	return &Portal{
 		client:       client,
 		sendQueueUrl: sendQueueUrl,
 		recvQueueUrl: recvQueueUrl,
-	}
+	}, nil
 }
 
 func (s *Portal) SendResult(ctx context.Context, job *Job, result *Result) error {
@@ -109,12 +136,11 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 					log.Printf("failed to decode json: %s\n", err.Error())
 					continue loop
 				}
-				job.receiptHandle = msg.ReceiptHandle
 
 				// NOTE: ジョブを取れたらすぐに削除 (可視性タイムアウト)
 				if _, err := s.client.DeleteMessage(&sqs.DeleteMessageInput{
 					QueueUrl:      aws.String(s.recvQueueUrl),
-					ReceiptHandle: job.receiptHandle,
+					ReceiptHandle: msg.ReceiptHandle,
 				}); err != nil {
 					continue loop
 				}

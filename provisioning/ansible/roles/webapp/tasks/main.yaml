@@ -55,16 +55,20 @@
 - name: Tasks for isupipe-go
   include_tasks: go.yaml
 
-- name: Put systemd service
-  become: true
-  ansible.builtin.copy:
-    src: isupipe-go.service
-    dest: /etc/systemd/system/
+#- name: Tasks for isupipe-node
+#  include_tasks: node.yaml
 
+- name: Tasks for isupipe-perl
+  include_tasks: perl.yaml
 
-- name: Start webapp
-  become: true
-  service:
-    name: isupipe-go
-    enabled: true
-    state: restarted
+- name: Tasks for isupipe-php
+  include_tasks: php.yaml
+
+- name: Tasks for isupipe-python
+  include_tasks: python.yaml
+
+- name: Tasks for isupipe-ruby
+  include_tasks: ruby.yaml
+
+- name: Tasks for isupipe-rust
+  include_tasks: rust.yaml

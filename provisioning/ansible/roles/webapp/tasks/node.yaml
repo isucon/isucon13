@@ -1,0 +1,28 @@
+---
+- name: Mkdir webapp for node
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/node
+    state: directory
+
+- name: Build isupipe-node
+  become: true
+  become_user: isucon
+  shell: |
+    /home/isucon/.x npm install
+  args:
+    chdir: /home/isucon/webapp/node
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: isupipe-node.service
+    dest: /etc/systemd/system/
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-node
+    enabled: false
+    state: stopped

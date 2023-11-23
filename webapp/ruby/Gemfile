@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem 'bcrypt'
+gem 'mysql2'
+gem 'mysql2-cs-bind'
+gem 'puma'
+gem 'sinatra'
+gem 'sinatra-contrib'

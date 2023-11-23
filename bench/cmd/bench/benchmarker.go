@@ -126,9 +126,9 @@ func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmar
 		streamerSem:            semaphore.NewWeighted(weight),
 		longStreamerSem:        semaphore.NewWeighted(weight),
 		moderatorSem:           semaphore.NewWeighted(weight),
-		viewerSem:              semaphore.NewWeighted(weight * 1), // 配信者の10倍視聴者トラフィックがある
-		spammerSem:             semaphore.NewWeighted(weight * 2), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:              semaphore.NewWeighted(512),        // 攻撃を段階的に大きくする最大値
+		viewerSem:              semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
+		spammerSem:             semaphore.NewWeighted(weight * 2),  // 視聴者の２倍はスパム投稿者が潜んでいる
+		attackSem:              semaphore.NewWeighted(512),         // 攻撃を段階的に大きくする最大値
 		attackParallelis:       2,
 		streamerLoginSem:       semaphore.NewWeighted(weight),
 		streamerLoginCounter:   new(LoginCounter),
@@ -157,7 +157,7 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 				}
 				defer sem.Release(1)
 
-				client, err := isupipe.NewClient(
+				client, err := isupipe.NewClient(b.contestantLogger,
 					agent.WithBaseURL(config.TargetBaseURL),
 				)
 				if err != nil {
@@ -179,6 +179,13 @@ func (b *benchmarker) runClientProviders(ctx context.Context) {
 				if err := client.Login(ctx, &isupipe.LoginRequest{
 					Username: u.Name,
 					Password: u.RawPassword,
+				}); err != nil {
+					return
+				}
+
+				icon := scheduler.IconSched.GetRandomIcon()
+				if _, err := client.PostIcon(ctx, &isupipe.PostIconRequest{
+					Image: icon.Image,
 				}); err != nil {
 					return
 				}
