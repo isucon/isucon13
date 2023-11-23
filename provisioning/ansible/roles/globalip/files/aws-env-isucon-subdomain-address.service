@@ -1,7 +1,6 @@
 [Unit]
 Description=run aws-env-isucon-subdomain-address once
-Wants=time-sync.target
-Before=time-sync.target
+Before=mysql.service
 After=network.target
 
 [Service]
