@@ -231,6 +231,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 			IsPassed:      benchResult.Pass,
 			Score:         benchResult.Score,
 			ResolvedCount: benchResult.ResolvedCount,
+			Language:      benchResult.Language,
 			Status:        status,
 			FinishedAt:    time.Now(),
 		}, nil

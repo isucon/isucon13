@@ -33,6 +33,7 @@ type Result struct {
 	Stdout        string    `json:"stdout,omitempty"`
 	Stderr        string    `json:"stderr,omitempty"`
 	ResolvedCount int64     `json:"resolved_count"`
+	Language      string    `json:"language"`
 	FinishedAt    time.Time `json:"finished_at,omitempty"`
 }
 
