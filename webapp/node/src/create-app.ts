@@ -65,7 +65,7 @@ export const createApp = (deps: Deps) => {
   app.post('/api/initialize', async (c) => {
     try {
       await deps.exec(['../sql/init.sh'])
-      return c.json({ advertise_level: 10, advertise_name: 'node' })
+      return c.json({ advertise_level: 10, language: 'node' })
     } catch (error) {
       console.log('init.sh failed with')
       console.log(error)
