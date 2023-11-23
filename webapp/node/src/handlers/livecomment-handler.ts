@@ -298,7 +298,7 @@ export const moderateHandler = [
         await conn.rollback()
         return c.text(
           "A streamer can't moderate livestreams that other streamers own",
-          404,
+          400,
         )
       }
 
