@@ -56,7 +56,7 @@ jobs:
         run: |
           make down/node
           make up/node
-      
+
       - name: "[frontend] build"
         working-directory: ./frontend
         run: make
@@ -85,4 +85,4 @@ jobs:
       - name: Show webapp logs
         if: ${{ always() }}
         working-directory: ./development
-        run: sudo docker compose -f docker-compose-common.yml -f docker-compose-perl.yml logs webapp
+        run: sudo docker compose -f docker-compose-common.yml -f docker-compose-node.yml logs webapp
