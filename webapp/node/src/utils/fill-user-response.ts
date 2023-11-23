@@ -36,7 +36,7 @@ export const fillUserResponse = async (
 
   if (!image) {
     // eslint-disable-next-line unicorn/prefer-module
-    const result = await readFile(join(__dirname, '../../img/NoImage.jpg'))
+    const result = await readFile(join(__dirname, '../../../img/NoImage.jpg'))
     const buf = result.buffer
     if (buf instanceof ArrayBuffer) {
       image = buf
