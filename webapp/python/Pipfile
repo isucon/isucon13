@@ -14,6 +14,7 @@ mysql-connector-python = "*"
 flake8 = "*"
 isort = "*"
 black = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.12"
