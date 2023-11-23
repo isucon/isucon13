@@ -7,7 +7,12 @@ import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import React from 'react';
 import { apiClient } from '~/api/client';
-import { useUser, useUserMe, useUserStatistics } from '~/api/hooks';
+import {
+  useLiveUserStream,
+  useUser,
+  useUserMe,
+  useUserStatistics,
+} from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
 import { ChangeIconDialog } from '~/components/account/iconmodal';
 import { VideoThumbnail } from '~/components/video/thumbnail';
@@ -28,6 +33,7 @@ export default function UserPage(): React.ReactElement {
     });
     location.reload();
   }, []);
+  const livestreams = useLiveUserStream(username ?? null);
 
   return (
     <Stack sx={{ mx: 2, my: 3 }} gap={3}>
@@ -84,13 +90,11 @@ export default function UserPage(): React.ReactElement {
           flexGrow={1}
           sx={{ padding: 2 }}
         >
-          {Array(10)
-            .fill(0)
-            .map((_, index) => (
-              <Grid key={index} xs={1}>
-                <VideoThumbnail liveSteram={{ id: index }} />
-              </Grid>
-            ))}
+          {livestreams.data?.map((livestream, index) => (
+            <Grid key={index} xs={1}>
+              <VideoThumbnail liveSteram={livestream} />
+            </Grid>
+          ))}
         </Grid>
       </Container>
     </Stack>

@@ -158,6 +158,26 @@ paths:
           in: cookie
           name: SESSIONID
           description: セッションID
+  "/user/{username}/livestream":
+    parameters:
+      - schema:
+          type: string
+        name: username
+        in: path
+        required: true
+    get:
+      summary: ""
+      operationId: get-user-livestream
+      responses:
+        "200":
+          $ref: "#/components/responses/GetLivestreams"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      description: ユーザの配信一覧を取得
   /livestream:
     get:
       summary: Your GET endpoint

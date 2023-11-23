@@ -1,3 +1,3 @@
-export function iconUrl(username: string | undefined): string {
-  return `/api/user/${username ?? 0}/icon`;
+export function iconUrl(username: string | undefined): string | undefined {
+  return username && `/api/user/${username ?? 0}/icon`;
 }
