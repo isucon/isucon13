@@ -21,6 +21,7 @@ export interface LivecommentReportResponse {
 export const fillLivecommentReportResponse = async (
   conn: PoolConnection,
   livecommentReport: LivecommentReportsModel,
+  fallbackUserIcon: Readonly<ArrayBuffer>,
 ) => {
   const [[user]] = await conn
     .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
@@ -29,7 +30,7 @@ export const fillLivecommentReportResponse = async (
     .catch(throwErrorWith('failed to get user'))
   if (!user) throw new Error('not found user that has the given id')
 
-  const userResponse = await fillUserResponse(conn, user)
+  const userResponse = await fillUserResponse(conn, user, fallbackUserIcon)
 
   const [[livecomment]] = await conn
     .query<(LivecommentsModel & RowDataPacket)[]>(
@@ -40,7 +41,11 @@ export const fillLivecommentReportResponse = async (
   if (!livecomment)
     throw new Error('not found livecomment that has the given id')
 
-  const livecommentResponse = await fillLivecommentResponse(conn, livecomment)
+  const livecommentResponse = await fillLivecommentResponse(
+    conn,
+    livecomment,
+    fallbackUserIcon,
+  )
 
   return {
     id: livecommentReport.id,

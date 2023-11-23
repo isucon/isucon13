@@ -49,6 +49,7 @@ export const getLivecommentsHandler = [
         const livecommentResponse = await fillLivecommentResponse(
           conn,
           livecomment,
+          await c.get('runtime').fallbackUserIcon,
         )
         livecommnetResponses.push(livecommentResponse)
       }
@@ -164,14 +165,18 @@ export const postLivecommentHandler = [
         )
         .catch(throwErrorWith('failed to insert livecomment'))
 
-      const livecommentResponse = await fillLivecommentResponse(conn, {
-        id: livecommentId,
-        user_id: userId,
-        livestream_id: livestreamId,
-        comment: body.comment,
-        tip: body.tip,
-        created_at: now,
-      })
+      const livecommentResponse = await fillLivecommentResponse(
+        conn,
+        {
+          id: livecommentId,
+          user_id: userId,
+          livestream_id: livestreamId,
+          comment: body.comment,
+          tip: body.tip,
+          created_at: now,
+        },
+        await c.get('runtime').fallbackUserIcon,
+      )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -248,6 +253,7 @@ export const reportLivecommentHandler = [
           livecomment_id: livecommentId,
           created_at: now,
         },
+        await c.get('runtime').fallbackUserIcon,
       )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))

@@ -1,6 +1,4 @@
 import { createHash } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { PoolConnection, RowDataPacket } from 'mysql2/promise'
 import { IconModel, ThemeModel, UserModel } from '../types/models'
 import { throwErrorWith } from './throw-error-with'
@@ -20,6 +18,7 @@ export interface UserResponse {
 export const fillUserResponse = async (
   conn: PoolConnection,
   user: Omit<UserModel, 'password'>,
+  fallbackUserIcon: Readonly<ArrayBuffer>,
 ) => {
   const [[theme]] = await conn
     .query<(ThemeModel & RowDataPacket)[]>(
@@ -35,14 +34,7 @@ export const fillUserResponse = async (
   let image = icon?.image
 
   if (!image) {
-    // eslint-disable-next-line unicorn/prefer-module
-    const result = await readFile(join(__dirname, '../../../img/NoImage.jpg'))
-    const buf = result.buffer
-    if (buf instanceof ArrayBuffer) {
-      image = buf
-    } else {
-      throw new TypeError(`NoImage.jpg should be ArrayBuffer, but ${buf}`)
-    }
+    image = fallbackUserIcon
   }
 
   return {

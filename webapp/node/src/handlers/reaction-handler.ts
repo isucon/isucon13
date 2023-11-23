@@ -42,7 +42,11 @@ export const getReactionsHandler = [
 
       const reactionResponses: ReactionResponse[] = []
       for (const reaction of reactions) {
-        const reactionResponse = await fillReactionResponse(conn, reaction)
+        const reactionResponse = await fillReactionResponse(
+          conn,
+          reaction,
+          await c.get('runtime').fallbackUserIcon,
+        )
 
         reactionResponses.push(reactionResponse)
       }
@@ -85,13 +89,17 @@ export const postReactionHandler = [
         )
         .catch(throwErrorWith('failed to insert reaction'))
 
-      const reactionResponse = await fillReactionResponse(conn, {
-        id: reactionId,
-        emoji_name: body.emoji_name,
-        user_id: userId,
-        livestream_id: livestreamId,
-        created_at: now,
-      })
+      const reactionResponse = await fillReactionResponse(
+        conn,
+        {
+          id: reactionId,
+          emoji_name: body.emoji_name,
+          user_id: userId,
+          livestream_id: livestreamId,
+          created_at: now,
+        },
+        await c.get('runtime').fallbackUserIcon,
+      )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
