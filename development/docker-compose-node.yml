@@ -11,6 +11,7 @@ services:
     container_name: webapp
     volumes:
       - ../webapp/sql:/home/isucon/webapp/sql
+      - ../webapp/pdns:/home/isucon/webapp/pdns
       - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro
       - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf:ro
       - ../webapp/img:/home/isucon/webapp/img
