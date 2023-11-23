@@ -71,7 +71,7 @@ def initialize_handler() -> tuple[dict[str, Any], int]:
         )
         raise HttpException(result.stderr, INTERNAL_SERVER_ERROR)
 
-    return {"advertise_level": 1, "language": "python"}, OK
+    return {"language": "python"}, OK
 
 
 # top

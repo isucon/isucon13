@@ -82,7 +82,6 @@ impl axum::extract::FromRef<AppState> for axum_extra::extract::cookie::Key {
 // FIXME: ポータルと足並み揃えて修正
 #[derive(Debug, serde::Serialize)]
 struct InitializeResponse {
-    advertise_level: u32,
     language: &'static str,
 }
 
@@ -127,7 +126,6 @@ async fn initialize_handler() -> Result<axum::Json<InitializeResponse>, Error> {
     }
 
     Ok(axum::Json(InitializeResponse {
-        advertise_level: 10,
         language: "rust",
     }))
 }

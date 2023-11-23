@@ -42,8 +42,7 @@ func init() {
 
 // FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
-	AdvertiseLevel int64  `json:"advertise_level"`
-	Language       string `json:"language"`
+	Language string `json:"language"`
 }
 
 func connectDB(logger echo.Logger) (*sqlx.DB, error) {
@@ -116,8 +115,7 @@ func initializeHandler(c echo.Context) error {
 
 	c.Request().Header.Add("Content-Type", "application/json;charset=utf-8")
 	return c.JSON(http.StatusOK, InitializeResponse{
-		AdvertiseLevel: 10,
-		Language:       "golang",
+		Language: "golang",
 	})
 }
 
