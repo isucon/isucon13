@@ -285,12 +285,14 @@ var supervise = cli.Command{
 	Action: func(cliCtx *cli.Context) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 		defer cancel()
+		log.Println("Start ISUPipe Supervisor")
 
 		var (
 			portal *Portal
 			signer ssh.Signer
 		)
 		if production {
+			log.Println("Running on production")
 			azName, err := fetchAZName(ctx)
 			if err != nil {
 				return cli.NewExitError(err, 1)
@@ -320,6 +322,7 @@ var supervise = cli.Command{
 			accessKey = "AKIAWFVKEZX5AUP2AK6O"
 			secretAccessKey = "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"
 		} else {
+			log.Println("Running on development")
 			azName, err := fetchAZName(ctx)
 			if err != nil {
 				return cli.NewExitError(err, 1)

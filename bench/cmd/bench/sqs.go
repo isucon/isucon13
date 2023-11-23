@@ -70,6 +70,7 @@ func NewPortal(
 	environment Environment,
 	accessKey, secretAccessKey string,
 ) (*Portal, error) {
+	log.Printf("azid = %s\n", azID)
 	if !strings.HasPrefix(azID, "apne1-az") {
 		return nil, fmt.Errorf("invalid availability zone: %s", azID)
 	}
@@ -92,6 +93,9 @@ func NewPortal(
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("Send Queue: %s\n", sendQueueUrl)
+	log.Printf("Recv Queue: %s\n", recvQueueUrl)
 	return &Portal{
 		client:       client,
 		sendQueueUrl: sendQueueUrl,
@@ -131,12 +135,14 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 			case <-ctx.Done():
 				return
 			default:
+				log.Println("waiting for receiving message from queue ...")
 				resp, err := s.client.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 					QueueUrl:            aws.String(s.recvQueueUrl),
 					MaxNumberOfMessages: aws.Int64(1),
 					WaitTimeSeconds:     aws.Int64(1),
 				})
 				if err != nil {
+					log.Printf("Receive message error: %s\n", err.Error())
 					continue loop
 				}
 				if len(resp.Messages) == 0 {
@@ -145,17 +151,20 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 
 				msg := resp.Messages[0]
 
+				log.Println("decode json")
 				var job *Job
 				if err := json.NewDecoder(strings.NewReader(*msg.Body)).Decode(&job); err != nil {
 					log.Printf("failed to decode json: %s\n", err.Error())
 					continue loop
 				}
 
+				log.Println("delete old sqs message")
 				// NOTE: ジョブを取れたらすぐに削除 (可視性タイムアウト)
 				if _, err := s.client.DeleteMessage(&sqs.DeleteMessageInput{
 					QueueUrl:      aws.String(s.recvQueueUrl),
 					ReceiptHandle: msg.ReceiptHandle,
 				}); err != nil {
+					log.Printf("failed to delete sqs message: %s\n", err.Error())
 					continue loop
 				}
 
