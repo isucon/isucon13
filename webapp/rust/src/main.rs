@@ -449,6 +449,7 @@ async fn reserve_livestream_handler(
     }
 
     // 予約枠をみて、予約が可能か調べる
+    // NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
     let slots: Vec<ReservationSlotModel> = sqlx::query_as(
         "SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE",
     )
@@ -1997,12 +1998,12 @@ async fn get_livestream_statistics_handler(
     let mut ranking = Vec::new();
     for livestream in livestreams {
         let MysqlDecimal(reactions) = sqlx::query_scalar("SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?")
-            .bind(livestream_id)
+            .bind(livestream.id)
             .fetch_one(&mut *tx)
             .await?;
 
         let MysqlDecimal(total_tips) = sqlx::query_scalar("SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?")
-            .bind(livestream_id)
+            .bind(livestream.id)
             .fetch_one(&mut *tx)
             .await?;
 
