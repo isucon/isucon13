@@ -14,6 +14,7 @@ class User implements JsonSerializable
         public ?string $displayName = null,
         public ?string $description = null,
         public ?Theme $theme = null,
+        public ?string $iconHash = null,
     ) {
     }
 
@@ -37,6 +38,10 @@ class User implements JsonSerializable
 
         if (!is_null($this->theme)) {
             $data['theme'] = $this->theme;
+        }
+
+        if (!is_null($this->iconHash)) {
+            $data['icon_hash'] = $this->iconHash;
         }
 
         return $data;
