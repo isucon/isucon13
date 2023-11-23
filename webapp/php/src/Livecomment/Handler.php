@@ -168,13 +168,33 @@ class Handler extends AbstractHandler
 
         $this->db->beginTransaction();
 
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestream: ' . $e->getMessage(),
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'livestream not found',
+            );
+        }
+        $livestreamModel = LivestreamModel::fromRow($row);
+
         // スパム判定
         /** @var list<NGWord> $ngWords */
         $ngWords = [];
         try {
             $stmt = $this->db->prepare('SELECT id, user_id, livestream_id, word FROM ng_words WHERE user_id = ? AND livestream_id = ?');
-            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-            $stmt->bindValue(2, $livestreamId, PDO::PARAM_INT);
+            $stmt->bindValue(1, $livestreamModel->userId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $livestreamModel->id, PDO::PARAM_INT);
             $stmt->execute();
             while (($row = $stmt->fetch()) !== false) {
                 $ngWords[] = NGWord::fromRow($row);
@@ -288,6 +308,25 @@ class Handler extends AbstractHandler
         $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
 
         $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE id = ?');
+            $stmt->bindValue(1, $livestreamId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestream: ' . $e->getMessage(),
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'livestream not found',
+            );
+        }
 
         try {
             $stmt = $this->db->prepare('SELECT * FROM livecomments WHERE id = ?');
