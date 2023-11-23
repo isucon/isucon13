@@ -18,6 +18,7 @@ func InitStaffLogger() (*zap.SugaredLogger, error) {
 	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	c.OutputPaths = []string{config.StaffLogPath, "stderr"}
 	c.ErrorOutputPaths = []string{"stderr"}
+	c.Sampling = nil
 
 	l, err := c.Build()
 	if err != nil {
@@ -39,6 +40,7 @@ func InitTestLogger() (*zap.Logger, error) {
 	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	c.OutputPaths = []string{"stderr"}
 	c.ErrorOutputPaths = []string{"stderr"}
+	c.Sampling = nil
 
 	l, err := c.Build()
 	if err != nil {
@@ -57,6 +59,7 @@ func InitContestantLogger() (*zap.Logger, error) {
 	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	c.OutputPaths = []string{config.ContestantLogPath, "stdout"}
 	c.ErrorOutputPaths = []string{"stdout"}
+	c.Sampling = nil
 
 	l, err := c.Build()
 	if err != nil {
