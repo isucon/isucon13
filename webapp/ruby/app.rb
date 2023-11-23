@@ -194,7 +194,6 @@ module Isupipe
       end
 
       json(
-        advertise_level: 10,
         language: 'ruby',
       )
     end

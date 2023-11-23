@@ -45,7 +45,6 @@ sub initialize_handler($self, $c) {
     }
 
     return $c->render_json({
-        advertise_level => 10,
         language        => 'perl',
     });
 }
