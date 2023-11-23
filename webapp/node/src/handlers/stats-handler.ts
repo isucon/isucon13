@@ -155,7 +155,7 @@ export const getUserStatisticsHandler = [
             INNER JOIN reactions r ON r.livestream_id = l.id
             WHERE u.name = ?
             GROUP BY emoji_name
-            ORDER BY COUNT(*) DESC
+            ORDER BY COUNT(*) DESC, emoji_name DESC
             LIMIT 1
           `,
           [username],

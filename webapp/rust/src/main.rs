@@ -1941,7 +1941,7 @@ async fn get_user_statistics_handler(
     INNER JOIN reactions r ON r.livestream_id = l.id
     WHERE u.name = ?
     GROUP BY emoji_name
-    ORDER BY COUNT(*) DESC
+    ORDER BY COUNT(*) DESC, emoji_name DESC
     LIMIT 1
     "#;
     let favorite_emoji: String = sqlx::query_scalar(query)
