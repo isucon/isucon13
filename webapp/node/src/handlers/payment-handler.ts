@@ -1,11 +1,12 @@
-import { Hono } from 'hono'
+import { Context } from 'hono'
 import { RowDataPacket } from 'mysql2/promise'
 import { HonoEnvironment } from '../types/application'
 import { throwErrorWith } from '../utils/throw-error-with'
 
-export const paymentHandler = new Hono<HonoEnvironment>()
-
-paymentHandler.get('/api/payment', async (c) => {
+// GET /api/payment
+export const GetPaymentResult = async (
+  c: Context<HonoEnvironment, '/api/payment'>,
+) => {
   const conn = await c.get('pool').getConnection()
   await conn.beginTransaction()
 
@@ -16,6 +17,8 @@ paymentHandler.get('/api/payment', async (c) => {
       )
       .catch(throwErrorWith('failed to count total tip'))
 
+    await conn.commit().catch(throwErrorWith('failed to commit'))
+
     return c.json({ totalTip: totalTip })
   } catch (error) {
     await conn.rollback()
@@ -23,4 +26,4 @@ paymentHandler.get('/api/payment', async (c) => {
   } finally {
     conn.release()
   }
-})
+}

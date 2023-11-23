@@ -19,9 +19,7 @@ const deps = {
           resolve({ stdout, stderr })
         } else {
           reject(
-            new Error(
-              `command failed with code ${code}\n${stderr}\n${stdout}}`,
-            ),
+            new Error(`command failed with code ${code}\n${stderr}\n${stdout}`),
           )
         }
       })

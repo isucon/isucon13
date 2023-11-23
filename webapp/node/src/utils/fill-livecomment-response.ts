@@ -1,10 +1,10 @@
 import { PoolConnection, RowDataPacket } from 'mysql2/promise'
 import { LivecommentsModel, LivestreamsModel, UserModel } from '../types/models'
-import { UserResponse, makeUserResponse } from './make-user-response'
+import { UserResponse, fillUserResponse } from './fill-user-response'
 import {
   LivestreamResponse,
-  makeLivestreamResponse,
-} from './make-livestream-response'
+  fillLivestreamResponse,
+} from './fill-livestream-response'
 import { throwErrorWith } from './throw-error-with'
 
 export interface LivecommentResponse {
@@ -16,7 +16,7 @@ export interface LivecommentResponse {
   created_at: number
 }
 
-export const makeLivecommentResponse = async (
+export const fillLivecommentResponse = async (
   conn: PoolConnection,
   livecomment: LivecommentsModel,
 ) => {
@@ -27,7 +27,7 @@ export const makeLivecommentResponse = async (
     .catch(throwErrorWith('failed to get user'))
   if (!user) throw new Error('not found user that has the given id')
 
-  const userResponse = await makeUserResponse(conn, user)
+  const userResponse = await fillUserResponse(conn, user)
 
   const [[livestream]] = await conn
     .query<(LivestreamsModel & RowDataPacket)[]>(
@@ -37,7 +37,7 @@ export const makeLivecommentResponse = async (
     .catch(throwErrorWith('failed to get livestream'))
   if (!livestream) throw new Error('not found livestream that has the given id')
 
-  const livestreamResponse = await makeLivestreamResponse(conn, livestream)
+  const livestreamResponse = await fillLivestreamResponse(conn, livestream)
 
   return {
     id: livecomment.id,

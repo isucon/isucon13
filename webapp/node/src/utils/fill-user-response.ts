@@ -17,7 +17,7 @@ export interface UserResponse {
   icon_hash: string
 }
 
-export const makeUserResponse = async (
+export const fillUserResponse = async (
   conn: PoolConnection,
   user: Omit<UserModel, 'password'>,
 ) => {

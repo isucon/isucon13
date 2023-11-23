@@ -1,16 +1,46 @@
-import { Hono } from 'hono'
+import { Context } from 'hono'
 import { RowDataPacket } from 'mysql2/promise'
 import { HonoEnvironment } from '../types/application'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
 import { TagsModel, ThemeModel, UserModel } from '../types/models'
 import { throwErrorWith } from '../utils/throw-error-with'
 
-export const topHandler = new Hono<HonoEnvironment>()
+// GET /api/tag
+export const getTagHandler = async (
+  c: Context<HonoEnvironment, '/api/tag'>,
+) => {
+  const conn = await c.get('pool').getConnection()
+  await conn.beginTransaction()
 
-topHandler.get(
-  '/api/user/:username/theme',
+  try {
+    const [tags] = await conn
+      .execute<(TagsModel & RowDataPacket)[]>('SELECT * FROM tags')
+      .catch(throwErrorWith('failed to get tags'))
+
+    await conn.commit().catch(throwErrorWith('failed to commit'))
+
+    const tagResponses = []
+    for (const tag of tags) {
+      tagResponses.push({
+        id: tag.id,
+        name: tag.name,
+      })
+    }
+
+    return c.json({ tags: tagResponses })
+  } catch (error) {
+    await conn.rollback()
+    return c.text(`Internal Server Error\n${error}`, 500)
+  } finally {
+    conn.release()
+  }
+}
+
+// 配信者のテーマ取得API
+// GET /api/user/:username/theme
+export const getStreamerThemeHandler = [
   verifyUserSessionMiddleware,
-  async (c) => {
+  async (c: Context<HonoEnvironment, '/api/user/:username/theme'>) => {
     const username = c.req.param('username')
 
     const conn = await c.get('pool').getConnection()
@@ -38,7 +68,12 @@ topHandler.get(
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
-      return c.json({ id: theme.id, dark_mode: !!theme.dark_mode })
+      const themeResponse = {
+        id: theme.id,
+        dark_mode: !!theme.dark_mode,
+      }
+
+      return c.json(themeResponse)
     } catch (error) {
       await conn.rollback()
       return c.text(`Internal Server Error\n${error}`, 500)
@@ -46,29 +81,4 @@ topHandler.get(
       conn.release()
     }
   },
-)
-
-topHandler.get('/api/tag', async (c) => {
-  const conn = await c.get('pool').getConnection()
-  await conn.beginTransaction()
-
-  try {
-    const [tags] = await conn
-      .execute<(TagsModel & RowDataPacket)[]>('SELECT * FROM tags')
-      .catch(throwErrorWith('failed to get tags'))
-
-    await conn.commit().catch(throwErrorWith('failed to commit'))
-
-    return c.json({
-      tags: tags.map((tag) => ({
-        id: tag.id,
-        name: tag.name,
-      })),
-    })
-  } catch (error) {
-    await conn.rollback()
-    return c.text(`Internal Server Error\n${error}`, 500)
-  } finally {
-    conn.release()
-  }
-})
+]

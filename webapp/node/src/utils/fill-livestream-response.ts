@@ -5,7 +5,7 @@ import {
   TagsModel,
   UserModel,
 } from '../types/models'
-import { UserResponse, makeUserResponse } from './make-user-response'
+import { UserResponse, fillUserResponse } from './fill-user-response'
 import { throwErrorWith } from './throw-error-with'
 
 export interface LivestreamResponse {
@@ -20,7 +20,7 @@ export interface LivestreamResponse {
   end_at: number
 }
 
-export const makeLivestreamResponse = async (
+export const fillLivestreamResponse = async (
   conn: PoolConnection,
   livestream: LivestreamsModel,
 ) => {
@@ -31,7 +31,7 @@ export const makeLivestreamResponse = async (
     .catch(throwErrorWith('failed to get user'))
   if (!user) throw new Error('not found user that has the given id')
 
-  const userResponse = await makeUserResponse(conn, user)
+  const userResponse = await fillUserResponse(conn, user)
 
   const [livestreamTags] = await conn
     .query<(LivestreamTagsModel & RowDataPacket)[]>(

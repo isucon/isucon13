@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Context } from 'hono'
 import { RowDataPacket } from 'mysql2/promise'
 import { HonoEnvironment } from '../types/application'
 import { verifyUserSessionMiddleware } from '../middlewares/verify-user-session-middleare'
@@ -10,13 +10,13 @@ import {
   UserModel,
 } from '../types/models'
 
-export const statsHandler = new Hono<HonoEnvironment>()
-
-statsHandler.get(
-  '/api/user/:username/statistics',
+// GET /api/user/:username/statistics
+export const getUserStatisticsHandler = [
   verifyUserSessionMiddleware,
-  async (c) => {
+  async (c: Context<HonoEnvironment, '/api/user/:username/statistics'>) => {
     const username = c.req.param('username')
+    // ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
+    // また、現在の合計視聴者数もだす
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -44,11 +44,11 @@ statsHandler.get(
         const [[{ 'COUNT(*)': reaction }]] = await conn
           .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
             `
-                SELECT COUNT(*) FROM users u
-                INNER JOIN livestreams l ON l.user_id = u.id
-                INNER JOIN reactions r ON r.livestream_id = l.id
-                WHERE u.id = ?
-              `,
+              SELECT COUNT(*) FROM users u
+              INNER JOIN livestreams l ON l.user_id = u.id
+              INNER JOIN reactions r ON r.livestream_id = l.id
+              WHERE u.id = ?
+            `,
             [user.id],
           )
           .catch(throwErrorWith('failed to count reactions'))
@@ -56,10 +56,11 @@ statsHandler.get(
         const [[{ 'IFNULL(SUM(l2.tip), 0)': tips }]] = await conn
           .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
             `
-        SELECT IFNULL(SUM(l2.tip), 0) FROM users u
-        INNER JOIN livestreams l ON l.user_id = u.id	
-        INNER JOIN livecomments l2 ON l2.livestream_id = l.id
-        WHERE u.id = ?`,
+              SELECT IFNULL(SUM(l2.tip), 0) FROM users u
+              INNER JOIN livestreams l ON l.user_id = u.id	
+              INNER JOIN livecomments l2 ON l2.livestream_id = l.id
+              WHERE u.id = ?
+            `,
             [user.id],
           )
           .catch(throwErrorWith('failed to count tips'))
@@ -70,22 +71,28 @@ statsHandler.get(
         })
       }
 
-      ranking.sort((a, b) => b.score - a.score)
+      ranking.sort((a, b) => {
+        if (a.score === b.score) return a.username.localeCompare(b.username)
+        return a.score - b.score
+      })
 
       let rank = 1
-      for (const r of ranking) {
-        if (r.username === username) break
+      for (const r of ranking.toReversed()) {
+        if (r.username === username) {
+          break
+        }
         rank++
       }
 
       // リアクション数
       const [[{ 'COUNT(*)': totalReactions }]] = await conn
         .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-          `SELECT COUNT(*) FROM users u 
-      INNER JOIN livestreams l ON l.user_id = u.id 
-      INNER JOIN reactions r ON r.livestream_id = l.id
-      WHERE u.name = ?
-    `,
+          `
+            SELECT COUNT(*) FROM users u 
+            INNER JOIN livestreams l ON l.user_id = u.id 
+            INNER JOIN reactions r ON r.livestream_id = l.id
+            WHERE u.name = ?
+          `,
           [username],
         )
         .catch(throwErrorWith('failed to count reactions'))
@@ -110,8 +117,8 @@ statsHandler.get(
             .catch(throwErrorWith('failed to get livecomments'))
 
           for (const livecomment of livecomments) {
-            totalLivecomments++
             totalTip += livecomment.tip
+            totalLivecomments++
           }
         }
       }
@@ -132,7 +139,7 @@ statsHandler.get(
               `SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?`,
               [livestream.id],
             )
-            .catch(throwErrorWith('failed to get livecomments'))
+            .catch(throwErrorWith('failed to get livestream_view_history'))
 
           viewersCount += livestreamViewerCount
         }
@@ -172,12 +179,14 @@ statsHandler.get(
       conn.release()
     }
   },
-)
+]
 
-statsHandler.get(
-  '/api/livestream/:livestream_id/statistics',
+// GET /api/livestream/:livestream_id/statistics
+export const getLivestreamStatisticsHandler = [
   verifyUserSessionMiddleware,
-  async (c) => {
+  async (
+    c: Context<HonoEnvironment, '/api/livestream/:livestream_id/statistics'>,
+  ) => {
     if (!Number.isInteger(c.req.param('livestream_id'))) {
       return c.json('livestream_id in path must be integer', 400)
     }
@@ -231,10 +240,13 @@ statsHandler.get(
           score: reactionCount + totalTip,
         })
       }
-      ranking.sort((a, b) => b.score - a.score)
+      ranking.sort((a, b) => {
+        if (a.score === b.score) return a.livestreamId - b.livestreamId
+        return a.score - b.score
+      })
 
       let rank = 1
-      for (const r of ranking) {
+      for (const r of ranking.toReversed()) {
         if (r.livestreamId === livestreamId) break
         rank++
       }
@@ -271,6 +283,8 @@ statsHandler.get(
         )
         .catch(throwErrorWith('failed to count reports'))
 
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
       return c.json({
         rank,
         viewers_count: viewersCount,
@@ -285,4 +299,4 @@ statsHandler.get(
       conn.release()
     }
   },
-)
+]
