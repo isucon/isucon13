@@ -304,10 +304,12 @@ var supervise = cli.Command{
 
 			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
 			if err != nil {
+				log.Printf("privateKey error = %s\n", err)
 				return err
 			}
 			signer, err = ssh.ParsePrivateKey(privateKey)
 			if err != nil {
+				log.Printf("signer error = %s\n", err)
 				return err
 			}
 		} else {
@@ -326,6 +328,17 @@ var supervise = cli.Command{
 			if err != nil {
 				return cli.NewExitError(err, 1)
 			}
+
+			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
+			if err != nil {
+				log.Printf("privateKey error = %s\n", err)
+				return err
+			}
+			signer, err = ssh.ParsePrivateKey(privateKey)
+			if err != nil {
+				log.Printf("signer error = %s\n", err)
+				return err
+			}
 		}
 		jobCh := portal.StartReceiveJob(ctx)
 
@@ -336,7 +349,7 @@ var supervise = cli.Command{
 			case job := <-jobCh:
 				log.Printf("job = %+v\n", job)
 
-				if production && job.Action == "reboot" {
+				if job.Action == "reboot" {
 					var errs []string
 					for _, server := range job.Servers {
 						if err := reboot(server, signer); err != nil {
