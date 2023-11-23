@@ -13,7 +13,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Log\LoggerInterface as Logger;
 use RuntimeException;
-use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException };
+use Slim\Exception\{ HttpBadRequestException, HttpInternalServerErrorException, HttpNotFoundException };
 use SlimSession\Helper as Session;
 use UnexpectedValueException;
 
@@ -288,6 +288,25 @@ class Handler extends AbstractHandler
         $userId = $this->session->get($this::DEFAULT_USER_ID_KEY);
 
         $this->db->beginTransaction();
+
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livecomments WHERE id = ?');
+            $stmt->bindValue(1, $livecommentId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livecomment: ' . $e->getMessage(),
+                previous: $e,
+            );
+        }
+        if ($row === false) {
+            throw new HttpNotFoundException(
+                request: $request,
+                message: 'livecomment not found',
+            );
+        }
 
         $now = time();
         $reportModel = new LivecommentReportModel(

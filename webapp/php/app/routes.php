@@ -61,7 +61,7 @@ return function (App $app) {
     $app->post('/api/icon', UserHandler::class . ':postIconHandler');
 
     // stats
-    // ライブコメント統計情報
+    // ライブ配信統計情報
     $app->get('/api/livestream/{livestream_id}/statistics', StatsHandler::class . ':getLivestreamStatisticsHandler');
 
     // 課金情報

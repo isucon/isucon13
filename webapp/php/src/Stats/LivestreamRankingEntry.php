@@ -11,7 +11,6 @@ class LivestreamRankingEntry
 {
     public function __construct(
         public int $livestreamId,
-        public string $title,
         public int $score,
     ) {
     }
@@ -19,7 +18,7 @@ class LivestreamRankingEntry
     public function compare(LivestreamRankingEntry $other): int
     {
         if ($this->score === $other->score) {
-            return $this->title <=> $other->title;
+            return $this->livestreamId <=> $other->livestreamId;
         }
 
         return $this->score <=> $other->score;

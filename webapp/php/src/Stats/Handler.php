@@ -369,7 +369,6 @@ class Handler extends AbstractHandler
             $score = $reactions + $tips;
             $ranking[] = new LivestreamRankingEntry(
                 livestreamId: $livestream->id,
-                title: $livestream->title,
                 score: $score,
             );
         }
@@ -441,6 +440,8 @@ class Handler extends AbstractHandler
                 previous: $e,
             );
         }
+
+        $this->db->commit();
 
         return $this->jsonResponse($response, new LivestreamStatistics(
             rank: $rank,

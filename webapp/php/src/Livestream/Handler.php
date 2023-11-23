@@ -490,7 +490,7 @@ class Handler extends AbstractHandler
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
-                message: 'failed to insert livestream_view_history: ' . $e->getMessage(),
+                message: 'failed to delete livestream_view_history: ' . $e->getMessage(),
                 previous: $e,
             );
         }
