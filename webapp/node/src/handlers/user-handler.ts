@@ -41,7 +41,7 @@ export const getIconHandler = [
         .catch(throwErrorWith('failed to get icon'))
       if (!icon) {
         await conn.rollback()
-        return c.body(await c.get('deps').fallbackUserIcon, 200, {
+        return c.body(await c.get('runtime').fallbackUserIcon, 200, {
           'Content-Type': 'image/jpeg',
         })
       }
@@ -148,7 +148,7 @@ export const registerHandler = async (
   }
 
   const hashedPassword = await c
-    .get('deps')
+    .get('runtime')
     .hashPassword(body.password)
     .catch(throwErrorWith('failed to generate hashed password'))
 
@@ -171,7 +171,7 @@ export const registerHandler = async (
       .catch(throwErrorWith('failed to insert user theme'))
 
     await c
-      .get('deps')
+      .get('runtime')
       .exec([
         'pdnsutil',
         'add-record',
@@ -179,7 +179,7 @@ export const registerHandler = async (
         body.name,
         'A',
         '0',
-        c.get('deps').powerDNSSubdomainAddress,
+        c.get('runtime').powerDNSSubdomainAddress,
       ])
       .catch(throwErrorWith('failed to add record to powerdns'))
 
@@ -231,7 +231,7 @@ export const loginHandler = async (
     await conn.commit().catch(throwErrorWith('failed to commit'))
 
     const isPasswordMatch = await c
-      .get('deps')
+      .get('runtime')
       .comparePassword(body.password, user.password)
       .catch(throwErrorWith('failed to compare hash and password'))
     if (!isPasswordMatch) {

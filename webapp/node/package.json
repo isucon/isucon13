@@ -1,10 +1,8 @@
 {
   "name": "isupipe",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "scripts": {
-    "start:node": "tsx watch src/node.ts",
+    "start": "tsx watch src/main.ts",
     "format": "prettier -w src",
     "lint": "eslint --fix src"
   },
