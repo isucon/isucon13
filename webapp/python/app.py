@@ -151,7 +151,7 @@ def reserve_livestream_handler() -> tuple[dict[str, Any], int]:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
 
-        # 2024/04/01からの１年間の期間内であるかチェック
+        # 2023/11/25 10:00からの１年間の期間内であるかチェック
         term_start_at = datetime(2023, 11, 25, 1, 0, 0, tzinfo=timezone.utc)
         term_end_at = datetime(2024, 11, 25, 1, 0, 0, tzinfo=timezone.utc)
         reserve_start_at = datetime.fromtimestamp(

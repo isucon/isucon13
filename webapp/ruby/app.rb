@@ -261,7 +261,7 @@ module Isupipe
       req = decode_request_body(ReserveLivestreamRequest)
 
       livestream = db_transaction do |tx|
-        # 2023/04/01からの１年間の期間内であるかチェック
+        # 2023/11/25 10:00からの１年間の期間内であるかチェック
         term_start_at = Time.utc(2023, 11, 25, 1)
         term_end_at = Time.utc(2024, 11, 25, 1)
         reserve_start_at = Time.at(req.start_at, in: 'UTC')
