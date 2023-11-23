@@ -1035,7 +1035,6 @@ def login_handler() -> tuple[str, int]:
         session_id = str(uuid.uuid4())
 
         session[Settings.DEFAULT_SESSION_ID_KEY] = session_id
-        # FIXME: ユーザ名
         session[Settings.DEFAULT_USER_ID_KEY] = user.id
         session[Settings.DEFAULT_USER_NAME_KEY] = user.name
         session[Settings.DEFAULT_SESSION_EXPIRES_KEY] = int(session_end_at.timestamp())

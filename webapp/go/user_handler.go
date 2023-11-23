@@ -331,7 +331,6 @@ func loginHandler(c echo.Context) error {
 		Path:   "/",
 	}
 	sess.Values[defaultSessionIDKey] = sessionID
-	// FIXME: ユーザ名
 	sess.Values[defaultUserIDKey] = userModel.ID
 	sess.Values[defaultUsernameKey] = userModel.Name
 	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()

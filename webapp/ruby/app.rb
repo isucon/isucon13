@@ -865,7 +865,6 @@ module Isupipe
       session_id = SecureRandom.uuid
       session[DEFAULT_SESSION_ID_KEY] = {
         DEFAULT_SESSION_ID_KEY => session_id,
-	# FIXME: ユーザ名
         DEFAULT_USER_ID_KEY => user_model.fetch(:id),
         DEFAULT_USERNAME_KEY => user_model.fetch(:name),
         DEFAULT_SESSION_EXPIRES_KEY => session_end_at.to_i,

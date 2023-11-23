@@ -367,7 +367,6 @@ class Handler extends AbstractHandler
 
         $this->session->id(true);
 
-        // FIXME: ユーザ名
         $this->session->set($this::DEFAULT_USER_ID_KEY, $userModel->id);
         $this->session->set($this::DEFAULT_USERNAME_KEY, $userModel->name);
         $this->session->set($this::DEFAULT_SESSION_EXPIRES_KEY, $sessionEndAt);
