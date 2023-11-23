@@ -58,6 +58,7 @@ export const getReactionsHandler = [
       await conn.rollback()
       return c.text(`Internal Server Error\n${error}`, 500)
     } finally {
+      await conn.rollback()
       conn.release()
     }
   },
@@ -108,6 +109,7 @@ export const postReactionHandler = [
       await conn.rollback()
       return c.text(`Internal Server Error\n${error}`, 500)
     } finally {
+      await conn.rollback()
       conn.release()
     }
   },
