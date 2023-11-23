@@ -17,19 +17,22 @@ type PostReactionRequest struct {
 }
 
 type Reaction struct {
-	ID         int64      `json:"id"`
-	EmojiName  string     `json:"emoji_name"`
-	User       User       `json:"user"`
-	Livestream Livestream `json:"livestream"`
-	CreatedAt  int64      `json:"created_at"`
+	ID         int64      `json:"id" validate:"required"`
+	EmojiName  string     `json:"emoji_name" validate:"required"`
+	User       User       `json:"user" validate:"required"`
+	Livestream Livestream `json:"livestream" validate:"required"`
+	CreatedAt  int64      `json:"created_at" validate:"required"`
 }
 
-func (c *Client) GetReactions(ctx context.Context, livestreamID int64, opts ...ClientOption) ([]Reaction, error) {
+func (c *Client) GetReactions(ctx context.Context, livestreamID int64, streamerName string, opts ...ClientOption) ([]Reaction, error) {
 	var (
 		defaultStatusCode = http.StatusOK
 		o                 = newClientOptions(defaultStatusCode, opts...)
 	)
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -60,12 +63,16 @@ func (c *Client) GetReactions(ctx context.Context, livestreamID int64, opts ...C
 		if err := json.NewDecoder(resp.Body).Decode(&reactions); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
 		}
+
+		if err := ValidateSlice(req, reactions); err != nil {
+			return nil, err
+		}
 	}
 
 	return reactions, nil
 }
 
-func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostReactionRequest, opts ...ClientOption) (*Reaction, error) {
+func (c *Client) PostReaction(ctx context.Context, livestreamID int64, streamerName string, r *PostReactionRequest, opts ...ClientOption) (*Reaction, error) {
 	var (
 		defaultStatusCode = http.StatusCreated
 		o                 = newClientOptions(defaultStatusCode, opts...)
@@ -76,6 +83,9 @@ func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostRe
 		return nil, bencherror.NewInternalError(err)
 	}
 
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
 	urlPath := fmt.Sprintf("/api/livestream/%d/reaction", livestreamID)
 	req, err := c.themeAgent.NewRequest(http.MethodPost, urlPath, bytes.NewReader(payload))
 	if err != nil {
@@ -100,6 +110,10 @@ func (c *Client) PostReaction(ctx context.Context, livestreamID int64, r *PostRe
 	if resp.StatusCode == defaultStatusCode {
 		if err := json.NewDecoder(resp.Body).Decode(&reaction); err != nil {
 			return nil, bencherror.NewHttpResponseError(err, req)
+		}
+
+		if err := ValidateResponse(req, reaction); err != nil {
+			return nil, err
 		}
 	}
 

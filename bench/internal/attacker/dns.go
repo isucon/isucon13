@@ -2,10 +2,13 @@ package attacker
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"math/rand"
 	"net"
+	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,14 +33,15 @@ const (
 
 var src = rand.NewSource(time.Now().UnixNano())
 var mutex sync.Mutex
-var counter = uint64(1)
 
 type DnsWaterTortureAttacker struct {
 	connected               bool
 	dnsClient               *dns.Client
 	dnsConn                 *dns.Conn
 	maxRequestPerConnection int
-	requests                int
+	numRequestPerConnection int
+	request                 uint64
+	resolvedRequests        uint64
 }
 
 func int63() int64 {
@@ -65,16 +69,16 @@ func NewDnsWaterTortureAttacker() *DnsWaterTortureAttacker {
 	c := &dns.Client{Net: "udp", Timeout: 1 * time.Second}
 	return &DnsWaterTortureAttacker{
 		maxRequestPerConnection: 10,
-		requests:                0,
+		numRequestPerConnection: 0,
 		dnsClient:               c,
 	}
 }
 
-func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
+func (a *DnsWaterTortureAttacker) Attack(ctx context.Context, httpClient *http.Client) {
 	buf := bytebufferpool.Get()
 	defer bytebufferpool.Put(buf)
 	numOfLabel := 1
-	if atomic.AddUint64(&counter, 1); counter%50 == 0 {
+	if atomic.AddUint64(&a.request, 1)%30 == 0 {
 		numOfLabel += rand.Intn(3)
 	}
 	for i := 0; i < numOfLabel; i++ {
@@ -84,7 +88,30 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context) {
 	}
 	buf.WriteString(zone)
 	b := buf.Bytes()
-	a.lookup(ctx, unsafe.String(&b[0], len(b)))
+	name := unsafe.String(&b[0], len(b))
+	ip := a.lookup(ctx, name)
+	if ip != nil && atomic.AddUint64(&a.resolvedRequests, 1)%5 == 0 {
+		// TODO target url
+		host := fmt.Sprintf("%s:%d", strings.TrimRight(name, "."), config.TargetPort)
+		url := fmt.Sprintf("%s://%s/",
+			config.HTTPScheme,
+			host,
+		)
+		valueCtx := context.WithValue(ctx, config.AttackHTTPClientContextKey,
+			fmt.Sprintf("%s:%d", ip.String(), config.TargetPort))
+		req, err := http.NewRequestWithContext(valueCtx, "GET", url, nil)
+		if err != nil {
+			return
+		}
+		// TODO: user-agent
+		req.Header.Set("User-Agent", "isucandar")
+		res, err := httpClient.Do(req)
+		if err != nil {
+			return
+		}
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}
 }
 
 var atomicId = uint64(1)
@@ -100,10 +127,13 @@ var msgPool = sync.Pool{
 	},
 }
 
-func (a *DnsWaterTortureAttacker) lookup(ctx context.Context, name string) {
+func (a *DnsWaterTortureAttacker) lookup(ctx context.Context, name string) net.IP {
 	if !a.connected {
 		nameserver := net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort))
-		dnsConn, _ := a.dnsClient.Dial(nameserver)
+		dnsConn, err := a.dnsClient.Dial(nameserver)
+		if err != nil {
+			return nil
+		}
 		a.connected = true
 		a.dnsConn = dnsConn
 	}
@@ -114,19 +144,29 @@ func (a *DnsWaterTortureAttacker) lookup(ctx context.Context, name string) {
 	msg.Question[0].Name = name
 	msg.RecursionDesired = false
 
-	a.requests++
-	_, _, err := a.dnsClient.ExchangeWithConn(msg, a.dnsConn)
+	a.numRequestPerConnection++
+	in, _, err := a.dnsClient.ExchangeWithConn(msg, a.dnsConn)
 	if err != nil {
 		a.dnsConn.Close()
 		a.connected = false
 		benchscore.IncDNSFailed()
-		return
+		return nil
 	}
-	if a.requests >= a.maxRequestPerConnection {
+	if a.numRequestPerConnection >= a.maxRequestPerConnection {
 		a.dnsConn.Close()
 		a.connected = false
-		a.requests = 0
+		a.numRequestPerConnection = 0
 	}
 	// プロトコル上成功をカウントする
 	benchscore.IncResolves()
+
+	for _, ans := range in.Answer {
+		if record, ok := ans.(*dns.A); ok {
+			if config.IsWebappIP(record.A) {
+				return record.A
+			}
+		}
+	}
+	return nil
+
 }

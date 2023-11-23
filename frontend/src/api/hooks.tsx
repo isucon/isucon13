@@ -32,14 +32,14 @@ export function useLiveSelfStreams(config?: SWRConfiguration) {
 }
 
 export function useLiveStreamsSearch(
-  params: Parameter$get$livestream$search,
+  params: Parameter$get$livestream$search | null,
   config?: SWRConfiguration,
 ) {
   return useSWR(
-    `/livestream/search?${encodeParam(params)}`,
+    params && `/livestream/search?${encodeParam(params)}`,
     () =>
       apiClient.get$livestream$search({
-        parameter: params,
+        parameter: params!,
       }),
     config,
   );
@@ -52,6 +52,22 @@ export function useLiveStream(id: string | null, config?: SWRConfiguration) {
       apiClient.get$livestream$_livestreamid({
         parameter: {
           livestreamid: id ?? '',
+        },
+      }),
+    config,
+  );
+}
+
+export function useLiveUserStream(
+  username: string | null,
+  config?: SWRConfiguration,
+) {
+  return useSWR(
+    username && `user/${username}/livestream`,
+    () =>
+      apiClient.get$user$livestream({
+        parameter: {
+          username: username ?? '',
         },
       }),
     config,

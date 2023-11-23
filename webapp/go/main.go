@@ -111,7 +111,7 @@ func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 func initializeHandler(c echo.Context) error {
 	if out, err := exec.Command("../sql/init.sh").CombinedOutput(); err != nil {
 		c.Logger().Warnf("init.sh failed with err=%s", string(out))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize: "+err.Error())
 	}
 
 	c.Request().Header.Add("Content-Type", "application/json;charset=utf-8")
@@ -179,7 +179,7 @@ func main() {
 	e.POST("/api/icon", postIconHandler)
 
 	// stats
-	// ライブコメント統計情報
+	// ライブ配信統計情報
 	e.GET("/api/livestream/:livestream_id/statistics", getLivestreamStatisticsHandler)
 
 	// 課金情報
@@ -218,13 +218,13 @@ type ErrorResponse struct {
 func errorResponseHandler(err error, c echo.Context) {
 	c.Logger().Errorf("error at %s: %+v", c.Path(), err)
 	if he, ok := err.(*echo.HTTPError); ok {
-		if e := c.JSON(he.Code, &ErrorResponse{Error: err.Error()}); err != nil {
+		if e := c.JSON(he.Code, &ErrorResponse{Error: err.Error()}); e != nil {
 			c.Logger().Errorf("%+v", e)
 		}
 		return
 	}
 
-	if e := c.JSON(http.StatusInternalServerError, &ErrorResponse{Error: err.Error()}); err != nil {
+	if e := c.JSON(http.StatusInternalServerError, &ErrorResponse{Error: err.Error()}); e != nil {
 		c.Logger().Errorf("%+v", e)
 	}
 }

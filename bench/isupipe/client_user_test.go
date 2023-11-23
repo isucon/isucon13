@@ -11,6 +11,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
+	"github.com/isucon/isucon13/bench/internal/logger"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +19,10 @@ import (
 func TestClientUser_Login(t *testing.T) {
 	ctx := context.Background()
 
+	testLogger, err := logger.InitTestLogger()
+
 	client, err := NewClient(
+		testLogger,
 		agent.WithBaseURL(config.TargetBaseURL),
 		agent.WithTimeout(1*time.Minute),
 	)
@@ -39,7 +43,7 @@ func TestClientUser_Login(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = client.Login(ctx, &LoginRequest{
-		UserName: streamer.Name,
+		Username: streamer.Name,
 		Password: streamer.RawPassword,
 	})
 	assert.NoError(t, err)

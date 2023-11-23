@@ -1,0 +1,20 @@
+requires 'perl', '5.038';
+
+requires 'Kossy', '0.63';
+requires 'Plack::Middleware::Session', '0.33';
+requires 'HTTP::Message', '6.45';
+requires 'Cpanel::JSON::XS', '4.37';
+requires 'Starlet', '0.31';
+
+# DBD::mysql@5.01 requires requires MySQL 8.x client libraries.
+# https://github.com/perl5-dbi/DBD-mysql/issues/378#issuecomment-1786759895
+requires 'DBD::mysql', '== 4.051';
+
+requires 'DBIx::Sunny', '0.9993';
+requires 'Log::Minimal', '0.19';
+requires 'Type::Tiny', '2.004000';
+requires 'Crypt::Eksblowfish::Bcrypt', '0.009';
+requires 'Crypt::OpenSSL::Random', '0.15';
+requires 'Data::Lock', '1.03';
+requires 'JSON::Types', '0.05';
+requires 'Digest::SHA', '6.04';

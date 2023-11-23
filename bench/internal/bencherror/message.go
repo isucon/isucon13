@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/isucon/isucon13/bench/internal/config"
+	"strings"
 )
 
 // NOTE: Goのhttp.Clientがcontext.DeadlineExceededをラップして返してくれないので、暫定対応
@@ -14,8 +13,8 @@ var ErrTimeout = errors.New("タイムアウトによりリクエスト失敗")
 // ベンチマーカー本体由来のエラー
 
 func NewInternalError(err error) error {
-	err = fmt.Errorf("[ベンチ本体のエラー] 運営に連絡してください: %w", err)
-	return WrapError(SystemError, err)
+	err = fmt.Errorf("[ベンチ本体のエラー] スタッフにのみ表示されます: %w", err)
+	return WrapInternalError(SystemError, err)
 }
 
 // タイムアウト
@@ -68,9 +67,8 @@ func NewAssertionError(err error, msg string, args ...interface{}) error {
 	return WrapError(BenchmarkViolationError, err)
 }
 
-// ページ離脱
-
-func NewTooManySpamError(username string, req *http.Request) error {
+func NewEmptyHttpResponseError(errorFields []string, req *http.Request) error {
 	endpoint := fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath())
-	return WrapError(BenchmarkApplicationError, fmt.Errorf("[機会損失] %s へのリクエストに対してスパム件数が%.1f を超過したため、ユーザ %s が離脱しました", endpoint, config.TooManySpamThresholdPercentage, username))
+	err := fmt.Errorf("[仕様違反] %s へのリクエストに対して、レスポンスボディに必要なフィールドがありません: %s", endpoint, strings.Join(errorFields, ","))
+	return WrapError(BenchmarkViolationError, err)
 }

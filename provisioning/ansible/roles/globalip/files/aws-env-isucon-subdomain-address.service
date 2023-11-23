@@ -1,0 +1,13 @@
+[Unit]
+Description=run aws-env-isucon-subdomain-address once
+Before=mysql.service
+After=network.target
+
+[Service]
+Restart=no
+Type=simple
+RemainAfterExit=yes
+ExecStart=/opt/aws-env-isucon-subdomain-address.sh
+
+[Install]
+WantedBy=multi-user.target

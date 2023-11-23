@@ -1,0 +1,36 @@
+---
+- name: Mkdir webapp for php
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/php
+    state: directory
+
+- name: Put php-fpn.conf
+  become: true
+  ansible.builtin.copy:
+    src: isupipe.php-fpm.conf
+    dest: /home/isucon/local/php/etc/isupipe.php-fpm.conf
+    owner: isucon
+    group: isucon
+
+- name: Build isupipe-php
+  become: true
+  become_user: isucon
+  shell: |
+    /home/isucon/.x ./composer.phar install
+  args:
+    chdir: /home/isucon/webapp/php
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: isupipe-php.service
+    dest: /etc/systemd/system/
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-php
+    enabled: false
+    state: stopped

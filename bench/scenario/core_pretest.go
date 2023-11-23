@@ -7,13 +7,15 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
 const testUserRawPassword = "s3cr3t"
 
-func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isupipe.User, error) {
+func setupTestUser(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) (*isupipe.User, error) {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -22,8 +24,10 @@ func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isu
 	}
 
 	user, err := client.Register(ctx, &isupipe.RegisterRequest{
-		Name:     "pretestuser",
-		Password: "test",
+		Name:        "pretestuser",
+		Password:    "test",
+		DisplayName: "pretest user",
+		Description: "this is a pre test user",
 	})
 	if err != nil {
 		return nil, err
@@ -33,83 +37,67 @@ func setupTestUser(ctx context.Context, dnsResolver *resolver.DNSResolver) (*isu
 }
 
 // 初期データチェック -> 基本的なエンドポイントの機能テスト -> 前後比較テスト
-func Pretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func Pretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// dns 初期レコード
-	if err := dnsrecordPretest(ctx, dnsResolver); err != nil {
+	if err := dnsRecordPretest(ctx, dnsResolver); err != nil {
 		return err
 	}
 
 	// 初期データチェック
 	initialGrp, initialCtx := errgroup.WithContext(ctx)
 	initialGrp.Go(func() error {
-		return normalInitialPaymentPretest(initialCtx, dnsResolver)
+		return normalInitialPaymentPretest(initialCtx, contestantLogger, dnsResolver)
 	})
-	initialGrp.Go(func() error {
-		return normalInitialLivecommentPretest(initialCtx, dnsResolver)
-	})
-	initialGrp.Go(func() error {
-		return normalInitialReactionPretest(initialCtx, dnsResolver)
-	})
-	initialGrp.Go(func() error {
-		return normalInitialTagPretest(ctx, dnsResolver)
-	})
+	// FIXME: reactions, livecommentsは統計情報をもとにチェックする
+	// FIXME: ngwordsはライブ配信のIDをいくつか問い合わせ、存在することをチェックする
 	if err := initialGrp.Wait(); err != nil {
 		return err
 	}
 
-	// 独立動作可能なテスト
-	testUser, err := setupTestUser(ctx, dnsResolver)
+	testUser, err := setupTestUser(ctx, contestantLogger, dnsResolver)
 	if err != nil {
 		return err
 	}
-	if err := NormalLivestreamPretest(ctx, testUser, dnsResolver); err != nil {
+	if err := NormalLivestreamPretest(ctx, contestantLogger, testUser, dnsResolver); err != nil {
 		return err
 	}
 
-	logicGrp, childCtx := errgroup.WithContext(ctx)
 	// 正常系
-	logicGrp.Go(func() error {
-		return NormalUserPretest(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return NormalIconPretest(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return NormalReactionPretest(childCtx, testUser, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		if err := NormalPostLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
-			return err
-		}
-		if err := NormalModerateLivecommentPretest(childCtx, testUser, dnsResolver); err != nil {
-			return err
-		}
-		return nil
-	})
-	// 異常系
-	logicGrp.Go(func() error {
-		return assertBadLogin(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertPipeUserRegistration(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertUserUniqueConstraint(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertReserveOverflowPretest(childCtx, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertReserveOutOfTerm(childCtx, testUser, dnsResolver)
-	})
-	logicGrp.Go(func() error {
-		return assertMultipleEnterLivestream(childCtx, dnsResolver)
-	})
-	if err := logicGrp.Wait(); err != nil {
+	if err := NormalUserPretest(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalIconPretest(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalReactionPretest(ctx, contestantLogger, testUser, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalPostLivecommentPretest(ctx, contestantLogger, testUser, dnsResolver); err != nil {
+		return err
+	}
+	if err := NormalModerateLivecommentPretest(ctx, contestantLogger, testUser, dnsResolver); err != nil {
 		return err
 	}
 
-	// FIXME: 統計情報、Paymentなど、前後比較するものは他のシナリオが割り込まないようにする
+	// 異常系
+	if err := assertBadLogin(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertPipeUserRegistration(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertUserUniqueConstraint(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertReserveOverflowPretest(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertReserveOutOfTerm(ctx, contestantLogger, testUser, dnsResolver); err != nil {
+		return err
+	}
+	if err := assertMultipleEnterLivestream(ctx, dnsResolver); err != nil {
+		return err
+	}
 
 	return nil
 }

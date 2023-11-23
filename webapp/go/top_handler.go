@@ -27,17 +27,17 @@ func getTagHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin new transaction")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin new transaction: : "+err.Error()+err.Error())
 	}
 	defer tx.Rollback()
 
 	var tagModels []*TagModel
 	if err := tx.SelectContext(ctx, &tagModels, "SELECT * FROM tags"); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get tags: "+err.Error())
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
 	}
 
 	tags := make([]*Tag, len(tagModels))
@@ -67,7 +67,7 @@ func getStreamerThemeHandler(c echo.Context) error {
 
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
 	}
 	defer tx.Rollback()
 
@@ -77,16 +77,16 @@ func getStreamerThemeHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "not found user that has the given username")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user: "+err.Error())
 	}
 
 	themeModel := ThemeModel{}
 	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user theme")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user theme: "+err.Error())
 	}
 
 	if err := tx.Commit(); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit: "+err.Error())
 	}
 
 	theme := Theme{

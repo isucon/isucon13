@@ -1,0 +1,28 @@
+---
+- name: Mkdir webapp for perl
+  become: true
+  become_user: isucon
+  ansible.builtin.file:
+    path: /home/isucon/webapp/perl
+    state: directory
+
+- name: Build isupipe-perl
+  become: true
+  become_user: isucon
+  shell: |
+    /home/isucon/.x cpm install --show-build-log-on-failure
+  args:
+    chdir: /home/isucon/webapp/perl
+
+- name: Put systemd service
+  become: true
+  ansible.builtin.copy:
+    src: isupipe-perl.service
+    dest: /etc/systemd/system/
+
+- name: Start webapp
+  become: true
+  service:
+    name: isupipe-perl
+    enabled: false
+    state: stopped

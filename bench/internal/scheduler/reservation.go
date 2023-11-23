@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/biogo/store/interval"
+	"go.uber.org/zap"
 )
 
 // FIXME: 同時配信枠数は、少なくとも２は想定しておいたほうがいい
@@ -36,7 +37,6 @@ type Reservation struct {
 	ThumbnailUrl string
 }
 
-// FIXME: id, UserNameなど古い引数を廃止
 // 初期データ生成スクリプト側修正後実施
 func mustNewReservation(id int, title string, description string, startAtStr string, endAtStr string, playlistUrl, thumbnailUrl string) *Reservation {
 	startAt, err := time.Parse("2006-01-02 15:04:05", startAtStr)
@@ -63,6 +63,8 @@ func mustNewReservation(id int, title string, description string, startAtStr str
 
 func (r *Reservation) Overlap(interval interval.IntRange) bool {
 	if interval.Start == interval.End {
+		lgr := zap.S()
+		lgr.Infof("same interval found: %s ~ %s\n", time.Unix(int64(interval.Start), 0).String(), time.Unix(int64(interval.End), 0).String())
 		// 区間の開始と終了が同じである場合、予約の中に含まれるならオーバーラップと判定させる
 		return r.StartAt <= int64(interval.Start) && r.EndAt >= int64(interval.Start)
 	}
@@ -81,4 +83,8 @@ func (r *Reservation) Overlap(interval interval.IntRange) bool {
 func (r *Reservation) ID() uintptr { return uintptr(r.id) }
 func (r *Reservation) Range() interval.IntRange {
 	return interval.IntRange{Start: int(r.StartAt), End: int(r.EndAt)}
+}
+
+func (r *Reservation) Hours() int {
+	return int(time.Unix(r.EndAt, 0).Sub(time.Unix(r.StartAt, 0)) / time.Hour)
 }

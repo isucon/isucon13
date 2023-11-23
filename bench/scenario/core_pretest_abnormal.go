@@ -11,12 +11,14 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"go.uber.org/zap"
 )
 
 // 異常系
 
-func assertPipeUserRegistration(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertPipeUserRegistration(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -40,17 +42,18 @@ func assertPipeUserRegistration(ctx context.Context, dnsResolver *resolver.DNSRe
 	return nil
 }
 
-func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertBadLogin(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// 存在しないユーザでログインされた場合はエラー
 	client1, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
-		agent.WithTimeout(3*time.Second),
+		agent.WithTimeout(config.PretestTimeout),
 	)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
 	unknownUserReq := isupipe.LoginRequest{
-		UserName: "unknownUser4328904823",
+		Username: "unknownUser4328904823",
 		Password: "unknownUser",
 	}
 
@@ -60,14 +63,15 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 
 	// パスワードが間違っている場合はエラー
 	client2, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
-		agent.WithTimeout(3*time.Second),
+		agent.WithTimeout(config.PretestTimeout),
 	)
 	if err != nil {
 		return bencherror.NewInternalError(err)
 	}
 	wrongPasswordReq := isupipe.LoginRequest{
-		UserName: "test001",
+		Username: "test001",
 		Password: "wrongPassword",
 	}
 	if err := client2.Login(ctx, &wrongPasswordReq, isupipe.WithStatusCode(http.StatusUnauthorized)); err != nil {
@@ -77,8 +81,9 @@ func assertBadLogin(ctx context.Context, dnsResolver *resolver.DNSResolver) erro
 	return nil
 }
 
-func assertUserUniqueConstraint(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertUserUniqueConstraint(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -106,11 +111,12 @@ func assertUserUniqueConstraint(ctx context.Context, dnsResolver *resolver.DNSRe
 	return nil
 }
 
-func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNSResolver) error {
+func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
 	// NumSlotを超えて予約しようとするとエラーになる
 	var overflow bool
 	for idx := 0; idx < config.NumSlots; idx++ {
 		overflowClient, err := isupipe.NewCustomResolverClient(
+			contestantLogger,
 			dnsResolver,
 			agent.WithTimeout(config.PretestTimeout),
 		)
@@ -132,7 +138,7 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			return err
 		}
 		if err := overflowClient.Login(ctx, &isupipe.LoginRequest{
-			UserName: overflowUser.Name,
+			Username: overflowUser.Name,
 			Password: "test",
 		}); err != nil {
 			return err
@@ -142,15 +148,15 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 			startAt = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
 			endAt   = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 		)
-		_, err = overflowClient.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-			Tags:        []int64{},
+		_, err = overflowClient.ReserveLivestream(ctx, overflowUser.Name, &isupipe.ReserveLivestreamRequest{
 			Title:       name,
 			Description: name,
 			// FIXME: フロントで困らないようにちゃんとしたのを設定
-			PlaylistUrl:  "",
-			ThumbnailUrl: "",
+			PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+			ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 			StartAt:      startAt.Unix(),
 			EndAt:        endAt.Unix(),
+			Tags:         []int64{},
 		})
 		if err != nil {
 			overflow = true
@@ -164,9 +170,10 @@ func assertReserveOverflowPretest(ctx context.Context, dnsResolver *resolver.DNS
 	return nil
 }
 
-func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
+func assertReserveOutOfTerm(ctx context.Context, contestantLogger *zap.Logger, testUser *isupipe.User, dnsResolver *resolver.DNSResolver) error {
 	// 期間外の予約をするとエラーになる
 	client, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
 	)
@@ -175,7 +182,7 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		UserName: testUser.Name,
+		Username: testUser.Name,
 		Password: "test",
 	}); err != nil {
 		return err
@@ -185,30 +192,30 @@ func assertReserveOutOfTerm(ctx context.Context, testUser *isupipe.User, dnsReso
 		startAt = time.Date(2026, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt   = time.Date(2026, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	if _, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:         []int64{},
+	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
-		PlaylistUrl:  "",
-		ThumbnailUrl: "",
+		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+		ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 		StartAt:      startAt.Unix(),
 		EndAt:        endAt.Unix(),
+		Tags:         []int64{},
 	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}
 
 	var (
-		startAt2 = time.Date(2023, 4, 1, 0, 0, 0, 0, time.Local)
-		endAt2   = time.Date(2023, 4, 1, 1, 0, 0, 0, time.Local)
+		startAt2 = time.Date(2022, 4, 1, 0, 0, 0, 0, time.Local)
+		endAt2   = time.Date(2022, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	if _, err := client.ReserveLivestream(ctx, &isupipe.ReserveLivestreamRequest{
-		Tags:         []int64{},
+	if _, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Title:        "outofterm",
 		Description:  "outofterm",
-		PlaylistUrl:  "",
-		ThumbnailUrl: "",
+		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+		ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 		StartAt:      startAt2.Unix(),
 		EndAt:        endAt2.Unix(),
+		Tags:         []int64{},
 	}, isupipe.WithStatusCode(http.StatusBadRequest)); err != nil {
 		return fmt.Errorf("期間外予約が不正にできてしまいます")
 	}

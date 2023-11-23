@@ -128,20 +128,6 @@ function LiveItem(props: LiveItemProps): React.ReactElement {
               </Typography>
             </Stack>
           </Grid>
-
-          <Grid xs={1}>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{ marginTop: 1 }}
-            >
-              <Avatar />
-              <div>
-                <Typography level="title-sm">user</Typography>
-              </div>
-            </Stack>
-          </Grid>
         </Grid>
       </Card>
     </Link>

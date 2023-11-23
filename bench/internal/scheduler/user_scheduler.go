@@ -1,11 +1,11 @@
 package scheduler
 
 import (
+	"fmt"
 	"math/rand"
 )
 
 func init() {
-	// 人気配信者が走行ごと変わるようにシャッフルする
 	rand.Shuffle(len(streamerPool), func(i, j int) { streamerPool[i], streamerPool[j] = streamerPool[j], streamerPool[i] })
 }
 
@@ -21,35 +21,14 @@ type User struct {
 }
 
 type userScheduler struct {
-	popularStreamerPool []*User
-	streamerPool        []*User
+	streamerPool []*User
 }
-
-// 人気配信者制限
-const popularLimit = 50
 
 func mustNewUserScheduler() *userScheduler {
 	sched := new(userScheduler)
-	sched.popularStreamerPool = streamerPool[:popularLimit]
-	sched.streamerPool = streamerPool[popularLimit:]
+	sched.streamerPool = streamerPool
 
 	return sched
-}
-
-func (s *userScheduler) IsPopularStreamer(name string) bool {
-	for _, streamer := range s.popularStreamerPool {
-		if streamer.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-// 人気配信者
-func (s *userScheduler) RangePopularStreamer(fn func(streamer *User)) {
-	for _, streamer := range s.popularStreamerPool {
-		fn(streamer)
-	}
 }
 
 // 通常配信者
@@ -72,21 +51,11 @@ func (s *userScheduler) RangeViewer(fn func(viewer *User)) {
 	}
 }
 
-// FIXME: 予約スケジューラとの連携
-// ログイン不要
-// 配信者から取り出す
-// FIXME: ただ、予約時に衝突するコラボ配信者を意図的に取り出したい場合がある (異常時シナリオ)
-//
-//	時間枠を指定したとき、完了した予約から予約者を割り出す必要がある
-//
-// 予約スケジューラに、当該時刻の予約済みライブ配信を列挙せよと命令し、予約者を割り出す必要がある.
-// 予約構造にユーザIDは含まれるので、それをもとにユーザを割り出すことが可能.
-// FIXME: 完了した予約を、ユーザ情報と合わせて保持する区間木を新たに定義し、そこから取り出す
-// ベンチマーカーだけで完結するので、取り急ぎ保留
-func (s *userScheduler) SelectCollaborators(n int) []*User {
-	//
-	if n >= len(streamerPool) {
-		n = len(streamerPool) - 1
+func (s *userScheduler) GetInitialUserForPretest(id int64) (*User, error) {
+	idx := max(id-1, 1)
+	if idx > int64(len(initialUserPool)-1) {
+		return nil, fmt.Errorf("想定しない初期ユーザが利用されました (idx=%d)", idx)
 	}
-	return streamerPool[:n]
+
+	return initialUserPool[idx], nil
 }

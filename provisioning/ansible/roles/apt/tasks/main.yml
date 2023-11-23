@@ -39,3 +39,5 @@
       - libreadline-dev
       - libffi-dev
       - zlib1g-dev
+      - libyaml-dev
+      - libmysqlclient-dev

@@ -10,11 +10,12 @@ import { MdManageHistory } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { useLiveStreamsSearch, useUserMe } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
+import { normalizeUrl } from '~/api/url';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
   const liveSterams = useLiveStreamsSearch({
-    limit: 100,
+    limit: 10,
   });
   const userMe = useUserMe();
 
@@ -35,7 +36,7 @@ export default function IndexPage(): React.ReactElement {
           </SidebarButton>
           <SidebarButton
             startDecorator={<BsFillPersonFill size="20px" />}
-            {...{ to: `/user/${userMe.data?.name}` }}
+            {...{ to: normalizeUrl(`/user`, userMe.data?.name) }}
           >
             プロフィール
           </SidebarButton>
@@ -64,6 +65,7 @@ export default function IndexPage(): React.ReactElement {
                   sx={{ width: '25px', height: '25px' }}
                 />
               }
+              {...{ to: normalizeUrl(`/watch/${live.id}`, live.owner?.name) }}
             >
               {live.owner?.display_name}
             </SidebarButton>

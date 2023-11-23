@@ -115,7 +115,6 @@ export function NewLiveDialog(props: NewLiveDialogProps): React.ReactElement {
               <Button type="submit" loading={isLoading}>
                 作成
               </Button>
-              <pre>{JSON.stringify(form.watch())}</pre>
             </Stack>
           </form>
         </ModalDialog>

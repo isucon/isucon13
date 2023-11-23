@@ -8,10 +8,11 @@ import MenuItem from '@mui/joy/MenuItem';
 import Stack from '@mui/joy/Stack';
 import { useColorScheme } from '@mui/joy/styles';
 import React from 'react';
-import { MdOutlineDarkMode, MdDarkMode, MdSearch } from 'react-icons/md';
+import { MdSearch } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toast } from '../toast/toast';
-import { useTags, useUserMe } from '~/api/hooks';
+import { useTags, useUser, useUserMe } from '~/api/hooks';
+import { normalizeUrl } from '~/api/url';
 import logo from './ISUPipe_yoko_color.png';
 
 interface LayoutProps {
@@ -24,10 +25,9 @@ export function Layout(props: LayoutProps): React.ReactElement {
 
   function onChange(e: React.SyntheticEvent, value: string | null): void {
     if (value) {
-      navigate({
-        pathname: '/search',
-        search: `?q=${value}`,
-      });
+      window.location.href = normalizeUrl(
+        `/search?q=${encodeURIComponent(value)}`,
+      );
     } else {
       navigate('/');
     }
@@ -35,6 +35,17 @@ export function Layout(props: LayoutProps): React.ReactElement {
 
   const tags = useTags();
   const userMe = useUserMe();
+
+  const username = window.location.hostname.split('.')[0];
+  const user = useUser((username === 'pipe' ? null : username) ?? null);
+  const isDark =
+    username === 'pipe'
+      ? userMe.data?.theme.dark_mode
+      : user.data?.theme.dark_mode;
+  React.useEffect(() => {
+    if (isDark === undefined) return;
+    colorScheme.setMode(isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   return (
     <div>
@@ -62,7 +73,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
           backgroundColor: mode === 'light' ? 'white' : 'black',
         }}
       >
-        <LogoLink to="/">
+        <LogoLink to={normalizeUrl('/')}>
           <img src={logo} title="ISUPipe" height="25" />
         </LogoLink>
         <Stack>
@@ -74,7 +85,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
           />
         </Stack>
         <Stack direction="row" alignItems="center" spacing={2}>
-          <div>
+          {/* <div>
             <Dropdown>
               <MenuButton variant="plain">
                 {mode === 'light' ? (
@@ -104,7 +115,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
                 </MenuItem>
               </Menu>
             </Dropdown>
-          </div>
+          </div> */}
           <div>
             <Dropdown>
               <MenuButton>

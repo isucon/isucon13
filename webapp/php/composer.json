@@ -1,0 +1,36 @@
+{
+    "name": "isucon/isucon13-php",
+    "require": {
+        "php": "^8.2",
+        "bryanjhv/slim-session": "^4.1",
+        "monolog/monolog": "^2.8",
+        "php-di/php-di": "^6.4",
+        "ramsey/uuid": "^4.7",
+        "slim/psr7": "^1.5",
+        "slim/slim": "^4.10"
+    },
+    "require-dev": {
+        "jangregor/phpstan-prophecy": "^1.0.0",
+        "phpstan/extension-installer": "^1.2.0",
+        "phpstan/phpstan": "^1.8",
+        "squizlabs/php_codesniffer": "^3.7"
+    },
+    "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        },
+        "process-timeout": 0,
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "IsuPipe\\": "src/"
+        }
+    },
+    "scripts": {
+        "analyse": "phpstan analyse",
+        "lint": "phpcs",
+        "lint:fix": "phpcbf"
+    }
+}
