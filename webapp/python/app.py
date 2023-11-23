@@ -158,6 +158,7 @@ def reserve_livestream_handler() -> tuple[dict[str, Any], int]:
             raise HttpException("bad reservation time range", BAD_REQUEST)
 
         # 予約枠をみて、予約が可能か調べる
+        # NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
         sql = "SELECT * FROM reservation_slots WHERE start_at >= %s AND end_at <= %s FOR UPDATE"
         c.execute(sql, [int(req["start_at"]), int(req["end_at"])])
         slots = c.fetchall()
@@ -1324,38 +1325,40 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
         row = c.fetchone()
         if row is None:
             raise HttpException("cannot get stats of not found livestream", BAD_REQUEST)
+        livestream = models.LiveStreamModel(**row)
 
         sql = "SELECT * FROM livestreams"
         c.execute(sql)
-        livestreams = c.fetchall()
-        if livestreams is None:
+        rows = c.fetchall()
+        if rows is None:
             raise HttpException("failed to get livestreams", INTERNAL_SERVER_ERROR)
+        livestreams = [models.LiveStreamModel(**row) for row in rows]
 
         # ランク算出
         ranking = []
         for livestream in livestreams:
             sql = "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = %s"
-            c.execute(sql, [livestream_id])
-            reactions = c.fetchone()
-            if reactions is None:
+            c.execute(sql, [livestream.id])
+            row = c.fetchone()
+            if row is None:
                 raise HttpException(
                     "failed to get livestream",
                     INTERNAL_SERVER_ERROR,
                 )
-            reactions = reactions["COUNT(*)"]
+            reactions = int(row["COUNT(*)"])
 
             sql = "SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = %s"
-            c.execute(sql, [livestream_id])
-            total_tips = c.fetchone()
-            if total_tips is None:
+            c.execute(sql, [livestream.id])
+            row = c.fetchone()
+            if row is None:
                 raise HttpException("failed to count tips", INTERNAL_SERVER_ERROR)
-            total_tips = total_tips["IFNULL(SUM(l2.tip), 0)"]
+            total_tips = int(row["IFNULL(SUM(l2.tip), 0)"])
 
             score = reactions + total_tips
             ranking.append(
                 asdict(
                     models.LiveStreamRankingEntry(
-                        livestream_id=livestream["id"],
+                        livestream_id=livestream.id,
                         score=score,
                     )
                 )
