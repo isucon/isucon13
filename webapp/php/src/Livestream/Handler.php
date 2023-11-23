@@ -374,7 +374,7 @@ class Handler extends AbstractHandler
         if ($row === false) {
             throw new HttpNotFoundException(
                 request: $request,
-                message: 'failed to get user',
+                message: 'user not found',
             );
         }
         $user = UserModel::fromRow($row);
