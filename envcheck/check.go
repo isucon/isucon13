@@ -34,14 +34,12 @@ func (c *checker) checkInstance(i *ec2.Instance) {
 	if c.ExpectedAMI != "" && *i.ImageId != c.ExpectedAMI {
 		c.addFailure("%s の AMI が %s です (%s である必要があります)", id, *i.ImageId, c.ExpectedAMI)
 	}
-	/* FIXME: AZ指定がまだ未完
 	if c.ExpectedAZ != "" {
 		azName := GetAZName(c.DescribeAvailabilityZones, c.ExpectedAZ)
 		if *i.Placement.AvailabilityZone != azName {
 			c.addFailure("%s のゾーンが %s です (%s (ID: %s) である必要があります)", id, *i.Placement.AvailabilityZone, azName, c.ExpectedAZ)
 		}
 	}
-	*/
 	if len(i.BlockDeviceMappings) != 1 {
 		c.addFailure("%s に %d 個のブロックデバイスが検出されました (1個である必要があります)", id, len(i.BlockDeviceMappings))
 	} else if i.BlockDeviceMappings[0].Ebs == nil {

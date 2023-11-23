@@ -19,11 +19,6 @@
     path: /home/isucon/webapp/sql
     state: directory
 
-- name: Get stats of webapp/sql
-  ansible.builtin.stat:
-    path: /home/isucon/webapp/sql
-  register: st
-
 - name: Extract webapp.tar.gz into /home/isucon
   become: true
   become_user: isucon
@@ -31,7 +26,6 @@
     remote_src: true
     src: /home/isucon/webapp.tar.gz
     dest: /home/isucon/
-  when: not st.stat.exists
 
 - name: Remove webapp.tar.gz
   become: true
