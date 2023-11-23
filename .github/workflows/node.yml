@@ -49,6 +49,10 @@ jobs:
         run: |
           make down/node
           make up/node
+      
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: make
 
       # bench
       - name: "[bench] Get deps"
