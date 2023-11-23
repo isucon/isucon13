@@ -110,7 +110,6 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 
 	for _, ans := range in.Answer {
 		if record, ok := ans.(*dns.A); ok {
-			// TODO: IPアドレスが競技者のものか確認
 			if r.UseCache && ans.Header().Ttl > 0 {
 				cache.Add(addr, cacheEntry{
 					IP:      record.A,
