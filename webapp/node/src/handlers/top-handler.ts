@@ -47,14 +47,14 @@ export const getStreamerThemeHandler = [
     await conn.beginTransaction()
 
     try {
-      const [[result]] = await conn
+      const [[user]] = await conn
         .execute<(Pick<UserModel, 'id'> & RowDataPacket)[]>(
           'SELECT id FROM users WHERE name = ?',
           [username],
         )
         .catch(throwErrorWith('failed to get user'))
 
-      if (!result) {
+      if (!user) {
         await conn.rollback()
         return c.text('not found user that has the given username', 404)
       }
@@ -62,7 +62,7 @@ export const getStreamerThemeHandler = [
       const [[theme]] = await conn
         .execute<(ThemeModel & RowDataPacket)[]>(
           'SELECT * FROM themes WHERE user_id = ?',
-          [result.id],
+          [user.id],
         )
         .catch(throwErrorWith('failed to get user theme'))
 

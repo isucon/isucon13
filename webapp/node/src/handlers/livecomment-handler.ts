@@ -314,7 +314,7 @@ export const moderateHandler = [
           'SELECT * FROM ng_words WHERE livestream_id = ?',
           [livestreamId],
         )
-        .catch(throwErrorWith('failed to get ngwords'))
+        .catch(throwErrorWith('failed to get NG words'))
 
       // NGワードにヒットする過去の投稿も全削除する
       for (const ngword of ngwords) {
