@@ -67,6 +67,7 @@ class Handler extends AbstractHandler
         }
 
         // 予約枠をみて、予約が可能か調べる
+        // NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
         /** @var list<ReservationSlotModel> $slots */
         $slots = [];
         try {
