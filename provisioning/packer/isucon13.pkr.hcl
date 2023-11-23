@@ -86,6 +86,7 @@ build {
       "sudo truncate -s 0 /home/ubuntu/.ssh/authorized_keys",
       "sudo truncate -s 0 /etc/machine-id",
       "sudo rm -f /opt/aws-env-isucon-subdomain-address.sh.lock",
+      "sh /home/isucon/webapp/sql/init.sh",
       "pdnsutil delete-zone u.isucon.dev",
     ]
   }
