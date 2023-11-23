@@ -23,7 +23,7 @@ export interface LivestreamResponse {
 export const fillLivestreamResponse = async (
   conn: PoolConnection,
   livestream: LivestreamsModel,
-  fallbackUserIcon: Readonly<ArrayBuffer>,
+  getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
   const [[user]] = await conn
     .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
@@ -32,7 +32,7 @@ export const fillLivestreamResponse = async (
     .catch(throwErrorWith('failed to get user'))
   if (!user) throw new Error('not found user that has the given id')
 
-  const userResponse = await fillUserResponse(conn, user, fallbackUserIcon)
+  const userResponse = await fillUserResponse(conn, user, getFallbackUserIcon)
 
   const [livestreamTags] = await conn
     .query<(LivestreamTagsModel & RowDataPacket)[]>(

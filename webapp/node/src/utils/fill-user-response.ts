@@ -18,7 +18,7 @@ export interface UserResponse {
 export const fillUserResponse = async (
   conn: PoolConnection,
   user: Omit<UserModel, 'password'>,
-  fallbackUserIcon: Readonly<ArrayBuffer>,
+  getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
   const [[theme]] = await conn
     .query<(ThemeModel & RowDataPacket)[]>(
@@ -34,7 +34,7 @@ export const fillUserResponse = async (
   let image = icon?.image
 
   if (!image) {
-    image = fallbackUserIcon
+    image = await getFallbackUserIcon()
   }
 
   return {

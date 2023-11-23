@@ -18,7 +18,7 @@ export interface ReactionResponse {
 export const fillReactionResponse = async (
   conn: PoolConnection,
   reaction: ReactionsModel,
-  fallbackUserIcon: Readonly<ArrayBuffer>,
+  getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
   const [[user]] = await conn
     .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
@@ -27,7 +27,7 @@ export const fillReactionResponse = async (
     .catch(throwErrorWith('failed to get user'))
   if (!user) throw new Error('not found user that has the given id')
 
-  const userResponse = await fillUserResponse(conn, user, fallbackUserIcon)
+  const userResponse = await fillUserResponse(conn, user, getFallbackUserIcon)
 
   const [[livestream]] = await conn
     .query<(LivestreamsModel & RowDataPacket)[]>(
@@ -40,7 +40,7 @@ export const fillReactionResponse = async (
   const livestreamResponse = await fillLivestreamResponse(
     conn,
     livestream,
-    fallbackUserIcon,
+    getFallbackUserIcon,
   )
 
   return {
