@@ -79,7 +79,6 @@ impl axum::extract::FromRef<AppState> for axum_extra::extract::cookie::Key {
     }
 }
 
-// FIXME: ポータルと足並み揃えて修正
 #[derive(Debug, serde::Serialize)]
 struct InitializeResponse {
     language: &'static str,
