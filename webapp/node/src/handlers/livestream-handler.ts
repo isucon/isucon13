@@ -130,7 +130,7 @@ export const reserveLivestreamHandler = [
           end_at: body.end_at,
         },
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill livestream'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -207,7 +207,7 @@ export const searchLivestreamsHandler = async (
         conn,
         livestream,
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill livestream'))
       livestreamResponses.push(livestreamResponse)
     }
 
@@ -245,7 +245,7 @@ export const getMyLivestreamsHandler = [
           conn,
           livestream,
           c.get('runtime').fallbackUserIcon,
-        )
+        ).catch(throwErrorWith('failed to fill livestream'))
 
         livestreamResponses.push(livestreamResponse)
       }
@@ -296,7 +296,7 @@ export const getUserLivestreamsHandler = [
           conn,
           livestream,
           c.get('runtime').fallbackUserIcon,
-        )
+        ).catch(throwErrorWith('failed to fill livestream'))
 
         livestreamResponses.push(livestreamResponse)
       }
@@ -413,7 +413,7 @@ export const getLivestreamHandler = [
         conn,
         livestream,
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill livestream'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -466,7 +466,7 @@ export const getLivecommentReportsHandler = [
           conn,
           livecommentReport,
           c.get('runtime').fallbackUserIcon,
-        )
+        ).catch(throwErrorWith('failed to fill livecomment report'))
         reportResponses.push(report)
       }
 

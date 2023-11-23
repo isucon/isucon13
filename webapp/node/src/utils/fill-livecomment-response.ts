@@ -5,7 +5,6 @@ import {
   LivestreamResponse,
   fillLivestreamResponse,
 } from './fill-livestream-response'
-import { throwErrorWith } from './throw-error-with'
 
 export interface LivecommentResponse {
   id: number
@@ -21,21 +20,18 @@ export const fillLivecommentResponse = async (
   livecomment: LivecommentsModel,
   getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
-  const [[user]] = await conn
-    .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
-      livecomment.user_id,
-    ])
-    .catch(throwErrorWith('failed to get user'))
+  const [[user]] = await conn.query<(UserModel & RowDataPacket)[]>(
+    'SELECT * FROM users WHERE id = ?',
+    [livecomment.user_id],
+  )
   if (!user) throw new Error('not found user that has the given id')
 
   const userResponse = await fillUserResponse(conn, user, getFallbackUserIcon)
 
-  const [[livestream]] = await conn
-    .query<(LivestreamsModel & RowDataPacket)[]>(
-      'SELECT * FROM livestreams WHERE id = ?',
-      [livecomment.livestream_id],
-    )
-    .catch(throwErrorWith('failed to get livestream'))
+  const [[livestream]] = await conn.query<(LivestreamsModel & RowDataPacket)[]>(
+    'SELECT * FROM livestreams WHERE id = ?',
+    [livecomment.livestream_id],
+  )
   if (!livestream) throw new Error('not found livestream that has the given id')
 
   const livestreamResponse = await fillLivestreamResponse(

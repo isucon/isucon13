@@ -46,7 +46,7 @@ export const getReactionsHandler = [
           conn,
           reaction,
           c.get('runtime').fallbackUserIcon,
-        )
+        ).catch(throwErrorWith('failed to fill reaction'))
 
         reactionResponses.push(reactionResponse)
       }
@@ -99,7 +99,7 @@ export const postReactionHandler = [
           created_at: now,
         },
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill reaction'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 

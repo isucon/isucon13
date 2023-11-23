@@ -50,7 +50,7 @@ export const getLivecommentsHandler = [
           conn,
           livecomment,
           c.get('runtime').fallbackUserIcon,
-        )
+        ).catch(throwErrorWith('failed to fill livecomment'))
         livecommnetResponses.push(livecommentResponse)
       }
 
@@ -176,7 +176,7 @@ export const postLivecommentHandler = [
           created_at: now,
         },
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill livecomment'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -254,7 +254,7 @@ export const reportLivecommentHandler = [
           created_at: now,
         },
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill livecomment report'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 

@@ -9,7 +9,6 @@ import {
   LivecommentResponse,
   fillLivecommentResponse,
 } from './fill-livecomment-response'
-import { throwErrorWith } from './throw-error-with'
 
 export interface LivecommentReportResponse {
   id: number
@@ -23,21 +22,19 @@ export const fillLivecommentReportResponse = async (
   livecommentReport: LivecommentReportsModel,
   getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
-  const [[user]] = await conn
-    .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
-      livecommentReport.user_id,
-    ])
-    .catch(throwErrorWith('failed to get user'))
+  const [[user]] = await conn.query<(UserModel & RowDataPacket)[]>(
+    'SELECT * FROM users WHERE id = ?',
+    [livecommentReport.user_id],
+  )
   if (!user) throw new Error('not found user that has the given id')
 
   const userResponse = await fillUserResponse(conn, user, getFallbackUserIcon)
 
-  const [[livecomment]] = await conn
-    .query<(LivecommentsModel & RowDataPacket)[]>(
-      'SELECT * FROM livecomments WHERE id = ?',
-      [livecommentReport.livecomment_id],
-    )
-    .catch(throwErrorWith('failed to get livecomment'))
+  const [[livecomment]] = await conn.query<
+    (LivecommentsModel & RowDataPacket)[]
+  >('SELECT * FROM livecomments WHERE id = ?', [
+    livecommentReport.livecomment_id,
+  ])
   if (!livecomment)
     throw new Error('not found livecomment that has the given id')
 

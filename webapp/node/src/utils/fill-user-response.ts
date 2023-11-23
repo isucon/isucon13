@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import { PoolConnection, RowDataPacket } from 'mysql2/promise'
 import { IconModel, ThemeModel, UserModel } from '../types/models'
-import { throwErrorWith } from './throw-error-with'
 
 export interface UserResponse {
   id: number
@@ -20,12 +19,10 @@ export const fillUserResponse = async (
   user: Omit<UserModel, 'password'>,
   getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
-  const [[theme]] = await conn
-    .query<(ThemeModel & RowDataPacket)[]>(
-      'SELECT * FROM themes WHERE user_id = ?',
-      [user.id],
-    )
-    .catch(throwErrorWith('failed to get theme'))
+  const [[theme]] = await conn.query<(ThemeModel & RowDataPacket)[]>(
+    'SELECT * FROM themes WHERE user_id = ?',
+    [user.id],
+  )
 
   const [[icon]] = await conn.query<
     (Pick<IconModel, 'image'> & RowDataPacket)[]

@@ -6,7 +6,6 @@ import {
   UserModel,
 } from '../types/models'
 import { UserResponse, fillUserResponse } from './fill-user-response'
-import { throwErrorWith } from './throw-error-with'
 
 export interface LivestreamResponse {
   id: number
@@ -25,29 +24,24 @@ export const fillLivestreamResponse = async (
   livestream: LivestreamsModel,
   getFallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>,
 ) => {
-  const [[user]] = await conn
-    .query<(UserModel & RowDataPacket)[]>('SELECT * FROM users WHERE id = ?', [
-      livestream.user_id,
-    ])
-    .catch(throwErrorWith('failed to get user'))
+  const [[user]] = await conn.query<(UserModel & RowDataPacket)[]>(
+    'SELECT * FROM users WHERE id = ?',
+    [livestream.user_id],
+  )
   if (!user) throw new Error('not found user that has the given id')
 
   const userResponse = await fillUserResponse(conn, user, getFallbackUserIcon)
 
-  const [livestreamTags] = await conn
-    .query<(LivestreamTagsModel & RowDataPacket)[]>(
-      'SELECT * FROM livestream_tags WHERE livestream_id = ?',
-      [livestream.id],
-    )
-    .catch(throwErrorWith('failed to get livestream tags'))
+  const [livestreamTags] = await conn.query<
+    (LivestreamTagsModel & RowDataPacket)[]
+  >('SELECT * FROM livestream_tags WHERE livestream_id = ?', [livestream.id])
 
   const tags: TagsModel[] = []
   for (const livestreamTag of livestreamTags) {
-    const [[tag]] = await conn
-      .query<(TagsModel & RowDataPacket)[]>('SELECT * FROM tags WHERE id = ?', [
-        livestreamTag.tag_id,
-      ])
-      .catch(throwErrorWith('failed to get tag'))
+    const [[tag]] = await conn.query<(TagsModel & RowDataPacket)[]>(
+      'SELECT * FROM tags WHERE id = ?',
+      [livestreamTag.tag_id],
+    )
     tags.push(tag)
   }
 

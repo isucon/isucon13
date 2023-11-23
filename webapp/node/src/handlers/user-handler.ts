@@ -120,7 +120,7 @@ export const getMeHandler = [
         conn,
         user,
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill user'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -196,7 +196,7 @@ export const registerHandler = async (
         description: body.description,
       },
       c.get('runtime').fallbackUserIcon,
-    )
+    ).catch(throwErrorWith('failed to fill user'))
 
     await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -290,7 +290,7 @@ export const getUserHandler = [
         conn,
         user,
         c.get('runtime').fallbackUserIcon,
-      )
+      ).catch(throwErrorWith('failed to fill user'))
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
