@@ -139,13 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     tracing_subscriber::fmt::init();
 
-    let concurrency = std::env::var("ISUCON13_RUST_CONCURRENCY")
-        .ok()
-        .and_then(|c| c.parse().ok())
-        .unwrap_or(50);
-
     let pool = sqlx::mysql::MySqlPoolOptions::new()
-        .max_connections(concurrency)
         .connect_with(build_mysql_options())
         .await
         .expect("failed to connect db");
@@ -164,10 +158,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             POWERDNS_SUBDOMAIN_ADDRESS_ENV_KEY
         );
     };
-
-    let svc = tower::ServiceBuilder::new()
-        .concurrency_limit(concurrency as usize)
-        .layer(tower_http::trace::TraceLayer::new_for_http());
 
     let app = axum::Router::new()
         // 初期化
@@ -271,7 +261,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             key: axum_extra::extract::cookie::Key::derive_from(&secret),
             powerdns_subdomain_address: Arc::new(powerdns_subdomain_address),
         })
-        .layer(svc);
+        .layer(tower_http::trace::TraceLayer::new_for_http());
 
     // HTTPサーバ起動
     if let Some(tcp_listener) = listenfd::ListenFd::from_env().take_tcp_listener(0)? {
