@@ -40,7 +40,6 @@ func init() {
 	}
 }
 
-// FIXME: ポータルと足並み揃えて修正
 type InitializeResponse struct {
 	Language string `json:"language"`
 }
