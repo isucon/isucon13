@@ -32,7 +32,7 @@ export const fillUserResponse = async (
     (Pick<IconModel, 'image'> & RowDataPacket)[]
   >('SELECT image FROM icons WHERE user_id = ?', [user.id])
 
-  let image = icon.image
+  let image = icon?.image
 
   if (!image) {
     // eslint-disable-next-line unicorn/prefer-module
