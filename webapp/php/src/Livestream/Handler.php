@@ -219,7 +219,7 @@ class Handler extends AbstractHandler
             try {
                 $sql = 'SELECT * FROM livestream_tags WHERE tag_id IN (';
                 $sql .= implode(',', array_fill(0, count($tagIdList), '?'));
-                $sql .= ')';
+                $sql .= ') ORDER BY livestream_id DESC';
                 $stmt = $this->db->prepare($sql);
                 foreach ($tagIdList as $i => $tagId) {
                     $stmt->bindValue($i + 1, $tagId, PDO::PARAM_INT);
@@ -259,7 +259,7 @@ class Handler extends AbstractHandler
             }
         } else {
             // 検索条件なし
-            $query = 'SELECT * FROM livestreams';
+            $query = 'SELECT * FROM livestreams ORDER BY id DESC';
             if (isset($request->getQueryParams()['limit'])) {
                 $limit = $this->getAsInt($request->getQueryParams(), 'limit');
                 if ($limit === false) {
