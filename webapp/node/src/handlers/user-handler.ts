@@ -116,7 +116,11 @@ export const getMeHandler = [
         return c.text('not found user that has the userid in session', 404)
       }
 
-      const response = await fillUserResponse(conn, user)
+      const response = await fillUserResponse(
+        conn,
+        user,
+        await c.get('runtime').fallbackUserIcon,
+      )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -183,12 +187,16 @@ export const registerHandler = async (
       ])
       .catch(throwErrorWith('failed to add record to powerdns'))
 
-    const response = await fillUserResponse(conn, {
-      id: userId,
-      name: body.name,
-      display_name: body.display_name,
-      description: body.description,
-    })
+    const response = await fillUserResponse(
+      conn,
+      {
+        id: userId,
+        name: body.name,
+        display_name: body.display_name,
+        description: body.description,
+      },
+      await c.get('runtime').fallbackUserIcon,
+    )
 
     await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -278,7 +286,11 @@ export const getUserHandler = [
         return c.text('not found user that has the given username', 404)
       }
 
-      const response = await fillUserResponse(conn, user)
+      const response = await fillUserResponse(
+        conn,
+        user,
+        await c.get('runtime').fallbackUserIcon,
+      )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 

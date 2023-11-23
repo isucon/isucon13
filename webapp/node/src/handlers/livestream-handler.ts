@@ -117,16 +117,20 @@ export const reserveLivestreamHandler = [
           .catch(throwErrorWith('failed to insert livestream tag'))
       }
 
-      const response = await fillLivestreamResponse(conn, {
-        id: livestreamId,
-        user_id: userId,
-        title: body.title,
-        description: body.description,
-        playlist_url: body.playlist_url,
-        thumbnail_url: body.thumbnail_url,
-        start_at: body.start_at,
-        end_at: body.end_at,
-      })
+      const response = await fillLivestreamResponse(
+        conn,
+        {
+          id: livestreamId,
+          user_id: userId,
+          title: body.title,
+          description: body.description,
+          playlist_url: body.playlist_url,
+          thumbnail_url: body.thumbnail_url,
+          start_at: body.start_at,
+          end_at: body.end_at,
+        },
+        await c.get('runtime').fallbackUserIcon,
+      )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -199,7 +203,11 @@ export const searchLivestreamsHandler = async (
 
     const livestreamResponses: LivestreamResponse[] = []
     for (const livestream of livestreams) {
-      const livestreamResponse = await fillLivestreamResponse(conn, livestream)
+      const livestreamResponse = await fillLivestreamResponse(
+        conn,
+        livestream,
+        await c.get('runtime').fallbackUserIcon,
+      )
       livestreamResponses.push(livestreamResponse)
     }
 
@@ -236,6 +244,7 @@ export const getMyLivestreamsHandler = [
         const livestreamResponse = await fillLivestreamResponse(
           conn,
           livestream,
+          await c.get('runtime').fallbackUserIcon,
         )
 
         livestreamResponses.push(livestreamResponse)
@@ -286,6 +295,7 @@ export const getUserLivestreamsHandler = [
         const livestreamResponse = await fillLivestreamResponse(
           conn,
           livestream,
+          await c.get('runtime').fallbackUserIcon,
         )
 
         livestreamResponses.push(livestreamResponse)
@@ -399,7 +409,11 @@ export const getLivestreamHandler = [
         return c.text('not found livestream that has the given id', 404)
       }
 
-      const livestreamResponse = await fillLivestreamResponse(conn, livestream)
+      const livestreamResponse = await fillLivestreamResponse(
+        conn,
+        livestream,
+        await c.get('runtime').fallbackUserIcon,
+      )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
 
@@ -451,6 +465,7 @@ export const getLivecommentReportsHandler = [
         const report = await fillLivecommentReportResponse(
           conn,
           livecommentReport,
+          await c.get('runtime').fallbackUserIcon,
         )
         reportResponses.push(report)
       }

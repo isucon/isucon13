@@ -136,7 +136,7 @@ app.use('*', async (c, next) => {
 app.post('/api/initialize', async (c) => {
   try {
     await runtime.exec(['../sql/init.sh'])
-    return c.json({ advertise_level: 10, advertise_name: 'node' })
+    return c.json({ advertise_level: 10, language: 'node' })
   } catch (error) {
     console.log('init.sh failed with')
     console.log(error)
