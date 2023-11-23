@@ -48,10 +48,13 @@ func VisitLivestream(ctx context.Context, contestantLogger *zap.Logger, client *
 		return err
 	}
 
-	_, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
-	if err != nil {
-		return err
-	}
+	/*
+		// NOTE: viwersのほうで呼ぶのでこっちは一旦やめます
+		_, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
+		if err != nil {
+			return err
+		}
+	*/
 
 	livecomments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name, isupipe.WithLimitQueryParam(10))
 	if err != nil {
