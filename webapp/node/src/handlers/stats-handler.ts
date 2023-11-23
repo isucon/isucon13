@@ -178,10 +178,10 @@ statsHandler.get(
   '/api/livestream/:livestream_id/statistics',
   verifyUserSessionMiddleware,
   async (c) => {
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (!Number.isInteger(c.req.param('livestream_id'))) {
       return c.json('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()

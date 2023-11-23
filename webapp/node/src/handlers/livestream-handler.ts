@@ -63,10 +63,10 @@ livestreamHandler.get('/api/livestream/search', async (c) => {
       let query = `SELECT * FROM livestreams`
       const limit = c.req.query('limit')
       if (limit) {
-        const limitNumber = Number.parseInt(limit, 10)
-        if (Number.isNaN(limitNumber)) {
+        if (Number.isInteger(limit)) {
           return c.text('limit query parameter must be integer', 400)
         }
+        const limitNumber = Number.parseInt(limit, 10)
         query += ` LIMIT ${limitNumber}`
       }
 
@@ -231,10 +231,10 @@ livestreamHandler.get(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -285,10 +285,10 @@ livestreamHandler.get(
   '/api/livestream/:livestream_id',
   verifyUserSessionMiddleware,
   async (c) => {
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -324,10 +324,10 @@ livestreamHandler.post(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -358,10 +358,10 @@ livestreamHandler.delete(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()

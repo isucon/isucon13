@@ -18,10 +18,10 @@ livecommentHandler.post(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (!Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const body = await c.req.json<{ comment: string; tip: number }>()
 
@@ -90,10 +90,10 @@ livecommentHandler.get(
   '/api/livestream/:livestream_id/livecomment',
   verifyUserSessionMiddleware,
   async (c) => {
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -103,10 +103,10 @@ livecommentHandler.get(
         'SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC'
       const limit = c.req.query('limit')
       if (limit) {
-        const limitNumber = Number.parseInt(limit, 10)
-        if (Number.isNaN(limitNumber)) {
+        if (Number.isInteger(limit)) {
           return c.text('limit query must be integer', 400)
         }
+        const limitNumber = Number.parseInt(limit, 10)
         query += ` LIMIT ${limitNumber}`
       }
       const [livecomments] = await conn
@@ -142,14 +142,14 @@ livecommentHandler.post(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livecommentId = Number.parseInt(c.req.param('livecomment_id'), 10)
-    if (Number.isNaN(livecommentId)) {
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
+    if (Number.isInteger(c.req.param('livecomment_id'))) {
       return c.text('livecomment_id in path must be integer', 400)
     }
+    const livecommentId = Number.parseInt(c.req.param('livecomment_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -192,10 +192,10 @@ livecommentHandler.post(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const body = await c.req.json<{ ng_word: string }>()
 
@@ -276,10 +276,10 @@ livecommentHandler.get(
   verifyUserSessionMiddleware,
   async (c) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (Number.isNaN(livestreamId)) {
+    if (Number.isInteger(c.req.param('livestream_id'))) {
       return c.text('livestream_id in path must be integer', 400)
     }
+    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
