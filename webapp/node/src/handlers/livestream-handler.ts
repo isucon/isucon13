@@ -129,7 +129,7 @@ export const reserveLivestreamHandler = [
           start_at: body.start_at,
           end_at: body.end_at,
         },
-        await c.get('runtime').fallbackUserIcon,
+        await c.get('runtime').fallbackUserIcon(),
       )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
@@ -206,7 +206,7 @@ export const searchLivestreamsHandler = async (
       const livestreamResponse = await fillLivestreamResponse(
         conn,
         livestream,
-        await c.get('runtime').fallbackUserIcon,
+        await c.get('runtime').fallbackUserIcon(),
       )
       livestreamResponses.push(livestreamResponse)
     }
@@ -244,7 +244,7 @@ export const getMyLivestreamsHandler = [
         const livestreamResponse = await fillLivestreamResponse(
           conn,
           livestream,
-          await c.get('runtime').fallbackUserIcon,
+          await c.get('runtime').fallbackUserIcon(),
         )
 
         livestreamResponses.push(livestreamResponse)
@@ -295,7 +295,7 @@ export const getUserLivestreamsHandler = [
         const livestreamResponse = await fillLivestreamResponse(
           conn,
           livestream,
-          await c.get('runtime').fallbackUserIcon,
+          await c.get('runtime').fallbackUserIcon(),
         )
 
         livestreamResponses.push(livestreamResponse)
@@ -412,7 +412,7 @@ export const getLivestreamHandler = [
       const livestreamResponse = await fillLivestreamResponse(
         conn,
         livestream,
-        await c.get('runtime').fallbackUserIcon,
+        await c.get('runtime').fallbackUserIcon(),
       )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
@@ -465,7 +465,7 @@ export const getLivecommentReportsHandler = [
         const report = await fillLivecommentReportResponse(
           conn,
           livecommentReport,
-          await c.get('runtime').fallbackUserIcon,
+          await c.get('runtime').fallbackUserIcon(),
         )
         reportResponses.push(report)
       }

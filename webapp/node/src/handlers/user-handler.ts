@@ -41,7 +41,7 @@ export const getIconHandler = [
         .catch(throwErrorWith('failed to get icon'))
       if (!icon) {
         await conn.rollback()
-        return c.body(await c.get('runtime').fallbackUserIcon, 200, {
+        return c.body(await c.get('runtime').fallbackUserIcon(), 200, {
           'Content-Type': 'image/jpeg',
         })
       }
@@ -119,7 +119,7 @@ export const getMeHandler = [
       const response = await fillUserResponse(
         conn,
         user,
-        await c.get('runtime').fallbackUserIcon,
+        await c.get('runtime').fallbackUserIcon(),
       )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
@@ -195,7 +195,7 @@ export const registerHandler = async (
         display_name: body.display_name,
         description: body.description,
       },
-      await c.get('runtime').fallbackUserIcon,
+      await c.get('runtime').fallbackUserIcon(),
     )
 
     await conn.commit().catch(throwErrorWith('failed to commit'))
@@ -289,7 +289,7 @@ export const getUserHandler = [
       const response = await fillUserResponse(
         conn,
         user,
-        await c.get('runtime').fallbackUserIcon,
+        await c.get('runtime').fallbackUserIcon(),
       )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))

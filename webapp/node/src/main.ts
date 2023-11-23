@@ -69,17 +69,16 @@ const runtime = {
   hashPassword: async (password: string) => hash(password, 4),
   comparePassword: async (password: string, hash: string) =>
     compare(password, hash),
-  // eslint-disable-next-line unicorn/prefer-module, unicorn/prefer-top-level-await
-  fallbackUserIcon: readFile(join(__dirname, '../../img/NoImage.jpg')).then(
-    (v) => {
+  fallbackUserIcon: () =>
+    // eslint-disable-next-line unicorn/prefer-module, unicorn/prefer-top-level-await
+    readFile(join(__dirname, '../../img/NoImage.jpg')).then((v) => {
       const buf = v.buffer
       if (buf instanceof ArrayBuffer) {
         return buf
       } else {
         throw new TypeError(`NoImage.jpg should be ArrayBuffer, but ${buf}`)
       }
-    },
-  ),
+    }),
 } satisfies Runtime
 
 const pool = createPool({

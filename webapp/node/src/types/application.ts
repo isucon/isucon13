@@ -6,7 +6,7 @@ export interface Runtime {
   exec: (cmd: string[]) => Promise<{ stdout: string; stderr: string }>
   hashPassword: (password: string) => Promise<string>
   comparePassword: (password: string, hash: string) => Promise<boolean>
-  fallbackUserIcon: Promise<Readonly<ArrayBuffer>>
+  fallbackUserIcon: () => Promise<Readonly<ArrayBuffer>>
 }
 
 export interface ApplicationRuntime extends Runtime {

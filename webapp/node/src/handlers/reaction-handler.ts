@@ -45,7 +45,7 @@ export const getReactionsHandler = [
         const reactionResponse = await fillReactionResponse(
           conn,
           reaction,
-          await c.get('runtime').fallbackUserIcon,
+          await c.get('runtime').fallbackUserIcon(),
         )
 
         reactionResponses.push(reactionResponse)
@@ -98,7 +98,7 @@ export const postReactionHandler = [
           livestream_id: livestreamId,
           created_at: now,
         },
-        await c.get('runtime').fallbackUserIcon,
+        await c.get('runtime').fallbackUserIcon(),
       )
 
       await conn.commit().catch(throwErrorWith('failed to commit'))
