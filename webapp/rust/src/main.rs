@@ -417,7 +417,7 @@ async fn reserve_livestream_handler(
 
     let mut tx = pool.begin().await?;
 
-    // 2024/04/01からの１年間の期間内であるかチェック
+    // 2023/11/25 10:00からの１年間の期間内であるかチェック
     let term_start_at = Utc.from_utc_datetime(
         &NaiveDate::from_ymd_opt(2023, 11, 25)
             .unwrap()

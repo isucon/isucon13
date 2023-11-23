@@ -92,7 +92,7 @@ func reserveLivestreamHandler(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	// 2023/11/25からの１年間の期間内であるかチェック
+	// 2023/11/25 10:00からの１年間の期間内であるかチェック
 	var (
 		termStartAt    = time.Date(2023, 11, 25, 1, 0, 0, 0, time.UTC)
 		termEndAt      = time.Date(2024, 11, 25, 1, 0, 0, 0, time.UTC)

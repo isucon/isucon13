@@ -40,7 +40,7 @@ export const reserveLivestreamHandler = [
     await conn.beginTransaction()
 
     try {
-      // 2023/11/25からの１年間の期間内であるかチェック
+      // 2023/11/25 10:00からの１年間の期間内であるかチェック
       const termStartAt = Date.UTC(2023, 10, 25, 1) // NOTE: month is 0-indexed
       const termEndAt = Date.UTC(2024, 10, 25, 1) // NOTE: month is 0-indexed
       const reserveStartAt = body.start_at * 1000 // NOTE: body.start_at is unixtime, so it is in seconds
