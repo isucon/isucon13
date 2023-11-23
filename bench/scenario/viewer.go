@@ -79,10 +79,12 @@ func BasicViewerScenario(
 		return err
 	}
 
-	lgr.Info("get livestream stats")
-	if _, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
-		lgr.Warnf("view: failed to get livestream stats: %s\n", err.Error())
-		return err
+	if n%10 == 1 { // NOTE: 本来のクライアントは全員statsを呼ぶが、重すぎるので調整
+		lgr.Info("get livestream stats")
+		if _, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
+			lgr.Warnf("view: failed to get livestream stats: %s\n", err.Error())
+			return err
+		}
 	}
 
 	contestantLogger.Info("視聴を開始しました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
