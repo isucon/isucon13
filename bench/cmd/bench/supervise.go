@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -50,9 +51,14 @@ type TaskMetadataV4 struct {
 }
 
 func fetchAZName(ctx context.Context) (string, error) {
-	metadataUrl := os.Getenv("ECS_CONTAINER_METADATA_URI_V4")
-	if metadataUrl == "" {
+	metadataBaseUrl := os.Getenv("ECS_CONTAINER_METADATA_URI_V4")
+	if metadataBaseUrl == "" {
 		return "", fmt.Errorf("empty metadata url")
+	}
+
+	metadataUrl, err := url.JoinPath(metadataBaseUrl, "task")
+	if err != nil {
+		return "", err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, metadataUrl, nil)
