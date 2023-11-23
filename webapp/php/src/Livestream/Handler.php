@@ -55,8 +55,8 @@ class Handler extends AbstractHandler
         $this->db->beginTransaction();
 
         // 2024/04/01からの１年間の期間内であるかチェック
-        $termStartAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2023-11-25 10:00:00', new DateTimeZone('UTC'));
-        $termEndAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2024-11-25 10:00:00', new DateTimeZone('UTC'));
+        $termStartAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2023-11-25 01:00:00', new DateTimeZone('UTC'));
+        $termEndAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2024-11-25 01:00:00', new DateTimeZone('UTC'));
         $reserveStartAt = DateTimeImmutable::createFromFormat('U', (string) $req->startAt, new DateTimeZone('UTC'));
         $reserveEndAt = DateTimeImmutable::createFromFormat('U', (string) $req->endAt, new DateTimeZone('UTC'));
         if ($reserveStartAt >= $termEndAt || $reserveEndAt <= $termStartAt) {
@@ -97,7 +97,13 @@ class Handler extends AbstractHandler
                 if ($count < 1) {
                     throw new HttpBadRequestException(
                         request: $request,
-                        message: sprintf('予約区間 %d ~ %dが予約できません', $req->startAt, $req->endAt),
+                        message: sprintf(
+                            '予約期間 %d ~ %dに対して、予約区間 %d ~ %dが予約できません',
+                            $termStartAt->getTimestamp(),
+                            $termEndAt->getTimestamp(),
+                            $req->startAt,
+                            $req->endAt,
+                        ),
                     );
                 }
             } catch (PDOException $e) {
