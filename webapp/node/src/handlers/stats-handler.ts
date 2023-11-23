@@ -187,7 +187,7 @@ export const getLivestreamStatisticsHandler = [
   async (
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/statistics'>,
   ) => {
-    if (!Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.json('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)

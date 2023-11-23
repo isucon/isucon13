@@ -40,9 +40,9 @@ export const reserveLivestreamHandler = [
     await conn.beginTransaction()
 
     try {
-      // 2024/11/25からの１年間の期間内であるかチェック
-      const termStartAt = Date.UTC(2024, 10, 25, 10) // NOTE: month is 0-indexed
-      const termEndAt = Date.UTC(2025, 10, 25, 10) // NOTE: month is 0-indexed
+      // 2023/11/25からの１年間の期間内であるかチェック
+      const termStartAt = Date.UTC(2023, 10, 25, 1) // NOTE: month is 0-indexed
+      const termEndAt = Date.UTC(2024, 10, 25, 1) // NOTE: month is 0-indexed
       const reserveStartAt = body.start_at * 1000 // NOTE: body.start_at is unixtime, so it is in seconds
       const reserveEndAt = body.end_at * 1000 // NOTE: body.end_at is unixtime, so it is in seconds
 
@@ -56,7 +56,7 @@ export const reserveLivestreamHandler = [
       const [slots] = await conn
         .query<(ReservationSlotsModel & RowDataPacket)[]>(
           'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE',
-          [new Date(reserveStartAt), new Date(reserveEndAt)],
+          [body.start_at, body.end_at],
         )
         .catch((error) => {
           console.warn(`予約枠一覧取得でエラー発生: ${error}`)
@@ -187,7 +187,7 @@ export const searchLivestreamsHandler = async (
       let query = `SELECT * FROM livestreams ORDER BY id DESC`
       const limit = c.req.query('limit')
       if (limit) {
-        if (Number.isInteger(limit)) {
+        if (!Number.isInteger(Number(limit))) {
           return c.text('limit query parameter must be integer', 400)
         }
         const limitNumber = Number.parseInt(limit, 10)
@@ -320,7 +320,7 @@ export const enterLivestreamHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/enter'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.text('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
@@ -356,7 +356,7 @@ export const exitLivestreamHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/exit'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.text('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
@@ -389,7 +389,7 @@ export const exitLivestreamHandler = [
 export const getLivestreamHandler = [
   verifyUserSessionMiddleware,
   async (c: Context<HonoEnvironment, '/api/livestream/:livestream_id'>) => {
-    if (Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.text('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
@@ -434,7 +434,7 @@ export const getLivecommentReportsHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/report'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.text('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)

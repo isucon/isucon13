@@ -16,7 +16,7 @@ export const getReactionsHandler = [
   async (
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/reaction'>,
   ) => {
-    if (Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.text('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
@@ -29,7 +29,7 @@ export const getReactionsHandler = [
         'SELECT * FROM reactions WHERE livestream_id = ? ORDER BY created_at DESC'
       const limit = c.req.query('limit')
       if (limit) {
-        if (Number.isInteger(limit)) {
+        if (!Number.isInteger(Number(limit))) {
           return c.text('limit query parameter must be integer', 400)
         }
         const limitNumber = Number.parseInt(limit, 10)
@@ -70,7 +70,7 @@ export const postReactionHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/reaction'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (Number.isInteger(c.req.param('livestream_id'))) {
+    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
       return c.text('livestream_id in path must be integer', 400)
     }
     const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
