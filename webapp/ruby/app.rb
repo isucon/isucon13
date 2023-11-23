@@ -931,7 +931,8 @@ module Isupipe
         end
 
         ranking.sort_by! { |entry| [entry.score, entry.username] }
-        rank = ranking.rindex { |entry| entry.username == username } + 1
+        ridx = ranking.rindex { |entry| entry.username == username }
+        rank = ranking.size - ridx
 
         # リアクション数
         total_reactions = tx.xquery(<<~SQL, username, as: :array).first[0]
@@ -1009,7 +1010,8 @@ module Isupipe
           LivestreamRankingEntry.new(livestream_id: livestream.fetch(:id), score:)
         end
         ranking.sort_by! { |entry| [entry.score, entry.livestream_id] }
-        rank = ranking.rindex { |entry| entry.livestream_id == livestream_id } + 1
+        ridx = ranking.rindex { |entry| entry.livestream_id == livestream_id }
+        rank = ranking.size - ridx
 
 	# 視聴者数算出
         viewers_count = tx.xquery('SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?', livestream_id, as: :array).first[0]

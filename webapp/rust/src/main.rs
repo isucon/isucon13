@@ -1887,11 +1887,11 @@ async fn get_user_statistics_handler(
             .then_with(|| a.username.cmp(b.username))
     });
 
-    let rank = ranking
+    let rpos = ranking
         .iter()
         .rposition(|entry| entry.username == username)
-        .unwrap_or(ranking.len()) as i64
-        + 1;
+        .unwrap();
+    let rank = (ranking.len() - rpos) as i64;
 
     // リアクション数
     let query = r"#
@@ -2019,11 +2019,11 @@ async fn get_livestream_statistics_handler(
             .then_with(|| a.livestream_id.cmp(&b.livestream_id))
     });
 
-    let rank = ranking
+    let rpos = ranking
         .iter()
         .rposition(|entry| entry.livestream_id == livestream_id)
-        .unwrap_or(ranking.len()) as i64
-        + 1;
+        .unwrap();
+    let rank = (ranking.len() - rpos) as i64;
 
     // 視聴者数算出
     let MysqlDecimal(viewers_count) = sqlx::query_scalar("SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?")
