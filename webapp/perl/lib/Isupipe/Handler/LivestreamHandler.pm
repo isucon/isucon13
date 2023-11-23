@@ -59,6 +59,7 @@ sub reserve_livestream_handler($app, $c) {
     }
 
     # 予約枠をみて、予約が可能か調べる
+    # NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
     my $slots = $app->dbh->select_all_as(
         'Isupipe::Entity::ReservationSlot',
         'SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE',
