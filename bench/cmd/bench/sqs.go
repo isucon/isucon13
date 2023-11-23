@@ -25,14 +25,15 @@ var (
 )
 
 type Result struct {
-	ID         int       `json:"id"`
-	Status     string    `json:"status"`
-	Score      int64     `json:"score,omitempty"`
-	IsPassed   bool      `json:"is_passed,omitempty"`
-	Reason     string    `json:"reason,omitempty"`
-	Stdout     string    `json:"stdout,omitempty"`
-	Stderr     string    `json:"stderr,omitempty"`
-	FinishedAt time.Time `json:"finished_at"`
+	ID            int       `json:"id"`
+	Status        string    `json:"status"`
+	Score         int64     `json:"score,omitempty"`
+	IsPassed      bool      `json:"is_passed,omitempty"`
+	Reason        string    `json:"reason,omitempty"`
+	Stdout        string    `json:"stdout,omitempty"`
+	Stderr        string    `json:"stderr,omitempty"`
+	ResolvedCount int64     `json:"resolved_count"`
+	FinishedAt    time.Time `json:"finished_at,omitempty"`
 }
 
 func NewAbortResult(id int) *Result {

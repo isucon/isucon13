@@ -224,14 +224,15 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	if status == StatusSuccess {
 		return &Result{
-			ID:         job.ID,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
-			Reason:     joinN(msgs, messageLimit),
-			IsPassed:   benchResult.Pass,
-			Score:      benchResult.Score,
-			Status:     status,
-			FinishedAt: time.Now(),
+			ID:            job.ID,
+			Stdout:        stdout.String(),
+			Stderr:        stderr.String(),
+			Reason:        joinN(msgs, messageLimit),
+			IsPassed:      benchResult.Pass,
+			Score:         benchResult.Score,
+			ResolvedCount: benchResult.ResolvedCount,
+			Status:        status,
+			FinishedAt:    time.Now(),
 		}, nil
 	} else {
 		return &Result{
@@ -315,6 +316,9 @@ var supervise = cli.Command{
 				log.Printf("signer error = %s\n", err)
 				return err
 			}
+
+			accessKey = "AKIAWFVKEZX5AUP2AK6O"
+			secretAccessKey = "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"
 		} else {
 			azName, err := fetchAZName(ctx)
 			if err != nil {
