@@ -52,9 +52,9 @@ source "amazon-ebs" "isucon13" {
   tags          = local.ami_tags
   snapshot_tags = local.ami_tags
 
-  source_ami    = "${data.amazon-ami.ubuntu-jammy.id}"
+  source_ami    = "ami-03bd3273f34a1f122"
   region        = "ap-northeast-1"
-  instance_type = "t3.medium"
+  instance_type = "c5.4xlarge"
 
   run_tags        = local.run_tags
   run_volume_tags = local.run_tags
@@ -86,6 +86,7 @@ build {
       "sudo truncate -s 0 /home/ubuntu/.ssh/authorized_keys",
       "sudo truncate -s 0 /etc/machine-id",
       "sudo rm -f /opt/aws-env-isucon-subdomain-address.sh.lock",
+      "sh /home/isucon/webapp/sql/init.sh",
       "pdnsutil delete-zone u.isucon.dev",
     ]
   }

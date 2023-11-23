@@ -36,6 +36,11 @@ export interface Parameter$get$user$statistics {
 }
 export type Response$get$user$statistics$Status$200 =
   Responses.GetUserStatistics.Content;
+export interface Parameter$get$user$livestream {
+  username: string;
+}
+export type Response$get$user$livestream$Status$200 =
+  Responses.GetLivestreams.Content;
 export type Response$get$livestream$Status$200 =
   Responses.GetLivestreams.Content;
 export interface Parameter$get$livestream$search {
@@ -163,6 +168,11 @@ export type ResponseContentType$get$user$statistics =
 export interface Params$get$user$statistics {
   parameter: Parameter$get$user$statistics;
 }
+export type ResponseContentType$get$user$livestream =
+  keyof Response$get$user$livestream$Status$200;
+export interface Params$get$user$livestream {
+  parameter: Parameter$get$user$livestream;
+}
 export type ResponseContentType$get$livestream =
   keyof Response$get$livestream$Status$200;
 export type ResponseContentType$get$livestream$search =
@@ -275,6 +285,7 @@ export type SuccessResponses =
   | Response$get$user$username$Status$200
   | Response$get$theme$Status$200
   | Response$get$user$statistics$Status$200
+  | Response$get$user$livestream$Status$200
   | Response$get$livestream$Status$200
   | Response$get$livestream$search$Status$200
   | Response$get$livestream$_livestreamid$Status$200
@@ -298,6 +309,7 @@ export namespace ErrorResponse {
   export type get$user$username = void;
   export type get$theme = void;
   export type get$user$statistics = void;
+  export type get$user$livestream = void;
   export type get$livestream = void;
   export type get$livestream$search = void;
   export type get$livestream$_livestreamid = void;
@@ -477,6 +489,24 @@ export class Client<RequestOption> {
     option?: RequestOption,
   ): Promise<Response$get$user$statistics$Status$200['application/json']> {
     const url = this.baseUrl + `/user/${params.parameter.username}/statistics`;
+    const headers = {
+      Accept: 'application/json',
+    };
+    return this.apiClient.request(
+      {
+        httpMethod: 'GET',
+        url,
+        headers,
+      },
+      option,
+    );
+  }
+  /** ユーザの配信一覧を取得 */
+  public async get$user$livestream(
+    params: Params$get$user$livestream,
+    option?: RequestOption,
+  ): Promise<Response$get$user$livestream$Status$200['application/json']> {
+    const url = this.baseUrl + `/user/${params.parameter.username}/livestream`;
     const headers = {
       Accept: 'application/json',
     };

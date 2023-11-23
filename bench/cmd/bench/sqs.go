@@ -32,13 +32,20 @@ type Result struct {
 	Reason     string    `json:"reason,omitempty"`
 	Stdout     string    `json:"stdout,omitempty"`
 	Stderr     string    `json:"stderr,omitempty"`
-	FinishedAt time.Time `json:"finished_at,omitempty"`
+	FinishedAt time.Time `json:"finished_at"`
 }
 
 func NewAbortResult(id int) *Result {
 	return &Result{
 		ID:     id,
-		Status: "aborted",
+		Status: StatusFailed,
+	}
+}
+
+func NewRunningResult(id int) *Result {
+	return &Result{
+		ID:     id,
+		Status: StatusRunning,
 	}
 }
 
@@ -73,7 +80,7 @@ func NewPortal(
 	client := sqs.New(sess)
 
 	// NOTE: ポータルへの送信キューはAZ分散しない
-	sendQueueName := fmt.Sprintf("%s-job-queue.fifo", environment)
+	sendQueueName := fmt.Sprintf("%s-job-result", environment)
 	sendQueueUrl, err := url.JoinPath(queueBaseUrl, sendQueueName)
 	if err != nil {
 		return nil, err
@@ -92,17 +99,23 @@ func NewPortal(
 }
 
 func (s *Portal) SendResult(ctx context.Context, job *Job, result *Result) error {
+	sendResultJSONMarshalStartAt := time.Now()
+	log.Printf("sendResultJSONMarshalStartAt = %s\n", sendResultJSONMarshalStartAt.String())
 	b, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
+	log.Printf("sendResultJSONMarshalFinishedAt = %s\n", time.Since(sendResultJSONMarshalStartAt).String())
 
+	sendResultSendMessageWithContextStartAt := time.Now()
+	log.Printf("sendResultSendMessageWithContextStartAt(aws-sdk-go) = %s", sendResultSendMessageWithContextStartAt.String())
 	if _, err := s.client.SendMessageWithContext(ctx, &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.sendQueueUrl),
 		MessageBody: aws.String(string(b)),
 	}); err != nil {
 		return err
 	}
+	log.Printf("sendResultSendMessageWithContextFinishedAt(aws-sdk-go) = %s\n", time.Since(sendResultSendMessageWithContextStartAt).String())
 
 	return nil
 }

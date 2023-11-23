@@ -1,12 +1,9 @@
 [Unit]
 Description=run aws-env-isucon-subdomain-address once
-Wants=time-sync.target
-Before=time-sync.target
-After=network.target
+Before=mysql.service
 
 [Service]
-Restart=no
-Type=simple
+Type=oneshot
 RemainAfterExit=yes
 ExecStart=/opt/aws-env-isucon-subdomain-address.sh
 

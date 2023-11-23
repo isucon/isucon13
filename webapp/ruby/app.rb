@@ -272,6 +272,7 @@ module Isupipe
         end
 
         # 予約枠をみて、予約が可能か調べる
+        # NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
         tx.xquery('SELECT * FROM reservation_slots WHERE start_at >= ? AND end_at <= ? FOR UPDATE', req.start_at, req.end_at).each do |slot|
           count = tx.xquery('SELECT slot FROM reservation_slots WHERE start_at = ? AND end_at = ?', slot.fetch(:start_at), slot.fetch(:end_at)).first.fetch(:slot)
           logger.info("#{slot.fetch(:start_at)} ~ #{slot.fetch(:end_at)}予約枠の残数 = #{slot.fetch(:slot)}")
@@ -930,7 +931,8 @@ module Isupipe
         end
 
         ranking.sort_by! { |entry| [entry.score, entry.username] }
-        rank = ranking.rindex { |entry| entry.username == username } + 1
+        ridx = ranking.rindex { |entry| entry.username == username }
+        rank = ranking.size - ridx
 
         # リアクション数
         total_reactions = tx.xquery(<<~SQL, username, as: :array).first[0]
@@ -1000,15 +1002,16 @@ module Isupipe
 
         # ランク算出
         ranking = tx.xquery('SELECT * FROM livestreams').map do |livestream|
-          reactions = tx.xquery('SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?', livestream_id, as: :array).first[0]
+          reactions = tx.xquery('SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = ?', livestream.fetch(:id), as: :array).first[0]
 
-          total_tips = tx.xquery('SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?', livestream_id, as: :array).first[0]
+          total_tips = tx.xquery('SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?', livestream.fetch(:id), as: :array).first[0]
 
           score = reactions + total_tips
           LivestreamRankingEntry.new(livestream_id: livestream.fetch(:id), score:)
         end
         ranking.sort_by! { |entry| [entry.score, entry.livestream_id] }
-        rank = ranking.rindex { |entry| entry.livestream_id == livestream_id } + 1
+        ridx = ranking.rindex { |entry| entry.livestream_id == livestream_id }
+        rank = ranking.size - ridx
 
 	# 視聴者数算出
         viewers_count = tx.xquery('SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = ?', livestream_id, as: :array).first[0]

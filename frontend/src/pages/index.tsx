@@ -15,7 +15,7 @@ import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
   const liveSterams = useLiveStreamsSearch({
-    limit: 100,
+    limit: 10,
   });
   const userMe = useUserMe();
 
@@ -65,6 +65,7 @@ export default function IndexPage(): React.ReactElement {
                   sx={{ width: '25px', height: '25px' }}
                 />
               }
+              {...{ to: normalizeUrl(`/watch/${live.id}`, live.owner?.name) }}
             >
               {live.owner?.display_name}
             </SidebarButton>
