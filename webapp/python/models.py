@@ -194,3 +194,33 @@ class NGWord:
     livestream_id: int
     word: str
     created_at: int
+
+
+@dataclass
+class ModerateResponse:
+    word_id: int
+
+
+@dataclass
+class PaymentResult:
+    total_tip: int
+
+
+@dataclass
+class ReservationSlotModel:
+    id: int
+    slot: int
+    start_at: int
+    end_at: int
+
+    def __init__(
+        self,
+        id: int,
+        slot: int,
+        start_at: int | str,
+        end_at: int | str,
+    ) -> None:
+        self.id = id
+        self.slot = slot
+        self.start_at = int(start_at)
+        self.end_at = int(end_at)
