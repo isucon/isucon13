@@ -48,8 +48,8 @@
 - name: Tasks for isupipe-go
   include_tasks: go.yaml
 
-#- name: Tasks for isupipe-node
-#  include_tasks: node.yaml
+- name: Tasks for isupipe-node
+  include_tasks: node.yaml
 
 - name: Tasks for isupipe-perl
   include_tasks: perl.yaml
