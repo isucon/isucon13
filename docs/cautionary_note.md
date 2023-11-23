@@ -9,7 +9,7 @@
 
 ## アプリケーション ISUPipe について
 
-ISUPipe の仕様については[ISUPipe アプリケーションマニュアル]()を参照してください。
+ISUPipe の仕様については[ISUPipe アプリケーションマニュアル](https://gist.github.com/kazeburo/70b352e6d51969b214f919bcf0794ba6)を参照してください。
 
 ## ISUCON13 ポータルサイト（ポータル）
 
@@ -188,7 +188,7 @@ $ sudo /opt/isucon-env-checker/envcheck
 
 競技を進めるにあたって必要となるポートの解放など、セキュリティグループの変更は行なっても構いません。
 
-ただし、SSH(TCP/22)、HTTPS(TCP/443) および DNS(UDP/53) については競技に影響がでるため変更しないでください。
+ただし、SSH(TCP/22)、HTTPS(TCP/443) および DNS(UDP/53) については競技に影響があり変更しないでください。
 
 セキュリティグループの変更により、ベンチマークが実行できない場合は失格となります。
 
@@ -212,7 +212,7 @@ $ sudo /opt/isucon-env-checker/envcheck
 * envcheck.serviceに関わるファイル
   * `/etc/systemd/system/envcheck.service`
   * `/etc/systemd/system/multi-user.target.wants/envcheck.service`
-  * `/opt/isucon-env-checker` 内のファイル、バイナリ
+  * `/opt/isucon-env-checker` 内のファイル、バイナリファイル
 * aws-env-isucon-subdomain-address.service に関わるファイル
   * `/etc/systemd/system/aws-env-isucon-subdomain-address.service`
   * `/etc/systemd/system/multi-user.target.wants/aws-env-isucon-subdomain-address.service`
@@ -259,8 +259,7 @@ $ sudo systemctl enable isupipe-{各言語}.service
 ただし、PHP を使う場合のみ、systemd の設定変更の他に、次のように nginx の設定ファイルの変更が必要です。
 
 ```sh
-$ sudo unlink /etc/nginx/sites-enabled/isuports.conf
-$ sudo ln -s /etc/nginx/sites-available/isuports-php.conf /etc/nginx/sites-enabled/isuports-php.conf
+$ sudo ln -s /etc/nginx/sites-available/isupipe-php.conf /etc/nginx/sites-enabled/
 $ sudo systemctl restart nginx.service
 ```
 
@@ -279,6 +278,12 @@ $ sudo systemctl restart nginx.service
 
 ```sh
 $ dig pipe.u.isucon.dev @127.0.0.1
+```
+
+もしくはその他の環境から
+
+```sh
+$ dig pipe.u.isucon.dev @{サーバのグローバルIP}
 ```
 
 と実行することで、名前解決結果を確認できます。
@@ -311,9 +316,17 @@ DNSラウンドロビンについて、複数のAレコードが返された場�
 
 ベンチマーカーの名前解決のタイムアウトは2秒で設定されています。タイムアウトやDNSサーバーに接続失敗した際のリトライは最大5回まで行います。ただし、負荷走行中はリトライを行いません。
 
-### データベース、DNSゾーン情報のリカバリ方法
+### MySQLへのログイン方法
 
-参考実装では、初期化処理（`POST /api/initialize`）においてデータベースおよびDNSゾーン情報をベンチマーカーが想定している状態に戻します。 以下のコマンドでもデータベースを初期化できます。
+参考実装のMySQLに管理者権限で接続するには以下のようにします。
+
+```sh
+$ sudo mysql ${データベース名}
+```
+
+### データベースのデータ、DNSゾーン情報の初期化
+
+参考実装では、初期化処理（`POST /api/initialize`）においてデータベースのデータおよびDNSゾーン情報をベンチマーカーが想定している状態に戻します。 以下のコマンドでもデータベースのデータを初期化できます。
 
 ```sh
 $ ~/webapp/sql/init.sh
@@ -334,13 +347,20 @@ $ ~/webapp/pdns/init_zone.sh
 - isupipe アプリケーションが利用するデータベース
 - isudns PowerDNSのゾーン情報を格納するデータベース
 
-### MySQLへのログイン方法
+### isupipe データベースのスキーマについて
 
-参考実装のMySQLに管理者権限で接続するには以下のようにします。
+isupipe データベースのスキーマは初期実装に含まれています
+
+- webapp/sql/initdb.d/00_create_database.sql データベースおよびユーザの作成
+- webapp/sql/initdb.d/10_schema.sql isupipe データベースのスキーマ
+
+isupipe データベースを初期化するにはデータベースを `DROP DATABASE isupipe; CREATE DATABASE isupipe` で削除し、
 
 ```sh
-$ sudo mysql isupipe
+$ cat webapp/sql/initdb.d/10_schema.sql | sudo mysql isupipe
 ```
+
+としたのち、データの初期化を行なってください。
 
 ## TLS証明書について
 
@@ -401,6 +421,7 @@ FIXME
 ##### 最終スコアで上位のチームに対して行う追試項目
 
 * 負荷走行実行時にアプリケーションに書き込まれたデータが、サーバー再起動後に取得できない場合
+* envcheckを利用したサーバ環境の確認
 
 ##### POST /api/initialize での実装言語の出力
 
