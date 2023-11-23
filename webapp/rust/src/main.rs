@@ -125,9 +125,7 @@ async fn initialize_handler() -> Result<axum::Json<InitializeResponse>, Error> {
         )));
     }
 
-    Ok(axum::Json(InitializeResponse {
-        language: "rust",
-    }))
+    Ok(axum::Json(InitializeResponse { language: "rust" }))
 }
 
 #[tokio::main]
