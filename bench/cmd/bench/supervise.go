@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -41,10 +40,22 @@ const (
 )
 
 const (
+	StatusRunning = "running"
 	StatusSuccess = "done"
 	StatusFailed  = "aborted"
 	StatusTimeout = "aborted"
 )
+
+func ResolveAZName(azID string) (string, bool) {
+	m := map[string]string{
+		"ap-northeast-1a": "apne1-az4",
+		"ap-northeast-1c": "apne1-az1",
+		"ap-northeast-1d": "apne1-az2",
+	}
+
+	azName, ok := m[azID]
+	return azName, ok
+}
 
 type TaskMetadataV4 struct {
 	AvailabilityZone string `json:"AvailabilityZone"`
@@ -78,7 +89,12 @@ func fetchAZName(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return taskMetadata.AvailabilityZone, nil
+	azName, ok := ResolveAZName(taskMetadata.AvailabilityZone)
+	if !ok {
+		return "", fmt.Errorf("failed to resolve availability zone name for %s", taskMetadata.AvailabilityZone)
+	}
+
+	return azName, nil
 }
 
 func joinN(messages []string, n int) string {
@@ -99,9 +115,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	// ベンチマーカー実行前に確実にresultファイルを削除する
 	// 他のチームに対する結果が含まれている可能性があるため
 	for _, name := range []string{resultPath, staffLogPath, contestantLogPath} {
-		if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
-			return nil, err
-		}
+		os.Remove(name)
 	}
 
 	benchOptions := []string{
@@ -116,8 +130,9 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		benchOptions = append(benchOptions, "--target", "https://pipe.u.isucon.dev:443")
 	} else {
 		// NOTE: 開発環境(Docker)
-		benchOptions = append(benchOptions, "--dns-port", strconv.Itoa(1053))
-		benchOptions = append(benchOptions, "--target", "http://pipe.u.isucon.dev:8080")
+		// benchOptions = append(benchOptions, "--dns-port", strconv.Itoa(1053))
+		benchOptions = append(benchOptions, "--enable-ssl")
+		benchOptions = append(benchOptions, "--target", "https://pipe.u.isucon.dev:443")
 	}
 	log.Println("===== options =====")
 	for _, opt := range benchOptions {
@@ -161,13 +176,14 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	b, err := os.ReadFile(contestantLogPath)
 	if err != nil {
 		return &Result{
-			ID:       job.ID,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
-			Reason:   err.Error(),
-			IsPassed: false,
-			Score:    0,
-			Status:   status,
+			ID:         job.ID,
+			Stdout:     stdout.String(),
+			Stderr:     stderr.String(),
+			Reason:     err.Error(),
+			IsPassed:   false,
+			Score:      0,
+			Status:     status,
+			FinishedAt: time.Now(),
 		}, nil
 	}
 	contestantLog := strings.Split(string(b), "\n")
@@ -177,24 +193,26 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	b, err = os.ReadFile(resultPath)
 	if err != nil {
 		return &Result{
-			ID:       job.ID,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
-			Reason:   err.Error(),
-			IsPassed: false,
-			Score:    0,
-			Status:   status,
+			ID:         job.ID,
+			Stdout:     stdout.String(),
+			Stderr:     stderr.String(),
+			Reason:     err.Error(),
+			IsPassed:   false,
+			Score:      0,
+			Status:     status,
+			FinishedAt: time.Now(),
 		}, nil
 	}
 	if err := json.NewDecoder(bytes.NewBuffer(b)).Decode(&benchResult); err != nil {
 		return &Result{
-			ID:       job.ID,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
-			Reason:   err.Error(),
-			IsPassed: false,
-			Score:    0,
-			Status:   status,
+			ID:         job.ID,
+			Stdout:     stdout.String(),
+			Stderr:     stderr.String(),
+			Reason:     err.Error(),
+			IsPassed:   false,
+			Score:      0,
+			Status:     status,
+			FinishedAt: time.Now(),
 		}, nil
 	}
 
@@ -203,23 +221,25 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	if status == StatusSuccess {
 		return &Result{
-			ID:       job.ID,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
-			Reason:   joinN(msgs, messageLimit),
-			IsPassed: benchResult.Pass,
-			Score:    benchResult.Score,
-			Status:   status,
+			ID:         job.ID,
+			Stdout:     stdout.String(),
+			Stderr:     stderr.String(),
+			Reason:     joinN(msgs, messageLimit),
+			IsPassed:   benchResult.Pass,
+			Score:      benchResult.Score,
+			Status:     status,
+			FinishedAt: time.Now(),
 		}, nil
 	} else {
 		return &Result{
-			ID:       job.ID,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
-			Reason:   "ベンチマーク失敗",
-			IsPassed: false,
-			Score:    0,
-			Status:   status,
+			ID:         job.ID,
+			Stdout:     stdout.String(),
+			Stderr:     stderr.String(),
+			Reason:     "ベンチマーク失敗",
+			IsPassed:   false,
+			Score:      0,
+			Status:     status,
+			FinishedAt: time.Now(),
 		}, nil
 	}
 }
@@ -291,10 +311,14 @@ var supervise = cli.Command{
 				return err
 			}
 		} else {
-			var err error
+			azName, err := fetchAZName(ctx)
+			if err != nil {
+				return cli.NewExitError(err, 1)
+			}
+
 			// az1, az2, az4
 			portal, err = NewPortal(
-				"apne1-az2",
+				azName,
 				Develop,
 				accessKey,
 				secretAccessKey,
@@ -323,14 +347,22 @@ var supervise = cli.Command{
 						NotifyWorkerErr(job, nil, "", "", strings.Join(errs, ","))
 					}
 				} else {
+					if err := portal.SendResult(ctx, job, NewRunningResult(job.ID)); err != nil {
+						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
+					}
+
 					result, err := execBench(ctx, job)
 					if err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
+					log.Printf("finishedAt = %s\n", result.FinishedAt.String())
 
+					sendResultStartAt := time.Now()
+					log.Printf("sendResultStartAt = %s\n", sendResultStartAt.String())
 					if err := portal.SendResult(ctx, job, result); err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
+					log.Printf("sendResultFinishedAt = %s\n", time.Since(sendResultStartAt).String())
 
 					os.Remove(staffLogPath)
 					os.Remove(contestantLogPath)

@@ -219,7 +219,7 @@ var run = cli.Command{
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, contestantLogger, pretestDNSResolver); err != nil {
-			dumpFailedResult([]string{"整合性チェックに失敗しました"})
+			dumpFailedResult([]string{"整合性チェックに失敗しました", err.Error()})
 			return nil
 		}
 		contestantLogger.Info("整合性チェックが成功しました")
