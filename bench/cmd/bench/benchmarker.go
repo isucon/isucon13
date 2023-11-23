@@ -126,9 +126,9 @@ func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmar
 		streamerSem:            semaphore.NewWeighted(weight),
 		longStreamerSem:        semaphore.NewWeighted(weight),
 		moderatorSem:           semaphore.NewWeighted(weight),
-		viewerSem:              semaphore.NewWeighted(weight * 1), // 配信者の10倍視聴者トラフィックがある
-		spammerSem:             semaphore.NewWeighted(weight * 2), // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:              semaphore.NewWeighted(512),        // 攻撃を段階的に大きくする最大値
+		viewerSem:              semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
+		spammerSem:             semaphore.NewWeighted(weight * 2),  // 視聴者の２倍はスパム投稿者が潜んでいる
+		attackSem:              semaphore.NewWeighted(512),         // 攻撃を段階的に大きくする最大値
 		attackParallelis:       2,
 		streamerLoginSem:       semaphore.NewWeighted(weight),
 		streamerLoginCounter:   new(LoginCounter),

@@ -10,7 +10,7 @@ const TooManySpamThresholdPercentage = 30.0
 
 // 基本となる並列性
 // セマフォの重みに使われます
-const BaseParallelism = 10
+const BaseParallelism = 1
 
 // 動的に並列度を上げる並列性
 // スコアに直結する視聴者シナリオなどのセマフォの重みに使われます
