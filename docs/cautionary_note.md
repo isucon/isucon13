@@ -113,17 +113,17 @@ ISUPipe には、サーバーのWeb ブラウザから HTTPS でアクセスで�
 
 ISUPipe はホスト名に依存した挙動があるため、ブラウザにサーバーのIPアドレスを直打ちする形での閲覧はできません。以下の手順でhostsファイルを編集し、動作確認のためのホスト名が競技サーバーのIPアドレスにつながるようにします。
 
-Mac や Linux であれば `/etc/hosts` に、 Windows であれば `C:\Windows\System32\drivers\etc\hosts` に以下の行を追記します。`${サーバー IP アドレス}` はサーバーの IP アドレスに読み替えてください。
+Mac や Linux であれば `/etc/hosts` に、 Windows であれば `C:\Windows\System32\drivers\etc\hosts` に以下の行を追記します。`{サーバー IP アドレス}` はサーバーの IP アドレスに読み替えてください。
 
 ```
-${サーバー IP アドレス} pipe.u.isucon.dev
-${サーバー IP アドレス} test001.u.isucon.dev
+{サーバー IP アドレス} pipe.u.isucon.dev
+{サーバー IP アドレス} test001.u.isucon.dev
 ```
 
 そのほかアプリケーションの確認のためにサブドメインを追加することがあります。
 
 ```
-${サーバー IP アドレス} サブドメイン.u.isucon.dev
+{サーバー IP アドレス} サブドメイン.u.isucon.dev
 ```
 
 上記変更の反映にはブラウザの再起動が必要な場合があります。
@@ -253,6 +253,13 @@ $ sudo systemctl stop isupipe-go.service
 $ sudo systemctl disable isupipe-go.service
 ```
 
+以下のコマンドで stop と disable を両方行うことができます
+
+```sh
+$ sudo systemctl disable --now isupipe-go.service
+```
+
+
 ##### 1. isupipe-{各言語}.service を起動、有効化します
 
 `{各言語}` のところには perlやrubyがはいります。
@@ -261,6 +268,13 @@ $ sudo systemctl disable isupipe-go.service
 $ sudo systemctl start isupipe-{各言語}.service
 $ sudo systemctl enable isupipe-{各言語}.service
 ```
+
+以下のコマンドで start と enable を両方行うことができます
+
+```sh
+$ sudo systemctl enable --now isupipe-{各言語}.service
+```
+
 
 #### PHPへの切り替え
 
@@ -347,7 +361,7 @@ DNS水責め攻撃はランダムなサブドメインを生成し、大量の�
 参考実装のMySQLに管理者権限で接続するには以下のようにします。
 
 ```sh
-$ sudo mysql ${データベース名}
+$ sudo mysql {データベース名}
 ```
 
 ### データベースのデータ、DNSゾーン情報の初期化
@@ -380,7 +394,7 @@ isupipe データベースのスキーマは初期実装に含まれています
 - webapp/sql/initdb.d/00_create_database.sql データベースおよびユーザの作成
 - webapp/sql/initdb.d/10_schema.sql isupipe データベースのスキーマ
 
-isupipe データベースを初期化するにはデータベースを `DROP DATABASE isupipe; CREATE DATABASE isupipe` で再作成し、
+isupipe データベースを初期化するにはデータベースを `DROP DATABASE isupipe` および `CREATE DATABASE isupipe` で再作成し、
 
 ```sh
 $ cat webapp/sql/initdb.d/10_schema.sql | sudo mysql isupipe
@@ -412,27 +426,23 @@ $ cat webapp/sql/initdb.d/10_schema.sql | sudo mysql isupipe
 ベンチマーカーのタイムアウトはそれぞれ以下のように設定されています。
 
 * 初期化処理の実行: 42秒
-* アプリケーションの整合性チェック: 5秒
+* アプリケーションの整合性チェック: 20秒
 * 負荷走行: 20秒
 * 最終チェック: 10秒
 
 ### 負荷走行の打ち切り
 
-FIXME: 負荷走行中に止まることはない
+負荷走行中に停止することはありません。
 
 ### 反映までの猶予時間について
 
-一部APIのデータはリクエストへの反映までに許容される猶予時間があります
+一部APIのデータはリクエストへの反映までに許容される猶予時間があります。
 
-FIXME:
-
-- APIで使われるユーザの情報の反映は1秒の反映遅延が許容されます
+- APIのレスポンスに含まれるユーザの情報の反映は更新リクエストから1秒の反映遅延が許容されます。
 
 ## スコア計算
 
-FIXME:
-
-スコアは投げ銭(Tip)機能により、送金・寄付された金額の合計となります。
+スコアは一回のベンチマーク中にISUPipeの投げ銭(Tip)機能により、送金・寄付された金額の合計となります。
 
 スコアの合計額がサーバとベンチマーカーとで差分がある場合、ベンチマーカーで計測している値をスコアとします。
 
