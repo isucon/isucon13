@@ -91,11 +91,13 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context, httpClient *http.C
 	name := unsafe.String(&b[0], len(b))
 	ip := a.lookup(ctx, name)
 	if ip != nil && atomic.AddUint64(&a.resolvedRequests, 1)%5 == 0 {
-		// TODO target url
 		host := fmt.Sprintf("%s:%d", strings.TrimRight(name, "."), config.TargetPort)
-		url := fmt.Sprintf("%s://%s/",
+		// root, favicon.ico, api/user/me, api/tag, api/livestream/search?limit=50 をランダムに
+		endpoints := []string{"", "", "", "favicon.ico", "api/user/me", "api/tag", "api/livestream/search?limit=50"}
+		url := fmt.Sprintf("%s://%s/%s",
 			config.HTTPScheme,
 			host,
+			endpoints[rand.Intn(len(endpoints))],
 		)
 		valueCtx := context.WithValue(ctx, config.AttackHTTPClientContextKey,
 			fmt.Sprintf("%s:%d", ip.String(), config.TargetPort))
@@ -103,7 +105,6 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context, httpClient *http.C
 		if err != nil {
 			return
 		}
-		// TODO: user-agent
 		req.Header.Set("User-Agent", "isucandar")
 		res, err := httpClient.Do(req)
 		if err != nil {

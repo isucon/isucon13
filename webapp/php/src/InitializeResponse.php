@@ -7,7 +7,6 @@ use JsonSerializable;
 class InitializeResponse implements JsonSerializable
 {
     public function __construct(
-        public int $advertiseLevel,
         public string $language,
     ) {
     }
@@ -18,7 +17,6 @@ class InitializeResponse implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'advertise_level' => $this->advertiseLevel,
             'language' => $this->language,
         ];
     }

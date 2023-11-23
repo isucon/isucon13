@@ -32,7 +32,6 @@ class InitializeHandler extends AbstractHandler
         }
 
         return $this->jsonResponse($response, new InitializeResponse(
-            advertiseLevel: 10,
             language: 'php',
         ));
     }

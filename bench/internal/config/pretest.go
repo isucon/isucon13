@@ -2,7 +2,7 @@ package config
 
 import "time"
 
-const PretestTimeout = 5 * time.Second
+const PretestTimeout = 20 * time.Second
 
 var DefaultDNSRecord = []string{
 	"www",

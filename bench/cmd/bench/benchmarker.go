@@ -371,7 +371,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
 	// FIXME: LIMITは負荷をみて調整したい
-	loadAttackLimiter := rate.NewLimiter(rate.Limit(900), 1)
+	loadAttackLimiter := rate.NewLimiter(rate.Limit(1200), 1)
 	go func() { b.loadAttackCoordinator(ctx) }()
 
 	for {
