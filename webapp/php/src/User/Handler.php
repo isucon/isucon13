@@ -259,7 +259,7 @@ class Handler extends AbstractHandler
         }
 
         try {
-            $this->execCommand(['pdnsutil', 'add-record', 'u.isucon.dev', $req->name, 'A', '30', $this->powerDNSSubdomainAddress]);
+            $this->execCommand(['pdnsutil', 'add-record', 'u.isucon.dev', $req->name, 'A', '0', $this->powerDNSSubdomainAddress]);
         } catch (RuntimeException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
