@@ -46,6 +46,8 @@ export const getIconHandler = [
         })
       }
 
+      await conn.commit().catch(throwErrorWith('failed to commit'))
+
       return c.body(icon.image, 200, {
         'Content-Type': 'image/jpeg',
       })
