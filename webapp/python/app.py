@@ -26,7 +26,7 @@ import models
 import mysql.connector
 from flask import Flask, Response, request, send_file, session
 from mysql.connector.errors import DatabaseError
-from sqlalchemy.pool import QueuePool
+from sqlalchemy import create_engine
 
 
 class Settings(object):
@@ -77,10 +77,12 @@ def initialize_handler() -> tuple[dict[str, Any], int]:
 # top
 @app.route("/api/tag", methods=["GET"])
 def get_tag_handler() -> tuple[dict[str, Any], int]:
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM tags"
         c.execute(sql)
         rows = c.fetchall()
@@ -103,11 +105,12 @@ def get_tag_handler() -> tuple[dict[str, Any], int]:
 def get_streamer_theme_handler(username: str) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
-
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT id FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -142,10 +145,12 @@ def reserve_livestream_handler() -> tuple[dict[str, Any], int]:
 
     req = get_request_json()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         # 2024/04/01からの１年間の期間内であるかチェック
         term_start_at = datetime(2023, 11, 25, 1, 0, 0, tzinfo=timezone.utc)
         term_end_at = datetime(2024, 11, 25, 1, 0, 0, tzinfo=timezone.utc)
@@ -246,10 +251,12 @@ def search_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
     key_tag_name = request.args.get("tag")
     limit_str = request.args.get("limit")
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         livestream_models = []
         if key_tag_name:
             # タグによる取得
@@ -317,10 +324,12 @@ def get_my_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
     if not user_id:
         raise HttpException("unauthorized", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM livestreams WHERE user_id = %s"
         c.execute(sql, [user_id])
         rows = c.fetchall()
@@ -355,10 +364,12 @@ def get_my_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
 def get_user_livestreams_handler(username: str) -> tuple[list[dict[str, Any]], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -400,10 +411,12 @@ def get_user_livestreams_handler(username: str) -> tuple[list[dict[str, Any]], i
 def get_livestream_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM livestreams WHERE id = %s"
         c.execute(sql, [livestream_id])
         row = c.fetchone()
@@ -426,10 +439,12 @@ def get_livestream_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 def get_livecomments_handler(livestream_id: int) -> tuple[list[dict[str, Any]], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM livecomments WHERE livestream_id = %s ORDER BY created_at DESC"
         args = [livestream_id]
         limit_str = request.args.get("limit")
@@ -471,7 +486,8 @@ def post_livecomment_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 
     req = get_request_json()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -543,10 +559,12 @@ def post_reaction_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 
     req = get_request_json()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         now = int(datetime.now().timestamp())
         sql = "INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (%s, %s, %s, %s)"
         c.execute(sql, [user_id, livestream_id, req["emoji_name"], now])
@@ -578,10 +596,12 @@ def get_reactions_handler(
 
     limit_str = request.args.get("limit")
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = (
             "SELECT * FROM reactions WHERE livestream_id = %s ORDER BY created_at DESC"
         )
@@ -618,7 +638,8 @@ def get_livecomment_reports_handler(
 ) -> tuple[list[dict[str, Any]], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -678,10 +699,12 @@ def get_ngwords(livestream_id: int) -> tuple[list[dict[str, Any]], int]:
     if not user_id:
         raise HttpException("unauthorized", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM ng_words WHERE user_id = %s AND livestream_id = %s ORDER BY created_at DESC"
         c.execute(sql, [user_id, livestream_id])
         rows = c.fetchall()
@@ -714,7 +737,8 @@ def report_livecomment_handler(
     if not user_id:
         raise HttpException("failed to find user-id from session", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -766,10 +790,12 @@ def moderate_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
             BAD_REQUEST,
         )
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         # 配信者自身の配信に対するmoderateなのかを検証
         sql = "SELECT * FROM livestreams WHERE id = %s AND user_id = %s"
         c.execute(sql, [livestream_id, user_id])
@@ -845,10 +871,12 @@ def enter_livestream_handler(livestream_id: int) -> tuple[str, int]:
     if not user_id:
         raise HttpException("failed to find user-id from session", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(%s, %s, %s)"
         c.execute(sql, [user_id, livestream_id, int(datetime.now().timestamp())])
         return "", OK
@@ -869,10 +897,12 @@ def exit_livestream_handler(livestream_id: int) -> tuple[str, int]:
     if not user_id:
         raise HttpException("failed to find user-id from session", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "DELETE FROM livestream_viewers_history WHERE user_id = %s AND livestream_id = %s"
         c.execute(sql, [user_id, livestream_id])
         return "", OK
@@ -918,10 +948,12 @@ def register_handler() -> tuple[dict[str, Any], int]:
         password=hashed_password.decode(),
     )
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "INSERT INTO users (name, display_name, description, password) VALUES (%s,%s,%s,%s)"
         c.execute(
             sql,
@@ -976,10 +1008,12 @@ def login_handler() -> tuple[str, int]:
             BAD_REQUEST,
         )
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [req["username"]])
         row = c.fetchone()
@@ -1015,10 +1049,12 @@ def get_me_handler() -> tuple[dict[str, Any], int]:
     if not user_id:
         raise HttpException("unauthorized", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE id = %s"
         c.execute(sql, [user_id])
         row = c.fetchone()
@@ -1040,10 +1076,12 @@ def get_me_handler() -> tuple[dict[str, Any], int]:
 def get_user_handler(username: str) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -1068,10 +1106,12 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
     # ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
     # また、現在の合計視聴者数もだす
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -1238,10 +1278,12 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 def get_icon_handler(username: str) -> Response:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
 
@@ -1289,10 +1331,12 @@ def post_icon_handler() -> tuple[dict[str, Any], int]:
         )
     new_icon = b64decode(req["image"])
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "DELETE FROM icons WHERE user_id = %s"
         c.execute(sql, [user_id])
 
@@ -1315,7 +1359,8 @@ def post_icon_handler() -> tuple[dict[str, Any], int]:
 def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -1437,7 +1482,8 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
 # 課金情報
 @app.route("/api/payment", methods=["GET"])
 def get_payment_result() -> tuple[dict[str, Any], int]:
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -1673,16 +1719,9 @@ if __name__ == "__main__":
         app.logger.critical("environ POWERDNS_SUBDOMAIN_ADDRESS must be provided")
         sys.exit(1)
 
-    global cnxpool
-    cnxpool = QueuePool(
-        lambda: mysql.connector.connect(
-            host=Settings.DB_HOST,
-            port=Settings.DB_PORT,
-            user=Settings.DB_USER,
-            password=Settings.DB_PASSWORD,
-            database=Settings.DB_NAME,
-        ),
-        pool_size=100,
+    global engine
+    engine = create_engine(
+        f"mysql+mysqlconnector://{Settings.DB_USER}:{Settings.DB_PASSWORD}@{Settings.DB_HOST}:{Settings.DB_PORT}/{Settings.DB_NAME}"
     )
     app.secret_key = Settings.SESSION_SECRET_KEY
     app.config["SESSION_COOKIE_DOMAIN"] = Settings.SESSION_COOKIE_DOMAIN

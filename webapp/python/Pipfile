@@ -7,7 +7,7 @@ name = "pypi"
 flask = "*"
 pymysql = "*"
 bcrypt = "*"
-sqlalchemy = "<2.0.0"
+sqlalchemy = "*"
 mysql-connector-python = "*"
 
 [dev-packages]
