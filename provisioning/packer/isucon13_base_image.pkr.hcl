@@ -49,7 +49,7 @@ source "amazon-ebs" "isucon13" {
 
   source_ami    = "${data.amazon-ami.ubuntu-jammy.id}"
   region        = "ap-northeast-1"
-  instance_type = "t3.medium"
+  instance_type = "t3.xlarge"
 
   run_tags        = local.run_tags
   run_volume_tags = local.run_tags
