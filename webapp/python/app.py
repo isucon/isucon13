@@ -1206,7 +1206,7 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
             INNER JOIN reactions r ON r.livestream_id = l.id
             WHERE u.name = %s
             GROUP BY emoji_name
-            ORDER BY COUNT(*) DESC
+            ORDER BY COUNT(*), emoji_name DESC
             LIMIT 1
             """
         c.execute(sql, [username])
