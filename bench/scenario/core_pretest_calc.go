@@ -20,7 +20,7 @@ var statsCalcRandSource = rand.New(rand.NewSource(257482710848044431))
 
 // ユーザ統計の計算処理がきちんとできているか
 func normalStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
-	streamerID := int64(42)
+	streamerID := int64(22)
 	streamer, err := scheduler.UserScheduler.GetInitialUserForPretest(streamerID)
 	if err != nil {
 		return err
