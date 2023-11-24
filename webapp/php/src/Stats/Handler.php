@@ -251,7 +251,7 @@ class Handler extends AbstractHandler
             INNER JOIN reactions r ON r.livestream_id = l.id
             WHERE u.name = ?
             GROUP BY emoji_name
-            ORDER BY COUNT(*) DESC
+            ORDER BY COUNT(*) DESC, emoji_name DESC
             LIMIT 1
         SQL;
         try {
@@ -357,7 +357,7 @@ class Handler extends AbstractHandler
                 $stmt = $this->db->prepare('SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?');
                 $stmt->bindValue(1, $livestream->id, PDO::PARAM_INT);
                 $stmt->execute();
-                $tips = (int) $stmt->fetchColumn();
+                $totalTips = (int) $stmt->fetchColumn();
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
@@ -366,7 +366,7 @@ class Handler extends AbstractHandler
                 );
             }
 
-            $score = $reactions + $tips;
+            $score = $reactions + $totalTips;
             $ranking[] = new LivestreamRankingEntry(
                 livestreamId: $livestream->id,
                 score: $score,

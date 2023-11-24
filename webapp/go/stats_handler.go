@@ -189,7 +189,7 @@ func getUserStatisticsHandler(c echo.Context) error {
 	INNER JOIN reactions r ON r.livestream_id = l.id
 	WHERE u.name = ?
 	GROUP BY emoji_name
-	ORDER BY COUNT(*) DESC
+	ORDER BY COUNT(*) DESC, emoji_name DESC
 	LIMIT 1
 	`
 	if err := tx.GetContext(ctx, &favoriteEmoji, query, username); err != nil && !errors.Is(err, sql.ErrNoRows) {

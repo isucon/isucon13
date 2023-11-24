@@ -26,7 +26,7 @@ import models
 import mysql.connector
 from flask import Flask, Response, request, send_file, session
 from mysql.connector.errors import DatabaseError
-from sqlalchemy.pool import QueuePool
+from sqlalchemy import create_engine
 
 
 class Settings(object):
@@ -71,16 +71,18 @@ def initialize_handler() -> tuple[dict[str, Any], int]:
         )
         raise HttpException(result.stderr, INTERNAL_SERVER_ERROR)
 
-    return {"advertise_level": 1, "language": "python"}, OK
+    return {"language": "python"}, OK
 
 
 # top
 @app.route("/api/tag", methods=["GET"])
 def get_tag_handler() -> tuple[dict[str, Any], int]:
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM tags"
         c.execute(sql)
         rows = c.fetchall()
@@ -103,11 +105,12 @@ def get_tag_handler() -> tuple[dict[str, Any], int]:
 def get_streamer_theme_handler(username: str) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
-
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT id FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -142,11 +145,13 @@ def reserve_livestream_handler() -> tuple[dict[str, Any], int]:
 
     req = get_request_json()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
-        # 2024/04/01からの１年間の期間内であるかチェック
+
+        # 2023/11/25 10:00からの１年間の期間内であるかチェック
         term_start_at = datetime(2023, 11, 25, 1, 0, 0, tzinfo=timezone.utc)
         term_end_at = datetime(2024, 11, 25, 1, 0, 0, tzinfo=timezone.utc)
         reserve_start_at = datetime.fromtimestamp(
@@ -158,32 +163,32 @@ def reserve_livestream_handler() -> tuple[dict[str, Any], int]:
             raise HttpException("bad reservation time range", BAD_REQUEST)
 
         # 予約枠をみて、予約が可能か調べる
+        # NOTE: 並列な予約のoverbooking防止にFOR UPDATEが必要
         sql = "SELECT * FROM reservation_slots WHERE start_at >= %s AND end_at <= %s FOR UPDATE"
         c.execute(sql, [int(req["start_at"]), int(req["end_at"])])
-        slots = c.fetchall()
-        if slots is None:
+        rows = c.fetchall()
+        if rows is None:
             app.logger.error("予約枠一覧取得でエラー発生")
             raise HttpException(
                 "failed to get reservation_slots",
                 INTERNAL_SERVER_ERROR,
             )
-        for slot in slots:
-            slot_start_at = int(slot["start_at"])
-            slot_end_at = int(slot["end_at"])
+        slots = [models.ReservationSlotModel(**row) for row in rows]
 
+        for slot in slots:
             sql = (
                 "SELECT slot FROM reservation_slots WHERE start_at = %s AND end_at = %s"
             )
-            c.execute(sql, [slot_start_at, slot_end_at])
-            count = c.fetchone()
-            if not count:
+            c.execute(sql, [slot.start_at, slot.end_at])
+            row = c.fetchone()
+            if row is None:
                 raise HttpException(
                     "failed to get reservation_slots",
                     INTERNAL_SERVER_ERROR,
                 )
-            count = count["slot"]
+            count = int(row["slot"])
 
-            # app.logger.info(f"{slot_start_at}~{slot_end_at}予約枠の残数 = {count}")
+            # app.logger.info(f"{slot.start_at}~{slot.end_at}予約枠の残数 = {count}")
             if count < 1:
                 raise HttpException(
                     f"予約期間 {term_start_at.timestamp()} ~ {term_end_at.timestamp()}に対して、予約区間 {req['start_at']} ~ {req['end_at']}が予約できません",
@@ -245,10 +250,12 @@ def search_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
     key_tag_name = request.args.get("tag")
     limit_str = request.args.get("limit")
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         livestream_models = []
         if key_tag_name:
             # タグによる取得
@@ -263,11 +270,16 @@ def search_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
             in_formats = ",".join(["%s"] * len(tag_ids))
             sql = sql % in_formats
             c.execute(sql, tag_ids)
-            key_tagged_livestreams = c.fetchall()
+            rows = c.fetchall()
+            if rows is None:
+                raise HttpException(
+                    "failed to get keyTaggedLivestream", INTERNAL_SERVER_ERROR
+                )
+            key_tagged_livestreams = [models.LiveStreamTagModel(**row) for row in rows]
 
             for key_tagged_livestream in key_tagged_livestreams:
                 sql = "SELECT * FROM livestreams WHERE id = %s"
-                c.execute(sql, [key_tagged_livestream["livestream_id"]])
+                c.execute(sql, [key_tagged_livestream.livestream_id])
                 row = c.fetchone()
                 if row is None:
                     raise HttpException(
@@ -316,10 +328,12 @@ def get_my_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
     if not user_id:
         raise HttpException("unauthorized", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM livestreams WHERE user_id = %s"
         c.execute(sql, [user_id])
         rows = c.fetchall()
@@ -354,10 +368,12 @@ def get_my_livestreams_handler() -> tuple[list[dict[str, Any]], int]:
 def get_user_livestreams_handler(username: str) -> tuple[list[dict[str, Any]], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -399,10 +415,12 @@ def get_user_livestreams_handler(username: str) -> tuple[list[dict[str, Any]], i
 def get_livestream_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM livestreams WHERE id = %s"
         c.execute(sql, [livestream_id])
         row = c.fetchone()
@@ -425,10 +443,12 @@ def get_livestream_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 def get_livecomments_handler(livestream_id: int) -> tuple[list[dict[str, Any]], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM livecomments WHERE livestream_id = %s ORDER BY created_at DESC"
         args = [livestream_id]
         limit_str = request.args.get("limit")
@@ -470,7 +490,8 @@ def post_livecomment_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 
     req = get_request_json()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -542,10 +563,12 @@ def post_reaction_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 
     req = get_request_json()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         now = int(datetime.now().timestamp())
         sql = "INSERT INTO reactions (user_id, livestream_id, emoji_name, created_at) VALUES (%s, %s, %s, %s)"
         c.execute(sql, [user_id, livestream_id, req["emoji_name"], now])
@@ -577,10 +600,12 @@ def get_reactions_handler(
 
     limit_str = request.args.get("limit")
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = (
             "SELECT * FROM reactions WHERE livestream_id = %s ORDER BY created_at DESC"
         )
@@ -617,7 +642,8 @@ def get_livecomment_reports_handler(
 ) -> tuple[list[dict[str, Any]], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -641,13 +667,14 @@ def get_livecomment_reports_handler(
 
         sql = "SELECT * FROM livecomment_reports WHERE livestream_id = %s"
         c.execute(sql, [livestream_id])
-        report_models = c.fetchall()
-        if report_models is None:
+        rows = c.fetchall()
+        if rows is None:
             # app.logger.info("report_model")
             raise HttpException(
                 "failed to get livecomment reports",
                 INTERNAL_SERVER_ERROR,
             )
+        report_models = [models.LiveCommentReportModel(**row) for row in rows]
 
         reports = []
         for report_model in report_models:
@@ -677,10 +704,12 @@ def get_ngwords(livestream_id: int) -> tuple[list[dict[str, Any]], int]:
     if not user_id:
         raise HttpException("unauthorized", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM ng_words WHERE user_id = %s AND livestream_id = %s ORDER BY created_at DESC"
         c.execute(sql, [user_id, livestream_id])
         rows = c.fetchall()
@@ -713,7 +742,8 @@ def report_livecomment_handler(
     if not user_id:
         raise HttpException("failed to find user-id from session", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -765,10 +795,12 @@ def moderate_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
             BAD_REQUEST,
         )
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         # 配信者自身の配信に対するmoderateなのかを検証
         sql = "SELECT * FROM livestreams WHERE id = %s AND user_id = %s"
         c.execute(sql, [livestream_id, user_id])
@@ -795,19 +827,23 @@ def moderate_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
 
         sql = "SELECT * FROM ng_words WHERE livestream_id = %s"
         c.execute(sql, [livestream_id])
-        ngwords = c.fetchall()
+        rows = c.fetchall()
+        if rows is None:
+            raise HttpException("failed to get NG words", INTERNAL_SERVER_ERROR)
+        ngwords = [models.NGWord(**row) for row in rows]
 
         # NGワードにヒットする過去の投稿も全削除する
         for ngword in ngwords:
             sql = "SELECT * FROM livecomments"
             c.execute(sql)
-            livecomments = c.fetchall()
-            if livecomments is None:
+            rows = c.fetchall()
+            if rows is None:
                 app.logger.warn("failed to get livecomments")
                 raise HttpException(
                     "failed to get livecomments",
                     INTERNAL_SERVER_ERROR,
                 )
+            livecomments = [models.LiveCommentModel(**row) for row in rows]
 
             for livecomment in livecomments:
                 # app.logger.info(f"delete: {livecomment}")
@@ -822,10 +858,8 @@ def moderate_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
                     (SELECT CONCAT('%%', %s, '%%')	AS pattern) AS patterns
                     ON texts.text LIKE patterns.pattern) >= 1;
                 """
-                c.execute(
-                    sql, [livecomment["id"], livecomment["comment"], ngword["word"]]
-                )
-        return {"word_id": word_id}, CREATED
+                c.execute(sql, [livecomment.id, livecomment.comment, ngword.word])
+        return asdict(models.ModerateResponse(word_id=word_id)), CREATED
     except DatabaseError as err:
         conn.rollback()
         raise err
@@ -844,10 +878,12 @@ def enter_livestream_handler(livestream_id: int) -> tuple[str, int]:
     if not user_id:
         raise HttpException("failed to find user-id from session", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "INSERT INTO livestream_viewers_history (user_id, livestream_id, created_at) VALUES(%s, %s, %s)"
         c.execute(sql, [user_id, livestream_id, int(datetime.now().timestamp())])
         return "", OK
@@ -868,10 +904,12 @@ def exit_livestream_handler(livestream_id: int) -> tuple[str, int]:
     if not user_id:
         raise HttpException("failed to find user-id from session", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "DELETE FROM livestream_viewers_history WHERE user_id = %s AND livestream_id = %s"
         c.execute(sql, [user_id, livestream_id])
         return "", OK
@@ -917,10 +955,12 @@ def register_handler() -> tuple[dict[str, Any], int]:
         password=hashed_password.decode(),
     )
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "INSERT INTO users (name, display_name, description, password) VALUES (%s,%s,%s,%s)"
         c.execute(
             sql,
@@ -975,10 +1015,12 @@ def login_handler() -> tuple[str, int]:
             BAD_REQUEST,
         )
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [req["username"]])
         row = c.fetchone()
@@ -993,7 +1035,6 @@ def login_handler() -> tuple[str, int]:
         session_id = str(uuid.uuid4())
 
         session[Settings.DEFAULT_SESSION_ID_KEY] = session_id
-        # FIXME: ユーザ名
         session[Settings.DEFAULT_USER_ID_KEY] = user.id
         session[Settings.DEFAULT_USER_NAME_KEY] = user.name
         session[Settings.DEFAULT_SESSION_EXPIRES_KEY] = int(session_end_at.timestamp())
@@ -1014,10 +1055,12 @@ def get_me_handler() -> tuple[dict[str, Any], int]:
     if not user_id:
         raise HttpException("unauthorized", UNAUTHORIZED)
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE id = %s"
         c.execute(sql, [user_id])
         row = c.fetchone()
@@ -1039,10 +1082,12 @@ def get_me_handler() -> tuple[dict[str, Any], int]:
 def get_user_handler(username: str) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -1067,10 +1112,12 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
     # ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
     # また、現在の合計視聴者数もだす
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
         row = c.fetchone()
@@ -1094,12 +1141,13 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
                 WHERE u.id = %s
                 """
             c.execute(sql, [user.id])
-            reactions = c.fetchone()
-            if not reactions:
+            row = c.fetchone()
+            if not row:
                 raise HttpException(
                     "failed to count reactions",
                     INTERNAL_SERVER_ERROR,
                 )
+            reactions = int(row["COUNT(*)"])
 
             sql = """
                 SELECT IFNULL(SUM(l2.tip), 0) FROM users u
@@ -1108,14 +1156,15 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
                 WHERE u.id = %s
                 """
             c.execute(sql, [user.id])
-            tips = c.fetchone()
-            if not tips:
+            row = c.fetchone()
+            if not row:
                 raise HttpException(
                     "failed to count tips",
                     INTERNAL_SERVER_ERROR,
                 )
+            tips = int(row["IFNULL(SUM(l2.tip), 0)"])
 
-            score = reactions["COUNT(*)"] + tips["IFNULL(SUM(l2.tip), 0)"]
+            score = reactions + tips
             ranking.append(models.UserRankingEntry(username=user.name, score=score))
         ranking = sorted(ranking, key=lambda x: x.score)
 
@@ -1136,13 +1185,13 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
             WHERE u.name = %s
         """
         c.execute(sql, [username])
-        total_reactions = c.fetchone()
-        if not total_reactions:
+        row = c.fetchone()
+        if not row:
             raise HttpException(
                 "failed to count total reactions",
                 INTERNAL_SERVER_ERROR,
             )
-        total_reactions = total_reactions["COUNT(*)"]
+        total_reactions = row["COUNT(*)"]
 
         # ライブコメント数、チップ合計
         total_livecomments = 0
@@ -1178,24 +1227,25 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
         for user in users:
             sql = "SELECT * FROM livestreams WHERE user_id = %s"
             c.execute(sql, [user.id])
-            livestreams = c.fetchall()
-            if livestreams is None:
+            rows = c.fetchall()
+            if rows is None:
                 app.logger.error("viewers_count")
                 raise HttpException(
                     "failed to get livestreams",
                     INTERNAL_SERVER_ERROR,
                 )
+            livestreams = [models.LiveStreamModel(**row) for row in rows]
 
             for livestream in livestreams:
                 sql = "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = %s"
-                c.execute(sql, [livestream["id"]])
+                c.execute(sql, [livestream.id])
                 cnt = c.fetchone()
                 if not cnt:
                     raise HttpException(
                         "failed to get livestream_view_history",
                         INTERNAL_SERVER_ERROR,
                     )
-                viewers_count += cnt["COUNT(*)"]
+                viewers_count += int(cnt["COUNT(*)"])
 
         # お気に入り絵文字
         sql = """
@@ -1205,15 +1255,15 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
             INNER JOIN reactions r ON r.livestream_id = l.id
             WHERE u.name = %s
             GROUP BY emoji_name
-            ORDER BY COUNT(*) DESC
+            ORDER BY COUNT(*) DESC, emoji_name DESC
             LIMIT 1
             """
         c.execute(sql, [username])
-        favorite_emoji = c.fetchone()
-        if not favorite_emoji:
+        row = c.fetchone()
+        if not row:
             favorite_emoji = ""
         else:
-            favorite_emoji = favorite_emoji["emoji_name"]
+            favorite_emoji = row["emoji_name"]
 
         statistics = models.UserStatistics(
             rank=rank,
@@ -1237,10 +1287,12 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 def get_icon_handler(username: str) -> Response:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
 
@@ -1288,10 +1340,12 @@ def post_icon_handler() -> tuple[dict[str, Any], int]:
         )
     new_icon = b64decode(req["image"])
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
+
         sql = "DELETE FROM icons WHERE user_id = %s"
         c.execute(sql, [user_id])
 
@@ -1314,7 +1368,8 @@ def post_icon_handler() -> tuple[dict[str, Any], int]:
 def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any], int]:
     verify_user_session()
 
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
@@ -1324,38 +1379,40 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
         row = c.fetchone()
         if row is None:
             raise HttpException("cannot get stats of not found livestream", BAD_REQUEST)
+        livestream = models.LiveStreamModel(**row)
 
         sql = "SELECT * FROM livestreams"
         c.execute(sql)
-        livestreams = c.fetchall()
-        if livestreams is None:
+        rows = c.fetchall()
+        if rows is None:
             raise HttpException("failed to get livestreams", INTERNAL_SERVER_ERROR)
+        livestreams = [models.LiveStreamModel(**row) for row in rows]
 
         # ランク算出
         ranking = []
         for livestream in livestreams:
             sql = "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON l.id = r.livestream_id WHERE l.id = %s"
-            c.execute(sql, [livestream_id])
-            reactions = c.fetchone()
-            if reactions is None:
+            c.execute(sql, [livestream.id])
+            row = c.fetchone()
+            if row is None:
                 raise HttpException(
                     "failed to get livestream",
                     INTERNAL_SERVER_ERROR,
                 )
-            reactions = reactions["COUNT(*)"]
+            reactions = int(row["COUNT(*)"])
 
             sql = "SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = %s"
-            c.execute(sql, [livestream_id])
-            total_tips = c.fetchone()
-            if total_tips is None:
+            c.execute(sql, [livestream.id])
+            row = c.fetchone()
+            if row is None:
                 raise HttpException("failed to count tips", INTERNAL_SERVER_ERROR)
-            total_tips = total_tips["IFNULL(SUM(l2.tip), 0)"]
+            total_tips = int(row["IFNULL(SUM(l2.tip), 0)"])
 
             score = reactions + total_tips
             ranking.append(
                 asdict(
                     models.LiveStreamRankingEntry(
-                        livestream_id=livestream["id"],
+                        livestream_id=livestream.id,
                         score=score,
                     )
                 )
@@ -1374,46 +1431,46 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
         # 視聴者数算出
         sql = "SELECT COUNT(*) FROM livestreams l INNER JOIN livestream_viewers_history h ON h.livestream_id = l.id WHERE l.id = %s"
         c.execute(sql, [livestream_id])
-        viewers_count = c.fetchone()
-        if viewers_count is None:
+        row = c.fetchone()
+        if row is None:
             raise HttpException(
                 "failed to get viewers_count",
                 INTERNAL_SERVER_ERROR,
             )
-        viewers_count = viewers_count["COUNT(*)"]
+        viewers_count = int(row["COUNT(*)"])
 
         # 最大チップ額
         sql = "SELECT IFNULL(MAX(tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l2.livestream_id = l.id WHERE l.id = %s"
         c.execute(sql, [livestream_id])
-        max_tip = c.fetchone()
-        if max_tip is None:
+        row = c.fetchone()
+        if row is None:
             raise HttpException(
                 "failed to get max_tip",
                 INTERNAL_SERVER_ERROR,
             )
-        max_tip = max_tip["IFNULL(MAX(tip), 0)"]
+        max_tip = int(row["IFNULL(MAX(tip), 0)"])
 
         # リアクション数
         sql = "SELECT COUNT(*) FROM livestreams l INNER JOIN reactions r ON r.livestream_id = l.id WHERE l.id = %s"
         c.execute(sql, [livestream_id])
-        total_reactions = c.fetchone()
-        if total_reactions is None:
+        row = c.fetchone()
+        if row is None:
             raise HttpException(
                 "failed to get total_reactions",
                 INTERNAL_SERVER_ERROR,
             )
-        total_reactions = total_reactions["COUNT(*)"]
+        total_reactions = int(row["COUNT(*)"])
 
         # スパム報告数
         sql = "SELECT COUNT(*) FROM livestreams l INNER JOIN livecomment_reports r ON r.livestream_id = l.id WHERE l.id = %s"
         c.execute(sql, [livestream_id])
-        total_reports = c.fetchone()
-        if total_reports is None:
+        row = c.fetchone()
+        if row is None:
             raise HttpException(
                 "failed to get total_reports",
                 INTERNAL_SERVER_ERROR,
             )
-        total_reports = total_reports["COUNT(*)"]
+        total_reports = int(row["COUNT(*)"])
 
         user_statistics = models.LiveStreamStatistics(
             rank=rank,
@@ -1434,16 +1491,17 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
 # 課金情報
 @app.route("/api/payment", methods=["GET"])
 def get_payment_result() -> tuple[dict[str, Any], int]:
-    conn = cnxpool.connect()
+    conn = engine.raw_connection()
+
     try:
         conn.start_transaction()
         c = conn.cursor(dictionary=True)
         sql = "SELECT IFNULL(SUM(tip), 0) AS sum_tip FROM livecomments"
         c.execute(sql)
-        total_tip = c.fetchone()
-        if not total_tip:
+        row = c.fetchone()
+        if not row:
             raise HttpException("failed to count total tip", INTERNAL_SERVER_ERROR)
-        return {"total_tip": total_tip}, OK
+        return asdict(models.PaymentResult(total_tip=row)), OK
     except DatabaseError as err:
         conn.rollback()
         raise err
@@ -1670,16 +1728,9 @@ if __name__ == "__main__":
         app.logger.critical("environ POWERDNS_SUBDOMAIN_ADDRESS must be provided")
         sys.exit(1)
 
-    global cnxpool
-    cnxpool = QueuePool(
-        lambda: mysql.connector.connect(
-            host=Settings.DB_HOST,
-            port=Settings.DB_PORT,
-            user=Settings.DB_USER,
-            password=Settings.DB_PASSWORD,
-            database=Settings.DB_NAME,
-        ),
-        pool_size=100,
+    global engine
+    engine = create_engine(
+        f"mysql+mysqlconnector://{Settings.DB_USER}:{Settings.DB_PASSWORD}@{Settings.DB_HOST}:{Settings.DB_PORT}/{Settings.DB_NAME}"
     )
     app.secret_key = Settings.SESSION_SECRET_KEY
     app.config["SESSION_COOKIE_DOMAIN"] = Settings.SESSION_COOKIE_DOMAIN

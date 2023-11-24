@@ -36,7 +36,7 @@
   become: true
   become_user: isucon
   shell:
-    cmd: /opt/xbuild/node-install v20.9.0 /home/isucon/local/node
+    cmd: /opt/xbuild/node-install v20.10.0 /home/isucon/local/node
 
 - name: Install Perl
   become: true

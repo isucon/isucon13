@@ -140,13 +140,16 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	}
 
 	var stdout, stderr bytes.Buffer
+	// 余裕みて3分
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
 	cmd := exec.CommandContext(ctx, executablePath, benchOptions...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	cmd.Cancel = func() error {
 		return cmd.Process.Signal(os.Interrupt)
 	}
-	cmd.WaitDelay = 1 * time.Minute
+	cmd.WaitDelay = 13 * time.Second
 
 	status := StatusSuccess
 
@@ -160,7 +163,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	select {
 	case <-ctx.Done():
-		NotifyWorkerErr(job, ctx.Err(), stdout.String(), stderr.String(), "ベンチマーカーの実行中context timeoutが発生 (StatusFailed)")
+		NotifyWorkerErr(job, ctx.Err(), stdout.String(), stderr.String(), "ベンチマーカーの実行がタイムアウトしました (StatusFailed)")
 		status = StatusTimeout
 	case err, ok := <-errCh:
 		if ok && err != nil {

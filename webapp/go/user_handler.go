@@ -327,11 +327,10 @@ func loginHandler(c echo.Context) error {
 
 	sess.Options = &sessions.Options{
 		Domain: "u.isucon.dev",
-		MaxAge: int(60000 /* 10 seconds */), // FIXME: 600
+		MaxAge: int(60000),
 		Path:   "/",
 	}
 	sess.Values[defaultSessionIDKey] = sessionID
-	// FIXME: ユーザ名
 	sess.Values[defaultUserIDKey] = userModel.ID
 	sess.Values[defaultUsernameKey] = userModel.Name
 	sess.Values[defaultSessionExpiresKey] = sessionEndAt.Unix()
