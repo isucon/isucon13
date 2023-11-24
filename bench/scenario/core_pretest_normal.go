@@ -451,7 +451,7 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		}
 		for i := 0; i < 5; i++ {
 			randNumber := rand.Intn(20) + 25
-			livestreamID := int64(scheduler.GetLivestreamLength() + len(reserveStreams) - randNumber)
+			livestreamID := int64(scheduler.GetLivestreamLength()+len(reserveStreams)-randNumber) + 1
 			if searchedStream[randNumber].ID != livestreamID {
 				return fmt.Errorf("タグ指定なし検索結果の%d番目のlivestream.idが一致しません (expected:%d actual:%d)", randNumber+1, livestreamID, searchedStream[randNumber].ID)
 			}
