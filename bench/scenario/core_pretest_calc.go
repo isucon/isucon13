@@ -114,10 +114,10 @@ func normalStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logger, d
 		return fmt.Errorf("配信 %d の総リアクション数が不正です: expected=%d, actual=%d", livestream.ID, beforeWantLiveStats.TotalReactions, beforeLiveStats.TotalReactions)
 	}
 	if beforeLiveStats.TotalReports != 0 {
-		return fmt.Errorf("ユーザ %s の総スパム報告数が不正です: expected=%d, actual=%d", streamer.Name, 0, beforeLiveStats.TotalReports)
+		return fmt.Errorf("配信 %d の総スパム報告数が不正です: expected=%d, actual=%d", livestream.ID, 0, beforeLiveStats.TotalReports)
 	}
 	if beforeLiveStats.ViewersCount != 0 {
-		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, 0, beforeLiveStats.ViewersCount)
+		return fmt.Errorf("配信 %d の総視聴者数が不正です: expected=%d, actual=%d", livestream.ID, 0, beforeLiveStats.ViewersCount)
 	}
 
 	// 操作
