@@ -98,11 +98,12 @@ func fetchAZName(ctx context.Context) (string, error) {
 	return azName, nil
 }
 
+// messagesの末尾からn行を結合して取得
 func joinN(messages []string, n int) string {
-	if len(messages) > n {
-		return strings.Join(messages[:n], ",\n")
+	if len(messages) <= n {
+		return strings.Join(messages, "\n")
 	}
-	return strings.Join(messages, ",\n")
+	return strings.Join(messages[len(messages)-n:], "\n")
 }
 
 func execBench(ctx context.Context, job *Job) (*Result, error) {
@@ -280,7 +281,7 @@ var supervise = cli.Command{
 		},
 		cli.IntFlag{
 			Name:        "message-limit",
-			Value:       2000,
+			Value:       200,
 			Destination: &messageLimit,
 			EnvVar:      "SUPERVISOR_MESSAGE_LIMIT",
 		},
