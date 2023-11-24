@@ -208,7 +208,7 @@ var run = cli.Command{
 
 		initializeResp, err := initClient.Initialize(ctx)
 		if err != nil {
-			dumpFailedResult([]string{"初期化が失敗しました"})
+			dumpFailedResult([]string{"初期化が失敗しました", err.Error()})
 			return nil
 		}
 		config.Language = initializeResp.Language
@@ -242,7 +242,7 @@ var run = cli.Command{
 		benchmarker := newBenchmarker(benchCtx, contestantLogger)
 		if err := benchmarker.run(benchCtx); err != nil {
 			lgr.Warnf("ベンチマーク中断: %s", err.Error())
-			dumpFailedResult([]string{"ベンチマーク走行が中断されました"})
+			dumpFailedResult([]string{"ベンチマーク走行が中断されました", err.Error()})
 			return nil
 		}
 
