@@ -67,13 +67,6 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
-	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: loginUser.Name,
-		Password: loginUser.RawPassword,
-	}); err != nil {
-		return err
-	}
-
 	userID := int64(1 + (rand.Int() % 10))
 	user, err := scheduler.UserScheduler.GetInitialUserForPretest(userID)
 	if err != nil {
