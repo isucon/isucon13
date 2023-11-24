@@ -14,5 +14,8 @@ Group=isucon
 ExecStart=/home/isucon/.x bundle exec puma --bind tcp://0.0.0.0:8080 --workers 8 --threads 0:8 --environment production
 ExecStop=/bin/kill -s QUIT $MAINPID
 
+Restart=on-failure
+RestartSec=5
+
 [Install]
 WantedBy=multi-user.target
