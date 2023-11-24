@@ -16,7 +16,7 @@ var PreTestUserName = "pretestuser"
 var PreTestUserPassword = "test"
 var PreTestDisplayName = "pretest user"
 
-var hiragana = []string{"あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ", "し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に", "ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ"}
+var hiragana = []string{"あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ", "し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に", "ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ", "ぱ", "ぴ", "ぷ", "ぺ", "ぽ", "が", "き", "ぐ", "げ", "ご", "エ", "モ", "ン", "タ"}
 
 func init() {
 	PreTestUserName = randstr.String(10)
