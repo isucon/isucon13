@@ -100,7 +100,8 @@ func powWeightSize(m int) int64 {
 
 func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmarker {
 	var weight int64 = int64(config.BaseParallelism)
-	contestantLogger.Info("負荷レベル", zap.Int64("level", weight))
+	// いま負荷レベルは固定値なので選手に見せる意味がない
+	// contestantLogger.Info("負荷レベル", zap.Int64("level", weight))
 
 	longStreamerClientPool := isupipe.NewClientPool(ctx)
 	streamerClientPool := isupipe.NewClientPool(ctx)
