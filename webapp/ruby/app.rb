@@ -902,7 +902,8 @@ module Isupipe
       # また、現在の合計視聴者数もだす
 
       stats = db_transaction do |tx|
-        unless tx.xquery('SELECT * FROM users WHERE name = ?', username).first
+        user = tx.xquery('SELECT * FROM users WHERE name = ?', username).first
+        unless user
           raise HttpError.new(400)
         end
 
@@ -943,12 +944,10 @@ module Isupipe
         # ライブコメント数、チップ合計
         total_livecomments = 0
         total_tip = 0
-        users.each do |user|
-          tx.xquery('SELECT * FROM livestreams WHERE user_id = ?', user.fetch(:id)).each do |livestream|
-            tx.xquery('SELECT * FROM livecomments WHERE livestream_id = ?', livestream.fetch(:id)).each do |livecomment|
-              total_tip += livecomment.fetch(:tip)
-              total_livecomments += 1
-            end
+        tx.xquery('SELECT * FROM livestreams WHERE user_id = ?', user.fetch(:id)).each do |livestream|
+          tx.xquery('SELECT * FROM livecomments WHERE livestream_id = ?', livestream.fetch(:id)).each do |livecomment|
+            total_tip += livecomment.fetch(:tip)
+            total_livecomments += 1
           end
         end
 

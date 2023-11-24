@@ -1824,7 +1824,7 @@ async fn get_user_statistics_handler(
 
     let mut tx = pool.begin().await?;
 
-    let _: UserModel = sqlx::query_as("SELECT * FROM users WHERE name = ?")
+    let user: UserModel = sqlx::query_as("SELECT * FROM users WHERE name = ?")
         .bind(&username)
         .fetch_optional(&mut *tx)
         .await?
@@ -1892,24 +1892,22 @@ async fn get_user_statistics_handler(
     // ライブコメント数、チップ合計
     let mut total_livecomments = 0;
     let mut total_tip = 0;
-    for user in &users {
-        let livestreams: Vec<LivestreamModel> =
-            sqlx::query_as("SELECT * FROM livestreams WHERE user_id = ?")
-                .bind(user.id)
+    let livestreams: Vec<LivestreamModel> =
+        sqlx::query_as("SELECT * FROM livestreams WHERE user_id = ?")
+            .bind(user.id)
+            .fetch_all(&mut *tx)
+            .await?;
+
+    for livestream in livestreams {
+        let livecomments: Vec<LivecommentModel> =
+            sqlx::query_as("SELECT * FROM livecomments WHERE livestream_id = ?")
+                .bind(livestream.id)
                 .fetch_all(&mut *tx)
                 .await?;
 
-        for livestream in livestreams {
-            let livecomments: Vec<LivecommentModel> =
-                sqlx::query_as("SELECT * FROM livecomments WHERE livestream_id = ?")
-                    .bind(livestream.id)
-                    .fetch_all(&mut *tx)
-                    .await?;
-
-            for livecomment in livecomments {
-                total_tip += livecomment.tip;
-                total_livecomments += 1;
-            }
+        for livecomment in livecomments {
+            total_tip += livecomment.tip;
+            total_livecomments += 1;
         }
     }
 

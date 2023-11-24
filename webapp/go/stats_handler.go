@@ -145,22 +145,20 @@ func getUserStatisticsHandler(c echo.Context) error {
 	// ライブコメント数、チップ合計
 	var totalLivecomments int64
 	var totalTip int64
-	for _, user := range users {
-		var livestreams []*LivestreamModel
-		if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestreams: "+err.Error())
+	var livestreams []*LivestreamModel
+	if err := tx.SelectContext(ctx, &livestreams, "SELECT * FROM livestreams WHERE user_id = ?", user.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livestreams: "+err.Error())
+	}
+
+	for _, livestream := range livestreams {
+		var livecomments []*LivecommentModel
+		if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestream.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livecomments: "+err.Error())
 		}
 
-		for _, livestream := range livestreams {
-			var livecomments []*LivecommentModel
-			if err := tx.SelectContext(ctx, &livecomments, "SELECT * FROM livecomments WHERE livestream_id = ?", livestream.ID); err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get livecomments: "+err.Error())
-			}
-
-			for _, livecomment := range livecomments {
-				totalTip += livecomment.Tip
-				totalLivecomments++
-			}
+		for _, livecomment := range livecomments {
+			totalTip += livecomment.Tip
+			totalLivecomments++
 		}
 	}
 

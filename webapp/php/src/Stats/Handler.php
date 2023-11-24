@@ -60,6 +60,7 @@ class Handler extends AbstractHandler
                 message: 'not found user that has the given username',
             );
         }
+        $user = $row;
 
         // ランク算出
         /** @var list<UserModel> $users */
@@ -162,46 +163,44 @@ class Handler extends AbstractHandler
         // ライブコメント数、チップ合計
         $totalLivecomments = 0;
         $totalTip = 0;
-        foreach ($users as $user) {
-            /** @var list<LivestreamModel> $livestreams */
-            $livestreams = [];
+        /** @var list<LivestreamModel> $livestreams */
+        $livestreams = [];
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
+            $stmt->bindValue(1, $user->id);
+            $stmt->execute();
+            while (($row = $stmt->fetch()) !== false) {
+                $livestreams[] = LivestreamModel::fromRow($row);
+            }
+        } catch (PDOException $e) {
+            throw new HttpInternalServerErrorException(
+                request: $request,
+                message: 'failed to get livestreams: ' . $e->getMessage(),
+                previous: $e,
+            );
+        }
+
+        foreach ($livestreams as $livestream) {
+            /** @var list<LivecommentModel> $livecomments */
+            $livecomments = [];
             try {
-                $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
-                $stmt->bindValue(1, $user->id);
+                $stmt = $this->db->prepare('SELECT * FROM livecomments WHERE livestream_id = ?');
+                $stmt->bindValue(1, $livestream->id);
                 $stmt->execute();
                 while (($row = $stmt->fetch()) !== false) {
-                    $livestreams[] = LivestreamModel::fromRow($row);
+                    $livecomments[] = LivecommentModel::fromRow($row);
                 }
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get livestreams: ' . $e->getMessage(),
+                    message: 'failed to get livecomments: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
 
-            foreach ($livestreams as $livestream) {
-                /** @var list<LivecommentModel> $livecomments */
-                $livecomments = [];
-                try {
-                    $stmt = $this->db->prepare('SELECT * FROM livecomments WHERE livestream_id = ?');
-                    $stmt->bindValue(1, $livestream->id);
-                    $stmt->execute();
-                    while (($row = $stmt->fetch()) !== false) {
-                        $livecomments[] = LivecommentModel::fromRow($row);
-                    }
-                } catch (PDOException $e) {
-                    throw new HttpInternalServerErrorException(
-                        request: $request,
-                        message: 'failed to get livecomments: ' . $e->getMessage(),
-                        previous: $e,
-                    );
-                }
-
-                foreach ($livecomments as $livecomment) {
-                    $totalTip += $livecomment->tip;
-                    $totalLivecomments++;
-                }
+            foreach ($livecomments as $livecomment) {
+                $totalTip += $livecomment->tip;
+                $totalLivecomments++;
             }
         }
 

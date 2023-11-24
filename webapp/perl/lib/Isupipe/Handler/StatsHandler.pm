@@ -102,24 +102,22 @@ sub get_user_statistics_handler($app, $c) {
     # ライブコメント数、チップ合計
     my $total_livecomments = 0;
     my $total_tip = 0;
-    for my $user ($users->@*) {
-        my $livestreams = $app->dbh->select_all_as(
-            'Isupipe::Entity::Livestream',
-            'SELECT * FROM livestreams WHERE user_id = ?',
-            $user->id,
+    my $livestreams = $app->dbh->select_all_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE user_id = ?',
+        $selected_user->id,
+    );
+
+    for my $livestream ($livestreams->@*) {
+        my $livecomments = $app->dbh->select_all_as(
+            'Isupipe::Entity::Livecomment',
+            'SELECT * FROM livecomments WHERE livestream_id = ?',
+            $livestream->id,
         );
 
-        for my $livestream ($livestreams->@*) {
-            my $livecomments = $app->dbh->select_all_as(
-                'Isupipe::Entity::Livecomment',
-                'SELECT * FROM livecomments WHERE livestream_id = ?',
-                $livestream->id,
-            );
-
-            for my $livecomment ($livecomments->@*) {
-                $total_tip += $livecomment->tip;
-                $total_livecomments++;
-            }
+        for my $livecomment ($livecomments->@*) {
+            $total_tip += $livecomment->tip;
+            $total_livecomments++;
         }
     }
 
