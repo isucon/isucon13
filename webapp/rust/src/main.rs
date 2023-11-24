@@ -1766,8 +1766,8 @@ struct UserStatistics {
 }
 
 #[derive(Debug)]
-struct UserRankingEntry<'a> {
-    username: &'a str,
+struct UserRankingEntry {
+    username: String,
     score: i64,
 }
 
@@ -1836,7 +1836,7 @@ async fn get_user_statistics_handler(
         .await?;
 
     let mut ranking = Vec::new();
-    for user in &users {
+    for user in users {
         let query = r#"
         SELECT COUNT(*) FROM users u
         INNER JOIN livestreams l ON l.user_id = u.id
@@ -1861,14 +1861,14 @@ async fn get_user_statistics_handler(
 
         let score = reactions + tips;
         ranking.push(UserRankingEntry {
-            username: &user.name,
+            username: user.name,
             score,
         });
     }
     ranking.sort_by(|a, b| {
         a.score
             .cmp(&b.score)
-            .then_with(|| a.username.cmp(b.username))
+            .then_with(|| a.username.cmp(&b.username))
     });
 
     let rpos = ranking
@@ -1898,7 +1898,7 @@ async fn get_user_statistics_handler(
             .fetch_all(&mut *tx)
             .await?;
 
-    for livestream in livestreams {
+    for livestream in &livestreams {
         let livecomments: Vec<LivecommentModel> =
             sqlx::query_as("SELECT * FROM livecomments WHERE livestream_id = ?")
                 .bind(livestream.id)
