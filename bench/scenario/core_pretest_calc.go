@@ -102,13 +102,13 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 	if stats1.Rank != userRank {
-		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", userRank, stats1.Rank)
+		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", user.Name, userRank, stats1.Rank)
 	}
 
 	favoriteEmoji, ok := wantStats1.FavoriteEmoji()
 	if ok {
 		if stats1.FavoriteEmoji != favoriteEmoji {
-			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", favoriteEmoji, stats1.FavoriteEmoji)
+			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", user.Name, favoriteEmoji, stats1.FavoriteEmoji)
 		}
 	}
 
