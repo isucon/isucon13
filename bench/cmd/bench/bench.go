@@ -299,6 +299,9 @@ var run = cli.Command{
 		var msgs []string
 		lgr.Info("シナリオカウンタを出力します")
 		scenarioCounter := benchmarker.ScenarioCounter()
+		if count, ok := scenarioCounter[BasicViewerScenario]; ok {
+			contestantLogger.Info("配信を最後まで視聴できた視聴者数", zap.Int64("viewers", count))
+		}
 
 		var scenarioLogs []string
 		for name, count := range scenarioCounter {

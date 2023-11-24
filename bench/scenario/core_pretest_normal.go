@@ -599,7 +599,7 @@ func NormalPostLivecommentPretest(ctx context.Context, contestantLogger *zap.Log
 		return fmt.Errorf("投稿したライブコメントが見つかりません")
 	}
 
-	if err := client.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomments[0].ID); err != nil {
+	if err := client.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomments[0].ID, isupipe.WithValidateReportLivecomment()); err != nil {
 		return err
 	}
 
@@ -747,7 +747,7 @@ func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.L
 		return err
 	}
 
-	if err := reporterClient.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.ID); err != nil {
+	if err := reporterClient.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.ID, isupipe.WithValidateReportLivecomment()); err != nil {
 		return err
 	}
 

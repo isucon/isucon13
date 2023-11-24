@@ -69,7 +69,6 @@ type benchmarker struct {
 	contestantLogger *zap.Logger
 
 	streamerSem      *semaphore.Weighted
-	longStreamerSem  *semaphore.Weighted
 	moderatorSem     *semaphore.Weighted
 	viewerSem        *semaphore.Weighted
 	viewerReportSem  *semaphore.Weighted
@@ -124,7 +123,6 @@ func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmar
 	return &benchmarker{
 		contestantLogger:       contestantLogger,
 		streamerSem:            semaphore.NewWeighted(weight),
-		longStreamerSem:        semaphore.NewWeighted(weight),
 		moderatorSem:           semaphore.NewWeighted(weight),
 		viewerSem:              semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
 		viewerReportSem:        semaphore.NewWeighted(weight),
@@ -278,12 +276,6 @@ func (b *benchmarker) loadStreamer(ctx context.Context) error {
 	return nil
 }
 
-func (b *benchmarker) loadLongStreamer(ctx context.Context) error {
-	defer b.longStreamerSem.Release(1)
-
-	return nil
-}
-
 // moderateが成功するなら可能な限り高速にmoderationしなければならない
 func (b *benchmarker) loadModerator(ctx context.Context) error {
 	defer b.moderatorSem.Release(1)
@@ -396,13 +388,6 @@ func (b *benchmarker) run(ctx context.Context) error {
 				go func() {
 					defer wg.Done()
 					b.loadViewerReport(childCtx)
-				}()
-			}
-			if ok := b.longStreamerSem.TryAcquire(1); ok {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					b.loadLongStreamer(childCtx)
 				}()
 			}
 			if ok := b.moderatorSem.TryAcquire(1); ok {
