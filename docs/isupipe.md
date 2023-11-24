@@ -1,6 +1,7 @@
 
 # ISUPipe アプリケーションマニュアル
 
+[ISUCON13 当日マニュアル](https://gist.github.com/kazeburo/bccc2d2b2b9dc307b5640ae855f3e0bf) も合わせて確認してください。
 
 ## ISUPipeとは
 
