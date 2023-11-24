@@ -1123,7 +1123,6 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
         user = c.fetchone()
         if user is None:
             raise HttpException("not found user that has the given username", NOT_FOUND)
-        user = row
 
         # ランク算出
         sql = "SELECT * FROM users"
