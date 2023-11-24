@@ -129,7 +129,7 @@ func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Log
 			Name:        name,
 			DisplayName: name,
 			Description: name,
-			Password:    "test",
+			Password:    "RpKpi+rhqo0Rb2fTXUpQN",
 			Theme: isupipe.Theme{
 				DarkMode: true,
 			},
@@ -139,7 +139,7 @@ func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Log
 		}
 		if err := overflowClient.Login(ctx, &isupipe.LoginRequest{
 			Username: overflowUser.Name,
-			Password: "test",
+			Password: "RpKpi+rhqo0Rb2fTXUpQN",
 		}); err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func assertReserveOutOfTerm(ctx context.Context, contestantLogger *zap.Logger, t
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: testUser.Name,
-		Password: "test",
+		Password: defaultPasswordOrPretest(testUser.Name),
 	}); err != nil {
 		return err
 	}

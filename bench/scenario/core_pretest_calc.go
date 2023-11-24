@@ -61,7 +61,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		Name:        "user-stats-calc",
 		DisplayName: "user-stats-calc",
 		Description: "user-stats-calc",
-		Password:    "test",
+		Password:    "f40dS9rXQmc8b1C49h69F",
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -72,7 +72,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: "user-stats-calc",
-		Password: "test",
+		Password: "f40dS9rXQmc8b1C49h69F",
 	}); err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 			Name:        name,
 			DisplayName: name,
 			Description: name,
-			Password:    "test",
+			Password:    "VogsxgG3CFVeQvT254N",
 			Theme: isupipe.Theme{
 				DarkMode: true,
 			},
@@ -110,7 +110,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 
 		if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
 			Username: viewer.Name,
-			Password: "test",
+			Password: "VogsxgG3CFVeQvT254N",
 		}); err != nil {
 			return err
 		}
@@ -146,7 +146,7 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 		Name:        "livestream-stats-calc",
 		DisplayName: "livestream-stats-calc",
 		Description: "livestream-stats-calc",
-		Password:    "test",
+		Password:    "v9VzSJXQPInaf4UbLhA",
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},

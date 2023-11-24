@@ -2,15 +2,37 @@ package scenario
 
 import (
 	"context"
+	"math/rand"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/najeira/randstr"
 	"go.uber.org/zap"
 )
 
-const testUserRawPassword = "s3cr3t"
+var PreTestUserName = "pretestuser"
+var PreTestUserPassword = "test"
+var PreTestDisplayName = "pretest user"
+
+var hiragana = []string{"あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ", "し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に", "ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ"}
+
+func init() {
+	PreTestUserName = randstr.String(10)
+	PreTestUserPassword = randstr.String(13)
+	PreTestDisplayName = ""
+	for i := 0; i < 7; i++ {
+		PreTestDisplayName += hiragana[rand.Intn(len(hiragana))]
+	}
+}
+
+func defaultPasswordOrPretest(name string) string {
+	if name == PreTestUserName {
+		return PreTestUserPassword
+	}
+	return "test"
+}
 
 func setupTestUser(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) (*isupipe.User, error) {
 	client, err := isupipe.NewCustomResolverClient(
@@ -23,10 +45,10 @@ func setupTestUser(ctx context.Context, contestantLogger *zap.Logger, dnsResolve
 	}
 
 	user, err := client.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "pretestuser",
-		Password:    "test",
-		DisplayName: "pretest user",
-		Description: "this is a pre test user",
+		Name:        PreTestUserName,
+		Password:    PreTestUserPassword,
+		DisplayName: PreTestDisplayName,
+		Description: "普段アーティストをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://chiyonakamura.example.com/\nメールアドレス: chiyonakamura@example.com\n",
 	})
 	if err != nil {
 		return nil, err
