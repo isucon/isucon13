@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -159,11 +160,21 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		return err
 	}
 
+	if len(tagResponse.Tags) != scheduler.GetTagPoolLength() {
+		return fmt.Errorf("取得した tag 一覧の数が正しくありません (expected:%d actual:%d)", scheduler.GetTagPoolLength(), len(tagResponse.Tags))
+	}
+
 	tagNames := map[int64]string{}
 	pretestTags := map[int64]int{}
 	for _, tag := range tagResponse.Tags {
 		tagNames[tag.ID] = tag.Name
 		pretestTags[tag.ID] = 0
+	}
+
+	// 全部のタグを検査
+	poolTags := scheduler.GetTagsMap()
+	if !reflect.DeepEqual(tagNames, poolTags) {
+		return fmt.Errorf("取得した tag 一覧が正しくありません。過不足があります")
 	}
 
 	tags := []int64{1, 103}
