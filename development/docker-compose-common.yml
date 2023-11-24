@@ -1,4 +1,4 @@
-version: '3.0'
+version: "3.0"
 
 services:
   nginx:
@@ -6,6 +6,7 @@ services:
     container_name: nginx
     volumes:
       - ./etc/nginx/conf.d:/etc/nginx/conf.d
+      - /home/isucon/webapp/public/:/home/isucon/webapp/public/
     ports:
       - 127.0.0.1:8443:80
     depends_on:
@@ -42,7 +43,7 @@ services:
     volumes:
       - powerdns_volume:/var/lib/powerdns
       # NOTE: gsqlite3バックエンドを読み込もうとするので、これを上書きしてしまう
-      # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/Dockerfile-auth#L88 
+      # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/Dockerfile-auth#L88
       # https://github.com/PowerDNS/pdns/blob/8cbe7d8e3c44f87b986a6f88cda98c3a0d943026/dockerdata/pdns.conf#L3
       - ../provisioning/ansible/roles/powerdns/files/pdns.conf:/etc/powerdns/pdns.conf:ro
       - ../provisioning/ansible/roles/powerdns/files/pdns.d/docker.conf:/etc/powerdns/pdns.d/docker.conf:ro
