@@ -140,7 +140,8 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	// 余裕みて3分
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, executablePath, benchOptions...)
 	cmd.Stdout = &stdout
