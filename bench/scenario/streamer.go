@@ -94,7 +94,8 @@ func BasicStreamerColdReserveScenario(
 	scheduler.ReservationSched.CommitReservation(reservation)
 
 	livestreamPool.Put(ctx, livestream)
-	contestantLogger.Info("配信を予約しました", zap.String("streamer", livestream.Owner.Name), zap.String("title", livestream.Title), zap.Int("duration_hours", livestream.Hours()))
+	// ログ削減
+	// contestantLogger.Info("配信を予約しました", zap.String("streamer", livestream.Owner.Name), zap.String("title", livestream.Title), zap.Int("duration_hours", livestream.Hours()))
 
 	return nil
 }
