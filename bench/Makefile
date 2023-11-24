@@ -33,13 +33,13 @@ pretest: build
 
 docker_image:
 	sudo aws ecr get-login-password --region ap-northeast-1 | sudo docker login --username AWS --password-stdin 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com
-	sudo docker build -t isucon13-benchmarker . --no-cache
+	sudo docker build -f Dockerfile.dev -t isucon13-benchmarker . --no-cache
 	sudo docker tag isucon13-benchmarker:latest 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com/isucon13-benchmarker:latest
 	sudo docker push 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com/isucon13-benchmarker:latest
 
 docker_image_prod:
 	sudo aws ecr get-login-password --region ap-northeast-1 | sudo docker login --username AWS --password-stdin 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com
-	sudo docker build -t isucon13-benchmarker-prod . --no-cache
+	sudo docker build -f Dockerfile.prod -t isucon13-benchmarker-prod . --no-cache
 	sudo docker tag isucon13-benchmarker-prod:latest 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com/isucon13-benchmarker-prod:latest
 	sudo docker push 424484851194.dkr.ecr.ap-northeast-1.amazonaws.com/isucon13-benchmarker-prod:latest
 
