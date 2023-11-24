@@ -95,7 +95,7 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 	benchscore.IncResolves()
 
 	if in.Rcode != dns.RcodeSuccess {
-		return nil, fmt.Errorf("failed to resolve %s with rcode=%d", addr, in.Rcode)
+		return nil, fmt.Errorf("「%s」の名前解決に失敗しました (rcode=%d)", addr, in.Rcode)
 	}
 
 	// webappsに含まれるかどうか
@@ -103,7 +103,7 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 		if record, ok := ans.(*dns.A); ok {
 			if !config.IsWebappIP(record.A) {
 				// webappsにないものが返ってきた
-				return nil, fmt.Errorf("failed to resolve %s. %s is not in the server list", addr, record.A.String())
+				return nil, fmt.Errorf("「%s」の名前解決に失敗しました。「%s」はサーバーリストに含まれていません", addr, record.A.String())
 			}
 		}
 	}
@@ -120,7 +120,7 @@ func (r *DNSResolver) Lookup(ctx context.Context, network, addr string) (net.IP,
 		}
 	}
 
-	return nil, fmt.Errorf("failed to resolve %s: not A record in response", addr)
+	return nil, fmt.Errorf("「%s」の名前解決に失敗しました。レスポンスにAレコードが含まれていません", addr)
 }
 
 func (r *DNSResolver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
