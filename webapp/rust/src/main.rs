@@ -1451,8 +1451,6 @@ async fn get_icon_handler(
 ) -> Result<axum::response::Response, Error> {
     use axum::response::IntoResponse as _;
 
-    verify_user_session(&jar).await?;
-
     let mut tx = pool.begin().await?;
 
     let user: UserModel = sqlx::query_as("SELECT * FROM users WHERE name = ?")

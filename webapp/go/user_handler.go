@@ -90,11 +90,6 @@ func getIconHandler(c echo.Context) error {
 
 	username := c.Param("username")
 
-	if err := verifyUserSession(c); err != nil {
-		// echo.NewHTTPErrorが返っているのでそのまま出力
-		return err
-	}
-
 	tx, err := dbConn.BeginTxx(ctx, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to begin transaction: "+err.Error())
