@@ -9,6 +9,7 @@ deps:
 	yarn
 
 js_build:
+	rm -rf $(ROOT_DIR)/dist
 	yarn build
 
 hash:
