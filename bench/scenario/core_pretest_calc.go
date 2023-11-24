@@ -73,8 +73,8 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: name,
-		Password: passwd,
+		Username: "user-stats-calc",
+		Password: "test",
 	}); err != nil {
 		return err
 	}
