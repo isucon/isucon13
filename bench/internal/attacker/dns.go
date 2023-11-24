@@ -84,6 +84,7 @@ func (a *DnsWaterTortureAttacker) Attack(ctx context.Context, httpClient *http.C
 	for i := 0; i < numOfLabel; i++ {
 		length := 10 + rand.Intn(maxLength)
 		randString(buf, length)
+		buf.WriteByte('0')
 		buf.WriteByte('.')
 	}
 	buf.WriteString(zone)
