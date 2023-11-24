@@ -65,7 +65,8 @@ func BasicViewerScenario(
 
 	// NOTE: 配信者のプロフィールが気になる人が一定数いる
 	if n%10 == 0 {
-		contestantLogger.Info("視聴者が配信者のプロフィールに関心を持ち、訪問しようとしています", zap.String("viewer", username), zap.String("streamer", livestream.Owner.Name))
+		// ログ削減
+		// contestantLogger.Info("視聴者が配信者のプロフィールに関心を持ち、訪問しようとしています", zap.String("viewer", username), zap.String("streamer", livestream.Owner.Name))
 		lgr.Info("visit user profile")
 		if err := VisitUserProfile(ctx, contestantLogger, client, &livestream.Owner); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			lgr.Warnf("view: failed to visit user profile: %s\n", err.Error())
@@ -87,7 +88,8 @@ func BasicViewerScenario(
 		}
 	}
 
-	contestantLogger.Info("視聴を開始しました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
+	// ログ削減
+	// contestantLogger.Info("視聴を開始しました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
 	for hour := 1; hour <= livestream.Hours(); hour++ {
 		if comments, err := client.GetLivecomments(ctx, livestream.ID, livestream.Owner.Name); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			lgr.Warnf("view: failed to get livecomments: %s\n", err.Error())
@@ -127,7 +129,8 @@ func BasicViewerScenario(
 			continue
 		}
 	}
-	contestantLogger.Info("視聴者が配信を最後まで視聴できました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
+	// ログ削減
+	// contestantLogger.Info("視聴者が配信を最後まで視聴できました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
 
 	if err := LeaveFromLivestream(ctx, contestantLogger, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 		lgr.Warnf("view: failed to leave from livestream: %s\n", err.Error())

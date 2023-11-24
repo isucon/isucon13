@@ -262,7 +262,6 @@ loop:
 			break loop
 		}
 	}
-	b.contestantLogger.Info("DNS水責め負荷が上昇します ///")
 }
 
 func (b *benchmarker) loadStreamer(ctx context.Context) error {
