@@ -46,7 +46,7 @@ class Handler extends AbstractHandler
             $stmt = $this->db->prepare('SELECT * FROM users WHERE name = ?');
             $stmt->bindValue(1, $username);
             $stmt->execute();
-            $stat_target_user = $stmt->fetch();
+            $row = $stmt->fetch();
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
@@ -54,12 +54,13 @@ class Handler extends AbstractHandler
                 previous: $e,
             );
         }
-        if ($stat_target_user === false) {
+        if ($row === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'not found user that has the given username',
             );
         }
+        $userModel = UserModel::fromRow($row);
 
         // ランク算出
         /** @var list<UserModel> $users */
@@ -166,7 +167,7 @@ class Handler extends AbstractHandler
         $livestreams = [];
         try {
             $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
-            $stmt->bindValue(1, $stat_target_user->id);
+            $stmt->bindValue(1, $userModel->id);
             $stmt->execute();
             while (($row = $stmt->fetch()) !== false) {
                 $livestreams[] = LivestreamModel::fromRow($row);
