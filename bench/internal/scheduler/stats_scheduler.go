@@ -148,7 +148,7 @@ func (s *StatsScheduler) AddLivestream(livestreamID int64) {
 	s.livestreamStatsMu.Lock()
 	defer s.livestreamStatsMu.Unlock()
 
-	s.livestreamStats[livestreamID] = new(LivestreamStats)
+	s.livestreamStats[livestreamID] = NewLivestreamStats(livestreamID)
 }
 
 func (s *StatsScheduler) loadInitialData() error {
@@ -159,7 +159,7 @@ func (s *StatsScheduler) loadInitialData() error {
 	// ライブ配信初期化
 	var i int64 = 1
 	for ; i <= int64(len(initialReservationPool)); i++ {
-		s.livestreamStats[i] = new(LivestreamStats)
+		s.livestreamStats[i] = NewLivestreamStats(i)
 	}
 
 	// リアクション追加
