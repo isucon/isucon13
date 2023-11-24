@@ -20,15 +20,17 @@ sub get_user_statistics_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $username = $c->args->{username};
+    # ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
+    # また、現在の合計視聴者数もだす
 
     my $txn = $app->dbh->txn_scope;
 
-    my $selected_user = $app->dbh->select_row_as(
+    my $user = $app->dbh->select_row_as(
         'Isupipe::Entity::User',
         'SELECT * FROM users WHERE name = ?',
         $username,
     );
-    unless ($selected_user) {
+    unless ($user) {
         $c->halt(HTTP_NOT_FOUND, 'not found user that has the given username');
     }
 
@@ -105,7 +107,7 @@ sub get_user_statistics_handler($app, $c) {
     my $livestreams = $app->dbh->select_all_as(
         'Isupipe::Entity::Livestream',
         'SELECT * FROM livestreams WHERE user_id = ?',
-        $selected_user->id,
+        $user->id,
     );
 
     for my $livestream ($livestreams->@*) {
