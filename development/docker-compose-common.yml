@@ -6,7 +6,7 @@ services:
     container_name: nginx
     volumes:
       - ./etc/nginx/conf.d:/etc/nginx/conf.d
-      - /home/isucon/webapp/public/:/home/isucon/webapp/public/
+      - ../frontend/dist/:/home/isucon/webapp/public/
     ports:
       - 127.0.0.1:8443:80
     depends_on:
