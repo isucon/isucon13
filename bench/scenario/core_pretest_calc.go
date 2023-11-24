@@ -49,15 +49,6 @@ func normalPaymentCalcPretest(ctx context.Context, contestantLogger *zap.Logger,
 
 // ユーザ統計の計算処理がきちんとできているか
 func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
-	client, err := isupipe.NewCustomResolverClient(
-		contestantLogger,
-		dnsResolver,
-		agent.WithTimeout(config.PretestTimeout),
-	)
-	if err != nil {
-		return err
-	}
-
 	streamerID := int64(1 + (rand.Int() % 10))
 	streamer, err := scheduler.UserScheduler.GetInitialUserForPretest(streamerID)
 	if err != nil {
@@ -98,7 +89,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	scheduler.StatsSched.AddLivestream(livestream.ID)
 	scheduler.ReservationSched.CommitReservation(coldReservation)
 
-	stats1, err := client.GetUserStatistics(ctx, streamer.Name)
+	stats1, err := streamerClient.GetUserStatistics(ctx, streamer.Name)
 	if err != nil {
 		return err
 	}
@@ -128,7 +119,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	if stats1.ViewersCount != 0 {
 		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalLivecomments, userStats1.TotalLivecomments)
 	}
-	liveStats1, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
+	liveStats1, err := streamerClient.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
@@ -200,7 +191,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		}
 	}
 
-	stats2, err := client.GetUserStatistics(ctx, streamer.Name)
+	stats2, err := streamerClient.GetUserStatistics(ctx, streamer.Name)
 	if err != nil {
 		return err
 	}
@@ -230,7 +221,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	if stats2.ViewersCount != userStats2.TotalViewers {
 		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, stats2.TotalLivecomments, userStats2.TotalLivecomments)
 	}
-	liveStats2, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
+	liveStats2, err := streamerClient.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
 	if err != nil {
 		return err
 	}
