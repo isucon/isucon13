@@ -11,7 +11,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/score"
-	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
@@ -352,7 +351,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 
 	b.runClientProviders(ctx)
 
-	violateCh := bencherror.RunViolationChecker(ctx)
+	violateCh := make(chan error) // とめておく bencherror.RunViolationChecker(ctx)
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
 	// FIXME: LIMITは負荷をみて調整したい

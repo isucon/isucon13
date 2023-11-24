@@ -93,9 +93,12 @@ func BasicViewerScenario(
 			lgr.Warnf("view: failed to get livecomments: %s\n", err.Error())
 			continue
 		} else {
-			for _, comment := range comments {
+			for i, comment := range comments {
 				client.GetIcon(ctx, comment.User.Name, isupipe.WithETag(comment.User.IconHash))
 				// icon取得はエラーになっても気にしない
+				if i > 10 { // 全部取ると多すぎるので10件まで
+					break
+				}
 			}
 		}
 
