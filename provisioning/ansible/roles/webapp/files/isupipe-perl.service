@@ -13,5 +13,7 @@ Group=isucon
 ExecStart=/home/isucon/.x ./local/bin/plackup -s Starlet -p 8080 -Ilib app.psgi
 ExecStop=/bin/kill -s QUIT $MAINPID
 
+Restart=on-failure
+
 [Install]
 WantedBy=multi-user.target

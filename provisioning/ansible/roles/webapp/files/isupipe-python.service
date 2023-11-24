@@ -13,5 +13,8 @@ Group=isucon
 ExecStart=/home/isucon/.x pipenv run python app.py
 ExecStop=/bin/kill -s QUIT $MAINPID
 
+Restart=on-failure
+RestartSec=5
+
 [Install]
 WantedBy=multi-user.target
