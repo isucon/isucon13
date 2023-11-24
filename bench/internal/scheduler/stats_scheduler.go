@@ -86,7 +86,11 @@ func (s *UserStats) FavoriteEmoji() (string, bool) {
 }
 
 func (s *UserStats) Score() int64 {
-	return int64(len(s.reactions)) + s.TotalTips
+	var totalReactions int64
+	for _, count := range s.reactions {
+		totalReactions += count
+	}
+	return totalReactions + s.TotalTips
 }
 
 type LivestreamStatsRanking []*LivestreamStats
