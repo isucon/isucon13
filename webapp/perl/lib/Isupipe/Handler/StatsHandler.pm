@@ -123,20 +123,13 @@ sub get_user_statistics_handler($app, $c) {
 
     # 合計視聴者数
     my $viewers_count = 0;
-    for my $user ($users->@*) {
-        my $livestreams = $app->dbh->select_all_as(
-            'Isupipe::Entity::Livestream',
-            'SELECT * FROM livestreams WHERE user_id = ?',
-            $user->id,
-        );
 
-        for my $livestream ($livestreams->@*) {
-            my $cnt = $app->dbh->select_one(
-                'SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?',
-                $livestream->id,
-            );
-            $viewers_count += $cnt;
-        }
+    for my $livestream ($user_livestreams->@*) {
+        my $cnt = $app->dbh->select_one(
+            'SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?',
+            $livestream->id,
+        );
+        $viewers_count += $cnt;
     }
 
     # お気に入り絵文字

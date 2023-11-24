@@ -907,7 +907,7 @@ module Isupipe
           raise HttpError.new(400)
         end
 
-	# ランク算出
+        # ランク算出
         users = tx.xquery('SELECT * FROM users').to_a
 
         ranking = users.map do |user|
@@ -944,7 +944,8 @@ module Isupipe
         # ライブコメント数、チップ合計
         total_livecomments = 0
         total_tip = 0
-        tx.xquery('SELECT * FROM livestreams WHERE user_id = ?', user.fetch(:id)).each do |livestream|
+        livestreams = tx.xquery('SELECT * FROM livestreams WHERE user_id = ?', user.fetch(:id))
+        livestreams.each do |livestream|
           tx.xquery('SELECT * FROM livecomments WHERE livestream_id = ?', livestream.fetch(:id)).each do |livecomment|
             total_tip += livecomment.fetch(:tip)
             total_livecomments += 1
@@ -953,14 +954,12 @@ module Isupipe
 
         # 合計視聴者数
         viewers_count = 0
-        users.each do |user|
-          tx.xquery('SELECT * FROM livestreams WHERE user_id = ?', user.fetch(:id)).each do |livestream|
-            cnt = tx.xquery('SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?', livestream.fetch(:id), as: :array).first[0]
-            viewers_count += cnt
-          end
+        livestreams.each do |livestream|
+          cnt = tx.xquery('SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?', livestream.fetch(:id), as: :array).first[0]
+          viewers_count += cnt
         end
 
-	# お気に入り絵文字
+        # お気に入り絵文字
         favorite_emoji = tx.xquery(<<~SQL, username).first&.fetch(:emoji_name)
           SELECT r.emoji_name
           FROM users u

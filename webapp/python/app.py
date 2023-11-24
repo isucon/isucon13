@@ -1120,8 +1120,8 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
-        row = c.fetchone()
-        if row is None:
+        user = c.fetchone()
+        if user is None:
             raise HttpException("not found user that has the given username", NOT_FOUND)
         user = row
 
@@ -1224,28 +1224,17 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 
         # 合計視聴者数
         viewers_count = 0
-        for user in users:
-            sql = "SELECT * FROM livestreams WHERE user_id = %s"
-            c.execute(sql, [user.id])
-            rows = c.fetchall()
-            if rows is None:
-                app.logger.error("viewers_count")
+
+        for livestream in livestreams:
+            sql = "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = %s"
+            c.execute(sql, [livestream.id])
+            cnt = c.fetchone()
+            if not cnt:
                 raise HttpException(
-                    "failed to get livestreams",
+                    "failed to get livestream_view_history",
                     INTERNAL_SERVER_ERROR,
                 )
-            livestreams = [models.LiveStreamModel(**row) for row in rows]
-
-            for livestream in livestreams:
-                sql = "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = %s"
-                c.execute(sql, [livestream.id])
-                cnt = c.fetchone()
-                if not cnt:
-                    raise HttpException(
-                        "failed to get livestream_view_history",
-                        INTERNAL_SERVER_ERROR,
-                    )
-                viewers_count += int(cnt["COUNT(*)"])
+            viewers_count += int(cnt["COUNT(*)"])
 
         # お気に入り絵文字
         sql = """

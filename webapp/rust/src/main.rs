@@ -1913,21 +1913,14 @@ async fn get_user_statistics_handler(
 
     // 合計視聴者数
     let mut viewers_count = 0;
-    for user in users {
-        let livestreams: Vec<LivestreamModel> =
-            sqlx::query_as("SELECT * FROM livestreams WHERE user_id = ?")
-                .bind(user.id)
-                .fetch_all(&mut *tx)
-                .await?;
-        for livestream in livestreams {
-            let MysqlDecimal(cnt) = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?",
-            )
-            .bind(livestream.id)
-            .fetch_one(&mut *tx)
-            .await?;
-            viewers_count += cnt;
-        }
+    for livestream in livestreams {
+        let MysqlDecimal(cnt) = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?",
+        )
+        .bind(livestream.id)
+        .fetch_one(&mut *tx)
+        .await?;
+        viewers_count += cnt;
     }
 
     // お気に入り絵文字

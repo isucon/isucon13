@@ -206,40 +206,22 @@ class Handler extends AbstractHandler
 
         // 合計視聴者数
         $viewersCount = 0;
-        foreach ($users as $user) {
-            /** @var list<LivestreamModel> $livestreams */
-            $livestreams = [];
+
+        foreach ($livestreams as $livestream) {
             try {
-                $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
-                $stmt->bindValue(1, $user->id);
+                $stmt = $this->db->prepare('SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?');
+                $stmt->bindValue(1, $livestream->id);
                 $stmt->execute();
-                while (($row = $stmt->fetch()) !== false) {
-                    $livestreams[] = LivestreamModel::fromRow($row);
-                }
+                $cnt = $stmt->fetchColumn();
+                assert(is_int($cnt));
             } catch (PDOException $e) {
                 throw new HttpInternalServerErrorException(
                     request: $request,
-                    message: 'failed to get livestreams: ' . $e->getMessage(),
+                    message: 'failed to get livestream_view_history: ' . $e->getMessage(),
                     previous: $e,
                 );
             }
-
-            foreach ($livestreams as $livestream) {
-                try {
-                    $stmt = $this->db->prepare('SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?');
-                    $stmt->bindValue(1, $livestream->id);
-                    $stmt->execute();
-                    $cnt = $stmt->fetchColumn();
-                    assert(is_int($cnt));
-                } catch (PDOException $e) {
-                    throw new HttpInternalServerErrorException(
-                        request: $request,
-                        message: 'failed to get livestream_view_history: ' . $e->getMessage(),
-                        previous: $e,
-                    );
-                }
-                $viewersCount += $cnt;
-            }
+            $viewersCount += $cnt;
         }
 
         // お気に入り絵文字
