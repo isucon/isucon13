@@ -3,9 +3,11 @@ package assets
 import (
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
