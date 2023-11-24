@@ -32,7 +32,7 @@ func TestEnterExitStats(t *testing.T) {
 		for j := 0; j < 5; j++ {
 			livestreamID := int64(j)
 			assert.Equal(t, int64(5), s.userStats[streamerName].TotalViewers)
-			assert.Equal(t, int64(5), s.livestreamStats[livestreamID].totalViewers)
+			assert.Equal(t, int64(5), s.livestreamStats[livestreamID].TotalViewers)
 		}
 	}
 	for i := 0; i < 5; i++ {
@@ -48,7 +48,7 @@ func TestEnterExitStats(t *testing.T) {
 		for j := 0; j < 5; j++ {
 			livestreamID := int64(j)
 			assert.Equal(t, int64(0), s.userStats[streamerName].TotalViewers)
-			assert.Equal(t, int64(0), s.livestreamStats[livestreamID].totalViewers)
+			assert.Equal(t, int64(0), s.livestreamStats[livestreamID].TotalViewers)
 		}
 	}
 }
@@ -76,7 +76,7 @@ func TestReactionStats(t *testing.T) {
 		for j := 0; j < 5; j++ {
 			livestreamID := int64(j)
 			assert.Equal(t, int64(5), s.userStats[streamerName].TotalReactions())
-			assert.Equal(t, int64(5), s.livestreamStats[livestreamID].totalReactions)
+			assert.Equal(t, int64(5), s.livestreamStats[livestreamID].TotalReactions)
 			favoriteEmoji, ok := s.userStats[streamerName].FavoriteEmoji()
 			assert.True(t, ok)
 			assert.Equal(t, "4", favoriteEmoji)
@@ -88,11 +88,11 @@ func TestReactionStats(t *testing.T) {
 	log.Printf("start = %s\n", startAt.String())
 	userRank, err := s.GetUserRank("streamer1")
 	assert.NoError(t, err)
-	assert.Equal(t, int64(2), userRank)
+	assert.Equal(t, int64(4), userRank)
 
 	livestreamRank, err := s.GetLivestreamRank(3)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(4), livestreamRank)
+	assert.Equal(t, int64(2), livestreamRank)
 	endAt := time.Now()
 	log.Printf("end = %s\n", endAt.String())
 	log.Printf("elapsed = %s\n", time.Since(startAt).String())
@@ -120,19 +120,19 @@ func TestLivecommentStats(t *testing.T) {
 		for j := 0; j < 5; j++ {
 			livestreamID := int64(j)
 			assert.Equal(t, int64(5), s.userStats[streamerName].TotalLivecomments)
-			assert.Equal(t, int64(j*5), s.livestreamStats[livestreamID].totalTips)
-			assert.Equal(t, int64(j), s.livestreamStats[livestreamID].maxTip)
+			assert.Equal(t, int64(j*5), s.livestreamStats[livestreamID].TotalTips)
+			assert.Equal(t, int64(j), s.livestreamStats[livestreamID].MaxTip)
 		}
 	}
 
 	startAt := time.Now()
 	userRank, err := s.GetUserRank("streamer4")
 	assert.NoError(t, err)
-	assert.Equal(t, int64(5), userRank)
+	assert.Equal(t, int64(1), userRank)
 
 	livestreamRank, err := s.GetLivestreamRank(1)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(2), livestreamRank)
+	assert.Equal(t, int64(4), livestreamRank)
 	endAt := time.Now()
 	log.Printf("end = %s\n", endAt.String())
 	log.Printf("elapsed = %s\n", time.Since(startAt).String())

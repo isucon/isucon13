@@ -110,17 +110,17 @@ type LivestreamStats struct {
 	LivestreamID int64
 
 	// 視聴者数 (初期では0)
-	totalViewers int64
+	TotalViewers int64
 
 	// トータルレポート数 (初期では0)
-	totalReports int64
+	TotalReports int64
 
 	// トータルリアクション数
-	totalReactions int64
+	TotalReactions int64
 
 	// 最大チップ金額 (ライブコメント)
-	totalTips int64
-	maxTip    int64
+	TotalTips int64
+	MaxTip    int64
 }
 
 func NewLivestreamStats(livestreamID int64) *LivestreamStats {
@@ -128,7 +128,7 @@ func NewLivestreamStats(livestreamID int64) *LivestreamStats {
 }
 
 func (s *LivestreamStats) Score() int64 {
-	return s.totalReactions + s.totalTips
+	return s.TotalReactions + s.TotalTips
 }
 
 type StatsScheduler struct {
@@ -277,7 +277,7 @@ func (s *StatsScheduler) EnterLivestream(streamerName string, livestreamID int64
 	if !ok {
 		return fmt.Errorf("統計情報の更新に失敗(EnterLivestream.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
-	livestreamStats.totalViewers++
+	livestreamStats.TotalViewers++
 
 	return nil
 }
@@ -301,10 +301,10 @@ func (s *StatsScheduler) ExitLivestream(streamerName string, livestreamID int64)
 	if !ok {
 		return fmt.Errorf("統計情報の更新に失敗(ExitLivestream.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
-	if livestreamStats.totalViewers <= 0 {
-		return fmt.Errorf("ExitLivestreamの呼び出し回数が不正です: streamer=%s viewers_count=%d", streamerName, livestreamStats.totalViewers)
+	if livestreamStats.TotalViewers <= 0 {
+		return fmt.Errorf("ExitLivestreamの呼び出し回数が不正です: streamer=%s viewers_count=%d", streamerName, livestreamStats.TotalViewers)
 	}
-	livestreamStats.totalViewers--
+	livestreamStats.TotalViewers--
 
 	return nil
 }
@@ -324,7 +324,7 @@ func (s *StatsScheduler) addReactionForLivestream(streamerName string, livestrea
 	if !ok {
 		return fmt.Errorf("統計情報の更新に失敗(AddReaction.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
-	livestreamStats.totalReactions++
+	livestreamStats.TotalReactions++
 
 	return nil
 }
@@ -351,7 +351,7 @@ func (s *StatsScheduler) AddReport(streamerName string, livestreamID int64) erro
 	if !ok {
 		return fmt.Errorf("統計情報の更新に失敗(AddReaction.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
-	livestreamStats.totalReports++
+	livestreamStats.TotalReports++
 
 	return nil
 }
@@ -370,8 +370,8 @@ func (s *StatsScheduler) addLivecommentForLivestream(streamerName string, livest
 	if !ok {
 		return fmt.Errorf("統計情報の更新に失敗(AddLivecomment.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
-	livestreamStats.totalTips += int64(tip.Tip)
-	livestreamStats.maxTip = max(livestreamStats.maxTip, int64(tip.Tip))
+	livestreamStats.TotalTips += int64(tip.Tip)
+	livestreamStats.MaxTip = max(livestreamStats.MaxTip, int64(tip.Tip))
 	return nil
 }
 func (s *StatsScheduler) AddLivecomment(streamerName string, livestreamID int64, tip *Tip) error {
