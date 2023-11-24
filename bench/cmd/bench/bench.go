@@ -17,6 +17,7 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/score"
+	"github.com/isucon/isucon13/bench/assets"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -194,6 +195,11 @@ var run = cli.Command{
 
 		// FIXME: アセット読み込み
 		contestantLogger.Info("静的ファイルチェックを行います")
+		err = assets.ValidateStaticAssets(contestantLogger, config.TargetBaseURL)
+		if err != nil {
+			dumpFailedResult([]string{"静的ファイルチェックに失敗しました"})
+			return cli.NewExitError(err, 1)
+		}
 		contestantLogger.Info("静的ファイルチェックが完了しました")
 
 		contestantLogger.Info("webappの初期化を行います")
