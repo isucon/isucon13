@@ -50,17 +50,17 @@ jobs:
         run: sudo chown -R $USER:$USER $GITHUB_WORKSPACE
       - uses: actions/checkout@v4
 
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: |
+          make
+
       # containers
       - name: "setup containers"
         working-directory: ./development
         run: |
           make down/node
           make up/node
-
-      - name: "[frontend] build"
-        working-directory: ./frontend
-        run: make
-
       # bench
       - name: "[bench] Get deps"
         working-directory: ./bench

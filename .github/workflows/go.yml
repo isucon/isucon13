@@ -47,11 +47,15 @@ jobs:
       #                 Error: File was unable to be removed Error: EACCES: permission denied, rmdir
       # https://github.com/actions/checkout/issues/211
       - name: chown workdir
-        run:
-          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+        run: sudo chown -R $USER:$USER $GITHUB_WORKSPACE
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
+
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: |
+          make
 
       # containers
       - name: "setup containers"
@@ -59,11 +63,6 @@ jobs:
         run: |
           make down/go
           make up/go
-      
-      - name: "[frontend] build"
-        working-directory: ./frontend
-        run: |
-          make
 
       # bench
       - name: "[bench] Get deps"

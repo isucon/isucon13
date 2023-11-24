@@ -43,8 +43,11 @@ jobs:
       #                 Error: File was unable to be removed Error: EACCES: permission denied, rmdir
       # https://github.com/actions/checkout/issues/211
       - name: chown workdir
-        run:
-          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+        run: sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: make
 
       # containers
       - name: "setup containers"
@@ -52,10 +55,6 @@ jobs:
         run: |
           make down/perl
           make up/perl
-
-      - name: "[frontend] build"
-        working-directory: ./frontend
-        run: make
 
       # bench
       - name: "[bench] Get deps"
@@ -82,4 +81,3 @@ jobs:
         run: |
           go clean -testcache
           go test -p=1 -v ./...
-

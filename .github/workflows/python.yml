@@ -54,17 +54,17 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
 
+      - name: "[frontend] build"
+        working-directory: ./frontend
+        run: |
+          make
+
       # containers
       - name: "setup containers"
         working-directory: ./development
         run: |
           make down/python
           make up/python
-
-      - name: "[frontend] build"
-        working-directory: ./frontend
-        run: |
-          make
 
       # bench
       - name: "[bench] Get deps"
