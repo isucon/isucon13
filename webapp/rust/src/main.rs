@@ -1446,7 +1446,6 @@ struct PostIconResponse {
 
 async fn get_icon_handler(
     State(AppState { pool, .. }): State<AppState>,
-    jar: SignedCookieJar,
     Path((username,)): Path<(String,)>,
 ) -> Result<axum::response::Response, Error> {
     use axum::response::IntoResponse as _;
