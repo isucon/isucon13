@@ -311,8 +311,39 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 			return err
 		}
 	}
-	for i := 0; i < 3; i++ {
-		tagID := int64(rand.Intn(len(tagResponse.Tags)))
+
+	{
+		// いくつか登録する
+		for i := 0; i < 19; i++ {
+			startAtExt := time.Date(2024, 4, 1, i+2, 0, 0, 0, time.Local)
+			endAtExt := time.Date(2024, 4, 1, i+3, 0, 0, 0, time.Local)
+			titleExt := "isutest" + randstr.String(10)
+			descriptionExt := "isutest" + randstr.String(30)
+			tagId := int64(rand.Intn(99)) + 1
+			tagsExt := []int64{tagId, tagId + 1}
+			pretestTags[tagId]++
+			pretestTags[tagId+1]++
+			livestreamExt, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
+				Tags:         tagsExt,
+				Title:        titleExt,
+				Description:  descriptionExt,
+				PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+				ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
+				StartAt:      startAtExt.Unix(),
+				EndAt:        endAtExt.Unix(),
+			})
+			if err != nil {
+				return err
+			}
+			if err := checkPretestLivestream("予約した", livestreamExt, titleExt, descriptionExt, tagsExt, tagNames, startAtExt, endAtExt); err != nil {
+				return err
+			}
+			reserveStreams = append([]int64{livestreamExt.ID}, reserveStreams...)
+		}
+	}
+
+	for i := 0; i < 7; i++ {
+		tagID := int64(rand.Intn(len(tagResponse.Tags))) + 1
 		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam(tagNames[tagID]))
 		if err != nil {
 			return err
@@ -339,40 +370,13 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 	}
 
 	{
-		// いくつか登録する
-		for i := 0; i < 19; i++ {
-			startAtExt := time.Date(2024, 4, 1, i+2, 0, 0, 0, time.Local)
-			endAtExt := time.Date(2024, 4, 1, i+3, 0, 0, 0, time.Local)
-			titleExt := "isutest" + randstr.String(10)
-			descriptionExt := "isutest" + randstr.String(30)
-			tagId := int64(rand.Intn(99)) + 1
-			tagsExt := []int64{tagId, tagId + 1}
-			livestreamExt, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
-				Tags:         tagsExt,
-				Title:        titleExt,
-				Description:  descriptionExt,
-				PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
-				ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
-				StartAt:      startAtExt.Unix(),
-				EndAt:        endAtExt.Unix(),
-			})
-			if err != nil {
-				return err
-			}
-			if err := checkPretestLivestream("予約した", livestreamExt, titleExt, descriptionExt, tagsExt, tagNames, startAtExt, endAtExt); err != nil {
-				return err
-			}
-			reserveStreams = append([]int64{livestreamExt.ID}, reserveStreams...)
-		}
-	}
-	{
 		// タグ指定なし検索
 		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 		if err != nil {
 			return err
 		}
-		if len(searchedStream) != 50 {
-			return fmt.Errorf("タグ指定なし検索結果の数が想定外です (expected:%d actual:%d)", 50, len(searchedStream))
+		if len(searchedStream) != config.NumSearchLivestreams {
+			return fmt.Errorf("タグ指定なし検索結果の数が想定外です (expected:%d actual:%d)", config.NumSearchLivestreams, len(searchedStream))
 		}
 		for i := 0; i < 5; i++ {
 			randNumber := rand.Intn(20)
