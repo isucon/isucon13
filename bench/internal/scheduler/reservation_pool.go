@@ -4087,6 +4087,7 @@ var reservationPool = []*Reservation{
 	mustNewReservation(4084, "資格取得の勉強方法！効率的な学習法を伝授", "様々な資格試験に合格するための勉強方法を伝授します。", "2024-11-22 11:00:00", "2024-11-23 06:00:00", "https://media.xiii.isucon.dev/api/2/playlist.m3u8", "https://media.xiii.isucon.dev/yoru.webp"),
 	mustNewReservation(4085, "キャンプライブ！自然の中での生活を公開", "キャンプ場からのライブ！自然の中での生活や料理を公開します。", "2024-11-23 06:00:00", "2024-11-24 00:00:00", "https://media.xiii.isucon.dev/api/2/playlist.m3u8", "https://media.xiii.isucon.dev/yoru.webp"),
 }
+
 var initialReservationPool = []*Reservation{
 	mustNewReservation(4086, "歌ってみたライブ！リクエスト募集中", "皆さんからのリクエスト曲を歌っていきます！楽しんでくださいね♪", "2023-08-01 01:00:00", "2023-08-01 02:00:00", "https://media.xiii.isucon.dev/api/7/playlist.m3u8", "https://media.xiii.isucon.dev/yoru.webp"),
 	mustNewReservation(4087, "映画レビュー！最新映画の感想を語る", "最新の映画について、感想や考察を深く掘り下げて話していきます。", "2023-08-01 01:00:00", "2023-08-01 02:00:00", "https://media.xiii.isucon.dev/api/7/playlist.m3u8", "https://media.xiii.isucon.dev/yoru.webp"),
