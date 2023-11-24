@@ -21,10 +21,15 @@ var hiragana = []string{"あ", "い", "う", "え", "お", "か", "き", "く", 
 func init() {
 	PreTestUserName = randstr.String(10)
 	PreTestUserPassword = randstr.String(13)
-	PreTestDisplayName = ""
-	for i := 0; i < 7; i++ {
-		PreTestDisplayName += hiragana[rand.Intn(len(hiragana))]
+	PreTestDisplayName = randDisplayName()
+}
+
+func randDisplayName() string {
+	s := ""
+	for i := 0; i < rand.Intn(3)+6; i++ {
+		s += hiragana[rand.Intn(len(hiragana))]
 	}
+	return s
 }
 
 func defaultPasswordOrPretest(name string) string {

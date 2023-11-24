@@ -10,6 +10,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/najeira/randstr"
 	"go.uber.org/zap"
 )
 
@@ -57,11 +58,20 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
+	name := randstr.String(12) + "sc"
+	passwd := randstr.String(12)
 	user, err := client.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "user-stats-calc",
-		DisplayName: "user-stats-calc",
-		Description: "user-stats-calc",
-		Password:    "f40dS9rXQmc8b1C49h69F",
+		Name:        name,
+		DisplayName: randDisplayName(),
+		Description: `普段医療事務員をしています。
+よろしくおねがいします！
+
+連絡は以下からお願いします。
+
+ウェブサイト: http://itomanabu.example.com/
+メールアドレス: itomanabu@example.com
+`,
+		Password: passwd,
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -71,8 +81,8 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: "user-stats-calc",
-		Password: "f40dS9rXQmc8b1C49h69F",
+		Username: name,
+		Password: passwd,
 	}); err != nil {
 		return err
 	}
@@ -94,12 +104,20 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 			return err
 		}
 
-		name := fmt.Sprintf("user-stats-calc-viewer%d", i)
+		name := fmt.Sprintf("%suscv%d", randstr.String(11), i)
+		passwd := randstr.String(11)
 		viewer, err := viewerClient.Register(ctx, &isupipe.RegisterRequest{
 			Name:        name,
-			DisplayName: name,
-			Description: name,
-			Password:    "VogsxgG3CFVeQvT254N",
+			DisplayName: randDisplayName(),
+			Description: `普段営業をしています。
+よろしくおねがいします！
+
+連絡は以下からお願いします。
+
+ウェブサイト: http://vfujii.example.com/
+メールアドレス: vfujii@example.com
+`,
+			Password: passwd,
 			Theme: isupipe.Theme{
 				DarkMode: true,
 			},
@@ -110,7 +128,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 
 		if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
 			Username: viewer.Name,
-			Password: "VogsxgG3CFVeQvT254N",
+			Password: passwd,
 		}); err != nil {
 			return err
 		}
@@ -142,11 +160,18 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 
+	name := fmt.Sprintf("%slsc", randstr.String(11))
+	passwd := randstr.String(17)
 	_, err = client.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "livestream-stats-calc",
-		DisplayName: "livestream-stats-calc",
-		Description: "livestream-stats-calc",
-		Password:    "v9VzSJXQPInaf4UbLhA",
+		Name:        name,
+		DisplayName: randDisplayName(),
+		Description: `
+連絡は以下からお願いします。
+
+ウェブサイト: http://osamu75.example.com/
+メールアドレス: osamu75@example.com
+`,
+		Password: passwd,
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -156,8 +181,8 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: "test001",
-		Password: "test",
+		Username: name,
+		Password: passwd,
 	}); err != nil {
 		return err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/najeira/randstr"
 	"go.uber.org/zap"
 )
 
@@ -124,12 +125,20 @@ func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Log
 			return err
 		}
 
-		name := fmt.Sprintf("overflow%d", idx)
+		name := fmt.Sprintf("%s%d", randstr.String(10), idx)
+		passwd := randstr.String(10)
 		overflowUser, err := overflowClient.Register(ctx, &isupipe.RegisterRequest{
 			Name:        name,
-			DisplayName: name,
-			Description: name,
-			Password:    "RpKpi+rhqo0Rb2fTXUpQN",
+			DisplayName: randDisplayName(),
+			Description: `普段グラフィックデザイナーをしています。
+よろしくおねがいします！
+
+連絡は以下からお願いします。
+
+ウェブサイト: http://saitohiroshi.example.com/
+メールアドレス: saitohiroshi@example.com
+`,
+			Password: passwd,
 			Theme: isupipe.Theme{
 				DarkMode: true,
 			},
@@ -139,7 +148,7 @@ func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Log
 		}
 		if err := overflowClient.Login(ctx, &isupipe.LoginRequest{
 			Username: overflowUser.Name,
-			Password: "RpKpi+rhqo0Rb2fTXUpQN",
+			Password: passwd,
 		}); err != nil {
 			return err
 		}
@@ -149,9 +158,8 @@ func assertReserveOverflowPretest(ctx context.Context, contestantLogger *zap.Log
 			endAt   = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 		)
 		_, err = overflowClient.ReserveLivestream(ctx, overflowUser.Name, &isupipe.ReserveLivestreamRequest{
-			Title:       name,
-			Description: name,
-			// FIXME: フロントで困らないようにちゃんとしたのを設定
+			Title:        name,
+			Description:  name,
 			PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
 			ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 			StartAt:      startAt.Unix(),
