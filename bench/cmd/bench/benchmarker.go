@@ -237,23 +237,25 @@ func (b *benchmarker) loadAttack(ctx context.Context, asize int64, httpClient *h
 	return nil
 }
 
+var prevNumResolved = int64(0)
+
 func (b *benchmarker) loadAttackCoordinator(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 loop:
 	for {
 		select {
 		case <-ticker.C:
 			failRate := float64(benchscore.NumDNSFailed()) / float64(benchscore.NumResolves()+benchscore.NumDNSFailed()+1)
-			if failRate < 0.01 {
-				now := time.Now()
-				d := now.Sub(b.startAt) / time.Second
-				new := int(2.0 * (1.0 + float64(d)/8.0))
-				if new > 16 {
-					new = 16
+			avg := float64(benchscore.NumResolves()-prevNumResolved) / 2.0
+			prevNumResolved = benchscore.NumResolves()
+			if failRate < 0.01 && avg/float64(b.attackParallelis) > 50.0 {
+				new := int(float64(b.attackParallelis) * 1.5)
+				if new > 15 {
+					new = 15
 				}
 				if new != b.attackParallelis {
-					b.contestantLogger.Info("DNS水責め負荷が上昇します")
+					b.contestantLogger.Info("DNS水責め負荷が上昇します", zap.Int("parallelis", new))
 					b.attackParallelis = new
 				}
 			}
@@ -355,8 +357,7 @@ func (b *benchmarker) run(ctx context.Context) error {
 	violateCh := bencherror.RunViolationChecker(ctx)
 
 	loadAttackHTTPClient := b.loadAttackHTTPClient()
-	// FIXME: LIMITは負荷をみて調整したい
-	loadAttackLimiter := rate.NewLimiter(rate.Limit(1500), 1)
+	loadAttackLimiter := rate.NewLimiter(rate.Limit(3000), 1)
 	go func() { b.loadAttackCoordinator(ctx) }()
 
 	for {

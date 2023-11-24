@@ -148,6 +148,15 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		return err
 	}
 
+	clientNoSession, err := isupipe.NewCustomResolverClient(
+		contestantLogger,
+		dnsResolver,
+		agent.WithTimeout(config.PretestTimeout),
+	)
+	if err != nil {
+		return err
+	}
+
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: testUser.Name,
 		Password: defaultPasswordOrPretest(testUser.Name),
@@ -180,6 +189,20 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 	// userドメインでのgetTag
 	{
 		tagr, err := client.GetTagsWithUser(ctx, testUser.Name)
+		if err != nil {
+			return err
+		}
+		tagn := map[int64]string{}
+		for _, tag := range tagr.Tags {
+			tagn[tag.ID] = tag.Name
+		}
+		if !reflect.DeepEqual(tagn, poolTags) {
+			return fmt.Errorf("取得した tag 一覧が正しくありません。過不足があります")
+		}
+	}
+
+	{
+		tagr, err := clientNoSession.GetTags(ctx)
 		if err != nil {
 			return err
 		}
@@ -322,7 +345,7 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 
 	{
 		//検索2回目
-		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("ライブ配信")) // ID:1
+		searchedStream, err := clientNoSession.SearchLivestreams(ctx, isupipe.WithSearchTagQueryParam("ライブ配信")) // ID:1
 		if err != nil {
 			return err
 		}
@@ -398,6 +421,22 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 	{
 		// タグ指定なし検索
 		searchedStream, err := client.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
+		if err != nil {
+			return err
+		}
+		if len(searchedStream) != config.NumSearchLivestreams {
+			return fmt.Errorf("タグ指定なし検索結果の数が想定外です (expected:%d actual:%d)", config.NumSearchLivestreams, len(searchedStream))
+		}
+		for i := 0; i < 5; i++ {
+			randNumber := rand.Intn(20)
+			if searchedStream[randNumber].ID != reserveStreams[randNumber] {
+				return fmt.Errorf("タグ指定なし検索結果の%d番目のlivestream.idが一致しません (expected:%d actual:%d)", randNumber+1, reserveStreams[randNumber], searchedStream[randNumber].ID)
+			}
+		}
+	}
+	{
+		// タグ指定なし検索
+		searchedStream, err := clientNoSession.SearchLivestreams(ctx, isupipe.WithLimitQueryParam(config.NumSearchLivestreams))
 		if err != nil {
 			return err
 		}
