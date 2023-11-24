@@ -70,6 +70,12 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	if err != nil {
 		return err
 	}
+	if err := streamerClient.Login(ctx, &isupipe.LoginRequest{
+		Username: streamer.Name,
+		Password: streamer.RawPassword,
+	}); err != nil {
+		return err
+	}
 
 	coldReservation, err := scheduler.ReservationSched.GetColdShortReservation()
 	if err != nil {
