@@ -337,7 +337,7 @@ class Handler extends AbstractHandler
         if (
             session_set_cookie_params([
             'domain' => 'u.isucon.dev',
-            'lifetime' => 60000 /* 10 seconds */, // FIXME: 600
+            'lifetime' => 60000,
             'path' => '/',
             ]) === false
         ) {

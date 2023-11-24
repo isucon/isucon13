@@ -231,7 +231,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/register", axum::routing::post(register_handler))
         .route("/api/login", axum::routing::post(login_handler))
         .route("/api/user/me", axum::routing::get(get_me_handler))
-        // FIXME: ユーザ一覧を返すAPI
         // フロントエンドで、配信予約のコラボレーターを指定する際に必要
         .route("/api/user/:username", axum::routing::get(get_user_handler))
         .route(
