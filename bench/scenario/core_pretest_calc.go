@@ -3,7 +3,6 @@ package scenario
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 
 	"github.com/isucon/isucandar/agent"
@@ -11,6 +10,7 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
+	"github.com/najeira/randstr"
 	"go.uber.org/zap"
 )
 
@@ -58,107 +58,12 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
-	randNumber := rand.Intn(100)
-	loginUser := scheduler.GetInitialUserByID(int64(1 + randNumber))
-	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: loginUser.Name,
-		Password: loginUser.RawPassword,
-	}); err != nil {
-		return err
-	}
-
-	userID := int64(1 + (rand.Int() % 10))
-	user, err := scheduler.UserScheduler.GetInitialUserForPretest(userID)
+	streamerID := int64(1 + (rand.Int() % 10))
+	streamer, err := scheduler.UserScheduler.GetInitialUserForPretest(streamerID)
 	if err != nil {
 		return err
 	}
-	username := user.Name
-
-	stats1, err := client.GetUserStatistics(ctx, username)
-	if err != nil {
-		return err
-	}
-
-	wantStats1, err := scheduler.StatsSched.GetUserStats(username)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("stats1 = %+v\n", stats1)
-	log.Printf("wantStats1 = %+v\n", wantStats1)
-
-	userRank, err := scheduler.StatsSched.GetUserRank(username)
-	if err != nil {
-		return err
-	}
-	if stats1.Rank != userRank {
-		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", username, userRank, stats1.Rank)
-	}
-	favoriteEmoji, ok := wantStats1.FavoriteEmoji()
-	if ok {
-		if stats1.FavoriteEmoji != favoriteEmoji {
-			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", username, favoriteEmoji, stats1.FavoriteEmoji)
-		}
-	}
-	if stats1.TotalReactions != wantStats1.TotalReactions() {
-		return fmt.Errorf("ユーザ %s の総リアクション数が不正です: expected=%d, actual=%d", username, stats1.TotalReactions, wantStats1.TotalReactions())
-	}
-	if stats1.TotalLivecomments != wantStats1.TotalLivecomments {
-		return fmt.Errorf("ユーザ %s の総ライブコメント数が不正です: expected=%d, actual=%d", username, stats1.TotalLivecomments, wantStats1.TotalLivecomments)
-	}
-
-	// // LivestreamStatsのイテレーション数 * 配信数(2)とかにして、LivestreamStatsのユーザより上に位置するようにする
-	// count := 5 + rand.Intn(10)
-	// for i := 0; i < count; i++ {
-	// 	viewerClient, err := isupipe.NewCustomResolverClient(
-	// 		contestantLogger,
-	// 		dnsResolver,
-	// 		agent.WithTimeout(config.PretestTimeout),
-	// 	)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	name := fmt.Sprintf("user-stats-calc-viewer%d", i)
-	// 	viewer, err := viewerClient.Register(ctx, &isupipe.RegisterRequest{
-	// 		Name:        name,
-	// 		DisplayName: name,
-	// 		Description: name,
-	// 		Password:    "test",
-	// 		Theme: isupipe.Theme{
-	// 			DarkMode: true,
-	// 		},
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
-	// 		Username: viewer.Name,
-	// 		Password: "test",
-	// 	}); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// stats2, err := client.GetUserStatistics(ctx, user.Name)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// _ = stats1
-	// _ = stats2
-
-	return nil
-}
-
-func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *resolver.DNSResolver) error {
-	// ライブストリーム統計の計算処理がきちんとできているか
-
-	// FIXME: 処理前、統計情報がすべて0になっていることをチェック
-	// FIXME: いくつかの処理後、統計情報がピタリ一致することをチェック
-	//        (処理数、処理データにランダム性をもたせる)
-	client, err := isupipe.NewCustomResolverClient(
+	streamerClient, err := isupipe.NewCustomResolverClient(
 		contestantLogger,
 		dnsResolver,
 		agent.WithTimeout(config.PretestTimeout),
@@ -167,95 +72,184 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 
-	randNumber := rand.Intn(100)
-	user := scheduler.GetInitialUserByID(int64(1 + randNumber))
-	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: user.Name,
-		Password: user.RawPassword,
-	}); err != nil {
-		return err
-	}
-
-	livestreamID := int64(scheduler.GetLivestreamLength() - randNumber)
-	livestream := scheduler.GetLivestreamByID(livestreamID)
-	streamer, err := scheduler.UserScheduler.GetInitialUserForPretest(livestream.OwnerID)
+	coldReservation, err := scheduler.ReservationSched.GetColdShortReservation()
 	if err != nil {
 		return err
 	}
+	livestream, err := streamerClient.ReserveLivestream(ctx, streamer.Name, &isupipe.ReserveLivestreamRequest{
+		Title:        randstr.String(18),
+		Description:  randstr.String(50),
+		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
+		ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
+		StartAt:      coldReservation.StartAt,
+		EndAt:        coldReservation.EndAt,
+	})
+	if err != nil {
+		scheduler.ReservationSched.AbortReservation(coldReservation)
+		return err
+	}
+	scheduler.StatsSched.AddLivestream(livestream.ID)
+	scheduler.ReservationSched.CommitReservation(coldReservation)
 
-	stats1, err := client.GetLivestreamStatistics(ctx, livestreamID, streamer.Name)
+	stats1, err := client.GetUserStatistics(ctx, streamer.Name)
 	if err != nil {
 		return err
 	}
-
-	wantStats1, err := scheduler.StatsSched.GetLivestreamStats(livestreamID)
+	userStats1, err := scheduler.StatsSched.GetUserStats(streamer.Name)
 	if err != nil {
 		return err
 	}
-	livestreamRank, err := scheduler.StatsSched.GetLivestreamRank(livestreamID)
+	userRank, err := scheduler.StatsSched.GetUserRank(streamer.Name)
 	if err != nil {
 		return err
 	}
-
-	if stats1.Rank != livestreamRank {
-		return fmt.Errorf("配信 %d のランクが不正です: expected=%d, actual=%d", livestreamID, livestreamRank, stats1.Rank)
+	if stats1.Rank != userRank {
+		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", streamer.Name, userRank, stats1.Rank)
 	}
-	if stats1.MaxTip != wantStats1.MaxTip {
-		return fmt.Errorf("配信 %d の最大チップが不正です: expected=%d, actual=%d", livestreamID, livestreamRank, stats1.Rank)
+	favoriteEmoji, ok := userStats1.FavoriteEmoji()
+	if ok {
+		if stats1.FavoriteEmoji != favoriteEmoji {
+			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", streamer.Name, favoriteEmoji, stats1.FavoriteEmoji)
+		}
 	}
-	if stats1.TotalReactions != wantStats1.TotalReactions {
-		return fmt.Errorf("配信 %d の総リアクション数が不正です: expected=%d, actual=%d", livestreamID, livestreamRank, stats1.Rank)
+	if stats1.TotalReactions != userStats1.TotalReactions() {
+		return fmt.Errorf("ユーザ %s の総リアクション数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalReactions, userStats1.TotalReactions())
+	}
+	if stats1.TotalLivecomments != userStats1.TotalLivecomments {
+		return fmt.Errorf("ユーザ %s の総ライブコメント数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalLivecomments, userStats1.TotalLivecomments)
+	}
+	if stats1.ViewersCount != 0 {
+		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalLivecomments, userStats1.TotalLivecomments)
+	}
+	liveStats1, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
+	if err != nil {
+		return err
+	}
+	wantStats1, err := scheduler.StatsSched.GetLivestreamStats(livestream.ID)
+	if err != nil {
+		return err
+	}
+	livestreamRank, err := scheduler.StatsSched.GetLivestreamRank(livestream.ID)
+	if err != nil {
+		return err
+	}
+	if liveStats1.Rank != livestreamRank {
+		return fmt.Errorf("配信 %d のランクが不正です: expected=%d, actual=%d", livestream.ID, livestreamRank, liveStats1.Rank)
+	}
+	if liveStats1.MaxTip != wantStats1.MaxTip {
+		return fmt.Errorf("配信 %d の最大チップが不正です: expected=%d, actual=%d", livestream.ID, wantStats1.MaxTip, liveStats1.MaxTip)
+	}
+	if liveStats1.TotalReactions != wantStats1.TotalReactions {
+		return fmt.Errorf("配信 %d の総リアクション数が不正です: expected=%d, actual=%d", livestream.ID, wantStats1.TotalReactions, liveStats1.TotalReactions)
+	}
+	if liveStats1.TotalReports != 0 {
+		return fmt.Errorf("ユーザ %s の総スパム報告数が不正です: expected=%d, actual=%d", streamer.Name, wantStats1.TotalReports, liveStats1.TotalReports)
+	}
+	if liveStats1.ViewersCount != 0 {
+		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, wantStats1.TotalViewers, wantStats1.TotalViewers)
 	}
 
-	// count := 5 + rand.Intn(10)
-	// for i := 0; i < count; i++ {
-	// 	viewer, err := isupipe.NewCustomResolverClient(
-	// 		contestantLogger,
-	// 		dnsResolver,
-	// 		agent.WithTimeout(config.PretestTimeout),
-	// 	)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	count := 1 + rand.Intn(5)
+	for i := 0; i < count; i++ {
+		viewerClient, err := isupipe.NewCustomResolverClient(
+			contestantLogger,
+			dnsResolver,
+			agent.WithTimeout(config.PretestTimeout),
+		)
+		if err != nil {
+			return err
+		}
 
-	// 	_, err = viewer.Register(ctx, &isupipe.RegisterRequest{
-	// 		// FIXME: ユーザ
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		viewerID := int64(1 + (rand.Int() % 10))
+		viewer, err := scheduler.UserScheduler.GetInitialUserForPretest(viewerID)
+		if err != nil {
+			return err
+		}
+		if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
+			Username: viewer.Name,
+			Password: viewer.RawPassword,
+		}); err != nil {
+			return err
+		}
 
-	// 	if err := viewer.EnterLivestream(ctx, livestream.ID, livestream.Owner.Name); err != nil {
-	// 		return err
-	// 	}
+		viewerClient.EnterLivestream(ctx, livestream.ID, livestream.Owner.Name)
+		scheduler.StatsSched.EnterLivestream(livestream.Owner.Name, livestream.ID)
 
-	// 	_, err = viewer.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
-	// 		EmojiName: "innocent",
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		reactionCount := 1 + rand.Intn(10)
+		for r := 0; r < reactionCount; r++ {
+			reaction := scheduler.GetReaction()
+			viewerClient.PostReaction(ctx, livestream.ID, livestream.Owner.Name, &isupipe.PostReactionRequest{
+				EmojiName: reaction,
+			})
+			scheduler.StatsSched.AddReaction(livestream.Owner.Name, livestream.ID, reaction)
+		}
 
-	// 	livecommentResp, _, err := viewer.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, "isuisu~", &scheduler.Tip{
-	// 		Tip: i,
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		livecommentCount := 1 + rand.Intn(10)
+		for l := 0; l < livecommentCount; l++ {
+			livecomment := scheduler.LivecommentScheduler.GetLongPositiveComment()
+			tip := &scheduler.Tip{Tip: rand.Intn(10)}
+			viewerClient.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, tip)
+			scheduler.StatsSched.AddLivecomment(livestream.Owner.Name, livestream.ID, tip)
+		}
+	}
 
-	// 	err = viewer.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecommentResp.ID)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// stats2, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// _ = stats1
-	// _ = stats2
+	stats2, err := client.GetUserStatistics(ctx, streamer.Name)
+	if err != nil {
+		return err
+	}
+	userStats2, err := scheduler.StatsSched.GetUserStats(streamer.Name)
+	if err != nil {
+		return err
+	}
+	userRank2, err := scheduler.StatsSched.GetUserRank(streamer.Name)
+	if err != nil {
+		return err
+	}
+	if stats2.Rank != userRank2 {
+		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", streamer.Name, userRank, stats1.Rank)
+	}
+	favoriteEmoji2, ok := userStats1.FavoriteEmoji()
+	if ok {
+		if stats2.FavoriteEmoji != favoriteEmoji2 {
+			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", streamer.Name, favoriteEmoji2, stats2.FavoriteEmoji)
+		}
+	}
+	if stats2.TotalReactions != userStats2.TotalReactions() {
+		return fmt.Errorf("ユーザ %s の総リアクション数が不正です: expected=%d, actual=%d", streamer.Name, stats2.TotalReactions, userStats2.TotalReactions())
+	}
+	if stats2.TotalLivecomments != userStats2.TotalLivecomments {
+		return fmt.Errorf("ユーザ %s の総ライブコメント数が不正です: expected=%d, actual=%d", streamer.Name, stats2.TotalLivecomments, userStats2.TotalLivecomments)
+	}
+	if stats2.ViewersCount != userStats2.TotalViewers {
+		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, stats2.TotalLivecomments, userStats2.TotalLivecomments)
+	}
+	liveStats2, err := client.GetLivestreamStatistics(ctx, livestream.ID, livestream.Owner.Name)
+	if err != nil {
+		return err
+	}
+	wantStats2, err := scheduler.StatsSched.GetLivestreamStats(livestream.ID)
+	if err != nil {
+		return err
+	}
+	livestreamRank2, err := scheduler.StatsSched.GetLivestreamRank(livestream.ID)
+	if err != nil {
+		return err
+	}
+	if liveStats2.Rank != livestreamRank2 {
+		return fmt.Errorf("配信 %d のランクが不正です: expected=%d, actual=%d", livestream.ID, livestreamRank, liveStats2.Rank)
+	}
+	if liveStats2.MaxTip != wantStats2.MaxTip {
+		return fmt.Errorf("配信 %d の最大チップが不正です: expected=%d, actual=%d", livestream.ID, wantStats2.MaxTip, liveStats2.MaxTip)
+	}
+	if liveStats2.TotalReactions != wantStats2.TotalReactions {
+		return fmt.Errorf("配信 %d の総リアクション数が不正です: expected=%d, actual=%d", livestream.ID, wantStats2.TotalReactions, liveStats2.TotalReactions)
+	}
+	if liveStats2.TotalReports != wantStats2.TotalReports {
+		return fmt.Errorf("ユーザ %s の総スパム報告数が不正です: expected=%d, actual=%d", streamer.Name, wantStats2.TotalReports, liveStats2.TotalReports)
+	}
+	if liveStats2.ViewersCount != wantStats2.TotalViewers {
+		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, wantStats2.TotalReports, liveStats2.ViewersCount)
+	}
 
 	return nil
 }

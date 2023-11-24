@@ -144,6 +144,13 @@ func NewStatsScheduler() *StatsScheduler {
 	}
 }
 
+func (s *StatsScheduler) AddLivestream(livestreamID int64) {
+	s.livestreamStatsMu.Lock()
+	defer s.livestreamStatsMu.Unlock()
+
+	s.livestreamStats[livestreamID] = new(LivestreamStats)
+}
+
 func (s *StatsScheduler) loadInitialData() error {
 	// 配信者初期化
 	for _, user := range initialUserPool {
