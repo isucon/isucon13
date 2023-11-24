@@ -9,6 +9,7 @@ import {
   ReactionsModel,
   UserModel,
 } from '../types/models'
+import { atoi } from '../utils/integer'
 
 // GET /api/user/:username/statistics
 export const getUserStatisticsHandler = [
@@ -188,10 +189,10 @@ export const getLivestreamStatisticsHandler = [
   async (
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/statistics'>,
   ) => {
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
-      return c.json('livestream_id in path must be integer', 400)
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
+      return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()

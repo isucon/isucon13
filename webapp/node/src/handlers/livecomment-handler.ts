@@ -14,6 +14,7 @@ import {
   NgWordsModel,
 } from '../types/models'
 import { throwErrorWith } from '../utils/throw-error-with'
+import { atoi } from '../utils/integer'
 
 // GET /api/livestream/:livestream_id/livecomment
 export const getLivecommentsHandler = [
@@ -21,10 +22,10 @@ export const getLivecommentsHandler = [
   async (
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/livecomment'>,
   ) => {
-    if (!Number.isInteger(Number(Number(c.req.param('livestream_id'))))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -34,10 +35,10 @@ export const getLivecommentsHandler = [
         'SELECT * FROM livecomments WHERE livestream_id = ? ORDER BY created_at DESC'
       const limit = c.req.query('limit')
       if (limit) {
-        if (!Number.isInteger(Number(limit))) {
+        const limitNumber = atoi(limit)
+        if (limitNumber === false) {
           return c.text('limit query parameter must be integer', 400)
         }
-        const limitNumber = Number.parseInt(limit, 10)
         query += ` LIMIT ${limitNumber}`
       }
       const [livecomments] = await conn
@@ -73,10 +74,10 @@ export const getNgwords = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/ngwords'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -117,10 +118,10 @@ export const postLivecommentHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/livecomment'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const body = await c.req.json<{ comment: string; tip: number }>()
 
@@ -214,14 +215,14 @@ export const reportLivecommentHandler = [
     >,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
-    if (!Number.isInteger(Number(c.req.param('livecomment_id')))) {
+    const livecommentId = atoi(c.req.param('livecomment_id'))
+    if (livecommentId === false) {
       return c.text('livecomment_id in path must be integer', 400)
     }
-    const livecommentId = Number.parseInt(c.req.param('livecomment_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -290,10 +291,10 @@ export const moderateHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/moderate'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const body = await c.req.json<{ ng_word: string }>()
 
