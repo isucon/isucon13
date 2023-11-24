@@ -2,8 +2,8 @@ package isupipe
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/goccy/go-json"
 	"io"
 	"math/rand"
 	"net/http"
