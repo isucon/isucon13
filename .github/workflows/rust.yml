@@ -23,7 +23,7 @@ on:
       - .github/workflows/rust.yml
 jobs:
   test:
-    runs-on: [isucon13-ci-02]
+    runs-on: [isucon13-ci-07]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
