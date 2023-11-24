@@ -310,6 +310,7 @@ func (b *benchmarker) loadViewer(ctx context.Context) error {
 func (b *benchmarker) loadViewerReport(ctx context.Context) error {
 	defer b.viewerReportSem.Release(1)
 
+	time.Sleep(1 * time.Second) // XXX: report回りすぎ抑止
 	if err := scenario.BasicViewerReportScenario(ctx, b.contestantLogger, b.viewerClientPool, b.spamPool); err != nil {
 		b.scenarioCounter.Add(BasicViewerReportScenarioFail)
 		return err
