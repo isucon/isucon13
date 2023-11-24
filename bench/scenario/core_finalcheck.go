@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"os"
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -23,6 +24,10 @@ func FinalcheckScenario(ctx context.Context, contestantLogger *zap.Logger, dnsRe
 
 	// FIXME: ライブコメント存在チェック
 	_ = client
+
+	if err := os.WriteFile(config.FinalcheckPath, []byte("{}"), os.ModePerm); err != nil {
+		return err
+	}
 
 	return nil
 }

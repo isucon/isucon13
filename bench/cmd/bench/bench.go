@@ -32,10 +32,11 @@ var enableSSL bool
 var pretestOnly bool
 
 type BenchResult struct {
-	Pass     bool     `json:"pass"`
-	Score    int64    `json:"score"`
-	Messages []string `json:"messages"`
-	Language string   `json:"language"`
+	Pass          bool     `json:"pass"`
+	Score         int64    `json:"score"`
+	Messages      []string `json:"messages"`
+	Language      string   `json:"language"`
+	ResolvedCount int64    `json:"resolved_count"`
 }
 
 // UniqueMsgs は重複除去したメッセージ配列を返します
@@ -333,10 +334,11 @@ var run = cli.Command{
 		lgr.Infof("スコア: %d", profit)
 
 		b, err := json.Marshal(&BenchResult{
-			Pass:     true,
-			Score:    int64(profit),
-			Messages: append(benchErrors, msgs...),
-			Language: config.Language,
+			Pass:          true,
+			Score:         int64(profit),
+			Messages:      append(benchErrors, msgs...),
+			Language:      config.Language,
+			ResolvedCount: numResolves,
 		})
 		if err != nil {
 			return cli.NewExitError(err, 1)

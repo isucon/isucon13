@@ -29,7 +29,8 @@ func notifyErr(title string, err error, attachments []slack.Attachment) error {
 	postRetrier := retrier.New(retrier.ConstantBackoff(retryCnt, retryInterval), nil)
 	return postRetrier.Run(func() error {
 		return slack.PostWebhook(slackWebhookURL, &slack.WebhookMessage{
-			Text:        fmt.Sprintf("<!channel> %s", title),
+			// Text:        fmt.Sprintf("<!channel> %s", title),
+			Text:        title,
 			Attachments: attachments,
 		})
 	})
@@ -59,6 +60,11 @@ func NotifyWorkerErr(job *Job, err error, stdout, stderr string, msg string, arg
 				slack.AttachmentField{
 					Title: "チームID",
 					Value: fmt.Sprintf("%d", job.Team),
+					Short: true,
+				},
+				slack.AttachmentField{
+					Title: "AZ名",
+					Value: AZName,
 					Short: true,
 				},
 				slack.AttachmentField{

@@ -15,17 +15,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 )
 
 // FIXME: SQSのメッセージサイズが最大で256KBなので、200KB程度までで打ち切るように
-
-const (
-	resultPath        = "/tmp/result.json"
-	staffLogPath      = "/tmp/staff.log"
-	contestantLogPath = "/tmp/contestant.log"
-)
 
 var (
 	accessKey, secretAccessKey string
@@ -45,6 +40,12 @@ const (
 	StatusFailed  = "aborted"
 	StatusTimeout = "aborted"
 )
+
+var AZName string
+
+func init() {
+
+}
 
 func ResolveAZName(azID string) (string, bool) {
 	m := map[string]string{
@@ -114,16 +115,17 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	// ベンチマーカー実行前に確実にresultファイルを削除する
 	// 他のチームに対する結果が含まれている可能性があるため
-	for _, name := range []string{resultPath, staffLogPath, contestantLogPath} {
+	log.Println("cleanup old logs for current job")
+	for _, name := range []string{config.ResultPath, config.StaffLogPath, config.ContestantLogPath} {
 		os.Remove(name)
 	}
 
 	benchOptions := []string{
 		"run",
 		"--nameserver", target,
-		"--staff-log-path", staffLogPath,
-		"--contestant-log-path", contestantLogPath,
-		"--result-path", resultPath,
+		"--staff-log-path", config.StaffLogPath,
+		"--contestant-log-path", config.ContestantLogPath,
+		"--result-path", config.ResultPath,
 	}
 	if production {
 		benchOptions = append(benchOptions, "--enable-ssl")
@@ -134,10 +136,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		benchOptions = append(benchOptions, "--enable-ssl")
 		benchOptions = append(benchOptions, "--target", "https://pipe.u.isucon.dev:443")
 	}
-	log.Println("===== options =====")
-	for _, opt := range benchOptions {
-		log.Printf("%s\n", opt)
-	}
+	log.Printf("benchmark options = %+v\n", benchOptions)
 
 	var stdout, stderr bytes.Buffer
 	// 余裕みて3分
@@ -156,6 +155,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	errCh := make(chan error, 1)
 	go func() {
 		defer close(errCh)
+		log.Println("running benchmark ...")
 		if err := cmd.Run(); err != nil {
 			errCh <- err
 		}
@@ -163,20 +163,21 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	select {
 	case <-ctx.Done():
+		log.Println("execBench中断")
 		NotifyWorkerErr(job, ctx.Err(), stdout.String(), stderr.String(), "ベンチマーカーの実行がタイムアウトしました (StatusFailed)")
 		status = StatusTimeout
 	case err, ok := <-errCh:
 		if ok && err != nil {
+			log.Printf("execBenchでエラー発生: %s\n", err.Error())
 			NotifyWorkerErr(job, err, stdout.String(), stderr.String(), "ベンチマーカーの実行エラーが発生 (StatusFailed)")
 			status = StatusFailed
 		}
 	}
 
-	log.Println(stdout.String())
-
 	var msgs []string
+	log.Println("read contestant log path")
 	// stdout
-	b, err := os.ReadFile(contestantLogPath)
+	b, err := os.ReadFile(config.ContestantLogPath)
 	if err != nil {
 		return &Result{
 			ID:         job.ID,
@@ -191,9 +192,10 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	}
 	contestantLog := strings.Split(string(b), "\n")
 
+	log.Println("read result path")
 	// result
 	var benchResult *BenchResult
-	b, err = os.ReadFile(resultPath)
+	b, err = os.ReadFile(config.ResultPath)
 	if err != nil {
 		return &Result{
 			ID:         job.ID,
@@ -206,6 +208,9 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 			FinishedAt: time.Now(),
 		}, nil
 	}
+
+	log.Println("decode bench result")
+	//
 	if err := json.NewDecoder(bytes.NewBuffer(b)).Decode(&benchResult); err != nil {
 		return &Result{
 			ID:         job.ID,
@@ -223,17 +228,21 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	msgs = append(msgs, benchResult.Messages...)
 
 	if status == StatusSuccess {
+		log.Println("success benchmark")
 		return &Result{
-			ID:         job.ID,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
-			Reason:     joinN(msgs, messageLimit),
-			IsPassed:   benchResult.Pass,
-			Score:      benchResult.Score,
-			Status:     status,
-			FinishedAt: time.Now(),
+			ID:            job.ID,
+			Stdout:        stdout.String(),
+			Stderr:        stderr.String(),
+			Reason:        joinN(msgs, messageLimit),
+			IsPassed:      benchResult.Pass,
+			Score:         benchResult.Score,
+			ResolvedCount: benchResult.ResolvedCount,
+			Language:      benchResult.Language,
+			Status:        status,
+			FinishedAt:    time.Now(),
 		}, nil
 	} else {
+		log.Println("fail benchmark")
 		return &Result{
 			ID:         job.ID,
 			Stdout:     stdout.String(),
@@ -284,63 +293,60 @@ var supervise = cli.Command{
 	Action: func(cliCtx *cli.Context) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 		defer cancel()
+		log.Println("Start ISUPipe Supervisor")
 
-		var (
-			portal *Portal
-			signer ssh.Signer
-		)
+		log.Println("Fetching AZ Name ...")
+		azName, err := fetchAZName(context.Background())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		AZName = azName
+		log.Printf("AZ Name = %s\n", AZName)
+
+		privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
+		if err != nil {
+			log.Printf("privateKey error = %s\n", err)
+			return err
+		}
+		signer, err := ssh.ParsePrivateKey(privateKey)
+		if err != nil {
+			log.Printf("signer error = %s\n", err)
+			return err
+		}
+
+		var portal *Portal
+		var finalcheckBucketName string
 		if production {
-			azName, err := fetchAZName(ctx)
-			if err != nil {
-				return cli.NewExitError(err, 1)
-			}
+			log.Println("Running on production")
+			// NOTE: アクセスキーを上書き
+			accessKey = "AKIAWFVKEZX5AUP2AK6O"
+			secretAccessKey = "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"
+			// NOTE: SQSはsqs初期化時に決まる
+			finalcheckBucketName = "isucon13-finalcheck-prod"
 
 			portal, err = NewPortal(
-				azName,
+				AZName,
 				Production,
 				accessKey,
 				secretAccessKey,
 			)
 			if err != nil {
+				log.Println("failed to initiate portal")
 				return cli.NewExitError(err, 1)
-			}
-
-			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
-			if err != nil {
-				log.Printf("privateKey error = %s\n", err)
-				return err
-			}
-			signer, err = ssh.ParsePrivateKey(privateKey)
-			if err != nil {
-				log.Printf("signer error = %s\n", err)
-				return err
 			}
 		} else {
-			azName, err := fetchAZName(ctx)
-			if err != nil {
-				return cli.NewExitError(err, 1)
-			}
+			log.Println("Running on development")
+			finalcheckBucketName = "isucon13-finalcheck-dev"
 
-			// az1, az2, az4
 			portal, err = NewPortal(
-				azName,
+				AZName,
 				Develop,
 				accessKey,
 				secretAccessKey,
 			)
 			if err != nil {
+				log.Println("failed to initiate portal")
 				return cli.NewExitError(err, 1)
-			}
-
-			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
-			if err != nil {
-				log.Printf("privateKey error = %s\n", err)
-				return err
-			}
-			signer, err = ssh.ParsePrivateKey(privateKey)
-			if err != nil {
-				log.Printf("signer error = %s\n", err)
-				return err
 			}
 		}
 		jobCh := portal.StartReceiveJob(ctx)
@@ -350,9 +356,10 @@ var supervise = cli.Command{
 			case <-ctx.Done():
 				return cli.NewExitError(ctx.Err(), 1)
 			case job := <-jobCh:
-				log.Printf("job = %+v\n", job)
+				log.Printf("receive job = %+v\n", job)
 
 				if job.Action == "reboot" {
+					log.Println("Job is reboot task")
 					var errs []string
 					for _, server := range job.Servers {
 						if err := reboot(server, signer); err != nil {
@@ -362,27 +369,35 @@ var supervise = cli.Command{
 					if len(errs) > 0 {
 						NotifyWorkerErr(job, nil, "", "", strings.Join(errs, ","))
 					}
+					log.Println("reboot completed")
 				} else {
+					log.Println("Job is benchmark")
+
+					log.Println("change status running")
 					if err := portal.SendResult(ctx, job, NewRunningResult(job.ID)); err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
 
+					log.Println("execute benchmark")
 					result, err := execBench(ctx, job)
 					if err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
-					log.Printf("finishedAt = %s\n", result.FinishedAt.String())
 
-					sendResultStartAt := time.Now()
-					log.Printf("sendResultStartAt = %s\n", sendResultStartAt.String())
+					log.Println("report result")
 					if err := portal.SendResult(ctx, job, result); err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
-					log.Printf("sendResultFinishedAt = %s\n", time.Since(sendResultStartAt).String())
 
-					os.Remove(staffLogPath)
-					os.Remove(contestantLogPath)
-					os.Remove(resultPath)
+					log.Println("upload finalcheck result")
+					if err := UploadFinalcheckResult(finalcheckBucketName, job.ID, job.Team); err != nil {
+						NotifyWorkerErr(job, err, "", "", "FinalCheckの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
+					}
+
+					log.Println("cleanup old logs for next job")
+					os.Remove(config.StaffLogPath)
+					os.Remove(config.ContestantLogPath)
+					os.Remove(config.ResultPath)
 				}
 			}
 		}

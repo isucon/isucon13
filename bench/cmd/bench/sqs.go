@@ -25,14 +25,32 @@ var (
 )
 
 type Result struct {
-	ID         int       `json:"id"`
-	Status     string    `json:"status"`
-	Score      int64     `json:"score,omitempty"`
-	IsPassed   bool      `json:"is_passed,omitempty"`
-	Reason     string    `json:"reason,omitempty"`
-	Stdout     string    `json:"stdout,omitempty"`
-	Stderr     string    `json:"stderr,omitempty"`
-	FinishedAt time.Time `json:"finished_at"`
+	ID            int       `json:"id"`
+	Status        string    `json:"status"`
+	Score         int64     `json:"score,omitempty"`
+	IsPassed      bool      `json:"is_passed,omitempty"`
+	Reason        string    `json:"reason,omitempty"`
+	Stdout        string    `json:"stdout,omitempty"`
+	Stderr        string    `json:"stderr,omitempty"`
+	ResolvedCount int64     `json:"resolved_count"`
+	Language      string    `json:"language"`
+	FinishedAt    time.Time `json:"finished_at,omitempty"`
+}
+
+func (r *Result) Summary() string {
+	if r == nil {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("jobid=%d", r.ID))
+	sb.WriteString(fmt.Sprintf("status=%s", r.Status))
+	sb.WriteString(fmt.Sprintf("ispassed=%+v", r.IsPassed))
+	// skip reason, stdout, stderr
+	sb.WriteString(fmt.Sprintf("resolved_count=%d", r.ResolvedCount))
+	sb.WriteString(fmt.Sprintf("language=%s", r.Language))
+	sb.WriteString(fmt.Sprintf("finished_at=%s", r.FinishedAt.String()))
+
+	return sb.String()
 }
 
 func NewAbortResult(id int) *Result {
@@ -69,6 +87,7 @@ func NewPortal(
 	environment Environment,
 	accessKey, secretAccessKey string,
 ) (*Portal, error) {
+	log.Printf("azid = %s\n", azID)
 	if !strings.HasPrefix(azID, "apne1-az") {
 		return nil, fmt.Errorf("invalid availability zone: %s", azID)
 	}
@@ -91,6 +110,9 @@ func NewPortal(
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("Send Queue: %s\n", sendQueueUrl)
+	log.Printf("Recv Queue: %s\n", recvQueueUrl)
 	return &Portal{
 		client:       client,
 		sendQueueUrl: sendQueueUrl,
@@ -99,23 +121,21 @@ func NewPortal(
 }
 
 func (s *Portal) SendResult(ctx context.Context, job *Job, result *Result) error {
-	sendResultJSONMarshalStartAt := time.Now()
-	log.Printf("sendResultJSONMarshalStartAt = %s\n", sendResultJSONMarshalStartAt.String())
+	log.Println("send result")
+	log.Printf("job = %+v\n", job)
+	log.Println(result.Summary())
+
 	b, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
-	log.Printf("sendResultJSONMarshalFinishedAt = %s\n", time.Since(sendResultJSONMarshalStartAt).String())
 
-	sendResultSendMessageWithContextStartAt := time.Now()
-	log.Printf("sendResultSendMessageWithContextStartAt(aws-sdk-go) = %s", sendResultSendMessageWithContextStartAt.String())
 	if _, err := s.client.SendMessageWithContext(ctx, &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.sendQueueUrl),
 		MessageBody: aws.String(string(b)),
 	}); err != nil {
 		return err
 	}
-	log.Printf("sendResultSendMessageWithContextFinishedAt(aws-sdk-go) = %s\n", time.Since(sendResultSendMessageWithContextStartAt).String())
 
 	return nil
 }
@@ -136,6 +156,7 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 					WaitTimeSeconds:     aws.Int64(1),
 				})
 				if err != nil {
+					log.Printf("Receive message error: %s\n", err.Error())
 					continue loop
 				}
 				if len(resp.Messages) == 0 {
@@ -144,20 +165,24 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 
 				msg := resp.Messages[0]
 
+				log.Println("decode json")
 				var job *Job
 				if err := json.NewDecoder(strings.NewReader(*msg.Body)).Decode(&job); err != nil {
 					log.Printf("failed to decode json: %s\n", err.Error())
 					continue loop
 				}
 
+				log.Println("delete old sqs message")
 				// NOTE: ジョブを取れたらすぐに削除 (可視性タイムアウト)
 				if _, err := s.client.DeleteMessage(&sqs.DeleteMessageInput{
 					QueueUrl:      aws.String(s.recvQueueUrl),
 					ReceiptHandle: msg.ReceiptHandle,
 				}); err != nil {
+					log.Printf("failed to delete sqs message: %s\n", err.Error())
 					continue loop
 				}
 
+				log.Println("accept job")
 				ch <- job
 			}
 		}
