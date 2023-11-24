@@ -444,7 +444,7 @@ $ cat webapp/sql/initdb.d/10_schema.sql | sudo mysql isupipe
 
 一部APIのデータはリクエストへの反映までに許容される猶予時間があります。
 
-- APIのレスポンスに含まれるユーザの情報について、更新リクエストのレスポンスをベンチマーカーが受信してから2秒
+[ISUPipe アプリケーションマニュアル](https://gist.github.com/kazeburo/70b352e6d51969b214f919bcf0794ba6)を参照してください。
 
 ## スコア計算
 
