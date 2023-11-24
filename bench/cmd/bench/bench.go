@@ -326,6 +326,7 @@ var run = cli.Command{
 		numResolves := benchscore.GetByTag(benchscore.DNSResolve)
 		numDNSFailed := benchscore.GetByTag(benchscore.DNSFailed)
 		msgs = append(msgs, fmt.Sprintf("名前解決成功数 %d", numResolves))
+		lgr.Infof("DNSAttacker並列数: %d", benchmarker.attackParallelis)
 		lgr.Infof("名前解決成功数: %d", numResolves)
 		lgr.Infof("名前解決失敗数: %d", numDNSFailed)
 
