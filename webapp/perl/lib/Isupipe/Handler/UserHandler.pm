@@ -197,8 +197,6 @@ sub get_user_handler($app, $c) {
 
 
 sub get_icon_handler($app, $c) {
-    verify_user_session($app, $c);
-
     my $username = $c->args->{username};
 
     my $txn = $app->dbh->txn_scope;
@@ -259,4 +257,3 @@ sub post_icon_handler($app, $c) {
     $res->status(HTTP_CREATED);
     return $res;
 }
-
