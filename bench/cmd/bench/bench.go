@@ -17,7 +17,6 @@ import (
 
 	"github.com/isucon/isucandar/agent"
 	"github.com/isucon/isucandar/score"
-	"github.com/isucon/isucon13/bench/assets"
 	"github.com/isucon/isucon13/bench/internal/bencherror"
 	"github.com/isucon/isucon13/bench/internal/benchscore"
 	"github.com/isucon/isucon13/bench/internal/config"
@@ -187,20 +186,12 @@ var run = cli.Command{
 			config.TargetBaseURL = u.String()
 			contestantLogger.Info("SSL接続が有効になっています")
 		} else {
+			config.TargetPort = 8443
 			contestantLogger.Info("SSL接続が無効になっています")
 		}
 
 		lgr.Infof("webapp: %s", config.TargetBaseURL)
 		lgr.Infof("nameserver: %s", net.JoinHostPort(config.TargetNameserver, strconv.Itoa(config.DNSPort)))
-
-		// FIXME: アセット読み込み
-		contestantLogger.Info("静的ファイルチェックを行います")
-		err = assets.ValidateStaticAssets(contestantLogger, config.TargetBaseURL)
-		if err != nil {
-			dumpFailedResult([]string{"静的ファイルチェックに失敗しました"})
-			return cli.NewExitError(err, 1)
-		}
-		contestantLogger.Info("静的ファイルチェックが完了しました")
 
 		contestantLogger.Info("webappの初期化を行います")
 		initClient, err := isupipe.NewClient(contestantLogger,
@@ -211,6 +202,14 @@ var run = cli.Command{
 			dumpFailedResult([]string{"webapp初期化クライアント生成が失敗しました"})
 			return cli.NewExitError(err, 1)
 		}
+
+		contestantLogger.Info("静的ファイルチェックを行います")
+		err = initClient.ValidateAssets(ctx)
+		if err != nil {
+			dumpFailedResult([]string{"静的ファイルチェックに失敗しました", err.Error()})
+			return cli.NewExitError(err, 1)
+		}
+		contestantLogger.Info("静的ファイルチェックが完了しました")
 
 		pretestDNSResolver := resolver.NewDNSResolver()
 		pretestDNSResolver.ResolveAttempts = 10
