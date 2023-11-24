@@ -244,7 +244,7 @@ func (s *StatsScheduler) GetLivestreamRank(livestreamID int64) (int64, error) {
 	s.livestreamStatsMu.Lock()
 	defer s.livestreamStatsMu.Unlock()
 
-	stats := make(LivestreamStatsRanking, len(s.userStats))
+	stats := make(LivestreamStatsRanking, len(s.livestreamStats))
 	var idx int
 	for _, stat := range s.livestreamStats {
 		stats[idx] = stat
