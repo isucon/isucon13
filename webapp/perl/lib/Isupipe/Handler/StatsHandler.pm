@@ -124,7 +124,7 @@ sub get_user_statistics_handler($app, $c) {
     # 合計視聴者数
     my $viewers_count = 0;
 
-    for my $livestream ($user_livestreams->@*) {
+    for my $livestream ($livestreams->@*) {
         my $cnt = $app->dbh->select_one(
             'SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?',
             $livestream->id,
