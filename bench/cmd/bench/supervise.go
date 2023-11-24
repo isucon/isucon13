@@ -182,8 +182,8 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	if err != nil {
 		return &Result{
 			ID:         job.ID,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
+			Stdout:     joinN(strings.Split(stdout.String(), "\n"), messageLimit),
+			Stderr:     joinN(strings.Split(stderr.String(), "\n"), messageLimit),
 			Reason:     err.Error(),
 			IsPassed:   false,
 			Score:      0,
@@ -200,8 +200,8 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	if err != nil {
 		return &Result{
 			ID:         job.ID,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
+			Stdout:     joinN(strings.Split(stdout.String(), "\n"), messageLimit),
+			Stderr:     joinN(strings.Split(stderr.String(), "\n"), messageLimit),
 			Reason:     err.Error(),
 			IsPassed:   false,
 			Score:      0,
@@ -215,8 +215,8 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	if err := json.NewDecoder(bytes.NewBuffer(b)).Decode(&benchResult); err != nil {
 		return &Result{
 			ID:         job.ID,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
+			Stdout:     joinN(strings.Split(stdout.String(), "\n"), messageLimit),
+			Stderr:     joinN(strings.Split(stderr.String(), "\n"), messageLimit),
 			Reason:     err.Error(),
 			IsPassed:   false,
 			Score:      0,
@@ -232,8 +232,8 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		log.Println("success benchmark")
 		return &Result{
 			ID:            job.ID,
-			Stdout:        stdout.String(),
-			Stderr:        stderr.String(),
+			Stdout:        joinN(strings.Split(stdout.String(), "\n"), messageLimit),
+			Stderr:        joinN(strings.Split(stderr.String(), "\n"), messageLimit),
 			Reason:        joinN(msgs, messageLimit),
 			IsPassed:      benchResult.Pass,
 			Score:         benchResult.Score,
@@ -246,8 +246,8 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		log.Println("fail benchmark")
 		return &Result{
 			ID:         job.ID,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
+			Stdout:     joinN(strings.Split(stdout.String(), "\n"), messageLimit),
+			Stderr:     joinN(strings.Split(stderr.String(), "\n"), messageLimit),
 			Reason:     "ベンチマーク失敗",
 			IsPassed:   false,
 			Score:      0,
