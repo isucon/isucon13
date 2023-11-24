@@ -47,14 +47,6 @@ export const Reaction = React.memo(function Reaction(
   );
 });
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'em-emoji': any;
-    }
-  }
-}
-
 const shortcoes = [':+1:', ':heart:', ':clap:', ':tada:', ':smile:'];
 export function RandomReactions(): React.ReactElement {
   const [reactions, setReactions] = React.useState<React.ReactNode[]>([]);
