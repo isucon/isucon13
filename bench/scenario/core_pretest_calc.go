@@ -10,7 +10,6 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
-	"github.com/najeira/randstr"
 	"go.uber.org/zap"
 )
 
@@ -77,8 +76,8 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 	livestream, err := streamerClient.ReserveLivestream(ctx, streamer.Name, &isupipe.ReserveLivestreamRequest{
-		Title:        randstr.String(18),
-		Description:  randstr.String(50),
+		Title:        coldReservation.Title,
+		Description:  coldReservation.Description,
 		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
 		ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final.webp",
 		StartAt:      coldReservation.StartAt,
