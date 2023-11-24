@@ -23,10 +23,14 @@ func ValidateStaticAssets(contestantLogger *zap.Logger, targetBaseURL string) er
 		if err != nil {
 			return err
 		}
-		b := make([]byte, resp.ContentLength)
-		_, err = resp.Body.Read(b)
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("ファイルのダウンロードに失敗しました %s", asset.Path)
+		}
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "read")
 		}
 		actualAssetHash := sha256.Sum256(b)
 		if asset.Hash != actualAssetHash {
