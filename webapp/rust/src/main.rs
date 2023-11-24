@@ -1763,8 +1763,8 @@ struct UserStatistics {
 }
 
 #[derive(Debug)]
-struct UserRankingEntry<'a> {
-    username: &'a str,
+struct UserRankingEntry {
+    username: String,
     score: i64,
 }
 
@@ -1821,7 +1821,7 @@ async fn get_user_statistics_handler(
 
     let mut tx = pool.begin().await?;
 
-    let _: UserModel = sqlx::query_as("SELECT * FROM users WHERE name = ?")
+    let user: UserModel = sqlx::query_as("SELECT * FROM users WHERE name = ?")
         .bind(&username)
         .fetch_optional(&mut *tx)
         .await?
@@ -1833,7 +1833,7 @@ async fn get_user_statistics_handler(
         .await?;
 
     let mut ranking = Vec::new();
-    for user in &users {
+    for user in users {
         let query = r#"
         SELECT COUNT(*) FROM users u
         INNER JOIN livestreams l ON l.user_id = u.id
@@ -1858,14 +1858,14 @@ async fn get_user_statistics_handler(
 
         let score = reactions + tips;
         ranking.push(UserRankingEntry {
-            username: &user.name,
+            username: user.name,
             score,
         });
     }
     ranking.sort_by(|a, b| {
         a.score
             .cmp(&b.score)
-            .then_with(|| a.username.cmp(b.username))
+            .then_with(|| a.username.cmp(&b.username))
     });
 
     let rpos = ranking
@@ -1889,44 +1889,35 @@ async fn get_user_statistics_handler(
     // ライブコメント数、チップ合計
     let mut total_livecomments = 0;
     let mut total_tip = 0;
-    for user in &users {
-        let livestreams: Vec<LivestreamModel> =
-            sqlx::query_as("SELECT * FROM livestreams WHERE user_id = ?")
-                .bind(user.id)
+    let livestreams: Vec<LivestreamModel> =
+        sqlx::query_as("SELECT * FROM livestreams WHERE user_id = ?")
+            .bind(user.id)
+            .fetch_all(&mut *tx)
+            .await?;
+
+    for livestream in &livestreams {
+        let livecomments: Vec<LivecommentModel> =
+            sqlx::query_as("SELECT * FROM livecomments WHERE livestream_id = ?")
+                .bind(livestream.id)
                 .fetch_all(&mut *tx)
                 .await?;
 
-        for livestream in livestreams {
-            let livecomments: Vec<LivecommentModel> =
-                sqlx::query_as("SELECT * FROM livecomments WHERE livestream_id = ?")
-                    .bind(livestream.id)
-                    .fetch_all(&mut *tx)
-                    .await?;
-
-            for livecomment in livecomments {
-                total_tip += livecomment.tip;
-                total_livecomments += 1;
-            }
+        for livecomment in livecomments {
+            total_tip += livecomment.tip;
+            total_livecomments += 1;
         }
     }
 
     // 合計視聴者数
     let mut viewers_count = 0;
-    for user in users {
-        let livestreams: Vec<LivestreamModel> =
-            sqlx::query_as("SELECT * FROM livestreams WHERE user_id = ?")
-                .bind(user.id)
-                .fetch_all(&mut *tx)
-                .await?;
-        for livestream in livestreams {
-            let MysqlDecimal(cnt) = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?",
-            )
-            .bind(livestream.id)
-            .fetch_one(&mut *tx)
-            .await?;
-            viewers_count += cnt;
-        }
+    for livestream in livestreams {
+        let MysqlDecimal(cnt) = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?",
+        )
+        .bind(livestream.id)
+        .fetch_one(&mut *tx)
+        .await?;
+        viewers_count += cnt;
     }
 
     // お気に入り絵文字

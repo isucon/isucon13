@@ -101,49 +101,38 @@ export const getUserStatisticsHandler = [
       // ライブコメント数、チップ合計
       let totalLivecomments = 0
       let totalTip = 0
-      for (const user of users) {
-        const [livestreams] = await conn
-          .query<(LivestreamsModel & RowDataPacket)[]>(
-            `SELECT * FROM livestreams WHERE user_id = ?`,
-            [user.id],
+      const [livestreams] = await conn
+        .query<(LivestreamsModel & RowDataPacket)[]>(
+          `SELECT * FROM livestreams WHERE user_id = ?`,
+          [user.id],
+        )
+        .catch(throwErrorWith('failed to get livestreams'))
+
+      for (const livestream of livestreams) {
+        const [livecomments] = await conn
+          .query<(LivecommentsModel & RowDataPacket)[]>(
+            `SELECT * FROM livecomments WHERE livestream_id = ?`,
+            [livestream.id],
           )
-          .catch(throwErrorWith('failed to get livestreams'))
+          .catch(throwErrorWith('failed to get livecomments'))
 
-        for (const livestream of livestreams) {
-          const [livecomments] = await conn
-            .query<(LivecommentsModel & RowDataPacket)[]>(
-              `SELECT * FROM livecomments WHERE livestream_id = ?`,
-              [livestream.id],
-            )
-            .catch(throwErrorWith('failed to get livecomments'))
-
-          for (const livecomment of livecomments) {
-            totalTip += livecomment.tip
-            totalLivecomments++
-          }
+        for (const livecomment of livecomments) {
+          totalTip += livecomment.tip
+          totalLivecomments++
         }
       }
 
       // 合計視聴者数
       let viewersCount = 0
-      for (const user of users) {
-        const [livestreams] = await conn
-          .query<(LivestreamsModel & RowDataPacket)[]>(
-            `SELECT * FROM livestreams WHERE user_id = ?`,
-            [user.id],
+      for (const livestream of livestreams) {
+        const [[{ 'COUNT(*)': livestreamViewerCount }]] = await conn
+          .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
+            `SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?`,
+            [livestream.id],
           )
-          .catch(throwErrorWith('failed to get livestreams'))
+          .catch(throwErrorWith('failed to get livestream_view_history'))
 
-        for (const livestream of livestreams) {
-          const [[{ 'COUNT(*)': livestreamViewerCount }]] = await conn
-            .query<({ 'COUNT(*)': number } & RowDataPacket)[]>(
-              `SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?`,
-              [livestream.id],
-            )
-            .catch(throwErrorWith('failed to get livestream_view_history'))
-
-          viewersCount += livestreamViewerCount
-        }
+        viewersCount += livestreamViewerCount
       }
 
       // お気に入り絵文字

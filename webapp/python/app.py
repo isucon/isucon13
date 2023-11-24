@@ -1120,8 +1120,8 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
-        row = c.fetchone()
-        if row is None:
+        user = c.fetchone()
+        if user is None:
             raise HttpException("not found user that has the given username", NOT_FOUND)
 
         # ランク算出
@@ -1196,56 +1196,44 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
         # ライブコメント数、チップ合計
         total_livecomments = 0
         total_tip = 0
-        for user in users:
-            sql = "SELECT * FROM livestreams WHERE user_id = %s"
-            c.execute(sql, [user.id])
-            rows = c.fetchall()
-            if rows is None:
-                app.logger.error("livestreams livecomments")
+        sql = "SELECT * FROM livestreams WHERE user_id = %s"
+        c.execute(sql, [user.id])
+        rows = c.fetchall()
+        if rows is None:
+            app.logger.error("livestreams livecomments")
+            raise HttpException(
+                "failed to get livestreams",
+                INTERNAL_SERVER_ERROR,
+            )
+        livestreams = [models.LiveStreamModel(**row) for row in rows]
+
+        for livestream in livestreams:
+            sql = "SELECT * FROM livecomments WHERE livestream_id = %s"
+            c.execute(sql, [livestream.id])
+            livecomments = c.fetchall()
+            if livecomments is None:
+                app.logger.error("livecomments")
                 raise HttpException(
-                    "failed to get livestreams",
+                    "failed to get livecomments",
                     INTERNAL_SERVER_ERROR,
                 )
-            livestreams = [models.LiveStreamModel(**row) for row in rows]
-
-            for livestream in livestreams:
-                sql = "SELECT * FROM livecomments WHERE livestream_id = %s"
-                c.execute(sql, [livestream.id])
-                livecomments = c.fetchall()
-                if livecomments is None:
-                    app.logger.error("livecomments")
-                    raise HttpException(
-                        "failed to get livecomments",
-                        INTERNAL_SERVER_ERROR,
-                    )
-                for livecomment in livecomments:
-                    total_tip += livecomment["tip"]
-                    total_livecomments += 1
+            for livecomment in livecomments:
+                total_tip += livecomment["tip"]
+                total_livecomments += 1
 
         # 合計視聴者数
         viewers_count = 0
-        for user in users:
-            sql = "SELECT * FROM livestreams WHERE user_id = %s"
-            c.execute(sql, [user.id])
-            rows = c.fetchall()
-            if rows is None:
-                app.logger.error("viewers_count")
+
+        for livestream in livestreams:
+            sql = "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = %s"
+            c.execute(sql, [livestream.id])
+            cnt = c.fetchone()
+            if not cnt:
                 raise HttpException(
-                    "failed to get livestreams",
+                    "failed to get livestream_view_history",
                     INTERNAL_SERVER_ERROR,
                 )
-            livestreams = [models.LiveStreamModel(**row) for row in rows]
-
-            for livestream in livestreams:
-                sql = "SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = %s"
-                c.execute(sql, [livestream.id])
-                cnt = c.fetchone()
-                if not cnt:
-                    raise HttpException(
-                        "failed to get livestream_view_history",
-                        INTERNAL_SERVER_ERROR,
-                    )
-                viewers_count += int(cnt["COUNT(*)"])
+            viewers_count += int(cnt["COUNT(*)"])
 
         # お気に入り絵文字
         sql = """

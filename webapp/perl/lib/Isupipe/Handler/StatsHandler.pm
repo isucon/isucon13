@@ -20,15 +20,17 @@ sub get_user_statistics_handler($app, $c) {
     verify_user_session($app, $c);
 
     my $username = $c->args->{username};
+    # ユーザごとに、紐づく配信について、累計リアクション数、累計ライブコメント数、累計売上金額を算出
+    # また、現在の合計視聴者数もだす
 
     my $txn = $app->dbh->txn_scope;
 
-    my $selected_user = $app->dbh->select_row_as(
+    my $user = $app->dbh->select_row_as(
         'Isupipe::Entity::User',
         'SELECT * FROM users WHERE name = ?',
         $username,
     );
-    unless ($selected_user) {
+    unless ($user) {
         $c->halt(HTTP_NOT_FOUND, 'not found user that has the given username');
     }
 
@@ -102,43 +104,34 @@ sub get_user_statistics_handler($app, $c) {
     # ライブコメント数、チップ合計
     my $total_livecomments = 0;
     my $total_tip = 0;
-    for my $user ($users->@*) {
-        my $livestreams = $app->dbh->select_all_as(
-            'Isupipe::Entity::Livestream',
-            'SELECT * FROM livestreams WHERE user_id = ?',
-            $user->id,
+    my $livestreams = $app->dbh->select_all_as(
+        'Isupipe::Entity::Livestream',
+        'SELECT * FROM livestreams WHERE user_id = ?',
+        $user->id,
+    );
+
+    for my $livestream ($livestreams->@*) {
+        my $livecomments = $app->dbh->select_all_as(
+            'Isupipe::Entity::Livecomment',
+            'SELECT * FROM livecomments WHERE livestream_id = ?',
+            $livestream->id,
         );
 
-        for my $livestream ($livestreams->@*) {
-            my $livecomments = $app->dbh->select_all_as(
-                'Isupipe::Entity::Livecomment',
-                'SELECT * FROM livecomments WHERE livestream_id = ?',
-                $livestream->id,
-            );
-
-            for my $livecomment ($livecomments->@*) {
-                $total_tip += $livecomment->tip;
-                $total_livecomments++;
-            }
+        for my $livecomment ($livecomments->@*) {
+            $total_tip += $livecomment->tip;
+            $total_livecomments++;
         }
     }
 
     # 合計視聴者数
     my $viewers_count = 0;
-    for my $user ($users->@*) {
-        my $livestreams = $app->dbh->select_all_as(
-            'Isupipe::Entity::Livestream',
-            'SELECT * FROM livestreams WHERE user_id = ?',
-            $user->id,
-        );
 
-        for my $livestream ($livestreams->@*) {
-            my $cnt = $app->dbh->select_one(
-                'SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?',
-                $livestream->id,
-            );
-            $viewers_count += $cnt;
-        }
+    for my $livestream ($livestreams->@*) {
+        my $cnt = $app->dbh->select_one(
+            'SELECT COUNT(*) FROM livestream_viewers_history WHERE livestream_id = ?',
+            $livestream->id,
+        );
+        $viewers_count += $cnt;
     }
 
     # お気に入り絵文字
