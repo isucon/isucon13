@@ -20,6 +20,7 @@ import {
   UserModel,
 } from '../types/models'
 import { throwErrorWith } from '../utils/throw-error-with'
+import { atoi } from '../utils/integer'
 
 // POST /api/livestream/reservation
 export const reserveLivestreamHandler = [
@@ -188,10 +189,10 @@ export const searchLivestreamsHandler = async (
       let query = `SELECT * FROM livestreams ORDER BY id DESC`
       const limit = c.req.query('limit')
       if (limit) {
-        if (!Number.isInteger(Number(limit))) {
+        const limitNumber = atoi(limit)
+        if (limitNumber === false) {
           return c.text('limit query parameter must be integer', 400)
         }
-        const limitNumber = Number.parseInt(limit, 10)
         query += ` LIMIT ${limitNumber}`
       }
 
@@ -324,10 +325,10 @@ export const enterLivestreamHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/enter'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -361,10 +362,10 @@ export const exitLivestreamHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/exit'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -395,10 +396,10 @@ export const exitLivestreamHandler = [
 export const getLivestreamHandler = [
   verifyUserSessionMiddleware,
   async (c: Context<HonoEnvironment, '/api/livestream/:livestream_id'>) => {
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
@@ -441,10 +442,10 @@ export const getLivecommentReportsHandler = [
     c: Context<HonoEnvironment, '/api/livestream/:livestream_id/report'>,
   ) => {
     const userId = c.get('session').get(defaultUserIDKey) as number // userId is verified by verifyUserSessionMiddleware
-    if (!Number.isInteger(Number(c.req.param('livestream_id')))) {
+    const livestreamId = atoi(c.req.param('livestream_id'))
+    if (livestreamId === false) {
       return c.text('livestream_id in path must be integer', 400)
     }
-    const livestreamId = Number.parseInt(c.req.param('livestream_id'), 10)
 
     const conn = await c.get('pool').getConnection()
     await conn.beginTransaction()
