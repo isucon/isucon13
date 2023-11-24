@@ -5,10 +5,6 @@ import (
 	"math/rand"
 )
 
-func init() {
-	rand.Shuffle(len(streamerPool), func(i, j int) { streamerPool[i], streamerPool[j] = streamerPool[j], streamerPool[i] })
-}
-
 var UserScheduler = mustNewUserScheduler()
 
 type User struct {
