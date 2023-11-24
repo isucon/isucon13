@@ -287,8 +287,10 @@ func (c *Client) ReportLivecomment(ctx context.Context, livestreamID int64, stre
 			return bencherror.NewHttpResponseError(err, req)
 		}
 
-		if err := ValidateResponse(req, livecommentReport); err != nil {
-			return err
+		if o.validateReportLivecomment {
+			if err := ValidateResponse(req, livecommentReport); err != nil {
+				return err
+			}
 		}
 	}
 

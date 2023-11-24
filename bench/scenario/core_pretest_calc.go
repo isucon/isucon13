@@ -249,7 +249,7 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 			return err
 		}
 
-		err = viewer.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecommentResp.ID)
+		err = viewer.ReportLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecommentResp.ID, isupipe.WithValidateReportLivecomment())
 		if err != nil {
 			return err
 		}

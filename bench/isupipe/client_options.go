@@ -15,6 +15,9 @@ type ClientOptions struct {
 	limitParam     *LimitParam
 	searchTag      *SearchTagParam
 	eTag           string
+	// NOTE: スパム報告は、ベンチ走行中は粛清されたライブコメントを期待する場合が有り、エラーになることがある
+	// Pretestでのみスパム報告のバリデーションを行うための対応
+	validateReportLivecomment bool
 }
 
 func newClientOptions(defaultStatusCode int, opts ...ClientOption) *ClientOptions {
@@ -55,5 +58,11 @@ func WithSearchTagQueryParam(tag string) ClientOption {
 func WithETag(eTag string) ClientOption {
 	return func(o *ClientOptions) {
 		o.eTag = eTag
+	}
+}
+
+func WithValidateReportLivecomment() ClientOption {
+	return func(o *ClientOptions) {
+		o.validateReportLivecomment = true
 	}
 }

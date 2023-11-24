@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrCancelRequest = errors.New("contextのタイムアウトによりリクエストがキャンセルされます")
+var ErrCancelRequest = errors.New("ベンチマーク走行が継続できないエラーが発生しました")
 
 // Client は、ISUPipeに対するHTTPクライアントです
 // NOTE: スレッドセーフではありません
@@ -157,8 +157,7 @@ func sendRequest(ctx context.Context, agent *agent.Agent, req *http.Request) (*h
 			if netErr.Timeout() {
 				return resp, bencherror.NewTimeoutError(err, "%s", endpoint)
 			} else {
-				// 接続ができないなど、ベンチ継続する上で致命的なエラー
-				return resp, bencherror.NewTimeoutError(err, "webappの %s に対するリクエストで、接続に失敗しました", endpoint)
+				return resp, ErrCancelRequest
 			}
 		} else {
 			return resp, bencherror.NewApplicationError(err, "%s に対するリクエストが失敗しました", endpoint)

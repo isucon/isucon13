@@ -106,7 +106,7 @@ func BasicViewerScenario(
 			return err
 		}
 		if _, _, err := client.PostLivecomment(ctx, livestream.ID, livestream.Owner.Name, livecomment.Comment, tip); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
-			// FIXME: 離脱関連のハンドリング
+			contestantLogger.Warn("ライブコメントを配信に投稿できないため、視聴者が離脱します", zap.String("viewer", username), zap.Int64("livestream_id", livestream.ID), zap.Error(err))
 			lgr.Warnf("view: failed to post livecomment: %s\n", err.Error())
 			return err
 		}
@@ -124,6 +124,7 @@ func BasicViewerScenario(
 			continue
 		}
 	}
+	contestantLogger.Info("視聴者が配信を最後まで視聴できました", zap.String("username", username), zap.Int("duration_hours", livestream.Hours()))
 
 	if err := LeaveFromLivestream(ctx, contestantLogger, client, livestream); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 		lgr.Warnf("view: failed to leave from livestream: %s\n", err.Error())
