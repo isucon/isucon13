@@ -6,21 +6,14 @@ import (
 	"slices"
 	"sort"
 	"sync"
-	"time"
 )
 
 var StatsSched = NewStatsScheduler()
 
 func init() {
-	startAt := time.Now()
-	log.Printf("Start loading initial data ... %s\n", startAt.String())
 	if err := StatsSched.loadInitialData(); err != nil {
 		log.Fatalln(err)
 	}
-	elapsed := time.Since(startAt)
-	endAt := time.Now()
-	log.Printf("Finish loading initial data: %s\n", endAt.String())
-	log.Printf("elapsed = %s\n", elapsed.String())
 }
 
 // NOTE: Pretestの用途で利用を想定
@@ -230,7 +223,8 @@ func (s *StatsScheduler) GetUserRank(username string) (int64, error) {
 	sort.Sort(stats)
 
 	var rank int64 = 1
-	for _, stat := range stats {
+	for i := len(stats) - 1; i >= 0; i-- {
+		stat := stats[i]
 		if stat.Username == username {
 			return rank, nil
 		}
@@ -253,7 +247,8 @@ func (s *StatsScheduler) GetLivestreamRank(livestreamID int64) (int64, error) {
 	sort.Sort(stats)
 
 	var rank int64 = 1
-	for _, stat := range stats {
+	for i := len(stats) - 1; i >= 0; i-- {
+		stat := stats[i]
 		if stat.LivestreamID == livestreamID {
 			return rank, nil
 		}
@@ -268,23 +263,21 @@ func (s *StatsScheduler) GetLivestreamRank(livestreamID int64) (int64, error) {
 func (s *StatsScheduler) EnterLivestream(streamerName string, livestreamID int64) error {
 	// ユーザ
 	s.userStatsMu.Lock()
+	defer s.userStatsMu.Unlock()
 	userStats, ok := s.userStats[streamerName]
 	if !ok {
-		s.userStatsMu.Unlock()
 		return fmt.Errorf("統計情報の更新に失敗(EnterLivestream.userStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
 	userStats.TotalViewers++
-	s.userStatsMu.Unlock()
 
 	// ライブ配信
 	s.livestreamStatsMu.Lock()
+	defer s.livestreamStatsMu.Unlock()
 	livestreamStats, ok := s.livestreamStats[livestreamID]
 	if !ok {
-		s.livestreamStatsMu.Unlock()
 		return fmt.Errorf("統計情報の更新に失敗(EnterLivestream.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
 	livestreamStats.totalViewers++
-	s.livestreamStatsMu.Unlock()
 
 	return nil
 }
@@ -356,7 +349,6 @@ func (s *StatsScheduler) AddReport(streamerName string, livestreamID int64) erro
 	defer s.livestreamStatsMu.Unlock()
 	livestreamStats, ok := s.livestreamStats[livestreamID]
 	if !ok {
-		s.livestreamStatsMu.Unlock()
 		return fmt.Errorf("統計情報の更新に失敗(AddReaction.livestreamStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
 	livestreamStats.totalReports++

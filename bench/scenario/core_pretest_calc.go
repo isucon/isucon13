@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/rand"
 
 	"github.com/isucon/isucandar/agent"
@@ -58,20 +59,11 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
-	name := randstr.String(12) + "sc"
-	passwd := randstr.String(12)
-	user, err := client.Register(ctx, &isupipe.RegisterRequest{
-		Name:        name,
-		DisplayName: randDisplayName(),
-		Description: `普段医療事務員をしています。
-よろしくおねがいします！
-
-連絡は以下からお願いします。
-
-ウェブサイト: http://itomanabu.example.com/
-メールアドレス: itomanabu@example.com
-`,
-		Password: passwd,
+	_, err = client.Register(ctx, &isupipe.RegisterRequest{
+		Name:        "user-stats-calc",
+		DisplayName: "user-stats-calc",
+		Description: "user-stats-calc",
+		Password:    "test",
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -87,28 +79,37 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
-	stats1, err := client.GetUserStatistics(ctx, user.Name)
+	userID := int64(1 + (rand.Int() % 10))
+	user, err := scheduler.UserScheduler.GetInitialUserForPretest(userID)
+	if err != nil {
+		return err
+	}
+	username := user.Name
+
+	stats1, err := client.GetUserStatistics(ctx, username)
 	if err != nil {
 		return err
 	}
 
-	wantStats1, err := scheduler.StatsSched.GetUserStats(user.Name)
+	wantStats1, err := scheduler.StatsSched.GetUserStats(username)
 	if err != nil {
 		return err
 	}
 
-	userRank, err := scheduler.StatsSched.GetUserRank(user.Name)
+	log.Printf("stats1 = %+v\n", stats1)
+	log.Printf("wantStats1 = %+v\n", wantStats1)
+
+	userRank, err := scheduler.StatsSched.GetUserRank(username)
 	if err != nil {
 		return err
 	}
 	if stats1.Rank != userRank {
-		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", user.Name, userRank, stats1.Rank)
+		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", username, userRank, stats1.Rank)
 	}
-
 	favoriteEmoji, ok := wantStats1.FavoriteEmoji()
 	if ok {
 		if stats1.FavoriteEmoji != favoriteEmoji {
-			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", user.Name, favoriteEmoji, stats1.FavoriteEmoji)
+			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", username, favoriteEmoji, stats1.FavoriteEmoji)
 		}
 	}
 
