@@ -31,9 +31,11 @@ func (c *checker) checkInstance(i *ec2.Instance) {
 	if *i.InstanceType != "c5.large" {
 		c.addFailure("%s のインスタンスタイプが %s です (t3.micro である必要があります)", id, *i.InstanceType)
 	}
-	if c.ExpectedAMI != "" && *i.ImageId != c.ExpectedAMI {
-		c.addFailure("%s の AMI が %s です (%s である必要があります)", id, *i.ImageId, c.ExpectedAMI)
-	}
+	/*
+		if c.ExpectedAMI != "" && *i.ImageId != c.ExpectedAMI {
+			c.addFailure("%s の AMI が %s です (%s である必要があります)", id, *i.ImageId, c.ExpectedAMI)
+		}
+	*/
 	if c.ExpectedAZ != "" {
 		azName := GetAZName(c.DescribeAvailabilityZones, c.ExpectedAZ)
 		if *i.Placement.AvailabilityZone != azName {

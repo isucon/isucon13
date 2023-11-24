@@ -55,10 +55,11 @@ func dumpFailedResult(msgs []string) {
 	lgr := zap.S()
 
 	messages := []string{}
+	messages = append(messages, msgs...)
 	for _, errs := range bencherror.GetFinalBenchErrors() {
 		messages = append(messages, errs...)
 	}
-	messages = append(messages, msgs...)
+	messages = uniqueMsgs(messages)
 
 	b, err := json.Marshal(&BenchResult{
 		Pass:     false,
@@ -71,6 +72,12 @@ func dumpFailedResult(msgs []string) {
 		fmt.Printf(`{"pass": false, "score": 0, "messages": ["%s"]}`, string(b))
 		fmt.Println("")
 		return
+	}
+
+	if err := os.WriteFile(config.ResultPath, b, os.ModePerm); err != nil {
+		lgr.Warnf("失格判定結果書き出しに失敗. 運営に連絡してください: messages=%+v, err=%+v", msgs, err)
+		fmt.Printf(`{"pass": false, "score": 0, "messages": ["%s"]}`, string(b))
+		fmt.Println("")
 	}
 
 	fmt.Println(string(b))
@@ -219,6 +226,7 @@ var run = cli.Command{
 		benchscore.InitCounter(ctx)
 		bencherror.InitErrors(ctx)
 		if err := scenario.Pretest(ctx, contestantLogger, pretestDNSResolver); err != nil {
+			bencherror.Done()
 			dumpFailedResult([]string{"整合性チェックに失敗しました", err.Error()})
 			return nil
 		}
@@ -242,6 +250,7 @@ var run = cli.Command{
 		benchmarker := newBenchmarker(benchCtx, contestantLogger)
 		if err := benchmarker.run(benchCtx); err != nil {
 			lgr.Warnf("ベンチマーク中断: %s", err.Error())
+			bencherror.Done()
 			dumpFailedResult([]string{"ベンチマーク走行が中断されました", err.Error()})
 			return nil
 		}
