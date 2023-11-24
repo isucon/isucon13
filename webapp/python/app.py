@@ -1403,7 +1403,7 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
                     )
                 )
             )
-        ranking = sorted(ranking, key=lambda x: x["score"])
+        ranking = sorted(ranking, key=lambda x: (x.score, x.username))
 
         rank = 1
         i = len(ranking) - 1
