@@ -63,6 +63,11 @@ func NotifyWorkerErr(job *Job, err error, stdout, stderr string, msg string, arg
 					Short: true,
 				},
 				slack.AttachmentField{
+					Title: "AZ名",
+					Value: AZName,
+					Short: true,
+				},
+				slack.AttachmentField{
 					Title: "メッセージ",
 					Value: fmt.Sprintf(msg, args...),
 					Short: true,

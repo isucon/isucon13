@@ -44,12 +44,7 @@ const (
 var AZName string
 
 func init() {
-	azName, err := fetchAZName(context.Background())
-	if err != nil {
-		log.Fatalln(err)
-	}
 
-	AZName = azName
 }
 
 func ResolveAZName(azID string) (string, bool) {
@@ -299,6 +294,14 @@ var supervise = cli.Command{
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 		defer cancel()
 		log.Println("Start ISUPipe Supervisor")
+
+		log.Println("Fetching AZ Name ...")
+		azName, err := fetchAZName(context.Background())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		AZName = azName
+		log.Printf("AZ Name = %s\n", AZName)
 
 		privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
 		if err != nil {
