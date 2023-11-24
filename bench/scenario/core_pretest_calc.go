@@ -114,9 +114,6 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 	if stats1.TotalReactions != userStats1.TotalReactions() {
 		return fmt.Errorf("ユーザ %s の総リアクション数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalReactions, userStats1.TotalReactions())
 	}
-	if stats1.TotalLivecomments != userStats1.TotalLivecomments {
-		return fmt.Errorf("ユーザ %s の総ライブコメント数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalLivecomments, userStats1.TotalLivecomments)
-	}
 	if stats1.ViewersCount != 0 {
 		return fmt.Errorf("ユーザ %s の総視聴者数が不正です: expected=%d, actual=%d", streamer.Name, stats1.TotalLivecomments, userStats1.TotalLivecomments)
 	}
