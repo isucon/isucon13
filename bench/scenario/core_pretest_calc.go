@@ -75,6 +75,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 	livestream, err := streamerClient.ReserveLivestream(ctx, streamer.Name, &isupipe.ReserveLivestreamRequest{
+		Tags:         []int64{},
 		Title:        coldReservation.Title,
 		Description:  coldReservation.Description,
 		PlaylistUrl:  "https://media.xiii.isucon.dev/api/4/playlist.m3u8",
