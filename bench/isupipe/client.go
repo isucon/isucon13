@@ -157,7 +157,7 @@ func sendRequest(ctx context.Context, agent *agent.Agent, req *http.Request) (*h
 			if netErr.Timeout() {
 				return resp, bencherror.NewTimeoutError(err, "%s", endpoint)
 			} else {
-				return resp, ErrCancelRequest
+				return resp, fmt.Errorf("%s: %w", netErr.Error(), ErrCancelRequest)
 			}
 		} else {
 			return resp, bencherror.NewApplicationError(err, "%s に対するリクエストが失敗しました", endpoint)

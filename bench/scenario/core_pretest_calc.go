@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/rand"
 
 	"github.com/isucon/isucandar/agent"
@@ -79,6 +80,7 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 
 	coldReservation, err := scheduler.ReservationSched.GetColdShortReservation()
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	livestream, err := streamerClient.ReserveLivestream(ctx, streamer.Name, &isupipe.ReserveLivestreamRequest{
