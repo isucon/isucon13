@@ -11,7 +11,6 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/internal/scheduler"
 	"github.com/isucon/isucon13/bench/isupipe"
-	"github.com/najeira/randstr"
 	"go.uber.org/zap"
 )
 
@@ -59,22 +58,18 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
-	_, err = client.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "user-stats-calc",
-		DisplayName: "user-stats-calc",
-		Description: "user-stats-calc",
-		Password:    "test",
-		Theme: isupipe.Theme{
-			DarkMode: true,
-		},
-	})
-	if err != nil {
+	randNumber := rand.Intn(100)
+	loginUser := scheduler.GetInitialUserByID(int64(1 + randNumber))
+	if err := client.Login(ctx, &isupipe.LoginRequest{
+		Username: loginUser.Name,
+		Password: loginUser.RawPassword,
+	}); err != nil {
 		return err
 	}
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: "user-stats-calc",
-		Password: "test",
+		Username: loginUser.Name,
+		Password: loginUser.RawPassword,
 	}); err != nil {
 		return err
 	}
@@ -179,44 +174,23 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 
-	name := fmt.Sprintf("%slsc", randstr.String(11))
-	passwd := randstr.String(17)
-	_, err = client.Register(ctx, &isupipe.RegisterRequest{
-		Name:        name,
-		DisplayName: randDisplayName(),
-		Description: `普段薬剤師をしています。
-よろしくおねがいします！
-
-連絡は以下からお願いします。
-
-ウェブサイト: http://kobayashiminoru.example.com/
-メールアドレス: kobayashiminoru@example.com
-`,
-		Password: passwd,
-		Theme: isupipe.Theme{
-			DarkMode: true,
-		},
-	})
-	if err != nil {
-		return err
-	}
-
+	randNumber := rand.Intn(100)
+	user := scheduler.GetInitialUserByID(int64(1 + randNumber))
 	if err := client.Login(ctx, &isupipe.LoginRequest{
-		Username: name,
-		Password: passwd,
+		Username: user.Name,
+		Password: user.RawPassword,
 	}); err != nil {
 		return err
 	}
 
-	randNumber := rand.Intn(100)
 	livestreamID := int64(scheduler.GetLivestreamLength() - randNumber)
 	livestream := scheduler.GetLivestreamByID(livestreamID)
-	user, err := scheduler.UserScheduler.GetInitialUserForPretest(livestream.OwnerID)
+	streamer, err := scheduler.UserScheduler.GetInitialUserForPretest(livestream.OwnerID)
 	if err != nil {
 		return err
 	}
 
-	stats1, err := client.GetLivestreamStatistics(ctx, livestreamID, user.Name)
+	stats1, err := client.GetLivestreamStatistics(ctx, livestreamID, streamer.Name)
 	if err != nil {
 		return err
 	}

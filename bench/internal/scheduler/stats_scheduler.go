@@ -81,7 +81,6 @@ func (s *UserStats) FavoriteEmoji() (string, bool) {
 		return "", false
 	}
 
-	// FIXME: 文字列アルファベット順の昇順になるはずだが、要チェック
 	slices.Sort(favoriteEmojis)
 	return favoriteEmojis[len(favoriteEmojis)-1], true
 }
