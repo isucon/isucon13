@@ -20,6 +20,48 @@ type TagsResponse struct {
 	Tags []*Tag `json:"tags" validate:"required,dive,required"`
 }
 
+func (c *Client) GetTagsWithUser(ctx context.Context, streamerName string, opts ...ClientOption) (*TagsResponse, error) {
+	var (
+		defaultStatusCode = http.StatusOK
+		o                 = newClientOptions(defaultStatusCode, opts...)
+	)
+
+	if err := c.setStreamerURL(streamerName); err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	req, err := c.agent.NewRequest(http.MethodGet, "/api/tag", nil)
+	if err != nil {
+		return nil, bencherror.NewInternalError(err)
+	}
+
+	resp, err := sendRequest(ctx, c.agent, req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != o.wantStatusCode {
+		return nil, bencherror.NewHttpStatusError(req, o.wantStatusCode, resp.StatusCode)
+	}
+
+	var tags *TagsResponse
+	if resp.StatusCode == defaultStatusCode {
+		if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+			return nil, err
+		}
+
+		if err := ValidateResponse(req, tags); err != nil {
+			return nil, err
+		}
+	}
+
+	return tags, nil
+}
+
 func (c *Client) GetTags(ctx context.Context, opts ...ClientOption) (*TagsResponse, error) {
 	var (
 		defaultStatusCode = http.StatusOK
