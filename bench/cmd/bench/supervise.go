@@ -15,17 +15,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/isucon/isucon13/bench/internal/config"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 )
 
 // FIXME: SQSのメッセージサイズが最大で256KBなので、200KB程度までで打ち切るように
-
-const (
-	resultPath        = "/tmp/result.json"
-	staffLogPath      = "/tmp/staff.log"
-	contestantLogPath = "/tmp/contestant.log"
-)
 
 var (
 	accessKey, secretAccessKey string
@@ -126,16 +121,16 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	// ベンチマーカー実行前に確実にresultファイルを削除する
 	// 他のチームに対する結果が含まれている可能性があるため
 	log.Println("cleanup old logs for current job")
-	for _, name := range []string{resultPath, staffLogPath, contestantLogPath} {
+	for _, name := range []string{config.ResultPath, config.StaffLogPath, config.ContestantLogPath} {
 		os.Remove(name)
 	}
 
 	benchOptions := []string{
 		"run",
 		"--nameserver", target,
-		"--staff-log-path", staffLogPath,
-		"--contestant-log-path", contestantLogPath,
-		"--result-path", resultPath,
+		"--staff-log-path", config.StaffLogPath,
+		"--contestant-log-path", config.ContestantLogPath,
+		"--result-path", config.ResultPath,
 	}
 	if production {
 		benchOptions = append(benchOptions, "--enable-ssl")
@@ -187,7 +182,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	var msgs []string
 	log.Println("read contestant log path")
 	// stdout
-	b, err := os.ReadFile(contestantLogPath)
+	b, err := os.ReadFile(config.ContestantLogPath)
 	if err != nil {
 		return &Result{
 			ID:         job.ID,
@@ -205,7 +200,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	log.Println("read result path")
 	// result
 	var benchResult *BenchResult
-	b, err = os.ReadFile(resultPath)
+	b, err = os.ReadFile(config.ResultPath)
 	if err != nil {
 		return &Result{
 			ID:         job.ID,
@@ -317,12 +312,14 @@ var supervise = cli.Command{
 		}
 
 		var portal *Portal
+		var finalcheckBucketName string
 		if production {
 			log.Println("Running on production")
 			// NOTE: アクセスキーを上書き
 			accessKey = "AKIAWFVKEZX5AUP2AK6O"
 			secretAccessKey = "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"
 			// NOTE: SQSはsqs初期化時に決まる
+			finalcheckBucketName = "isucon13-finalcheck-prod"
 
 			portal, err = NewPortal(
 				AZName,
@@ -331,10 +328,12 @@ var supervise = cli.Command{
 				secretAccessKey,
 			)
 			if err != nil {
+				log.Println("failed to initiate portal")
 				return cli.NewExitError(err, 1)
 			}
 		} else {
 			log.Println("Running on development")
+			finalcheckBucketName = "isucon13-finalcheck-dev"
 
 			portal, err = NewPortal(
 				AZName,
@@ -343,6 +342,7 @@ var supervise = cli.Command{
 				secretAccessKey,
 			)
 			if err != nil {
+				log.Println("failed to initiate portal")
 				return cli.NewExitError(err, 1)
 			}
 		}
@@ -366,6 +366,7 @@ var supervise = cli.Command{
 					if len(errs) > 0 {
 						NotifyWorkerErr(job, nil, "", "", strings.Join(errs, ","))
 					}
+					log.Println("reboot completed")
 				} else {
 					log.Println("Job is benchmark")
 
@@ -385,10 +386,15 @@ var supervise = cli.Command{
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
 
+					log.Println("upload finalcheck result")
+					if err := UploadFinalcheckResult(finalcheckBucketName, job.ID, job.Team); err != nil {
+						NotifyWorkerErr(job, err, "", "", "FinalCheckの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
+					}
+
 					log.Println("cleanup old logs for next job")
-					os.Remove(staffLogPath)
-					os.Remove(contestantLogPath)
-					os.Remove(resultPath)
+					os.Remove(config.StaffLogPath)
+					os.Remove(config.ContestantLogPath)
+					os.Remove(config.ResultPath)
 				}
 			}
 		}
