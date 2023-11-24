@@ -115,7 +115,7 @@ app.use(
     cookieOptions: {
       path: '/',
       domain: 'u.isucon.dev',
-      maxAge: 60_000 /* 10 seconds */, // FIXME: 600
+      maxAge: 60_000,
     },
   }),
 )
