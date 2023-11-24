@@ -1120,8 +1120,8 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 
         sql = "SELECT * FROM users WHERE name = %s"
         c.execute(sql, [username])
-        user = c.fetchone()
-        if user is None:
+        stat_target_user: dict[str, Any] = c.fetchone()
+        if stat_target_user is None:
             raise HttpException("not found user that has the given username", NOT_FOUND)
 
         # ランク算出
@@ -1197,7 +1197,7 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
         total_livecomments = 0
         total_tip = 0
         sql = "SELECT * FROM livestreams WHERE user_id = %s"
-        c.execute(sql, [user.id])
+        c.execute(sql, [stat_target_user["id"]])
         rows = c.fetchall()
         if rows is None:
             app.logger.error("livestreams livecomments")

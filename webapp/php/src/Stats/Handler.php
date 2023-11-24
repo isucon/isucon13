@@ -46,7 +46,7 @@ class Handler extends AbstractHandler
             $stmt = $this->db->prepare('SELECT * FROM users WHERE name = ?');
             $stmt->bindValue(1, $username);
             $stmt->execute();
-            $user = $stmt->fetch();
+            $stat_target_user = $stmt->fetch();
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
@@ -54,7 +54,7 @@ class Handler extends AbstractHandler
                 previous: $e,
             );
         }
-        if ($user === false) {
+        if ($stat_target_user === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'not found user that has the given username',
@@ -105,7 +105,7 @@ class Handler extends AbstractHandler
 
             $query = <<<SQL
                 SELECT IFNULL(SUM(l2.tip), 0) FROM users u
-                INNER JOIN livestreams l ON l.user_id = u.id	
+                INNER JOIN livestreams l ON l.user_id = u.id
                 INNER JOIN livecomments l2 ON l2.livestream_id = l.id
                 WHERE u.id = ?
             SQL;
@@ -140,8 +140,8 @@ class Handler extends AbstractHandler
 
         // リアクション数
         $query = <<<SQL
-            SELECT COUNT(*) FROM users u 
-            INNER JOIN livestreams l ON l.user_id = u.id 
+            SELECT COUNT(*) FROM users u
+            INNER JOIN livestreams l ON l.user_id = u.id
             INNER JOIN reactions r ON r.livestream_id = l.id
             WHERE u.name = ?
         SQL;
@@ -166,7 +166,7 @@ class Handler extends AbstractHandler
         $livestreams = [];
         try {
             $stmt = $this->db->prepare('SELECT * FROM livestreams WHERE user_id = ?');
-            $stmt->bindValue(1, $user->id);
+            $stmt->bindValue(1, $stat_target_user->id);
             $stmt->execute();
             while (($row = $stmt->fetch()) !== false) {
                 $livestreams[] = LivestreamModel::fromRow($row);
