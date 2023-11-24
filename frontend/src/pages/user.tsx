@@ -77,6 +77,15 @@ export default function UserPage(): React.ReactElement {
               <Typography level="body-sm">
                 視聴者数 {userStatistics.data?.viewers_count}
               </Typography>
+              <Typography level="body-sm">
+                好きな絵文字
+                {userStatistics.data?.favorite_emoji && (
+                  <em-emoji
+                    shortcodes={`:${userStatistics.data.favorite_emoji}:`}
+                    set="twitter"
+                  ></em-emoji>
+                )}
+              </Typography>
             </Stack>
             <Typography level="body-sm">{user.data?.description}</Typography>
           </Stack>
