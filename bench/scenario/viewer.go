@@ -65,7 +65,8 @@ func BasicViewerScenario(
 
 	// NOTE: 配信者のプロフィールが気になる人が一定数いる
 	if n%10 == 0 {
-		contestantLogger.Info("視聴者が配信者のプロフィールに関心を持ち、訪問しようとしています", zap.String("viewer", username), zap.String("streamer", livestream.Owner.Name))
+		// ログ削減
+		// contestantLogger.Info("視聴者が配信者のプロフィールに関心を持ち、訪問しようとしています", zap.String("viewer", username), zap.String("streamer", livestream.Owner.Name))
 		lgr.Info("visit user profile")
 		if err := VisitUserProfile(ctx, contestantLogger, client, &livestream.Owner); err != nil && !errors.Is(err, bencherror.ErrTimeout) {
 			lgr.Warnf("view: failed to visit user profile: %s\n", err.Error())
