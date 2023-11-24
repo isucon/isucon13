@@ -121,5 +121,10 @@ func Pretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *res
 		return err
 	}
 
+	// 統計情報
+	if err := normalUserStatsCalcPretest(ctx, contestantLogger, dnsResolver); err != nil {
+		return err
+	}
+
 	return nil
 }

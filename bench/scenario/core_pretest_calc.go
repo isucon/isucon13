@@ -92,55 +92,67 @@ func normalUserStatsCalcPretest(ctx context.Context, contestantLogger *zap.Logge
 		return err
 	}
 
-	// LivestreamStatsのイテレーション数 * 配信数(2)とかにして、LivestreamStatsのユーザより上に位置するようにする
-	count := 5 + rand.Intn(10)
-	for i := 0; i < count; i++ {
-		viewerClient, err := isupipe.NewCustomResolverClient(
-			contestantLogger,
-			dnsResolver,
-			agent.WithTimeout(config.PretestTimeout),
-		)
-		if err != nil {
-			return err
-		}
-
-		name := fmt.Sprintf("%suscv%d", randstr.String(11), i)
-		passwd := randstr.String(11)
-		viewer, err := viewerClient.Register(ctx, &isupipe.RegisterRequest{
-			Name:        name,
-			DisplayName: randDisplayName(),
-			Description: `普段営業をしています。
-よろしくおねがいします！
-
-連絡は以下からお願いします。
-
-ウェブサイト: http://vfujii.example.com/
-メールアドレス: vfujii@example.com
-`,
-			Password: passwd,
-			Theme: isupipe.Theme{
-				DarkMode: true,
-			},
-		})
-		if err != nil {
-			return err
-		}
-
-		if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
-			Username: viewer.Name,
-			Password: passwd,
-		}); err != nil {
-			return err
-		}
-	}
-
-	stats2, err := client.GetUserStatistics(ctx, user.Name)
+	wantStats1, err := scheduler.StatsSched.GetUserStats(user.Name)
 	if err != nil {
 		return err
 	}
 
-	_ = stats1
-	_ = stats2
+	userRank, err := scheduler.StatsSched.GetUserRank(user.Name)
+	if err != nil {
+		return err
+	}
+	if stats1.Rank != userRank {
+		return fmt.Errorf("ユーザ %s のランクが不正です: expected=%d, actual=%d", userRank, stats1.Rank)
+	}
+
+	favoriteEmoji, ok := wantStats1.FavoriteEmoji()
+	if ok {
+		if stats1.FavoriteEmoji != favoriteEmoji {
+			return fmt.Errorf("ユーザ %s のお気に入り絵文字が不正です: expected=%s, actual=%s", favoriteEmoji, stats1.FavoriteEmoji)
+		}
+	}
+
+	// // LivestreamStatsのイテレーション数 * 配信数(2)とかにして、LivestreamStatsのユーザより上に位置するようにする
+	// count := 5 + rand.Intn(10)
+	// for i := 0; i < count; i++ {
+	// 	viewerClient, err := isupipe.NewCustomResolverClient(
+	// 		contestantLogger,
+	// 		dnsResolver,
+	// 		agent.WithTimeout(config.PretestTimeout),
+	// 	)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	name := fmt.Sprintf("user-stats-calc-viewer%d", i)
+	// 	viewer, err := viewerClient.Register(ctx, &isupipe.RegisterRequest{
+	// 		Name:        name,
+	// 		DisplayName: name,
+	// 		Description: name,
+	// 		Password:    "test",
+	// 		Theme: isupipe.Theme{
+	// 			DarkMode: true,
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	if err := viewerClient.Login(ctx, &isupipe.LoginRequest{
+	// 		Username: viewer.Name,
+	// 		Password: "test",
+	// 	}); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// stats2, err := client.GetUserStatistics(ctx, user.Name)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// _ = stats1
+	// _ = stats2
 
 	return nil
 }
