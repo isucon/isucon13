@@ -79,10 +79,8 @@ impl axum::extract::FromRef<AppState> for axum_extra::extract::cookie::Key {
     }
 }
 
-// FIXME: ポータルと足並み揃えて修正
 #[derive(Debug, serde::Serialize)]
 struct InitializeResponse {
-    advertise_level: u32,
     language: &'static str,
 }
 
@@ -126,10 +124,7 @@ async fn initialize_handler() -> Result<axum::Json<InitializeResponse>, Error> {
         )));
     }
 
-    Ok(axum::Json(InitializeResponse {
-        advertise_level: 10,
-        language: "rust",
-    }))
+    Ok(axum::Json(InitializeResponse { language: "rust" }))
 }
 
 #[tokio::main]
@@ -139,13 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     tracing_subscriber::fmt::init();
 
-    let concurrency = std::env::var("ISUCON13_RUST_CONCURRENCY")
-        .ok()
-        .and_then(|c| c.parse().ok())
-        .unwrap_or(50);
-
     let pool = sqlx::mysql::MySqlPoolOptions::new()
-        .max_connections(concurrency)
         .connect_with(build_mysql_options())
         .await
         .expect("failed to connect db");
@@ -164,10 +153,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             POWERDNS_SUBDOMAIN_ADDRESS_ENV_KEY
         );
     };
-
-    let svc = tower::ServiceBuilder::new()
-        .concurrency_limit(concurrency as usize)
-        .layer(tower_http::trace::TraceLayer::new_for_http());
 
     let app = axum::Router::new()
         // 初期化
@@ -246,7 +231,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/register", axum::routing::post(register_handler))
         .route("/api/login", axum::routing::post(login_handler))
         .route("/api/user/me", axum::routing::get(get_me_handler))
-        // FIXME: ユーザ一覧を返すAPI
         // フロントエンドで、配信予約のコラボレーターを指定する際に必要
         .route("/api/user/:username", axum::routing::get(get_user_handler))
         .route(
@@ -271,7 +255,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             key: axum_extra::extract::cookie::Key::derive_from(&secret),
             powerdns_subdomain_address: Arc::new(powerdns_subdomain_address),
         })
-        .layer(svc);
+        .layer(tower_http::trace::TraceLayer::new_for_http());
 
     // HTTPサーバ起動
     if let Some(tcp_listener) = listenfd::ListenFd::from_env().take_tcp_listener(0)? {
@@ -429,7 +413,7 @@ async fn reserve_livestream_handler(
 
     let mut tx = pool.begin().await?;
 
-    // 2024/04/01からの１年間の期間内であるかチェック
+    // 2023/11/25 10:00からの１年間の期間内であるかチェック
     let term_start_at = Utc.from_utc_datetime(
         &NaiveDate::from_ymd_opt(2023, 11, 25)
             .unwrap()
@@ -1956,7 +1940,7 @@ async fn get_user_statistics_handler(
     INNER JOIN reactions r ON r.livestream_id = l.id
     WHERE u.name = ?
     GROUP BY emoji_name
-    ORDER BY COUNT(*) DESC
+    ORDER BY COUNT(*) DESC, emoji_name DESC
     LIMIT 1
     "#;
     let favorite_emoji: String = sqlx::query_scalar(query)

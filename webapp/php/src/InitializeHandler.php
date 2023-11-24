@@ -8,9 +8,6 @@ use Psr\Log\LoggerInterface as Logger;
 use RuntimeException;
 use Slim\Exception\HttpInternalServerErrorException;
 
-/**
- * FIXME: ポータルと足並み揃えて修正
- */
 class InitializeHandler extends AbstractHandler
 {
     public function __construct(
@@ -32,7 +29,6 @@ class InitializeHandler extends AbstractHandler
         }
 
         return $this->jsonResponse($response, new InitializeResponse(
-            advertiseLevel: 10,
             language: 'php',
         ));
     }

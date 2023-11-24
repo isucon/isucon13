@@ -194,7 +194,6 @@ module Isupipe
       end
 
       json(
-        advertise_level: 10,
         language: 'ruby',
       )
     end
@@ -262,7 +261,7 @@ module Isupipe
       req = decode_request_body(ReserveLivestreamRequest)
 
       livestream = db_transaction do |tx|
-        # 2023/04/01からの１年間の期間内であるかチェック
+        # 2023/11/25 10:00からの１年間の期間内であるかチェック
         term_start_at = Time.utc(2023, 11, 25, 1)
         term_end_at = Time.utc(2024, 11, 25, 1)
         reserve_start_at = Time.at(req.start_at, in: 'UTC')
@@ -866,7 +865,6 @@ module Isupipe
       session_id = SecureRandom.uuid
       session[DEFAULT_SESSION_ID_KEY] = {
         DEFAULT_SESSION_ID_KEY => session_id,
-	# FIXME: ユーザ名
         DEFAULT_USER_ID_KEY => user_model.fetch(:id),
         DEFAULT_USERNAME_KEY => user_model.fetch(:name),
         DEFAULT_SESSION_EXPIRES_KEY => session_end_at.to_i,
@@ -971,7 +969,7 @@ module Isupipe
           INNER JOIN reactions r ON r.livestream_id = l.id
           WHERE u.name = ?
           GROUP BY emoji_name
-          ORDER BY COUNT(*) DESC
+          ORDER BY COUNT(*) DESC, emoji_name DESC
           LIMIT 1
         SQL
 

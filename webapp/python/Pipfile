@@ -7,13 +7,14 @@ name = "pypi"
 flask = "*"
 pymysql = "*"
 bcrypt = "*"
-sqlalchemy = "<2.0.0"
+sqlalchemy = "*"
 mysql-connector-python = "*"
 
 [dev-packages]
 flake8 = "*"
 isort = "*"
 black = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.12"
