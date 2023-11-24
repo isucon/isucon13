@@ -41,10 +41,10 @@ export const reserveLivestreamHandler = [
 
     try {
       // 2023/11/25 10:00からの１年間の期間内であるかチェック
-      const termStartAt = Date.UTC(2023, 10, 25, 1) // NOTE: month is 0-indexed
-      const termEndAt = Date.UTC(2024, 10, 25, 1) // NOTE: month is 0-indexed
-      const reserveStartAt = body.start_at * 1000 // NOTE: body.start_at is unixtime, so it is in seconds
-      const reserveEndAt = body.end_at * 1000 // NOTE: body.end_at is unixtime, so it is in seconds
+      const termStartAt = Date.UTC(2023, 10, 25, 1)
+      const termEndAt = Date.UTC(2024, 10, 25, 1)
+      const reserveStartAt = body.start_at * 1000
+      const reserveEndAt = body.end_at * 1000
 
       if (reserveStartAt >= termEndAt || reserveEndAt <= termStartAt) {
         await conn.rollback()
