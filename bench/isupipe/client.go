@@ -99,7 +99,7 @@ func NewCustomResolverClient(contestantLogger *zap.Logger, dnsResolver *resolver
 			IdleConnTimeout: config.ClientIdleConnTimeout,
 		}),
 		agent.WithTimeout(config.DefaultAgentTimeout),
-		// NOTE: 画像はキャッシュできるようにするので WithNoCache は指定しない
+		agent.WithNoCache(),
 	}
 	for _, customOpt := range customOpts {
 		assetOpts = append(assetOpts, customOpt)
