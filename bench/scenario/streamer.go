@@ -54,10 +54,21 @@ func BasicStreamerColdReserveScenario(
 		}
 	}
 
-	reservation, err := scheduler.ReservationSched.GetColdShortReservation()
-	if err != nil {
-		lgr.Warnf("reserve: failed to get cold short reservation: %s\n", err.Error())
-		return err
+	var reservation *scheduler.Reservation
+	if n%2 == 0 {
+		r, err := scheduler.ReservationSched.GetColdShortReservation()
+		if err != nil {
+			lgr.Warnf("reserve: failed to get cold short reservation: %s\n", err.Error())
+			return err
+		}
+		reservation = r
+	} else {
+		r, err := scheduler.ReservationSched.GetColdLongReservation()
+		if err != nil {
+			lgr.Warnf("reserve: failed to get cold long reservation: %s\n", err.Error())
+			return err
+		}
+		reservation = r
 	}
 
 	tags, err := client.GetRandomLivestreamTags(ctx, 5)
