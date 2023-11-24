@@ -86,7 +86,11 @@ func (s *UserStats) FavoriteEmoji() (string, bool) {
 }
 
 func (s *UserStats) Score() int64 {
-	return int64(len(s.reactions)) + s.TotalTips
+	var totalReactions int64
+	for _, count := range s.reactions {
+		totalReactions += count
+	}
+	return totalReactions + s.TotalTips
 }
 
 type LivestreamStatsRanking []*LivestreamStats
@@ -369,6 +373,7 @@ func (s *StatsScheduler) addLivecommentForUser(streamerName string, livestreamID
 		return fmt.Errorf("統計情報の更新に失敗(AddLivecomment.userStats): user=%s, livestream=%d", streamerName, livestreamID)
 	}
 	userStats.TotalLivecomments++
+	userStats.TotalTips += int64(tip.Tip)
 	return nil
 }
 func (s *StatsScheduler) addLivecommentForLivestream(streamerName string, livestreamID int64, tip *Tip) error {

@@ -77,7 +77,7 @@ func Pretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *res
 	}
 
 	// 統計情報
-	if err := normalUserStatsCalcPretest(ctx, contestantLogger, dnsResolver); err != nil {
+	if err := normalStatsCalcPretest(ctx, contestantLogger, dnsResolver); err != nil {
 		return err
 	}
 
