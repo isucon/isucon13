@@ -165,11 +165,13 @@ func normalLivestreamStatsCalcPretest(ctx context.Context, contestantLogger *zap
 	_, err = client.Register(ctx, &isupipe.RegisterRequest{
 		Name:        name,
 		DisplayName: randDisplayName(),
-		Description: `
+		Description: `普段薬剤師をしています。
+よろしくおねがいします！
+
 連絡は以下からお願いします。
 
-ウェブサイト: http://osamu75.example.com/
-メールアドレス: osamu75@example.com
+ウェブサイト: http://kobayashiminoru.example.com/
+メールアドレス: kobayashiminoru@example.com
 `,
 		Password: passwd,
 		Theme: isupipe.Theme{

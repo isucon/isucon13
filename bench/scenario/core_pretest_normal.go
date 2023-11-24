@@ -743,11 +743,14 @@ func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.L
 	if err != nil {
 		return err
 	}
+
+	name := fmt.Sprintf("%srpt", randstr.String(11))
+	passwd := randstr.String(13)
 	reporter, err := reporterClient.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "report",
-		DisplayName: "report",
+		Name:        name,
+		DisplayName: randDisplayName(),
 		Description: "report",
-		Password:    "rOHAshMDHM1TjiVd86q3m",
+		Password:    passwd,
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -757,7 +760,7 @@ func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.L
 	}
 	if err := reporterClient.Login(ctx, &isupipe.LoginRequest{
 		Username: reporter.Name,
-		Password: "rOHAshMDHM1TjiVd86q3m",
+		Password: passwd,
 	}); err != nil {
 		return err
 	}
@@ -834,11 +837,20 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 
+	name := fmt.Sprintf("%sspm", randstr.String(11))
+	passwd := randstr.String(18)
 	_, err = spammerClient.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "spam",
-		DisplayName: "spam",
-		Description: "spam",
-		Password:    "qqmluyGcldCT9lIM58F",
+		Name:        name,
+		DisplayName: randDisplayName(),
+		Description: `普段アナウンサーをしています。
+よろしくおねがいします！
+
+連絡は以下からお願いします。
+
+ウェブサイト: http://eishikawa.example.com/
+メールアドレス: eishikawa@example.com
+`,
+		Password: passwd,
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -847,8 +859,8 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 	if err := spammerClient.Login(ctx, &isupipe.LoginRequest{
-		Username: "spam",
-		Password: "qqmluyGcldCT9lIM58F",
+		Username: name,
+		Password: passwd,
 	}); err != nil {
 		return err
 	}
