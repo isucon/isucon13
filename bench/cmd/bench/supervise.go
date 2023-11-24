@@ -46,6 +46,17 @@ const (
 	StatusTimeout = "aborted"
 )
 
+var AZName string
+
+func init() {
+	azName, err := fetchAZName(context.Background())
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	AZName = azName
+}
+
 func ResolveAZName(azID string) (string, bool) {
 	m := map[string]string{
 		"ap-northeast-1a": "apne1-az4",
@@ -114,6 +125,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	// ベンチマーカー実行前に確実にresultファイルを削除する
 	// 他のチームに対する結果が含まれている可能性があるため
+	log.Println("cleanup old logs for current job")
 	for _, name := range []string{resultPath, staffLogPath, contestantLogPath} {
 		os.Remove(name)
 	}
@@ -134,10 +146,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		benchOptions = append(benchOptions, "--enable-ssl")
 		benchOptions = append(benchOptions, "--target", "https://pipe.u.isucon.dev:443")
 	}
-	log.Println("===== options =====")
-	for _, opt := range benchOptions {
-		log.Printf("%s\n", opt)
-	}
+	log.Printf("benchmark options = %+v\n", benchOptions)
 
 	var stdout, stderr bytes.Buffer
 	// 余裕みて3分
@@ -156,6 +165,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	errCh := make(chan error, 1)
 	go func() {
 		defer close(errCh)
+		log.Println("running benchmark ...")
 		if err := cmd.Run(); err != nil {
 			errCh <- err
 		}
@@ -163,18 +173,19 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 
 	select {
 	case <-ctx.Done():
+		log.Println("execBench中断")
 		NotifyWorkerErr(job, ctx.Err(), stdout.String(), stderr.String(), "ベンチマーカーの実行がタイムアウトしました (StatusFailed)")
 		status = StatusTimeout
 	case err, ok := <-errCh:
 		if ok && err != nil {
+			log.Printf("execBenchでエラー発生: %s\n", err.Error())
 			NotifyWorkerErr(job, err, stdout.String(), stderr.String(), "ベンチマーカーの実行エラーが発生 (StatusFailed)")
 			status = StatusFailed
 		}
 	}
 
-	log.Println(stdout.String())
-
 	var msgs []string
+	log.Println("read contestant log path")
 	// stdout
 	b, err := os.ReadFile(contestantLogPath)
 	if err != nil {
@@ -191,6 +202,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	}
 	contestantLog := strings.Split(string(b), "\n")
 
+	log.Println("read result path")
 	// result
 	var benchResult *BenchResult
 	b, err = os.ReadFile(resultPath)
@@ -206,6 +218,9 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 			FinishedAt: time.Now(),
 		}, nil
 	}
+
+	log.Println("decode bench result")
+	//
 	if err := json.NewDecoder(bytes.NewBuffer(b)).Decode(&benchResult); err != nil {
 		return &Result{
 			ID:         job.ID,
@@ -223,6 +238,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 	msgs = append(msgs, benchResult.Messages...)
 
 	if status == StatusSuccess {
+		log.Println("success benchmark")
 		return &Result{
 			ID:            job.ID,
 			Stdout:        stdout.String(),
@@ -236,6 +252,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 			FinishedAt:    time.Now(),
 		}, nil
 	} else {
+		log.Println("fail benchmark")
 		return &Result{
 			ID:         job.ID,
 			Stdout:     stdout.String(),
@@ -288,21 +305,27 @@ var supervise = cli.Command{
 		defer cancel()
 		log.Println("Start ISUPipe Supervisor")
 
-		var (
-			portal *Portal
-			signer ssh.Signer
-		)
+		privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
+		if err != nil {
+			log.Printf("privateKey error = %s\n", err)
+			return err
+		}
+		signer, err := ssh.ParsePrivateKey(privateKey)
+		if err != nil {
+			log.Printf("signer error = %s\n", err)
+			return err
+		}
+
+		var portal *Portal
 		if production {
+			log.Println("Running on production")
+			// NOTE: アクセスキーを上書き
 			accessKey = "AKIAWFVKEZX5AUP2AK6O"
 			secretAccessKey = "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"
-			log.Println("Running on production")
-			azName, err := fetchAZName(ctx)
-			if err != nil {
-				return cli.NewExitError(err, 1)
-			}
+			// NOTE: SQSはsqs初期化時に決まる
 
 			portal, err = NewPortal(
-				azName,
+				AZName,
 				Production,
 				accessKey,
 				secretAccessKey,
@@ -310,28 +333,11 @@ var supervise = cli.Command{
 			if err != nil {
 				return cli.NewExitError(err, 1)
 			}
-
-			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
-			if err != nil {
-				log.Printf("privateKey error = %s\n", err)
-				return err
-			}
-			signer, err = ssh.ParsePrivateKey(privateKey)
-			if err != nil {
-				log.Printf("signer error = %s\n", err)
-				return err
-			}
-
 		} else {
 			log.Println("Running on development")
-			azName, err := fetchAZName(ctx)
-			if err != nil {
-				return cli.NewExitError(err, 1)
-			}
 
-			// az1, az2, az4
 			portal, err = NewPortal(
-				azName,
+				AZName,
 				Develop,
 				accessKey,
 				secretAccessKey,
@@ -339,29 +345,18 @@ var supervise = cli.Command{
 			if err != nil {
 				return cli.NewExitError(err, 1)
 			}
-
-			privateKey, err := os.ReadFile("/home/benchuser/cmd/bench/id_ed25519")
-			if err != nil {
-				log.Printf("privateKey error = %s\n", err)
-				return err
-			}
-			signer, err = ssh.ParsePrivateKey(privateKey)
-			if err != nil {
-				log.Printf("signer error = %s\n", err)
-				return err
-			}
 		}
 		jobCh := portal.StartReceiveJob(ctx)
 
-		log.Printf("AccessKey = ...%s\n", accessKey[len(accessKey)-1-3:len(accessKey)-1])
 		for {
 			select {
 			case <-ctx.Done():
 				return cli.NewExitError(ctx.Err(), 1)
 			case job := <-jobCh:
-				log.Printf("job = %+v\n", job)
+				log.Printf("receive job = %+v\n", job)
 
 				if job.Action == "reboot" {
+					log.Println("Job is reboot task")
 					var errs []string
 					for _, server := range job.Servers {
 						if err := reboot(server, signer); err != nil {
@@ -372,23 +367,25 @@ var supervise = cli.Command{
 						NotifyWorkerErr(job, nil, "", "", strings.Join(errs, ","))
 					}
 				} else {
+					log.Println("Job is benchmark")
+
+					log.Println("change status running")
 					if err := portal.SendResult(ctx, job, NewRunningResult(job.ID)); err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
 
+					log.Println("execute benchmark")
 					result, err := execBench(ctx, job)
 					if err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
-					log.Printf("finishedAt = %s\n", result.FinishedAt.String())
 
-					sendResultStartAt := time.Now()
-					log.Printf("sendResultStartAt = %s\n", sendResultStartAt.String())
+					log.Println("report result")
 					if err := portal.SendResult(ctx, job, result); err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
-					log.Printf("sendResultFinishedAt = %s\n", time.Since(sendResultStartAt).String())
 
+					log.Println("cleanup old logs for next job")
 					os.Remove(staffLogPath)
 					os.Remove(contestantLogPath)
 					os.Remove(resultPath)

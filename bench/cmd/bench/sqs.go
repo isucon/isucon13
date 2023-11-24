@@ -37,6 +37,22 @@ type Result struct {
 	FinishedAt    time.Time `json:"finished_at,omitempty"`
 }
 
+func (r *Result) Summary() string {
+	if r == nil {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("jobid=%d", r.ID))
+	sb.WriteString(fmt.Sprintf("status=%s", r.Status))
+	sb.WriteString(fmt.Sprintf("ispassed=%+v", r.IsPassed))
+	// skip reason, stdout, stderr
+	sb.WriteString(fmt.Sprintf("resolved_count=%d", r.ResolvedCount))
+	sb.WriteString(fmt.Sprintf("language=%s", r.Language))
+	sb.WriteString(fmt.Sprintf("finished_at=%s", r.FinishedAt.String()))
+
+	return sb.String()
+}
+
 func NewAbortResult(id int) *Result {
 	return &Result{
 		ID:     id,
@@ -105,23 +121,21 @@ func NewPortal(
 }
 
 func (s *Portal) SendResult(ctx context.Context, job *Job, result *Result) error {
-	sendResultJSONMarshalStartAt := time.Now()
-	log.Printf("sendResultJSONMarshalStartAt = %s\n", sendResultJSONMarshalStartAt.String())
+	log.Println("send result")
+	log.Printf("job = %+v\n", job)
+	log.Println(result.Summary())
+
 	b, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
-	log.Printf("sendResultJSONMarshalFinishedAt = %s\n", time.Since(sendResultJSONMarshalStartAt).String())
 
-	sendResultSendMessageWithContextStartAt := time.Now()
-	log.Printf("sendResultSendMessageWithContextStartAt(aws-sdk-go) = %s", sendResultSendMessageWithContextStartAt.String())
 	if _, err := s.client.SendMessageWithContext(ctx, &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.sendQueueUrl),
 		MessageBody: aws.String(string(b)),
 	}); err != nil {
 		return err
 	}
-	log.Printf("sendResultSendMessageWithContextFinishedAt(aws-sdk-go) = %s\n", time.Since(sendResultSendMessageWithContextStartAt).String())
 
 	return nil
 }
@@ -136,7 +150,6 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 			case <-ctx.Done():
 				return
 			default:
-				log.Println("waiting for receiving message from queue ...")
 				resp, err := s.client.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 					QueueUrl:            aws.String(s.recvQueueUrl),
 					MaxNumberOfMessages: aws.Int64(1),
@@ -169,6 +182,7 @@ func (s *Portal) StartReceiveJob(ctx context.Context) <-chan *Job {
 					continue loop
 				}
 
+				log.Println("accept job")
 				ch <- job
 			}
 		}
