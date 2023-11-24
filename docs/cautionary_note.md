@@ -230,7 +230,12 @@ $ sudo /opt/isucon-env-checker/envcheck boot
   * `/opt/aws-env-isucon-subdomain-address.sh`
 * isuadmin ユーザに関わるファイルおよびログイン情報
 * その他、主催者による追試を妨げる変更（例： サーバー上の isucon 以外のユーザに関する、ユーザ削除や既存の公開鍵の削除、サーバーの再起動の妨害）
-  
+
+### コンテンツ配信サービスについて
+
+映像とサムネイル画像の配信は主催者が提供するコンテンツ配信サービス `media.xiii.isucon.dev` から行われます。
+
+`media.xiii.isucon.dev` に障害等が発生した場合、ブラウザ上での映像配信・サムネイル表示がおかしくなりますが、ベンチマーカーの動作や採点には一切影響ありません。
 
 ## 参考実装
 
