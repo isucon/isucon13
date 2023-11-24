@@ -8,7 +8,6 @@ import (
 	"github.com/isucon/isucon13/bench/internal/resolver"
 	"github.com/isucon/isucon13/bench/isupipe"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 )
 
 const testUserRawPassword = "s3cr3t"
@@ -44,13 +43,9 @@ func Pretest(ctx context.Context, contestantLogger *zap.Logger, dnsResolver *res
 	}
 
 	// 初期データチェック
-	initialGrp, initialCtx := errgroup.WithContext(ctx)
-	initialGrp.Go(func() error {
-		return normalInitialPaymentPretest(initialCtx, contestantLogger, dnsResolver)
-	})
 	// FIXME: reactions, livecommentsは統計情報をもとにチェックする
 	// FIXME: ngwordsはライブ配信のIDをいくつか問い合わせ、存在することをチェックする
-	if err := initialGrp.Wait(); err != nil {
+	if err := normalInitialPaymentPretest(ctx, contestantLogger, dnsResolver); err != nil {
 		return err
 	}
 
