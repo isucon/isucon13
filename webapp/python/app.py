@@ -1166,7 +1166,7 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 
             score = reactions + tips
             ranking.append(models.UserRankingEntry(username=user.name, score=score))
-        ranking = sorted(ranking, key=lambda x: x.score)
+        ranking = sorted(ranking, key=lambda x: (x.score, x.username))
 
         rank = 1
         i = len(ranking) - 1
@@ -1403,7 +1403,7 @@ def get_livestream_statistics_handler(livestream_id: int) -> tuple[dict[str, Any
                     )
                 )
             )
-        ranking = sorted(ranking, key=lambda x: (x.score, x.username))
+        ranking = sorted(ranking, key=lambda x: x["score"])
 
         rank = 1
         i = len(ranking) - 1
