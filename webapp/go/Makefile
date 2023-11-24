@@ -13,7 +13,7 @@ TAG=isupipe:latest
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/isupipe_darwin -ldflags "-s -w"
+#	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/isupipe_darwin -ldflags "-s -w"
 	CGO_ENABLED=0 $(LINUX_TARGET_ENV)  $(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
 
 .PHONY: docker_image
