@@ -46,7 +46,7 @@ class Handler extends AbstractHandler
             $stmt = $this->db->prepare('SELECT * FROM users WHERE name = ?');
             $stmt->bindValue(1, $username);
             $stmt->execute();
-            $row = $stmt->fetch();
+            $user = $stmt->fetch();
         } catch (PDOException $e) {
             throw new HttpInternalServerErrorException(
                 request: $request,
@@ -54,13 +54,12 @@ class Handler extends AbstractHandler
                 previous: $e,
             );
         }
-        if ($row === false) {
+        if ($user === false) {
             throw new HttpBadRequestException(
                 request: $request,
                 message: 'not found user that has the given username',
             );
         }
-        $user = $row;
 
         // ランク算出
         /** @var list<UserModel> $users */
