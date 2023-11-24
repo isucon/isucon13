@@ -1285,8 +1285,6 @@ def get_user_statistics_handler(username: str) -> tuple[dict[str, Any], int]:
 
 @app.route("/api/user/<string:username>/icon", methods=["GET"])
 def get_icon_handler(username: str) -> Response:
-    verify_user_session()
-
     conn = engine.raw_connection()
 
     try:

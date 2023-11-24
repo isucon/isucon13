@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -42,7 +43,7 @@ func NormalUserPretest(ctx context.Context, contestantLogger *zap.Logger, dnsRes
 		Name:        "test",
 		DisplayName: "test",
 		Description: "blah blah blah",
-		Password:    testUserRawPassword,
+		Password:    "test",
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -53,7 +54,7 @@ func NormalUserPretest(ctx context.Context, contestantLogger *zap.Logger, dnsRes
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: user.Name,
-		Password: testUserRawPassword,
+		Password: "test",
 	}); err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: testUser.Name,
-		Password: "test",
+		Password: defaultPasswordOrPretest(testUser.Name),
 	}); err != nil {
 		return err
 	}
@@ -159,11 +160,36 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		return err
 	}
 
+	if len(tagResponse.Tags) != scheduler.GetTagPoolLength() {
+		return fmt.Errorf("取得した tag 一覧の数が正しくありません (expected:%d actual:%d)", scheduler.GetTagPoolLength(), len(tagResponse.Tags))
+	}
+
 	tagNames := map[int64]string{}
 	pretestTags := map[int64]int{}
 	for _, tag := range tagResponse.Tags {
 		tagNames[tag.ID] = tag.Name
 		pretestTags[tag.ID] = 0
+	}
+
+	// 全部のタグを検査
+	poolTags := scheduler.GetTagsMap()
+	if !reflect.DeepEqual(tagNames, poolTags) {
+		return fmt.Errorf("取得した tag 一覧が正しくありません。過不足があります")
+	}
+
+	// userドメインでのgetTag
+	{
+		tagr, err := client.GetTagsWithUser(ctx, testUser.Name)
+		if err != nil {
+			return err
+		}
+		tagn := map[int64]string{}
+		for _, tag := range tagr.Tags {
+			tagn[tag.ID] = tag.Name
+		}
+		if !reflect.DeepEqual(tagn, poolTags) {
+			return fmt.Errorf("取得した tag 一覧が正しくありません。過不足があります")
+		}
 	}
 
 	tags := []int64{1, 103}
@@ -183,8 +209,8 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		startAt = time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)
 		endAt   = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 	)
-	title := "pretest" + randstr.String(10)
-	description := "pretest" + randstr.String(30)
+	title := randstr.String(19)
+	description := randstr.String(29)
 	livestream, err := client.ReserveLivestream(ctx, testUser.Name, &isupipe.ReserveLivestreamRequest{
 		Tags:         tags,
 		Title:        title,
@@ -206,8 +232,8 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 	if livestream.Owner.ID != testUser.ID {
 		return fmt.Errorf("予約したlivestreamのuser.IDが異なります (expected:%d actual:%d)", testUser.ID, livestream.Owner.ID)
 	}
-	if livestream.Owner.DisplayName != "pretest user" {
-		return fmt.Errorf("予約したlivestreamのuser.DisplayNameが異なります (expected:%s actual:%s)", "pretestuser", livestream.Owner.DisplayName)
+	if livestream.Owner.DisplayName != PreTestDisplayName {
+		return fmt.Errorf("予約したlivestreamのuser.DisplayNameが異なります (expected:%s actual:%s)", PreTestDisplayName, livestream.Owner.DisplayName)
 	}
 
 	gotLivestream, err := client.GetLivestream(ctx, livestream.ID, livestream.Owner.Name)
@@ -270,8 +296,8 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		startAt2nd = time.Date(2024, 4, 1, 1, 0, 0, 0, time.Local)
 		endAt2nd   = time.Date(2024, 4, 1, 2, 0, 0, 0, time.Local)
 	)
-	title2nd := "isutest" + randstr.String(10)
-	description2nd := "isutest" + randstr.String(30)
+	title2nd := randstr.String(12)
+	description2nd := randstr.String(36)
 	tags2nd := []int64{1, 2, 103}
 	pretestTags[1]++
 	pretestTags[2]++
@@ -317,8 +343,8 @@ func NormalLivestreamPretest(ctx context.Context, contestantLogger *zap.Logger, 
 		for i := 0; i < 19; i++ {
 			startAtExt := time.Date(2024, 4, 1, i+2, 0, 0, 0, time.Local)
 			endAtExt := time.Date(2024, 4, 1, i+3, 0, 0, 0, time.Local)
-			titleExt := "isutest" + randstr.String(10)
-			descriptionExt := "isutest" + randstr.String(30)
+			titleExt := randstr.String(17 + rand.Intn(19))
+			descriptionExt := randstr.String(51 + rand.Intn(19))
 			tagId := int64(rand.Intn(99)) + 1
 			tagsExt := []int64{tagId, tagId + 1}
 			pretestTags[tagId]++
@@ -519,7 +545,7 @@ func NormalPostLivecommentPretest(ctx context.Context, contestantLogger *zap.Log
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: testUser.Name,
-		Password: "test",
+		Password: defaultPasswordOrPretest(testUser.Name),
 	}); err != nil {
 		return err
 	}
@@ -610,7 +636,7 @@ func NormalReactionPretest(ctx context.Context, contestantLogger *zap.Logger, te
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: testUser.Name,
-		Password: "test",
+		Password: defaultPasswordOrPretest(testUser.Name),
 	}); err != nil {
 		return err
 	}
@@ -717,11 +743,14 @@ func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.L
 	if err != nil {
 		return err
 	}
+
+	name := fmt.Sprintf("%srpt", randstr.String(11))
+	passwd := randstr.String(13)
 	reporter, err := reporterClient.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "report",
-		DisplayName: "report",
+		Name:        name,
+		DisplayName: randDisplayName(),
 		Description: "report",
-		Password:    "test",
+		Password:    passwd,
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -731,7 +760,7 @@ func NormalReportLivecommentPretest(ctx context.Context, contestantLogger *zap.L
 	}
 	if err := reporterClient.Login(ctx, &isupipe.LoginRequest{
 		Username: reporter.Name,
-		Password: "test",
+		Password: passwd,
 	}); err != nil {
 		return err
 	}
@@ -766,7 +795,7 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 
 	if err := client.Login(ctx, &isupipe.LoginRequest{
 		Username: testUser.Name,
-		Password: "test",
+		Password: defaultPasswordOrPretest(testUser.Name),
 	}); err != nil {
 		return err
 	}
@@ -808,11 +837,20 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 
+	name := fmt.Sprintf("%sspm", randstr.String(11))
+	passwd := randstr.String(18)
 	_, err = spammerClient.Register(ctx, &isupipe.RegisterRequest{
-		Name:        "spam",
-		DisplayName: "spam",
-		Description: "spam",
-		Password:    "test",
+		Name:        name,
+		DisplayName: randDisplayName(),
+		Description: `普段アナウンサーをしています。
+よろしくおねがいします！
+
+連絡は以下からお願いします。
+
+ウェブサイト: http://eishikawa.example.com/
+メールアドレス: eishikawa@example.com
+`,
+		Password: passwd,
 		Theme: isupipe.Theme{
 			DarkMode: true,
 		},
@@ -821,8 +859,8 @@ func NormalModerateLivecommentPretest(ctx context.Context, contestantLogger *zap
 		return err
 	}
 	if err := spammerClient.Login(ctx, &isupipe.LoginRequest{
-		Username: "spam",
-		Password: "test",
+		Username: name,
+		Password: passwd,
 	}); err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/isucon/isucandar/failure"
 	"go.uber.org/zap"
@@ -116,11 +117,13 @@ func CheckViolation() error {
 func RunViolationChecker(ctx context.Context) chan error {
 	violate := make(chan error, 1)
 	go func() {
+		t := time.NewTicker(10 * time.Millisecond)
+		defer t.Stop()
 		defer close(violate)
 		for {
 			select {
 			case <-ctx.Done():
-			default:
+			case <-t.C:
 				if err := CheckViolation(); err != nil {
 					violate <- err
 					return

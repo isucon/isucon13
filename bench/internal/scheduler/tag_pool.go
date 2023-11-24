@@ -109,3 +109,11 @@ var tagPool = [...]string{
 func GetTagPoolLength() int {
 	return len(tagPool)
 }
+
+func GetTagsMap() map[int64]string {
+	tags := map[int64]string{}
+	for i := 1; i <= len(tagPool); i++ {
+		tags[int64(i)] = tagPool[i-1]
+	}
+	return tags
+}

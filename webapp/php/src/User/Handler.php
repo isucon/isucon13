@@ -44,8 +44,6 @@ class Handler extends AbstractHandler
     {
         $username = $params['username'] ?? '';
 
-        $this->verifyUserSession($request, $this->session);
-
         $this->db->beginTransaction();
 
         try {

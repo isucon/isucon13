@@ -13,7 +13,6 @@ import { IconModel, UserModel } from '../types/models'
 
 // GET /api/user/:username/icon
 export const getIconHandler = [
-  verifyUserSessionMiddleware,
   async (c: Context<HonoEnvironment, '/api/user/:username/icon'>) => {
     const username = c.req.param('username')
 

@@ -727,7 +727,6 @@ module Isupipe
 
     get '/api/user/:username/icon' do
       username = params[:username]
-      verify_user_session!
 
       image = db_transaction do |tx|
         user = tx.xquery('SELECT * FROM users WHERE name = ?', username).first

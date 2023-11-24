@@ -18,7 +18,6 @@ import (
 	"github.com/isucon/isucon13/bench/isupipe"
 	"github.com/isucon/isucon13/bench/scenario"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/time/rate"
 )
@@ -73,6 +72,7 @@ type benchmarker struct {
 	longStreamerSem  *semaphore.Weighted
 	moderatorSem     *semaphore.Weighted
 	viewerSem        *semaphore.Weighted
+	viewerReportSem  *semaphore.Weighted
 	spammerSem       *semaphore.Weighted
 	attackSem        *semaphore.Weighted
 	attackParallelis int
@@ -127,8 +127,9 @@ func newBenchmarker(ctx context.Context, contestantLogger *zap.Logger) *benchmar
 		longStreamerSem:        semaphore.NewWeighted(weight),
 		moderatorSem:           semaphore.NewWeighted(weight),
 		viewerSem:              semaphore.NewWeighted(weight * 10), // 配信者の10倍視聴者トラフィックがある
-		spammerSem:             semaphore.NewWeighted(weight * 2),  // 視聴者の２倍はスパム投稿者が潜んでいる
-		attackSem:              semaphore.NewWeighted(512),         // 攻撃を段階的に大きくする最大値
+		viewerReportSem:        semaphore.NewWeighted(weight),
+		spammerSem:             semaphore.NewWeighted(weight * 2), // 視聴者の２倍はスパム投稿者が潜んでいる
+		attackSem:              semaphore.NewWeighted(512),        // 攻撃を段階的に大きくする最大値
 		attackParallelis:       2,
 		streamerLoginSem:       semaphore.NewWeighted(weight),
 		streamerLoginCounter:   new(LoginCounter),
@@ -287,43 +288,35 @@ func (b *benchmarker) loadLongStreamer(ctx context.Context) error {
 func (b *benchmarker) loadModerator(ctx context.Context) error {
 	defer b.moderatorSem.Release(1)
 
-	eg, childCtx := errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-		if err := scenario.BasicStreamerModerateScenario(childCtx, b.contestantLogger, b.streamerClientPool); err != nil {
-			b.scenarioCounter.Add(BasicStreamerModerateScenarioFail)
-			return err
-		}
-		b.scenarioCounter.Add(BasicStreamerModerateScenario)
-		return nil
-	})
-
-	return eg.Wait()
+	if err := scenario.BasicStreamerModerateScenario(ctx, b.contestantLogger, b.streamerClientPool); err != nil {
+		b.scenarioCounter.Add(BasicStreamerModerateScenarioFail)
+		return err
+	}
+	b.scenarioCounter.Add(BasicStreamerModerateScenario)
+	return nil
 }
 
 func (b *benchmarker) loadViewer(ctx context.Context) error {
 	defer b.viewerSem.Release(1)
-	eg, childCtx := errgroup.WithContext(ctx)
 
-	eg.Go(func() error {
-		if err := scenario.BasicViewerScenario(childCtx, b.contestantLogger, b.viewerClientPool, b.livestreamPool); err != nil {
-			b.scenarioCounter.Add(BasicViewerScenarioFail)
-			return err
-		}
-		b.scenarioCounter.Add(BasicViewerScenario)
-		return nil
-	})
+	if err := scenario.BasicViewerScenario(ctx, b.contestantLogger, b.viewerClientPool, b.livestreamPool); err != nil {
+		b.scenarioCounter.Add(BasicViewerScenarioFail)
+		return err
+	}
+	b.scenarioCounter.Add(BasicViewerScenario)
+	return nil
+}
 
-	eg.Go(func() error {
-		if err := scenario.BasicViewerReportScenario(childCtx, b.contestantLogger, b.viewerClientPool, b.spamPool); err != nil {
-			b.scenarioCounter.Add(BasicViewerReportScenarioFail)
-			return err
-		}
-		b.scenarioCounter.Add(BasicViewerReportScenario)
-		return nil
-	})
+func (b *benchmarker) loadViewerReport(ctx context.Context) error {
+	defer b.viewerReportSem.Release(1)
 
-	return eg.Wait()
+	time.Sleep(1 * time.Second) // XXX: report回りすぎ抑止
+	if err := scenario.BasicViewerReportScenario(ctx, b.contestantLogger, b.viewerClientPool, b.spamPool); err != nil {
+		b.scenarioCounter.Add(BasicViewerReportScenarioFail)
+		return err
+	}
+	b.scenarioCounter.Add(BasicViewerReportScenario)
+	return nil
 }
 
 func (b *benchmarker) loadSpammer(ctx context.Context) error {
@@ -396,6 +389,13 @@ func (b *benchmarker) run(ctx context.Context) error {
 				go func() {
 					defer wg.Done()
 					b.loadViewer(childCtx)
+				}()
+			}
+			if ok := b.viewerReportSem.TryAcquire(1); ok {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					b.loadViewerReport(childCtx)
 				}()
 			}
 			if ok := b.longStreamerSem.TryAcquire(1); ok {
