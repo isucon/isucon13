@@ -137,7 +137,7 @@ func execBench(ctx context.Context, job *Job) (*Result, error) {
 		benchOptions = append(benchOptions, "--enable-ssl")
 		benchOptions = append(benchOptions, "--target", "https://pipe.u.isucon.dev:443")
 	}
-	for _, server := job.Servers {
+	for _, server := range job.Servers {
 		benchOptions = append(benchOptions, "--webapp")
 		benchOptions = append(benchOptions, server)
 	}
