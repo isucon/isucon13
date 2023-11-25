@@ -55,7 +55,9 @@ export const getUserStatisticsHandler = [
           .catch(throwErrorWith('failed to count reactions'))
 
         const [[{ 'IFNULL(SUM(l2.tip), 0)': tips }]] = await conn
-          .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
+          .query<
+            ({ 'IFNULL(SUM(l2.tip), 0)': string | number } & RowDataPacket)[]
+          >(
             `
               SELECT IFNULL(SUM(l2.tip), 0) FROM users u
               INNER JOIN livestreams l ON l.user_id = u.id	
@@ -68,7 +70,7 @@ export const getUserStatisticsHandler = [
 
         ranking.push({
           username: user.name,
-          score: reaction + tips,
+          score: reaction + Number(tips),
         })
       }
 
@@ -219,7 +221,9 @@ export const getLivestreamStatisticsHandler = [
           .catch(throwErrorWith('failed to count reactions'))
 
         const [[{ 'IFNULL(SUM(l2.tip), 0)': totalTip }]] = await conn
-          .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
+          .query<
+            ({ 'IFNULL(SUM(l2.tip), 0)': number | string } & RowDataPacket)[]
+          >(
             'SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?',
             [livestream.id],
           )
@@ -228,7 +232,7 @@ export const getLivestreamStatisticsHandler = [
         ranking.push({
           livestreamId: livestream.id,
           title: livestream.title,
-          score: reactionCount + totalTip,
+          score: reactionCount + Number(totalTip),
         })
       }
       ranking.sort((a, b) => {
