@@ -24,7 +24,7 @@ func UploadFinalcheckResult(bucketName string, jobID, team int) error {
 	}))
 	client := s3.New(sess)
 
-	key := fmt.Sprintf("team-%d/job-%d-finalcheck.json", team, jobID)
+	key := fmt.Sprintf("team-%d-job-%d-finalcheck.json", team, jobID)
 	if _, err := client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(key),
