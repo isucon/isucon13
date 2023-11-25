@@ -395,10 +395,11 @@ var supervise = cli.Command{
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
 
-					log.Println("upload finalcheck result")
-					if err := UploadFinalcheckResult(finalcheckBucketName, job.ID, job.Team); err != nil {
-						NotifyWorkerErr(job, err, "", "", "FinalCheckの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
-					}
+					_ = finalcheckBucketName
+					// log.Println("upload finalcheck result")
+					// if err := UploadFinalcheckResult(finalcheckBucketName, job.ID, job.Team); err != nil {
+					// 	NotifyWorkerErr(job, err, "", "", "FinalCheckの結果送信に失敗。すぐに調査してください。supervisorの処理は継続します")
+					// }
 
 					log.Println("cleanup old logs for next job")
 					os.Remove(config.StaffLogPath)
