@@ -40,13 +40,22 @@ loop:
 		return err
 	}
 	lgr := zap.S()
-	b, err := json.Marshal(searchedStream)
+	ids := []int64{}
+	for _, stream := range searchedStream {
+		ids = append(ids, stream.ID)
+	}
+	b, err := json.Marshal(ids)
 	if err != nil {
 		return err
 	}
-	lgr.Info("Finalcheck SearchLivestreams", string(b))
+	lgr.Info("Finalcheck SearchLivestreams IDs:", string(b))
 
-	if err := os.WriteFile(config.FinalcheckPath, []byte("{}"), os.ModePerm); err != nil {
+	b2, err := json.Marshal(searchedStream)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(config.FinalcheckPath, b2, os.ModePerm); err != nil {
 		return err
 	}
 
