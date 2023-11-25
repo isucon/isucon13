@@ -28,9 +28,6 @@ func normalInitialPaymentPretest(ctx context.Context, contestantLogger *zap.Logg
 	if err != nil {
 		return err
 	}
-	if result == nil {
-		return fmt.Errorf("api/payment のレスポンスが正しくないようです")
-	}
 
 	if result.TotalTip != 0 {
 		return fmt.Errorf("初期の売上は0ISUでなければなりません")
