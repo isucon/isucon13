@@ -52,7 +52,7 @@ func mustNewReservationScheduler(baseAt int64, numSlots int64, hours int) *Reser
 
 	intervalTempertures, err := newIntervalTemperture(baseAt, numSlots, hours)
 	if err != nil {
-		lgr.Fatalf("failed to initiate interval temperture: %s\n", err.Error())
+		lgr.Warn("failed to initiate interval temperture: %s\n", err.Error())
 	}
 	return &ReservationScheduler{
 		reservationPool:     []*Reservation{},
@@ -126,7 +126,7 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
-			lgr.Fatalf("GetHotShortReservation: failed to convert reservation: %s\n", err.Error())
+			lgr.Warnf("GetHotShortReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -142,7 +142,7 @@ func (r *ReservationScheduler) GetHotShortReservation() (*Reservation, error) {
 		}
 	}
 
-	lgr.Fatal("GetHotShortReservation: failed to get reservation (not found)")
+	lgr.Warn("GetHotShortReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
@@ -171,7 +171,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
-			lgr.Fatalf("GetHotLongReservation: failed to convert reservation: %s\n", err.Error())
+			lgr.Warnf("GetHotLongReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -187,7 +187,7 @@ func (r *ReservationScheduler) GetHotLongReservation() (*Reservation, error) {
 		}
 	}
 
-	lgr.Fatal("GetHotLongReservation: failed to get reservation (not found)")
+	lgr.Warn("GetHotLongReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
@@ -216,7 +216,7 @@ func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
-			lgr.Fatalf("GetColdShortReservation: failed to convert reservation: %s\n", err.Error())
+			lgr.Warnf("GetColdShortReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -233,7 +233,7 @@ func (r *ReservationScheduler) GetColdShortReservation() (*Reservation, error) {
 		}
 	}
 
-	lgr.Fatal("GetColdShortReservation: failed to get reservation (not found)")
+	lgr.Warn("GetColdShortReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
@@ -262,7 +262,7 @@ func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
 
 		reservations, err := ConvertFromIntInterface(founds)
 		if err != nil {
-			lgr.Fatalf("GetColdLongReservation: failed to convert reservation: %s\n", err.Error())
+			lgr.Warnf("GetColdLongReservation: failed to convert reservation: %s\n", err.Error())
 			return nil, err
 		}
 
@@ -279,7 +279,7 @@ func (r *ReservationScheduler) GetColdLongReservation() (*Reservation, error) {
 		}
 	}
 
-	lgr.Fatal("GetColdLongReservation: failed to get reservation (not found)")
+	lgr.Warn("GetColdLongReservation: failed to get reservation (not found)")
 	return nil, ErrNoReservation
 }
 
