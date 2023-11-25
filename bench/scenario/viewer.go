@@ -12,7 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var basicViewerScenarioRandSource = rand.New(rand.NewSource(63877281473681))
+var (
+	basicViewerScenarioRandSourceMu sync.Mutex
+	basicViewerScenarioRandSource = rand.New(rand.NewSource(63877281473681))
+)
 
 func BasicViewerScenario(
 	ctx context.Context,
@@ -21,7 +24,9 @@ func BasicViewerScenario(
 	livestreamPool *isupipe.LivestreamPool,
 ) error {
 	lgr := zap.S()
+	basicViewerScenarioRandSourceMu.Lock()
 	n := basicViewerScenarioRandSource.Int()
+	basicViewerScenarioRandSourceMu.Unlock()
 
 	lgr.Info("basic viewer scenario")
 	client, err := viewerPool.Get(ctx)
