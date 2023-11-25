@@ -3,7 +3,7 @@ package config
 import "time"
 
 // ベンチマーク走行時間タイムアウト
-const DefaultBenchmarkTimeout = 10 * time.Second
+const DefaultBenchmarkTimeout = 60 * time.Second
 
 // スパム離脱割合
 const TooManySpamThresholdPercentage = 30.0
