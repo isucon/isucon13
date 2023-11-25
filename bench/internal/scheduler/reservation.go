@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/biogo/store/interval"
@@ -26,6 +27,23 @@ func ConvertFromIntInterface(i []interval.IntInterface) ([]*Reservation, error) 
 	return reservations, nil
 }
 
+type ReservationUrls struct {
+	ThumbnailUrl string
+	PlaylistUrl  string
+}
+
+var urls = []*ReservationUrls{
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/BBB.webp", PlaylistUrl: "https://media.xiii.isucon.dev/bbb.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/timewarp.webp", PlaylistUrl: "https://media.xiii.isucon.dev/timewarp.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/yoru.webp", PlaylistUrl: "https://media.xiii.isucon.dev/yoru.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon11_final.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon11_final.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final_live.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon12_final_live.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon13.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon13.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon9.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon9.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/hkd.webp", PlaylistUrl: "https://media.xiii.isucon.dev/hkd.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/ube.webp", PlaylistUrl: "https://media.xiii.isucon.dev/ube.m3u8"},
+}
+
 type Reservation struct {
 	// NOTE: id は、webappで割り振られるIDではなく、ReservationSchedulerが管理する上で利用するもの
 	id           int
@@ -48,14 +66,17 @@ func mustNewReservation(id int, title string, description string, startAtStr str
 		log.Fatalln(err)
 	}
 
+	urlIdx := rand.Intn(len(urls))
+	url := urls[urlIdx]
+
 	reservation := &Reservation{
 		id:           id,
 		Title:        title,
 		Description:  description,
 		StartAt:      startAt.Unix(),
 		EndAt:        endAt.Unix(),
-		PlaylistUrl:  playlistUrl,
-		ThumbnailUrl: thumbnailUrl,
+		PlaylistUrl:  url.PlaylistUrl,
+		ThumbnailUrl: url.ThumbnailUrl,
 	}
 
 	return reservation

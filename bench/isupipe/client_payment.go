@@ -32,9 +32,5 @@ func (c *Client) GetPaymentResult(ctx context.Context) (*PaymentResult, error) {
 		return nil, err
 	}
 
-	if err := ValidateResponse(req, paymentResp); err != nil {
-		return nil, err
-	}
-
 	return paymentResp, nil
 }
