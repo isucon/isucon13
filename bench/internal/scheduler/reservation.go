@@ -33,15 +33,15 @@ type ReservationUrls struct {
 }
 
 var urls = []*ReservationUrls{
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/BBB.webp", PlaylistUrl: "https://media.xii.isucon.dev/bbb.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/timewarp.webp", PlaylistUrl: "https://media.xii.isucon.dev/timewarp.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/yoru.webp", PlaylistUrl: "https://media.xii.isucon.dev/yoru.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/isucon11_final.webp", PlaylistUrl: "https://media.xii.isucon.dev/isucon11_final.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/isucon12_final_live.webp", PlaylistUrl: "https://media.xii.isucon.dev/isucon12_final_live.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/isucon13.webp", PlaylistUrl: "https://media.xii.isucon.dev/isucon13.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/isucon9.webp", PlaylistUrl: "https://media.xii.isucon.dev/isucon9.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/hkd.webp", PlaylistUrl: "https://media.xii.isucon.dev/hkd.m3u8"},
-	&ReservationUrls{ThumbnailUrl: "https://media.xii.isucon.dev/ube.webp", PlaylistUrl: "https://media.xii.isucon.dev/ube.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/BBB.webp", PlaylistUrl: "https://media.xiii.isucon.dev/bbb.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/timewarp.webp", PlaylistUrl: "https://media.xiii.isucon.dev/timewarp.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/yoru.webp", PlaylistUrl: "https://media.xiii.isucon.dev/yoru.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon11_final.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon11_final.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon12_final_live.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon12_final_live.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon13.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon13.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/isucon9.webp", PlaylistUrl: "https://media.xiii.isucon.dev/isucon9.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/hkd.webp", PlaylistUrl: "https://media.xiii.isucon.dev/hkd.m3u8"},
+	&ReservationUrls{ThumbnailUrl: "https://media.xiii.isucon.dev/ube.webp", PlaylistUrl: "https://media.xiii.isucon.dev/ube.m3u8"},
 }
 
 type Reservation struct {
