@@ -355,11 +355,10 @@ var supervise = cli.Command{
 			}
 		}
 		jobCh := portal.StartReceiveJob(ctx)
-		jobWaitCh := make(chan struct{}, 1)
+
 		for {
 			select {
 			case <-ctx.Done():
-				<-jobWaitCh
 				return cli.NewExitError(ctx.Err(), 1)
 			case job := <-jobCh:
 				log.Printf("receive job = %+v\n", job)
@@ -385,7 +384,7 @@ var supervise = cli.Command{
 					}
 
 					log.Println("execute benchmark")
-					result, err := execBench(context.Background(), job)
+					result, err := execBench(ctx, job)
 					if err != nil {
 						NotifyWorkerErr(job, err, "", "", "ベンチマーカーの実行に失敗。すぐに調査してください。supervisorの処理は継続します")
 					}
@@ -405,7 +404,6 @@ var supervise = cli.Command{
 					os.Remove(config.StaffLogPath)
 					os.Remove(config.ContestantLogPath)
 					os.Remove(config.ResultPath)
-					jobWaitCh <- struct{}{}
 				}
 			}
 		}
