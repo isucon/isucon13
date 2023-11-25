@@ -13,7 +13,7 @@ var ErrTimeout = errors.New("タイムアウトによりリクエスト失敗")
 // ベンチマーカー本体由来のエラー
 
 func NewInternalError(err error) error {
-	err = fmt.Errorf("[致命的なエラー]: %w", err)
+	err = fmt.Errorf("[ベンチ本体のエラー] スタッフにのみ表示されます: %w", err)
 	return WrapInternalError(SystemError, err)
 }
 
