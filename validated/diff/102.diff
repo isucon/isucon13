@@ -1,0 +1,652 @@
+--- /proc/self/fd/16	2023-11-25 18:53:31.404511699 +0900
++++ /proc/self/fd/21	2023-11-25 18:53:31.404511699 +0900
+@@ -7,10 +7,10 @@
+       "display_name": "やわらかやわらび",
+       "description": "普段農家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://tsuzuki.example.com/\nメールアドレス: tsuzuki@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1334,
+         "dark_mode": true
+       },
+-      "icon_hash": "1cd0a04ebd328fc4f881c5a261768ae5b467aa4596394a26f5590615f4fe81e2"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "歌ってみたライブ！リクエスト募集中",
+     "description": "皆さんからのリクエスト曲を歌っていきます！楽しんでくださいね♪",
+@@ -49,10 +49,10 @@
+       "display_name": "きらきらきらりん",
+       "description": "普段音響技術者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://aabe.example.com/\nメールアドレス: aabe@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1332,
+         "dark_mode": true
+       },
+-      "icon_hash": "79cfc7d4f4907ad2ecaa89c53be4752b6b5b583ef06cc8480519d6ef03a86422"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "手芸ライブ！かわいい刺繍の作り方",
+     "description": "手芸好きのためのライブ。今回はかわいい刺繍の作り方を紹介します。",
+@@ -91,10 +91,10 @@
+       "display_name": "うるうるうめ",
+       "description": "普段バスガイドをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://vkobayashi.example.com/\nメールアドレス: vkobayashi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1151,
+         "dark_mode": true
+       },
+-      "icon_hash": "bcbdb6a04879817af0c056bae5c9257f08aa6f5af3fe50f4d3f04c4a1b431f05"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ダンスライブ！今夜の特訓の様子を公開",
+     "description": "ダンスの特訓の様子をリアルタイムで公開します。",
+@@ -133,10 +133,10 @@
+       "display_name": "きみどり抹茶",
+       "description": "普段イラストレーターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://ssuzuki.example.com/\nメールアドレス: ssuzuki@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1329,
+         "dark_mode": true
+       },
+-      "icon_hash": "9fd225022cd7df686fd11f5a22600cc0a770523fefa81010cb012cb8834f0344"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "読書の時間！おすすめの一冊を紹介",
+     "description": "今月読んだ本の中から特に感動した一冊を紹介します。",
+@@ -175,10 +175,10 @@
+       "display_name": "乾燥梅",
+       "description": "普段グラフィックデザイナーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://osamushimizu.example.com/\nメールアドレス: osamushimizu@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1328,
+         "dark_mode": true
+       },
+-      "icon_hash": "08398455dfebc9a29364d14632eea5a395bcf1e468e2cc1b1733434e3add64cd"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "アートライブ！絵を描きながらのんびりトーク",
+     "description": "絵を描きながら、リラックスしたトークを楽しんでください。",
+@@ -217,10 +217,10 @@
+       "display_name": "もももももんじゃ",
+       "description": "普段映画監督をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://bhasegawa.example.com/\nメールアドレス: bhasegawa@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1094,
+         "dark_mode": true
+       },
+-      "icon_hash": "ecdd7e5d252bd6cbe08d7c72f95adcee6a3a7827cc016e317764755fd04f03cb"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "旅行先からのライブ！今日の景色を共有",
+     "description": "今日訪れた旅行先の美しい景色や文化を共有します。",
+@@ -259,10 +259,10 @@
+       "display_name": "星影",
+       "description": "普段医療事務員をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://sotaro28.example.com/\nメールアドレス: sotaro28@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1326,
+         "dark_mode": true
+       },
+-      "icon_hash": "d7b306c6bb61095f76d546279f0fcfc8c6c88f18da2f5d517cee1aaa53effb60"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "美容室ライブ！春の新作ヘアスタイルを公開",
+     "description": "美容師が春の新作ヘアスタイルやカラーを実際に公開します。",
+@@ -301,10 +301,10 @@
+       "display_name": "さくさくさくしま",
+       "description": "普段音響技術者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://shimizusotaro.example.com/\nメールアドレス: shimizusotaro@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1488,
+         "dark_mode": true
+       },
+-      "icon_hash": "b61e1964e1041db3cd405afc23d2680537093a5c791049c7f2978305968f9977"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "新曲初披露！歌配信",
+     "description": "オリジナルの新曲を初めて披露します！感想をお聞かせください！",
+@@ -343,10 +343,10 @@
+       "display_name": "大地の恵みせんべい",
+       "description": "普段大学教授をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://cyamaguchi.example.com/\nメールアドレス: cyamaguchi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1184,
+         "dark_mode": true
+       },
+-      "icon_hash": "a026379c55128221be8adbb04a4c0461acda40c176c6dcf5a287b846cb11fc0f"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "映画クリティック！新作映画のレビュータイム",
+     "description": "映画評論家が新作映画の内容や見どころを詳しく説明します。",
+@@ -385,10 +385,10 @@
+       "display_name": "きんとききんとかんきんこうせ",
+       "description": "普段和紙職人をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://isato.example.com/\nメールアドレス: isato@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1324,
+         "dark_mode": true
+       },
+-      "icon_hash": "45a5532b19ffa26c46cdc42017ffadf295571d9def98355f4abab470d10e8860"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "スポーツ実況！今夜の試合はこれ！",
+     "description": "今夜のスポーツ試合の実況と解説を行います！",
+@@ -427,10 +427,10 @@
+       "display_name": "さくらさくらんぼ",
+       "description": "普段占い師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://lyamamoto.example.com/\nメールアドレス: lyamamoto@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1322,
+         "dark_mode": true
+       },
+-      "icon_hash": "163971625ca4a991ee06abb576e00ff43de55dd8cbd2f0f954f982dc59d1544f"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "映画の裏話！監督とのスペシャルトーク",
+     "description": "大ヒット映画の裏話を、監督自らが語ります。",
+@@ -469,10 +469,10 @@
+       "display_name": "空色だんご",
+       "description": "普段行政書士をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://sayuriyamazaki.example.com/\nメールアドレス: sayuriyamazaki@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1320,
+         "dark_mode": true
+       },
+-      "icon_hash": "1e18118f9bf7971bc786a84d521e5cd5f123a604aa2e85b434ebcb6e51e6f2c9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "天体観測！今夜の星空を一緒に",
+     "description": "都市の喧騒を離れ、美しい星空を観測します。",
+@@ -511,10 +511,10 @@
+       "display_name": "いちごいちえ",
+       "description": "普段経営者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yosuke95.example.com/\nメールアドレス: yosuke95@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1318,
+         "dark_mode": true
+       },
+-      "icon_hash": "9728de33f37b6c7b48b052bb63b1d822512420df8f3c146d4c99c704abb316bb"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "マジックライブ！手品の秘密を少しだけ教えます",
+     "description": "マジシャンが実際の手品を披露し、その秘密を少しだけ公開します。",
+@@ -553,10 +553,10 @@
+       "display_name": "冬つばきもち",
+       "description": "普段経営者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://vito.example.com/\nメールアドレス: vito@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1092,
+         "dark_mode": true
+       },
+-      "icon_hash": "08398455dfebc9a29364d14632eea5a395bcf1e468e2cc1b1733434e3add64cd"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "アウトドアライブ！BBQの楽しみ方を紹介",
+     "description": "アウトドア好きが集まるBBQの様子を公開し、楽しみ方やおすすめの食材を紹介します。",
+@@ -595,10 +595,10 @@
+       "display_name": "雲海",
+       "description": "普段アニメーターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yamamotoyoichi.example.com/\nメールアドレス: yamamotoyoichi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1147,
+         "dark_mode": true
+       },
+-      "icon_hash": "75f60c2887a0aa89bef630a6f52337c96bf730c837099d12d2861acb07592c2b"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "料理ライブ！手軽に作れるデザート特集",
+     "description": "家にある材料で簡単に作れるデザートレシピを紹介します！",
+@@ -637,10 +637,10 @@
+       "display_name": "ちゅるちゅるちょこれーと",
+       "description": "普段薬剤師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yukisaito.example.com/\nメールアドレス: yukisaito@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1487,
+         "dark_mode": true
+       },
+-      "icon_hash": "7f06f30123489ae038e486098e890bbc43ca37e183213c66b1238c2dfbeb6555"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "手芸ライブ！かわいい刺繍の作り方",
+     "description": "手芸好きのためのライブ。今回はかわいい刺繍の作り方を紹介します。",
+@@ -679,10 +679,10 @@
+       "display_name": "木陰",
+       "description": "普段イラストレーターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yyamada.example.com/\nメールアドレス: yyamada@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1180,
+         "dark_mode": true
+       },
+-      "icon_hash": "8dae31489be31f183edefd05c9b28e081f70a499d599aaa299d725e0b1d460a9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "夜の音楽ライブ！リラックスタイム",
+     "description": "夜の時間を、心地良い音楽とともに過ごしましょう。",
+@@ -721,10 +721,10 @@
+       "display_name": "きらきらきらりん",
+       "description": "普段アイドルをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://akemitanaka.example.com/\nメールアドレス: akemitanaka@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1316,
+         "dark_mode": true
+       },
+-      "icon_hash": "9169bf3b8ea769a36234604d011bdf9562ec94ac701dfde8b486c0049ae3b2b9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "お菓子作りライブ！手作りクッキーのレシピ",
+     "description": "一緒に美味しい手作りクッキーを作る時間。簡単なレシピを紹介します。",
+@@ -763,10 +763,10 @@
+       "display_name": "れんれんれんこん",
+       "description": "普段建築家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yosukenakagawa.example.com/\nメールアドレス: yosukenakagawa@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1485,
+         "dark_mode": true
+       },
+-      "icon_hash": "82993bfc1b3a59f9287887aaae131f025edf6e285de665185c0d964b17dd657e"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "資産運用の基本！投資初心者のためのライブ",
+     "description": "資産運用や投資の基本的な知識を、専門家がわかりやすく説明します。",
+@@ -805,10 +805,10 @@
+       "display_name": "ゆめゆめゆべし",
+       "description": "普段脚本家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://nkato.example.com/\nメールアドレス: nkato@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1069,
+         "dark_mode": true
+       },
+-      "icon_hash": "69f5a7affba064550dfb3ede8cc193fa302d44ef603a4c8cfe46d92cbe5a6f44"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "旅行記！先日の旅行の思い出話",
+     "description": "先日の旅行での出来事やおすすめスポットを紹介します！",
+@@ -847,10 +847,10 @@
+       "display_name": "雪月夜",
+       "description": "普段調理師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://zokada.example.com/\nメールアドレス: zokada@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1314,
+         "dark_mode": true
+       },
+-      "icon_hash": "703155bd0d4f39b447b5233dc8f94292dc8596a28dd66c2785988c912a34683d"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "子育てトーク！育児の悩み解決方法",
+     "description": "子育て中のママやパパのための、育児の悩みや解決方法について話し合います。",
+@@ -889,10 +889,10 @@
+       "display_name": "彩雲葛餅",
+       "description": "普段モデルをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://hiroshisakamoto.example.com/\nメールアドレス: hiroshisakamoto@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1136,
+         "dark_mode": true
+       },
+-      "icon_hash": "ef485b6de9c2f9e44edbf99cbc07c2af1a1bc9b66c1f714a4382c95df2527e38"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "アイドルとのコラボ配信！特別な時間",
+     "description": "人気アイドルとの特別なコラボ配信！裏話やQ&Aも！",
+@@ -931,10 +931,10 @@
+       "display_name": "藤花",
+       "description": "普段ゲームクリエイターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://hiroshiyoshida.example.com/\nメールアドレス: hiroshiyoshida@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1483,
+         "dark_mode": true
+       },
+-      "icon_hash": "e27eb1deec15360ede9cc5ab33bad0d1beb65e22f8208f535b4c7a0e0ec72500"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "夜のゲーム実況！新作RPG攻略中",
+     "description": "新しいRPGゲームを実況しながら進めていきます！みんなでワイワイ攻略しよう！",
+@@ -973,10 +973,10 @@
+       "display_name": "まんまるもち",
+       "description": "普段YouTuberをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://momoko46.example.com/\nメールアドレス: momoko46@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1312,
+         "dark_mode": true
+       },
+-      "icon_hash": "1225d203cd3871dec173cb6a4f7aec1202f2880f903874e3495a4d5248d0c60d"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "映画の裏話！監督とのスペシャルトーク",
+     "description": "大ヒット映画の裏話を、監督自らが語ります。",
+@@ -1015,10 +1015,10 @@
+       "display_name": "きんきんきんせん",
+       "description": "普段高等学校教員をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://ogawayoichi.example.com/\nメールアドレス: ogawayoichi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1051,
+         "dark_mode": true
+       },
+-      "icon_hash": "3eb23b440c31480d03fbe50e3fe274cb16ed8c3780984ff147cc8180053ad2fa"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "日常の出来事トーク！今日のハイライト",
+     "description": "今日あった日常の出来事やハイライトを話していきます。",
+@@ -1057,10 +1057,10 @@
+       "display_name": "つぶつぶつぶかんき",
+       "description": "普段アナウンサーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://hiroshiyoshida.example.com/\nメールアドレス: hiroshiyoshida@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1179,
+         "dark_mode": true
+       },
+-      "icon_hash": "64fa9b6e2a483f1d258b95b6c4ef347958fca0c4b44a25c03d026b40ac67c534"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "野菜の収穫ライブ！畑での作業を公開",
+     "description": "畑での野菜の収穫や作業の様子をリアルタイムで公開します。",
+@@ -1099,10 +1099,10 @@
+       "display_name": "あまあまあんこ",
+       "description": "普段イラストレーターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://osaito.example.com/\nメールアドレス: osaito@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1481,
+         "dark_mode": true
+       },
+-      "icon_hash": "528e3139ccb3326299ea688eece7ed550e19a8b2be476feb58380815241ff9b4"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ガーデニングライブ！今日のお花はこれ",
+     "description": "庭やベランダでのガーデニングの様子を公開します。",
+@@ -1141,10 +1141,10 @@
+       "display_name": "風情",
+       "description": "普段ゲームクリエイターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://kana20.example.com/\nメールアドレス: kana20@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1310,
+         "dark_mode": true
+       },
+-      "icon_hash": "75b849ad9c06deffacdd7d3cbc59990a02681dae20077d091cfa74841ae92e48"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "歴史講座ライブ！戦国時代の英雄たち",
+     "description": "歴史学者が、戦国時代の英雄たちやその背景を詳しく解説します",
+@@ -1183,10 +1183,10 @@
+       "display_name": "えんえんえんまん",
+       "description": "普段脚本家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://shotahayashi.example.com/\nメールアドレス: shotahayashi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1308,
+         "dark_mode": true
+       },
+-      "icon_hash": "821b756aa552af6a4f2ae306fb87f73e6b3f5561830d29fcf40177bb21252494"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "お菓子作りライブ！手作りクッキーのレシピ",
+     "description": "一緒に美味しい手作りクッキーを作る時間。簡単なレシピを紹介します。",
+@@ -1225,10 +1225,10 @@
+       "display_name": "はなはなはなびら",
+       "description": "普段営業をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://fujiiryosuke.example.com/\nメールアドレス: fujiiryosuke@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1176,
+         "dark_mode": true
+       },
+-      "icon_hash": "9ea6965fa350748cec639d4d0e56776f921224a6ed115efb744a9af85832566e"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ライブコンサート！アコースティックセッション",
+     "description": "アーティストがアコースティックセッションを公開。心温まる音楽の時間です。",
+@@ -1267,10 +1267,10 @@
+       "display_name": "はしはしはしわせんべい",
+       "description": "普段ウェブデザイナーをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://tomoya81.example.com/\nメールアドレス: tomoya81@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1479,
+         "dark_mode": true
+       },
+-      "icon_hash": "13f0a504e81ec9bb3851f842f7babd4f9eabf825c6ceb63f2af68f183535a822"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "Q&Aセッション！視聴者の質問に答えます",
+     "description": "視聴者の皆さんからの質問に、直接答えていきます！",
+@@ -1309,10 +1309,10 @@
+       "display_name": "ゆりゆりゆりもち",
+       "description": "普段検察官をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://naoto67.example.com/\nメールアドレス: naoto67@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1306,
+         "dark_mode": true
+       },
+-      "icon_hash": "63166b6560cf73d9be65346447c3c7698b4a1002819dafd3778d57c931b614a7"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "実況！今夜のサッカー試合",
+     "description": "今夜のサッカー試合の実況と解説を行います！",
+@@ -1351,10 +1351,10 @@
+       "display_name": "たんたんだんご",
+       "description": "普段建築家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://pfukuda.example.com/\nメールアドレス: pfukuda@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1304,
+         "dark_mode": true
+       },
+-      "icon_hash": "1cd0a04ebd328fc4f881c5a261768ae5b467aa4596394a26f5590615f4fe81e2"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "トレーニングライブ！筋トレの方法を紹介",
+     "description": "筋トレの基本的な方法やコツを紹介しながら、実際にトレーニングを行います。",
+@@ -1393,10 +1393,10 @@
+       "display_name": "月うさぎ",
+       "description": "普段和紙職人をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://matsudataichi.example.com/\nメールアドレス: matsudataichi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1144,
+         "dark_mode": true
+       },
+-      "icon_hash": "8c772794f57c3607aba834b675e78e9085a0d45ebf499a8d8b5a76ee9316c6ce"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ホラートーク！怖い話を共有しよう",
+     "description": "夜の時間、一緒に怖い話を共有する時間です。",
+@@ -1435,10 +1435,10 @@
+       "display_name": "春風",
+       "description": "普段高等学校教員をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://kumiko88.example.com/\nメールアドレス: kumiko88@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1477,
+         "dark_mode": true
+       },
+-      "icon_hash": "ef485b6de9c2f9e44edbf99cbc07c2af1a1bc9b66c1f714a4382c95df2527e38"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "子育てライブ！子供の健康や教育について",
+     "description": "子育ての専門家が、子供の健康や教育に関する悩みや質問に答えます。",
+@@ -1477,10 +1477,10 @@
+       "display_name": "はるはるはるき",
+       "description": "普段演歌歌手をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://shimizumai.example.com/\nメールアドレス: shimizumai@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1090,
+         "dark_mode": true
+       },
+-      "icon_hash": "84dd1f73ebbcac548f38ab8400c9d8cdf1f5517157a260bfe5b308d95fc8fd07"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "写真術ライブ！基本の撮影技術を学ぶ",
+     "description": "プロのカメラマンが、写真の基本的な撮影技術やコツを伝授します。",
+@@ -1519,10 +1519,10 @@
+       "display_name": "神楽",
+       "description": "普段小説家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://manabunakamura.example.com/\nメールアドレス: manabunakamura@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1302,
+         "dark_mode": true
+       },
+-      "icon_hash": "fac421d3815e84205bb2ffcbf8c94c9cbfb2058012b98029f9b4223c4836b182"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "絵描きライブ！風景画の描き方を学ぶ",
+     "description": "プロの画家が、風景画の基本的な描き方や技術を伝授します。",
+@@ -1561,10 +1561,10 @@
+       "display_name": "いちごいちごかんき",
+       "description": "普段漫画家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yuikobayashi.example.com/\nメールアドレス: yuikobayashi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1475,
+         "dark_mode": true
+       },
+-      "icon_hash": "47d1f75bdff2776783bbf83b7ec073072b648570cb33d4ba2320b725ee28f1e9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "実況！今夜のゴルフトーナメント",
+     "description": "ゴルフのトーナメントの進行や選手の動向をリアルタイムで実況します。",
+@@ -1603,10 +1603,10 @@
+       "display_name": "雨の後",
+       "description": "普段経営者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://xinoue.example.com/\nメールアドレス: xinoue@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1472,
+         "dark_mode": true
+       },
+-      "icon_hash": "1e18118f9bf7971bc786a84d521e5cd5f123a604aa2e85b434ebcb6e51e6f2c9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "音楽制作ライブ！新曲の制作過程を公開",
+     "description": "新しい楽曲の制作過程をリアルタイムで公開します。",
+@@ -1645,10 +1645,10 @@
+       "display_name": "ほし星せんべい",
+       "description": "普段絵本作家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://ginoue.example.com/\nメールアドレス: ginoue@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1297,
+         "dark_mode": true
+       },
+-      "icon_hash": "9ea6965fa350748cec639d4d0e56776f921224a6ed115efb744a9af85832566e"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "実況！今夜のプロレス試合",
+     "description": "今夜のプロレス試合の実況と解説を行います！",
+@@ -1687,10 +1687,10 @@
+       "display_name": "あんこあんこかんきんこう",
+       "description": "普段花火師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://katonanami.example.com/\nメールアドレス: katonanami@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1469,
+         "dark_mode": true
+       },
+-      "icon_hash": "7de0d21782eb9819fc240cbab1cb8f374831c530dc98202fc1c03305507d8d20"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "美容室ライブ！春の新作ヘアスタイルを公開",
+     "description": "美容師が春の新作ヘアスタイルやカラーを実際に公開します。",
+@@ -1729,10 +1729,10 @@
+       "display_name": "すももすももち",
+       "description": "普段コピーライターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://aendo.example.com/\nメールアドレス: aendo@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1290,
+         "dark_mode": true
+       },
+-      "icon_hash": "5aaf0ca98c7d928e733bd0a0d1f33955794e01fc0b8168467b53979d15e87bdc"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "早起き朝活配信！今日も元気に",
+     "description": "朝の時間を有効に使いたい皆さん、一緒に活動を始めましょう！",
+@@ -1771,10 +1771,10 @@
+       "display_name": "うきうきういろう",
+       "description": "普段アニメーターをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yamadakenichi.example.com/\nメールアドレス: yamadakenichi@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1138,
+         "dark_mode": true
+       },
+-      "icon_hash": "9169bf3b8ea769a36234604d011bdf9562ec94ac701dfde8b486c0049ae3b2b9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "絵描きライブ！風景画の描き方を学ぶ",
+     "description": "プロの画家が、風景画の基本的な描き方や技術を伝授します。",
+@@ -1813,10 +1813,10 @@
+       "display_name": "夏霞",
+       "description": "普段漫画家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://ahashimoto.example.com/\nメールアドレス: ahashimoto@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1122,
+         "dark_mode": true
+       },
+-      "icon_hash": "08398455dfebc9a29364d14632eea5a395bcf1e468e2cc1b1733434e3add64cd"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "キャンプライブ！自然の中での生活を公開",
+     "description": "キャンプ場からのライブ！自然の中での生活や料理を公開します。",
+@@ -1855,10 +1855,10 @@
+       "display_name": "空の旅",
+       "description": "普段公務員をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://gototsubasa.example.com/\nメールアドレス: gototsubasa@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1084,
+         "dark_mode": true
+       },
+-      "icon_hash": "2ece415e97b9d605b007d7fe45f91cb24277d7cebdd98b0f26854901e082667e"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "写真術ライブ！基本の撮影技術を学ぶ",
+     "description": "プロのカメラマンが、写真の基本的な撮影技術やコツを伝授します。",
+@@ -1897,10 +1897,10 @@
+       "display_name": "絆",
+       "description": "普段モデルをしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://shota02.example.com/\nメールアドレス: shota02@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1279,
+         "dark_mode": true
+       },
+-      "icon_hash": "409bb488a793932767de2c31db82d644c5c9ce5ac0602d5e1a05dd63aaad0f77"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "釣りライブ！海辺でのんびり",
+     "description": "今日は海辺での釣りの様子を配信します。どんな魚が釣れるかな？",
+@@ -1939,10 +1939,10 @@
+       "display_name": "神楽",
+       "description": "普段歯科医師をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yoko16.example.com/\nメールアドレス: yoko16@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1460,
+         "dark_mode": true
+       },
+-      "icon_hash": "b0a32acde59a27f11ae30bd8bc4f55e1106647c10f1c37e9ff997792f5c9e570"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "手芸ライブ！かわいい刺繍の作り方",
+     "description": "手芸好きのためのライブ。今回はかわいい刺繍の作り方を紹介します。",
+@@ -1981,10 +1981,10 @@
+       "display_name": "はるはるはるかんき",
+       "description": "普段音楽家をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://mtanaka.example.com/\nメールアドレス: mtanaka@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1029,
+         "dark_mode": true
+       },
+-      "icon_hash": "0de3d3f6eb8aafc7e15a06e4d461028105bd2ee9e08d6c73811bf97c0df7d77e"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "歴史講座ライブ！戦国時代の英雄たち",
+     "description": "歴史学者が、戦国時代の英雄たちやその背景を詳しく解説します",
+@@ -2023,10 +2023,10 @@
+       "display_name": "りんりんりんご",
+       "description": "普段経営者をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://endoryosuke.example.com/\nメールアドレス: endoryosuke@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1455,
+         "dark_mode": true
+       },
+-      "icon_hash": "5ad89d60c67737be6b34a359b5b71d449fa96e085b30773c9610db1ca3853586"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "子供向けライブ！絵本の読み聞かせ",
+     "description": "子供向けの絵本を読み聞かせる時間。就寝前のリラックスタイムに。",
+@@ -2065,10 +2065,10 @@
+       "display_name": "ふわふわだんご",
+       "description": "普段検察官をしています。\nよろしくおねがいします！\n\n連絡は以下からお願いします。\n\nウェブサイト: http://yamazakiosamu.example.com/\nメールアドレス: yamazakiosamu@example.com\n",
+       "theme": {
+-        "id": 0,
++        "id": 1267,
+         "dark_mode": true
+       },
+-      "icon_hash": "1a5bed49c449a3d6926de62617d16ca230a2d66913c5216c67987ea744dba742"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "歴史トーク！過去の出来事から学ぶ",
+     "description": "世界の歴史や有名な出来事について、詳しく解説します。",

@@ -1,0 +1,227 @@
+--- /proc/self/fd/16	2023-11-25 18:55:48.021304841 +0900
++++ /proc/self/fd/21	2023-11-25 18:55:48.021304841 +0900
+@@ -94,7 +94,7 @@
+         "id": 1428,
+         "dark_mode": true
+       },
+-      "icon_hash": "6ddf50e34502bb9a15fcbd01f03cdcc1847dccdeba129cad2aa5423fb92be551"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "野菜の収穫ライブ！畑での作業を公開",
+     "description": "畑での野菜の収穫や作業の様子をリアルタイムで公開します。",
+@@ -178,7 +178,7 @@
+         "id": 1550,
+         "dark_mode": true
+       },
+-      "icon_hash": "94d6276355c688447b3b8274db6c8cfe9b20a882ca63bcd432be46d1473927b6"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "コメディライブ！笑いでリフレッシュ",
+     "description": "日常の出来事やニュースをユーモアたっぷりに解説します！笑顔で過ごしましょう！",
+@@ -262,7 +262,7 @@
+         "id": 1422,
+         "dark_mode": true
+       },
+-      "icon_hash": "b0a32acde59a27f11ae30bd8bc4f55e1106647c10f1c37e9ff997792f5c9e570"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "歌ってみたライブ！リクエスト募集中",
+     "description": "皆さんからのリクエスト曲を歌っていきます！楽しんでくださいね♪",
+@@ -304,7 +304,7 @@
+         "id": 1028,
+         "dark_mode": true
+       },
+-      "icon_hash": "cde62c54e42f8ec931fa343f881a3621024fc97153e374e1343dce265c581736"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "新曲初披露！歌配信",
+     "description": "オリジナルの新曲を初めて披露します！感想をお聞かせください！",
+@@ -388,7 +388,7 @@
+         "id": 1542,
+         "dark_mode": true
+       },
+-      "icon_hash": "2af3ff227b5383f6dac4c2f81196e8b010f7358475ad09f9c3517c3aadf88527"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "アウトドアライブ！BBQの楽しみ方を紹介",
+     "description": "アウトドア好きが集まるBBQの様子を公開し、楽しみ方やおすすめの食材を紹介します。",
+@@ -430,7 +430,7 @@
+         "id": 1540,
+         "dark_mode": true
+       },
+-      "icon_hash": "e7b807c11eff197e2c37a6f91420de5ebd0bf93758a297bc469da342a2abda4d"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "写真術ライブ！基本の撮影技術を学ぶ",
+     "description": "プロのカメラマンが、写真の基本的な撮影技術やコツを伝授します。",
+@@ -472,7 +472,7 @@
+         "id": 1416,
+         "dark_mode": true
+       },
+-      "icon_hash": "17001e693d5a46dfcf616bcaa44cd03630af807a5d56dfb13bf5fa8808991954"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ライブコンサート！アコースティックセッション",
+     "description": "アーティストがアコースティックセッションを公開。心温まる音楽の時間です。",
+@@ -556,7 +556,7 @@
+         "id": 1340,
+         "dark_mode": true
+       },
+-      "icon_hash": "547bef2912500f7722264b81fadfea0d394b3b9a7513d1ac7ec903aabb2f892c"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "映画レビュー！最新映画の感想を語る",
+     "description": "最新の映画について、感想や考察を深く掘り下げて話していきます。",
+@@ -640,7 +640,7 @@
+         "id": 1534,
+         "dark_mode": true
+       },
+-      "icon_hash": "407da3f66b7b2b728cfc0b1dc7ff97a0917a59e2c7e25f903225a2b4545a064e"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ファッションライブ！夏のおすすめコーディネート",
+     "description": "この夏のおすすめのファッションコーディネートを紹介します。",
+@@ -808,7 +808,7 @@
+         "id": 1530,
+         "dark_mode": true
+       },
+-      "icon_hash": "9bb960c2b1ba56b780c974a1e0a70a6d1db1f7bc58cfd04d85a7df09cec75529"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "歌ってみたライブ！リクエスト募集中",
+     "description": "皆さんからのリクエスト曲を歌っていきます！楽しんでくださいね♪",
+@@ -850,7 +850,7 @@
+         "id": 1032,
+         "dark_mode": true
+       },
+-      "icon_hash": "cbdb7fdfba6c37b9c419194355b380565be3dd0fad30fe1d2327ade45e9c9a62"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "日常のDIY！家具の組み立て",
+     "description": "新しい家具の組み立ての様子やDIYのコツを紹介します。",
+@@ -892,7 +892,7 @@
+         "id": 1528,
+         "dark_mode": true
+       },
+-      "icon_hash": "ccfda87880e49333d08e2f7762276d3946094dedf9c260e26404c93cac0e140d"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "トレーニングライブ！筋トレの方法を紹介",
+     "description": "筋トレの基本的な方法やコツを紹介しながら、実際にトレーニングを行います。",
+@@ -1060,7 +1060,7 @@
+         "id": 1524,
+         "dark_mode": true
+       },
+-      "icon_hash": "9169bf3b8ea769a36234604d011bdf9562ec94ac701dfde8b486c0049ae3b2b9"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "美容室ライブ！春の新作ヘアスタイルを公開",
+     "description": "美容師が春の新作ヘアスタイルやカラーを実際に公開します。",
+@@ -1102,7 +1102,7 @@
+         "id": 1404,
+         "dark_mode": true
+       },
+-      "icon_hash": "c1b2611b17b5b6869d521e0f3aafb1278a85fd3ee185893edae944063041a9fa"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "実況！今夜のボクシング試合",
+     "description": "今夜のボクシング試合の実況と解説を行います！",
+@@ -1312,7 +1312,7 @@
+         "id": 1515,
+         "dark_mode": true
+       },
+-      "icon_hash": "13f0a504e81ec9bb3851f842f7babd4f9eabf825c6ceb63f2af68f183535a822"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "夜のゲーム実況！新作RPG攻略中",
+     "description": "新しいRPGゲームを実況しながら進めていきます！みんなでワイワイ攻略しよう！",
+@@ -1438,7 +1438,7 @@
+         "id": 1398,
+         "dark_mode": true
+       },
+-      "icon_hash": "df2d1857b86c67b774cb30e8a6326be19488971beffeb3ea20ca917eb86e9615"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "新曲初披露！歌配信",
+     "description": "オリジナルの新曲を初めて披露します！感想をお聞かせください！",
+@@ -1480,7 +1480,7 @@
+         "id": 1508,
+         "dark_mode": true
+       },
+-      "icon_hash": "3ad4e8375a8b4322e7a1f8152514fc4e30ee410925279d21c25422fbc84c4310"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "ファッションライブ！今季のトレンドは？",
+     "description": "最新のファッショントレンドやおすすめアイテムを紹介します！",
+@@ -1522,7 +1522,7 @@
+         "id": 1506,
+         "dark_mode": true
+       },
+-      "icon_hash": "867d4e847a13cb0edd7a8a744dc377dfac73622b376ded2083e375f80c452739"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "実況！今夜のゴルフトーナメント",
+     "description": "ゴルフのトーナメントの進行や選手の動向をリアルタイムで実況します。",
+@@ -1564,7 +1564,7 @@
+         "id": 1396,
+         "dark_mode": true
+       },
+-      "icon_hash": "3b1572d217a3d188555d249e810b8e2b33018234bc70aee0fbe4e340b6897b27"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "アウトドアライブ！BBQの楽しみ方を紹介",
+     "description": "アウトドア好きが集まるBBQの様子を公開し、楽しみ方やおすすめの食材を紹介します。",
+@@ -1648,7 +1648,7 @@
+         "id": 1500,
+         "dark_mode": true
+       },
+-      "icon_hash": "9da12fd38a10b74216ea4a07b71c9e26ad8aa5fd56d835cc49eedf07579a3c01"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "旅行記！先日の旅行の思い出話",
+     "description": "先日の旅行での出来事やおすすめスポットを紹介します！",
+@@ -1690,7 +1690,7 @@
+         "id": 1394,
+         "dark_mode": true
+       },
+-      "icon_hash": "703155bd0d4f39b447b5233dc8f94292dc8596a28dd66c2785988c912a34683d"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "資産運用の基本！投資初心者のためのライブ",
+     "description": "資産運用や投資の基本的な知識を、専門家がわかりやすく説明します。",
+@@ -1816,7 +1816,7 @@
+         "id": 1496,
+         "dark_mode": true
+       },
+-      "icon_hash": "514702700e668665e0285e7fdb4237dfdf7bf6b2a7aee3a65039a06f6a3095d5"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "恋愛トーク！恋愛相談に答えます",
+     "description": "恋愛の悩みや相談に、経験豊富なゲストと一緒に答えていきます。",
+@@ -1900,7 +1900,7 @@
+         "id": 1096,
+         "dark_mode": true
+       },
+-      "icon_hash": "b94c3b1c0f66554b067f8255e6a277350a0e07ec510069d84e094b8122c0c8f5"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "映画レビュー！最新映画の感想を語る",
+     "description": "最新の映画について、感想や考察を深く掘り下げて話していきます。",
+@@ -1942,7 +1942,7 @@
+         "id": 1386,
+         "dark_mode": true
+       },
+-      "icon_hash": "3ae40348ed31cfe615024f7259344ad53375186ffe3e8e39d01d80586b779765"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "写真術ライブ！基本の撮影技術を学ぶ",
+     "description": "プロのカメラマンが、写真の基本的な撮影技術やコツを伝授します。",
+@@ -2068,7 +2068,7 @@
+         "id": 1487,
+         "dark_mode": true
+       },
+-      "icon_hash": "ecdd7e5d252bd6cbe08d7c72f95adcee6a3a7827cc016e317764755fd04f03cb"
++      "icon_hash": "d9f8294e9d895f81ce62e73dc7d5dff862a4fa40bd4e0fecf53f7526a8edcac0"
+     },
+     "title": "お菓子作りライブ！手作りクッキーのレシピ",
+     "description": "一緒に美味しい手作りクッキーを作る時間。簡単なレシピを紹介します。",

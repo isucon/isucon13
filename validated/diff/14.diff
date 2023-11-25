@@ -1,0 +1,92 @@
+--- /proc/self/fd/16	2023-11-25 18:53:41.408276797 +0900
++++ /proc/self/fd/21	2023-11-25 18:53:41.408276797 +0900
+@@ -478,7 +478,28 @@
+     "description": "朝の時間を有効に使いたい皆さん、一緒に活動を始めましょう！",
+     "playlist_url": "https://media.xiii.isucon.dev/api/5/playlist.m3u8",
+     "thumbnail_url": "https://media.xiii.isucon.dev/isucon12_final.webp",
+-    "tags": [],
++    "tags": [
++      {
++        "id": 59,
++        "name": "猫"
++      },
++      {
++        "id": 84,
++        "name": "起業"
++      },
++      {
++        "id": 46,
++        "name": "映画レビュー"
++      },
++      {
++        "id": 38,
++        "name": "お料理配信"
++      },
++      {
++        "id": 71,
++        "name": "心理学"
++      }
++    ],
+     "start_at": 1711785600,
+     "end_at": 1711800000
+   },
+@@ -1465,7 +1486,28 @@
+     "description": "日常の出来事やニュースをユーモアたっぷりに解説します！笑顔で過ごしましょう！",
+     "playlist_url": "https://media.xiii.isucon.dev/api/3/playlist.m3u8",
+     "thumbnail_url": "https://media.xiii.isucon.dev/BBB.webp",
+-    "tags": [],
++    "tags": [
++      {
++        "id": 87,
++        "name": "株式投資"
++      },
++      {
++        "id": 35,
++        "name": "日常話"
++      },
++      {
++        "id": 85,
++        "name": "投資"
++      },
++      {
++        "id": 12,
++        "name": "対戦ゲーム"
++      },
++      {
++        "id": 93,
++        "name": "オカルト"
++      }
++    ],
+     "start_at": 1711227600,
+     "end_at": 1711267200
+   },
+@@ -1864,7 +1906,28 @@
+     "description": "最新のアニメについて、感想や考察をみんなで交換しましょう！",
+     "playlist_url": "https://media.xiii.isucon.dev/api/11/playlist.m3u8",
+     "thumbnail_url": "https://media.xiii.isucon.dev/timewarp.webp",
+-    "tags": [],
++    "tags": [
++      {
++        "id": 67,
++        "name": "ニュース解説"
++      },
++      {
++        "id": 15,
++        "name": "ゲーム解説"
++      },
++      {
++        "id": 49,
++        "name": "メイク"
++      },
++      {
++        "id": 68,
++        "name": "歴史"
++      },
++      {
++        "id": 1,
++        "name": "ライブ配信"
++      }
++    ],
+     "start_at": 1711177200,
+     "end_at": 1711227600
+   },
