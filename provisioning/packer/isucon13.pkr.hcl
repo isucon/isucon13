@@ -52,7 +52,7 @@ source "amazon-ebs" "isucon13" {
   tags          = local.ami_tags
   snapshot_tags = local.ami_tags
 
-  source_ami    = "ami-03bd3273f34a1f122"
+  source_ami    = "${data.amazon-ami.ubuntu-jammy.id}"
   region        = "ap-northeast-1"
   instance_type = "c5.4xlarge"
 

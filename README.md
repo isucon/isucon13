@@ -45,40 +45,45 @@ ISUCON13で使用したTLS証明書は `provisioning/ansible/roles/nginx/files/e
 
 ### 用意されたAMIを利用する場合
 
-リージョン ap-northeast-1 AMI-ID ami-06c947ddf8c38c43c で起動してください。 
-
-このAMIは予告なく利用できなくなる可能性があります。
-
-このAMIで Node.JS の参考実装を利用する際は [#408](https://github.com/isucon/isucon13/pull/408) の変更を適用してください。
+AMIは準備中です。のちほど更新します
 
 ### 自分でAMIをビルドする場合
 
 上記AMIが利用できなくなった場合は、 `provisioning/packer` 以下でmake buildを実行するとAMIをビルドできます。packer が必要です。(運営時に検証したバージョンはv1.9.4)
 
-ベースとなるAMIが利用できない場合は以下のパッチを適用する必要があります。
-
-```
-diff --git a/provisioning/packer/isucon13.pkr.hcl b/provisioning/packer/isucon13.pkr.hcl
-index 4123481..0b7a676 100644
---- a/provisioning/packer/isucon13.pkr.hcl
-+++ b/provisioning/packer/isucon13.pkr.hcl
-@@ -52,7 +52,7 @@ source "amazon-ebs" "isucon13" {
-   tags          = local.ami_tags
-   snapshot_tags = local.ami_tags
- 
--  source_ami    = "ami-03bd3273f34a1f122"
-+  source_ami    = "${data.amazon-ami.ubuntu-jammy.id}"
-   region        = "ap-northeast-1"
-   instance_type = "c5.4xlarge"
-```
+Ansibleで環境構築を行います。すべての初期実装の言語環境をビルドするため、時間がかかります。下記のAnsibleの項目も確認してください。
 
 ### AMIからEC2を起動する場合の注意事項
+
+※ AMIは準備中です
 
 - 起動に必要なEBSのサイズは最低8GBですが、ベンチマーク中にデータが増えると溢れる可能性があるため、大きめに設定することをお勧めします(競技環境では40GiB)
 - セキュリティグループは `TCP/443` 、 `TCP/22` に加え、 `UDP/53` を必要に応じて開放してください
 - 適切なインスタンスプロファイルを設定することで、セッションマネージャーによる接続が可能です
 - 起動時に指定したキーペアで `ubuntu` ユーザーでSSH可能です
   - その後 `sudo su - isucon` で `isucon` ユーザーに切り替えてください
+
+## Ansibleでの環境構築
+
+ubuntu 22.04 の環境に対して Ansible を実行することで環境構築が可能です
+
+対象サーバにて `git clone` してセットアップする方法
+
+```
+$ cd provisioing/ansible
+$ ./make_latest_files.sh # 各種ビルド
+$ ansible-playbook -i inventory/localhost application.yml
+$ ansible-playbook -i inventory/localhost benchmark.yml
+```
+
+`make_latest_files.sh` ではフロントエンドおよび、ベンチマーカーのビルドが行われます。
+Node.JSと、Go言語のランタイムが必要となります。
+
+### 対象言語の絞り込み
+
+Ansibleではすべての初期実装の言語環境をビルドするため、時間がかかります。
+
+すべての言語が必要ない場合、 `provisioning/ansible/roles/xbuildwebapp/tasks/main.yml` および `provisioning/ansible/roles/webapp/tasks/main.yaml` で必要の無い言語をコメントアウトしてください。
 
 ## docker compose での構築方法
 
@@ -97,7 +102,7 @@ go以外の環境の起動は `{言語実装名}/down`  および `{言語実装
 
 ### ベンチマーカーのビルド
 
-ベンチマーカーは参考実装のAMIには含まれません。本Repositoryを git clone しビルドを行なってください。
+以下の手順でベンチマーカーをビルドをしてください
 
 ```
 $ cd bench
@@ -119,11 +124,14 @@ $ ./bench_darwin_arm64 run --dns-port=1053 # M1系macOSの場合
 ```
 $ ./bench_linux_amd64 run --target https://pipe.u.isucon.dev --nameserver 163.43.129.52 --enable-ssl --webapp {他のサーバ1} --webapp {他のサーバ2}
 ```
+
+オプション
+
 - `--nameserver`　は、ベンチマーカーが名前解決を行うサーバーのIPアドレスを指定して下さい
 - `--webapp` は、名前解決を行うDNSサーバーが名前解決の結果返却する可能性があるIPアドレスを指定して下さい
   - 1台のサーバーで競技を行う場合は指定不要です
   - 複数台で競技を行う場合は、`--nameserver` に指定したアドレスを除いた、競技に使用するサーバーのIPアドレスを指定してください
-またベンチマークコマンドに、 `--pretest-only` を付加することで、初期化処理と整合性チェックのみを行うことができます。アプリケーションの動作確認に利用してください。
+- `--pretest-only` を付加することで、初期化処理と整合性チェックのみを行うことができます。アプリケーションの動作確認に利用してください。
 
 ## フロントエンドおよび動画配信について
 
