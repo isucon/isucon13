@@ -45,17 +45,17 @@ ISUCON13で使用したTLS証明書は `provisioning/ansible/roles/nginx/files/e
 
 ### 用意されたAMIを利用する場合
 
-AMIは準備中です。のちほど更新します
+リージョン ap-northeast-1 AMI-ID ami-0b6f370b46c7043d9 で起動してください。 このAMIは予告なく利用できなくなる可能性があります。
+
+本AMIでは、Node.JSへのパッチは適用済みとなり、ベンチマーカーも含まれています。
 
 ### 自分でAMIをビルドする場合
 
-上記AMIが利用できなくなった場合は、 `provisioning/packer` 以下でmake buildを実行するとAMIをビルドできます。packer が必要です。(運営時に検証したバージョンはv1.9.4)
+上記AMIが利用できなくなった場合は、 `provisioning/packer` 以下で `make build` を実行するとAMIをビルドできます。packer が必要です。(運営時に検証したバージョンはv1.9.4)
 
 Ansibleで環境構築を行います。すべての初期実装の言語環境をビルドするため、時間がかかります。下記のAnsibleの項目も確認してください。
 
 ### AMIからEC2を起動する場合の注意事項
-
-※ AMIは準備中です
 
 - 起動に必要なEBSのサイズは最低8GBですが、ベンチマーク中にデータが増えると溢れる可能性があるため、大きめに設定することをお勧めします(競技環境では40GiB)
 - セキュリティグループは `TCP/443` 、 `TCP/22` に加え、 `UDP/53` を必要に応じて開放してください
@@ -100,7 +100,12 @@ go以外の環境の起動は `{言語実装名}/down`  および `{言語実装
 
 ## ベンチマーカーの実行
 
+
 ### ベンチマーカーのビルド
+
+docker composeの場合、ホストとなるマシン上でベンチマーカーをビルドする必要があります。
+
+ベンチマーカーのビルドにはGo言語が必要です。
 
 以下の手順でベンチマーカーをビルドをしてください
 
@@ -122,7 +127,9 @@ $ ./bench_darwin_arm64 run --dns-port=1053 # M1系macOSの場合
 競技環境に向けては次のように実行します
 
 ```
-$ ./bench_linux_amd64 run --target https://pipe.u.isucon.dev --nameserver 163.43.129.52 --enable-ssl --webapp {他のサーバ1} --webapp {他のサーバ2}
+$ ./bench_linux_amd64 run --target https://pipe.u.isucon.dev \
+  --nameserver 127.0.0.1 --enable-ssl \
+  --webapp {サーバ2} --webapp {サーバ3}
 ```
 
 オプション
