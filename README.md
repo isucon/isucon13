@@ -3,7 +3,7 @@
 ## 当日に公開したマニュアルおよびアプリケーションについての説明
 
 - [ISUCON13 当日マニュアル](https://gist.github.com/kazeburo/bccc2d2b2b9dc307b5640ae855f3e0bf)
-- [ISUCON13 アプリケーションマニュアル](https://gist.github.com/kazeburo/70b352e6d51969b214f919bcf0794ba6)
+- [ISUCON13 アプリケーションマニュアル](/docs/isupipe.md)
 
 
 ## ディレクトリ構成
