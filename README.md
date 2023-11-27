@@ -45,7 +45,7 @@ ISUCON13で使用したTLS証明書は `provisioning/ansible/roles/nginx/files/e
 
 ### 用意されたAMIを利用する場合
 
-リージョン ap-northeast-1 AMI-ID ami-0b6f370b46c7043d9 で起動してください。 このAMIは予告なく利用できなくなる可能性があります。
+リージョン ap-northeast-1 AMI-ID ami-041289d910c114864 で起動してください。 このAMIは予告なく利用できなくなる可能性があります。
 
 本AMIでは、Node.JSへのパッチは適用済みとなり、ベンチマーカーも含まれています。
 
