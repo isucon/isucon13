@@ -72,10 +72,12 @@ ISUPipeのクライアント(ベンチマーカーを含む)は、`/api/user/:us
 
 このリクエストでは、他のAPIで返されるユーザー情報に含まれる `icon_hash` という値を利用し、HTTPリクエストヘッダを次のように付与して条件付きGETリクエストを行うことがあります。
 
+```
 GET /api/user/:username/icon HTTP/1.1
 Host: pipe.u.isucon.dev
 If-None-Match: "{icon_hashの値}"
 (他のヘッダは省略)
+```
 
 ISUPipeのサーバーはこのリクエストに対し、ユーザーのアイコン画像のSHA256値と送信された `icon_hash`　の値を比較して、一致する場合にはステータスコード 304 でレスポンスすることができます(MAY)。
 
@@ -90,4 +92,63 @@ APIで返却される `icon_hash` の値と `GET /api/user/:username/icon` で�
 ISUPipeのサーバーでは、ユーザーのパスワードをbcryptでハッシュ化して保存しています。
 
 パスワードのハッシュアルゴリズムを変更したり、bcryptのコストを変更してはいけません(MUST NOT)。
+
+## 一部ログについてについての確認事項
+
+この「一般エラー」はベンチに問題となり、減点対象ではありません
+
+```
+viewer_spam: failed to post livecomment (moderated spam): benchmark-application: [一般エラー] POST /api/livestream/7531/livecomment へのリクエストに対して、期待されたHTTPステータスコードが確認できませんでした (expected:400, actual:201)
+```
+
+## Node.js初期実装へのパッチ
+
+Node.js の初期実装には負荷走行が不正終了することがあり、以下のパッチを適用してください
+
+```
+diff --git a/webapp/node/src/handlers/stats-handler.ts b/webapp/node/src/handlers/stats-handler.ts
+index 0428e9db..10b14b90 100644
+--- a/webapp/node/src/handlers/stats-handler.ts
++++ b/webapp/node/src/handlers/stats-handler.ts
+@@ -55,7 +55,9 @@ export const getUserStatisticsHandler = [
+           .catch(throwErrorWith('failed to count reactions'))
+ 
+         const [[{ 'IFNULL(SUM(l2.tip), 0)': tips }]] = await conn
+-          .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
++          .query<
++            ({ 'IFNULL(SUM(l2.tip), 0)': string | number } & RowDataPacket)[]
++          >(
+             `
+               SELECT IFNULL(SUM(l2.tip), 0) FROM users u
+               INNER JOIN livestreams l ON l.user_id = u.id	
+@@ -68,7 +70,7 @@ export const getUserStatisticsHandler = [
+ 
+         ranking.push({
+           username: user.name,
+-          score: reaction + tips,
++          score: reaction + Number(tips),
+         })
+       }
+ 
+@@ -219,7 +221,9 @@ export const getLivestreamStatisticsHandler = [
+           .catch(throwErrorWith('failed to count reactions'))
+ 
+         const [[{ 'IFNULL(SUM(l2.tip), 0)': totalTip }]] = await conn
+-          .query<({ 'IFNULL(SUM(l2.tip), 0)': number } & RowDataPacket)[]>(
++          .query<
++            ({ 'IFNULL(SUM(l2.tip), 0)': number | string } & RowDataPacket)[]
++          >(
+             'SELECT IFNULL(SUM(l2.tip), 0) FROM livestreams l INNER JOIN livecomments l2 ON l.id = l2.livestream_id WHERE l.id = ?',
+             [livestream.id],
+           )
+@@ -228,7 +232,7 @@ export const getLivestreamStatisticsHandler = [
+         ranking.push({
+           livestreamId: livestream.id,
+           title: livestream.title,
+-          score: reactionCount + totalTip,
++          score: reactionCount + Number(totalTip),
+         })
+       }
+       ranking.sort((a, b) => {
+```
 

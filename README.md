@@ -1,117 +1,144 @@
-# isucon13
+# ISUCON13 問題
 
-## bench
+## 当日に公開したマニュアルおよびアプリケーションについての説明
 
-webappの土台ができてきたら実装開始
+- [ISUCON13 当日マニュアル](/docs/cautionary_note.md)
+- [ISUCON13 アプリケーションマニュアル](/docs/isupipe.md)
 
-## payment
 
-TBW
-
-## Livestream
-
-HLSで配信予定。動画はS3に配置し、m3u8プレイリストをうまいこと返して複数視聴者が同じタイミングから視聴できるように調停するサーバを用意する予定
-
-## DNS
-
-PowerDNSを用いる予定
-
-## webapp
-
-### DB起動
-
-DBはdocker composeで起動します。
+## ディレクトリ構成
 
 ```
-isucon/isucon13$ sudo docker compose up -d
-[+] Running 3/3
- ⠿ Network isucon13_default    Created                                                                                                                              0.1s
- ⠿ Volume "isucon13_mysql"     Created                                                                                                                              0.0s
- ⠿ Container isucon13-mysql-1  Started                                     
+.
++- bech           # ベンチマーカー
++- development    # 開発環境用 docker compose
++- docs           # ドキュメント類
++- envcheck       # EC2サーバー 環境確認用プログラム
++- frontend       # フロントエンド
++- provisioning   # Ansible および Packer
++- scripts        # 初期、ベンチマーカー用データ生成用スクリプト
++- validated      # 競技後、最終チェックに用いたデータ
++- webapp         # 参考実装
 ```
 
-起動確認
+## ISUCON13 予選当日との変更点
+
+### Node.JSへのパッチ
+
+当日、アプリケーションマニュアルにて公開した Node.JSへのパッチは適用済みです。[#408](https://github.com/isucon/isucon13/pull/408)
+
+## TLS証明書について
+
+ISUCON13で使用したTLS証明書は `provisioning/ansible/roles/nginx/files/etc/nginx/tls` 以下にあります。
+
+本証明書は有効期限が切れている可能性があります。定期的な更新については予定しておりません。
+
+## ISUCON13のインスタンスタイプ
+
+- 競技者 VM 3台
+  - InstanceType: c5.large (2vCPU, 4GiB Mem)
+  - VolumeType: gp3 40GB
+- ベンチマーカー VM 1台
+  - ECS Fargate (8vCPU, 8GB Mem)
+
+## AWS上での過去問環境の構築方法
+
+### 用意されたAMIを利用する場合
+
+AMIは準備中です。のちほど更新します
+
+### 自分でAMIをビルドする場合
+
+上記AMIが利用できなくなった場合は、 `provisioning/packer` 以下でmake buildを実行するとAMIをビルドできます。packer が必要です。(運営時に検証したバージョンはv1.9.4)
+
+Ansibleで環境構築を行います。すべての初期実装の言語環境をビルドするため、時間がかかります。下記のAnsibleの項目も確認してください。
+
+### AMIからEC2を起動する場合の注意事項
+
+※ AMIは準備中です
+
+- 起動に必要なEBSのサイズは最低8GBですが、ベンチマーク中にデータが増えると溢れる可能性があるため、大きめに設定することをお勧めします(競技環境では40GiB)
+- セキュリティグループは `TCP/443` 、 `TCP/22` に加え、 `UDP/53` を必要に応じて開放してください
+- 適切なインスタンスプロファイルを設定することで、セッションマネージャーによる接続が可能です
+- 起動時に指定したキーペアで `ubuntu` ユーザーでSSH可能です
+  - その後 `sudo su - isucon` で `isucon` ユーザーに切り替えてください
+
+## Ansibleでの環境構築
+
+ubuntu 22.04 の環境に対して Ansible を実行することで環境構築が可能です
+
+対象サーバにて `git clone` してセットアップする方法
 
 ```
-isucon/isucon13$ mysql -h127.0.0.1 -uisucon -pisucon isupipe
-mysql: [Warning] Using a password on the command line interface can be insecure.
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
-
-Welcome to the MySQL monitor.  Commands end with ; or \g.
-Your MySQL connection id is 9
-Server version: 8.0.31 MySQL Community Server - GPL
-
-Copyright (c) 2000, 2023, Oracle and/or its affiliates.
-
-Oracle is a registered trademark of Oracle Corporation and/or its
-affiliates. Other names may be trademarks of their respective
-owners.
-
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-
-mysql>
+$ cd provisioing/ansible
+$ ./make_latest_files.sh # 各種ビルド
+$ ansible-playbook -i inventory/localhost application.yml
+$ ansible-playbook -i inventory/localhost benchmark.yml
 ```
 
-* webapp/sql/initdb.dディレクトリ配下のSQLが起動時に投入されるようになっています
-* webapp/sql/init.sh を実行すると、webapp/sql/init.sqlが投入されてDBの全テーブルに対してDELETEクエリが発行されます (お掃除)
+`make_latest_files.sh` ではフロントエンドおよび、ベンチマーカーのビルドが行われます。
+Node.JSと、Go言語のランタイムが必要となります。
 
-### webapp起動 (Go)
+### 対象言語の絞り込み
 
-コンパイルすると、/tmp/isupipeが作成されます。
+Ansibleではすべての初期実装の言語環境をビルドするため、時間がかかります。
 
-バイナリはLDFLAGSによってstrippedな状態でコンパイルされます。
+すべての言語が必要ない場合、 `provisioning/ansible/roles/xbuildwebapp/tasks/main.yml` および `provisioning/ansible/roles/webapp/tasks/main.yaml` で必要の無い言語をコメントアウトしてください。
 
-```
-isucon/isucon13/webapp/go$ make
-go build -o /tmp/isupipe -ldflags "-s -w"
-isucon/isucon13/webapp/go$ file /tmp/isupipe
-/tmp/isupipe: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, Go BuildID=oPmA-hr6Ug6TbwITkQ1X/cPHWGWkU_PQcsampCrOX/DzLxtHPGuucLf6w_R665/RgfqXH-k0OrQOIB7E7jT, stripped
-```
+## docker compose での構築方法
 
-コンパイルできたバイナリを実行すると、Echoサーバが立ち上がります。
-一旦、他と衝突しにくそうな 8080/tcpでリッスンするようにしています。
+開発に利用した docker composeで環境を構築することもできます。ただし、スペックやTLS証明書の有無など競技環境とは異なります。
 
 ```
-/isucon/isucon13/webapp/go$ make && /tmp/isupipe
-go build -o /tmp/isupipe -ldflags "-s -w"
-
-   ____    __
-  / __/___/ /  ___
- / _// __/ _ \/ _ \
-/___/\__/_//_/\___/ v4.11.1
-High performance, minimalist Go web framework
-https://echo.labstack.com
-____________________________________O/_______
-                                    O\
-⇨ http server started on [::]:8080
+$ cd development
+$ make go/down
+$ make go/up
 ```
 
-sqlxパッケージを用いた基本的なCRUDはlivestream_handler.goに書きましたので、ご参考まで。
+go以外の環境の起動は `{言語実装名}/down`  および `{言語実装名}/up` で行えます。
 
-## ベンチマーカーのテストについて
 
-dockertestを用いてベンチマーカーのテストが可能です
+## ベンチマーカーの実行
 
-projectrootにMakefileがありますので、以下の手順を踏んで下さい
+### ベンチマーカーのビルド
 
-1. make build_webapp を実行し、webappのdockerイメージを作成する
-2. make testを実行し、ベンチマーカーをテストする
-   * 内部でMySQLコンテナ起動
-   * webappコンテナも起動
-   * その上で、シナリオ関連中心にベンチマーカーのテストが走る
+以下の手順でベンチマーカーをビルドをしてください
 
-利用の際、以下に留意してください
+```
+$ cd bench
+$ make
+```
 
-* 実行にはsudo権限が必要
-   * docker.sockを用いて通信するため
-   * benchのMakefileでsudoを用いてgo testを実行するため、わざわざ指定する必要はありません
-   * あくまで、sudo権限を用いるということだけ認識してもらえれば良いです
-* benchのGo実装でdockertestが必要
-   * go.modにかいてある
-* internal/benchtestパッケージで実装されているdockertest処理に問題がある場合、エラー終了後にdockerコンテナが残留することがあります
-   * ゴミ掃除が必要な場合があります
-   * 再度make testを走らせた際、コンテナ名重複が起きて気付けるようにはなってます
+macOSとLinux用のバイナリが作成されます。
 
-コンテナを起動し、MySQLなどは動作準備ができるまで待ち合わせたりもするので、実行コストはコンテナといえどあります。
-基本的には benchtest.Setup() と benchtest.Teardown()を実行するだけで、問題ないですが、多くのテストをまとめて実行する場合などはTestMainなどでまとめるなどの工夫も検討してください。
+### ベンチマーカーの実行
+
+docker compose 環境の場合、次のようにベンチマークを実行します
+
+```
+$ ./bench_darwin_arm64 run --dns-port=1053 # M1系macOSの場合
+```
+
+競技環境に向けては次のように実行します
+
+```
+$ ./bench_linux_amd64 run --target https://pipe.u.isucon.dev --nameserver 163.43.129.52 --enable-ssl --webapp {他のサーバ1} --webapp {他のサーバ2}
+```
+
+オプション
+
+- `--nameserver`　は、ベンチマーカーが名前解決を行うサーバーのIPアドレスを指定して下さい
+- `--webapp` は、名前解決を行うDNSサーバーが名前解決の結果返却する可能性があるIPアドレスを指定して下さい
+  - 1台のサーバーで競技を行う場合は指定不要です
+  - 複数台で競技を行う場合は、`--nameserver` に指定したアドレスを除いた、競技に使用するサーバーのIPアドレスを指定してください
+- `--pretest-only` を付加することで、初期化処理と整合性チェックのみを行うことができます。アプリケーションの動作確認に利用してください。
+
+## フロントエンドおよび動画配信について
+
+フロントエンドの実装はリポジトリに存在していますが、競技の際に利用した動画とサムネイルについては配信サーバを廃止しており、表示できません。
+
+
+## Links
+
+- [ISUCON13 まとめ](https://isucon.net/archives/57801192.html)
+

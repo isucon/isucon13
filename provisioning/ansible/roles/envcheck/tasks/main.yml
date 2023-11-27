@@ -42,5 +42,5 @@
   become: true
   ansible.builtin.systemd:
     name: envcheck
-    enabled: true
+    enabled: no
     daemon_reload: true
