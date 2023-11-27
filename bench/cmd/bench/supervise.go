@@ -324,8 +324,8 @@ var supervise = cli.Command{
 		if production {
 			log.Println("Running on production")
 			// NOTE: アクセスキーを上書き
-			accessKey = "AKIAWFVKEZX5AUP2AK6O"
-			secretAccessKey = "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"
+			accessKey = ""
+			secretAccessKey = ""
 			// NOTE: SQSはsqs初期化時に決まる
 			finalcheckBucketName = "isucon13-finalcheck-prod"
 
