@@ -29,7 +29,7 @@
 
 ## TLS証明書について
 
-ISUCON13で使用したTLS証明は `provisioning/ansible/roles/nginx/files/etc/nginx/tls` 以下にあります。
+ISUCON13で使用したTLS証明書は `provisioning/ansible/roles/nginx/files/etc/nginx/tls` 以下にあります。
 
 本証明書は有効期限が切れている可能性があります。定期的な更新については予定しておりません。
 
