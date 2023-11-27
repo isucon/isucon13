@@ -129,5 +129,5 @@ $ ./bench_linux_amd64 run --target https://pipe.u.isucon.dev --nameserver 163.43
 
 ## Links
 
-- [ISUCON3 まとめ](https://isucon.net/archives/57801192.html)
+- [ISUCON13 まとめ](https://isucon.net/archives/57801192.html)
 
