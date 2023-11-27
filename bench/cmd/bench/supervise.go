@@ -267,19 +267,19 @@ var supervise = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:        "access-key",
-			Value:       "AKIAWFVKEZX5GDVVMWF7",
+			Value:       "",
 			Destination: &accessKey,
 			EnvVar:      "SUPERVISOR_ACCESS_KEY",
 		},
 		cli.StringFlag{
 			Name:        "secret-access-key",
-			Value:       "WXrWx7UWZIN85IzCoK8dGvHFivU+jZvcUhWdi21i",
+			Value:       "",
 			Destination: &secretAccessKey,
 			EnvVar:      "SUPERVISOR_SECRET_ACCESS_KEY",
 		},
 		cli.StringFlag{
 			Name:        "slack-webhook-url",
-			Value:       "https://hooks.slack.com/services/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",
+			Value:       "",
 			Destination: &slackWebhookURL,
 			EnvVar:      "SUPERVISOR_SLACK_WEBHOOK_URL",
 		},
