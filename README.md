@@ -49,6 +49,7 @@ ISUCON13で使用したTLS証明は `provisioning/ansible/roles/nginx/files/etc/
 
 このAMIは予告なく利用できなくなる可能性があります。
 
+このAMIで Node.JS の参考実装を利用する際は [#408](https://github.com/isucon/isucon13/pull/408) の変更を適用してください。
 
 ### 自分でAMIをビルドする場合
 
