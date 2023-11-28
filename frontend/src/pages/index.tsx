@@ -8,12 +8,14 @@ import React from 'react';
 import { BsFillHouseDoorFill, BsFillPersonFill } from 'react-icons/bs';
 import { MdManageHistory } from 'react-icons/md';
 import { Link } from 'react-router-dom';
+import { imageUrls } from '../assets';
 import { useLiveStreamsSearch, useUserMe } from '~/api/hooks';
 import { iconUrl } from '~/api/icon';
 import { normalizeUrl } from '~/api/url';
 import { VideoThumbnail } from '~/components/video/thumbnail';
 
 export default function IndexPage(): React.ReactElement {
+  console.log({ imageUrls });
   const liveSterams = useLiveStreamsSearch({
     limit: 10,
   });

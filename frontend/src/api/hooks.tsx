@@ -2,6 +2,7 @@
 
 import React from 'react';
 import useSWR, { type SWRConfiguration } from 'swr';
+import { getThumbnailUrl } from '~/assets';
 import { Parameter$get$livestream$search } from './apiClient';
 import { HTTPError, apiClient } from './client';
 
@@ -218,12 +219,29 @@ export interface UseMediaResponse {
 }
 
 export function useMedia(id: string | number, config?: SWRConfiguration) {
-  const url = `https://media.xiii.isucon.dev/api/${id}/live/`;
-  return useSWR(
-    url,
-    () => fetch(url).then((res) => res.json() as Promise<UseMediaResponse>),
-    config,
-  );
+  if (import.meta.env.USE_REMOTE_MEDIA) {
+    const url = `https://media.xiii.isucon.dev/api/${id}/live/`;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useSWR(
+      url,
+      () => fetch(url).then((res) => res.json() as Promise<UseMediaResponse>),
+      config,
+    );
+  } else {
+    const idNum = Number(id) || 0;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useSWR(
+      `/local_media/${id}`,
+      async () =>
+        ({
+          id: idNum,
+          name: `Local Media ${idNum}`,
+          playlist_url: `https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8`,
+          thumbnail_url: getThumbnailUrl(idNum),
+        }) satisfies UseMediaResponse,
+      config,
+    );
+  }
 }
 
 function encodeParam(params: Object): string {
