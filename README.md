@@ -70,7 +70,7 @@ ubuntu 22.04 の環境に対して Ansible を実行することで環境構築�
 対象サーバにて `git clone` してセットアップする方法
 
 ```
-$ cd provisioing/ansible
+$ cd provisioning/ansible
 $ ./make_latest_files.sh # 各種ビルド
 $ ansible-playbook -i inventory/localhost application.yml
 $ ansible-playbook -i inventory/localhost benchmark.yml
