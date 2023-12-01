@@ -91,11 +91,11 @@ Ansibleではすべての初期実装の言語環境をビルドするため、�
 
 ```
 $ cd development
-$ make go/down
-$ make go/up
+$ make down/go
+$ make up/go
 ```
 
-go以外の環境の起動は `{言語実装名}/down`  および `{言語実装名}/up` で行えます。
+go以外の環境の起動は `down/{言語実装名}`  および `up/{言語実装名}` で行えます。
 
 
 ## ベンチマーカーの実行
