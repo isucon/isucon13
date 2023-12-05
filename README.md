@@ -10,7 +10,7 @@
 
 ```
 .
-+- bech           # ベンチマーカー
++- bench          # ベンチマーカー
 +- development    # 開発環境用 docker compose
 +- docs           # ドキュメント類
 +- envcheck       # EC2サーバー 環境確認用プログラム
