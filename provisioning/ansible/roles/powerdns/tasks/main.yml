@@ -1,4 +1,26 @@
 ---
+- name: Copy systemd/resolved.conf
+  become: true
+  copy:
+    src: resolved.conf
+    dest: /etc/systemd/resolved.conf
+    mode: 0644
+
+- name: symlink resolv.conf
+  become: true
+  file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: true
+
+- name: Restart systemd-resolved
+  become: true
+  service:
+    name: systemd-resolved
+    enabled: true
+    state: restarted
+
 - name: Copy sources.list.d/pdns.list
   become: true
   copy:
@@ -87,28 +109,6 @@
     src: pdns.conf
     dest: /etc/powerdns/pdns.conf
     mode: 0644
-
-- name: Copy systemd/resolved.conf
-  become: true
-  copy:
-    src: resolved.conf
-    dest: /etc/systemd/resolved.conf
-    mode: 0644
-
-- name: symlink resolv.conf
-  become: true
-  file:
-    src: /run/systemd/resolve/resolv.conf
-    dest: /etc/resolv.conf
-    state: link
-    force: true
-
-- name: Restart systemd-resolved
-  become: true
-  service:
-    name: systemd-resolved
-    enabled: true
-    state: restarted
 
 - name: Put ExecStartPost file
   become: true
